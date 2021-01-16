@@ -705,33 +705,48 @@ def ParseL3ControlFile(cf, ds):
     # try and get the height from the CO2 variable
     if CO2_label in labels:
         # get height from attributes if the CO2 variable is already in the data structure
-        CO2 = pfp_utils.GetVariable(ds, CO2_label)
-        zms = float(pfp_utils.strip_non_numeric(CO2["Attr"]["height"]))
-        got_zms = True
-    elif "MergeSeries" in list(cf["Variables"][CO2_label].keys()):
+        try:
+            CO2 = pfp_utils.GetVariable(ds, CO2_label)
+            zms = float(pfp_utils.strip_non_numeric(CO2["Attr"]["height"]))
+            got_zms = True
+        except:
+            pass
+    if not got_zms and "MergeSeries" in list(cf["Variables"][CO2_label].keys()):
         # get the height from the variables listed in MergeSeries
-        source = cf["Variables"][CO2_label]["MergeSeries"]["source"]
-        source = pfp_utils.convert_csv_string_to_list(source)
-        for item in source:
-            var = pfp_utils.GetVariable(ds, item)
-            zms = float(pfp_utils.strip_non_numeric(var["Attr"]["height"]))
-            got_zms = True
-            break
-    elif "AverageSeries" in list(cf["Variables"][CO2_label].keys()):
+        try:
+            source = cf["Variables"][CO2_label]["MergeSeries"]["source"]
+            source = pfp_utils.convert_csv_string_to_list(source)
+            for item in source:
+                var = pfp_utils.GetVariable(ds, item)
+                zms = float(pfp_utils.strip_non_numeric(var["Attr"]["height"]))
+                got_zms = True
+                break
+        except:
+            pass
+    if not got_zms and "AverageSeries" in list(cf["Variables"][CO2_label].keys()):
         # get the height from the variables listed in AverageSeries
-        source = cf["Variables"][CO2_label]["AverageSeries"]["source"]
-        source = pfp_utils.convert_csv_string_to_list(source)
-        for item in source:
-            var = pfp_utils.GetVariable(ds, item)
-            zms = float(pfp_utils.strip_non_numeric(var["Attr"]["height"]))
+        try:
+            source = cf["Variables"][CO2_label]["AverageSeries"]["source"]
+            source = pfp_utils.convert_csv_string_to_list(source)
+            for item in source:
+                var = pfp_utils.GetVariable(ds, item)
+                zms = float(pfp_utils.strip_non_numeric(var["Attr"]["height"]))
+                got_zms = True
+                break
+        except:
+            pass
+    if not got_zms and "tower_height" in list(ds.globalattributes.keys()):
+        try:
+            zms = float(pfp_utils.strip_non_numeric(ds.globalattributes["tower_height"]))
             got_zms = True
-            break
-    if "tower_height" in list(ds.globalattributes.keys()) and not got_zms:
-        zms = float(pfp_utils.strip_non_numeric(ds.globalattributes["tower_height"]))
-        got_zms = True
-    if pfp_utils.cfkeycheck(cf, Base="Options", ThisOne="zms") and not got_zms:
-        zms = float(pfp_utils.strip_non_numeric(cf["Options"]["zms"]))
-        got_zms = True
+        except:
+            pass
+    if not got_zms and pfp_utils.cfkeycheck(cf, Base="Options", ThisOne="zms"):
+        try:
+            zms = float(pfp_utils.strip_non_numeric(cf["Options"]["zms"]))
+            got_zms = True
+        except:
+            pass
     if got_zms:
         l3_info["CO2"]["height"] = zms
     else:
@@ -1486,8 +1501,9 @@ def l2_update_cfg_syntax(cfg):
                 for key3 in cfg[key1][key2]:
                     cfg3 = cfg[key1][key2][key3]
                     if key3 in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
-                                    "ApplyFcStorage", "MergeSeries", "AverageSeries",
-                                    "LowerCheck", "UpperCheck"]:
+                                "CorrectWindDirection", "ApplyFcStorage",
+                                "MergeSeries", "AverageSeries",
+                                "LowerCheck", "UpperCheck"]:
                         for key4 in cfg3:
                             # force keywords to lower case
                             cfg3.rename(key4, key4.lower())
@@ -2652,7 +2668,7 @@ def parse_cfg_variables_value(k, v):
             # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
             v = v.replace("[", "").replace("]", "")
     # remove white space and quotes
-    if k in ["ExcludeDates", "LowerCheck", "UpperCheck"]:
+    if k in ["ExcludeDates", "CorrectWindDirection", "LowerCheck", "UpperCheck"]:
         # don't remove white space between date and time
         strip_list = ['"', "'"]
     elif k in ["Attr"]:

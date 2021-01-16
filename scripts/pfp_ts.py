@@ -1089,7 +1089,7 @@ def CalculateComponentsFromWsWd(ds):
     pfp_utils.CreateVariable(ds, u)
     pfp_utils.CreateVariable(ds, v)
 
-def CalculateFco2StorageSinglePoint(cf, ds, CO2_in="CO2", Fco2_out="Fco2_single"):
+def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
     """
     Calculate CO2 flux storage term in the air column beneath the CO2 instrument.  This
     routine assumes the air column between the sensor and the surface is well mixed.
@@ -1115,7 +1115,7 @@ def CalculateFco2StorageSinglePoint(cf, ds, CO2_in="CO2", Fco2_out="Fco2_single"
         ldt = pfp_utils.GetVariable(ds, "DateTime")
         Fco2_single = pfp_utils.CreateEmptyVariable(Fco2_out, nRecs, datetime=ldt["Data"])
         # get the input data
-        CO2 = pfp_utils.GetVariable(ds, CO2_in)
+        CO2 = pfp_utils.GetVariable(ds, info["CO2"]["label"])
         Ta = pfp_utils.GetVariable(ds, "Ta")
         ps = pfp_utils.GetVariable(ds, "ps")
         # check the CO2 concentration units
@@ -1131,13 +1131,13 @@ def CalculateFco2StorageSinglePoint(cf, ds, CO2_in="CO2", Fco2_out="Fco2_single"
         seconds = numpy.array([(dt-epoch).total_seconds() for dt in ldt["Data"]])
         dt = numpy.ediff1d(seconds, to_begin=float(ts)*60)
         # calculate the CO2 flux based on storage below the measurement height
-        zms = float(pfp_utils.strip_non_numeric(CO2["Attr"]["height"]))
-        Fco2_single["Data"] = zms*dc/dt
+        Fco2_single["Data"] = info["CO2"]["height"]*dc/dt
         # do the attributes
         Fco2_single["Attr"] = {}
-        for attr in ["height", "instrument", "serial_number"]:
+        for attr in ["instrument", "serial_number"]:
             if attr in CO2["Attr"]:
                 Fco2_single["Attr"][attr] = CO2["Attr"][attr]
+        Fco2_single["Attr"]["height"] = info["CO2"]["height"]
         Fco2_single["Attr"]["units"] = "umol/m^2/s"
         Fco2_single["Attr"]["standard_name"] = "not defined"
         Fco2_single["Attr"]["long_name"] = "CO2 flux (storage term)"
@@ -1524,8 +1524,8 @@ def CorrectWindDirection(cf, ds, Wd_in):
         ds: data structure
         Wd_in: input/output wind direction variable in ds.  Example: 'Wd_CSAT'
         """
-    logger.info(" Correcting wind direction")
-    ts = int(ds.globalattributes["time_step"])
+    msg = " Correcting wind direction (" + str(Wd_in) + ")"
+    logger.info(msg)
     Wd,f,a = pfp_utils.GetSeriesasMA(ds,Wd_in)
     ldt = ds.series["DateTime"]["Data"]
     KeyList = list(cf["Variables"][Wd_in]["CorrectWindDirection"].keys())
@@ -1534,24 +1534,25 @@ def CorrectWindDirection(cf, ds, Wd_in):
         correct_wd_list = correct_wd_string.split(",")
         for i, item in enumerate(correct_wd_list):
             correct_wd_list[i] = correct_wd_list[i].strip()
-        try:
-            si = pfp_utils.get_start_index(ldt, correct_wd_list[0], mode="quiet")
-        except ValueError:
-            msg = " CorrectWindDirection: start date (" + correct_wd_list[0] + ") not found"
+        si = pfp_utils.get_start_index(ldt, correct_wd_list[0], mode="quiet")
+        if si is None:
+            msg = " CorrectWindDirection: start date (" + correct_wd_list[0]
+            msg += ") not found, no correction applied"
             logger.warning(msg)
-            continue
-        try:
-            ei = pfp_utils.get_end_index(ldt, correct_wd_list[1], mode="quiet")
-        except ValueError:
-            msg = " CorrectWindDirection: end date (" + correct_wd_list[1] + ") not found"
+            return
+        ei = pfp_utils.get_end_index(ldt, correct_wd_list[1], mode="quiet")
+        if ei == -1:
+            msg = " CorrectWindDirection: end date (" + correct_wd_list[1]
+            msg += ") not found, using last date in data"
             logger.warning(msg)
-            continue
+            ei = len(ldt) - 1
         try:
             Correction = float(correct_wd_list[2])
         except:
-            msg = " CorrectWindDirection: bad value (" + correct_wd_list[2] + ") for correction"
+            msg = " CorrectWindDirection: bad value (" + str(correct_wd_list[2])
+            msg += ") for correction, not applied"
             logger.warning(msg)
-            continue
+            return
         Wd[si:ei] = Wd[si:ei] + Correction
     Wd = numpy.mod(Wd, float(360))
     ds.series[Wd_in]["Data"] = numpy.ma.filled(Wd, float(c.missing_value))
