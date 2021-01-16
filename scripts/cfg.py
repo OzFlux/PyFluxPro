@@ -1,5 +1,8 @@
 version_name = "PyFluxPro"
-version_number = "V3.0.5"
+version_number = "V3.0.6"
+# V3.0.6 - 13th January 2021
+#        - patch code for getting the height of the CO2 sensor
+#          for calculating single point storage
 # V3.0.5 - 25th November 2020
 #        - implement plotting at L2 and L3 in batch mode
 # V3.0.4 - 20th November 2020

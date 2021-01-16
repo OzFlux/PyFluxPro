@@ -2260,7 +2260,7 @@ def get_diurnalstats(dt,data,info):
     diel_stats["Number"] = numpy.ma.count(data_2d,axis=0)
     return diel_stats
 
-def get_end_index(ldt, end, mode="quiet"):
+def get_end_index(ldt, end, default=-1, mode="quiet"):
     """
     Purpose:
     Usage:
@@ -2274,29 +2274,29 @@ def get_end_index(ldt, end, mode="quiet"):
                 ei = numpy.where(ldt == end)[0][0]
             else:
                 if mode == "verbose":
-                    msg = "Requested end date not found, setting to last date"
+                    msg = "Requested end date not found"
                     logger.warning(msg)
-                ei = len(ldt)
+                ei = default
         except ValueError as error:
             if mode == "verbose":
-                msg = "Error parsing end date string, setting to last date"
+                msg = "Error parsing end date string"
                 logger.warning(msg)
-            ei = len(ldt)
+            ei = default
     elif isinstance(end, datetime.datetime):
         if end >= ldt[0] and end <= ldt[-1]:
             ei = numpy.where(ldt == end)[0][0]
         else:
             if mode == "verbose":
-                msg = "Requested end date not found, setting to last date"
+                msg = "Requested end date not found"
                 logger.warning(msg)
-            ei = len(ldt)
+            ei = default
     elif (isinstance(end, numbers.Number)):
         ei = min([int(end), len(ldt)])
     else:
         if mode == "verbose":
-            msg = "Unrecognised type for end date, setting to last date"
+            msg = "Unrecognised type for end date"
             logger.warning(msg)
-        ei = len(ldt)
+        ei = default
     return ei
 
 def get_keyvaluefromcf(cf,sections,key,default=None,mode="quiet"):
@@ -2455,7 +2455,7 @@ def get_nrecs(ds):
         nRecs = len(ds.series[series_list[0]]['Data'])
     return nRecs
 
-def get_start_index(ldt, start, mode="quiet"):
+def get_start_index(ldt, start, default=None, mode="quiet"):
     """
     Purpose:
     Usage:
@@ -2469,29 +2469,29 @@ def get_start_index(ldt, start, mode="quiet"):
                 si = numpy.where(ldt == start)[0][0]
             else:
                 if mode == "verbose":
-                    msg = "Requested start date not found, setting to first date"
+                    msg = "Requested start date not found"
                     logger.warning(msg)
-                si = 0
+                si = default
         except ValueError as error:
             if mode == "verbose":
-                msg = "Error parsing start date string, setting to first date"
+                msg = "Error parsing start date string"
                 logger.warning(msg)
-            si = 0
+            si = default
     elif isinstance(start, datetime.datetime):
         if start >= ldt[0] and start <= ldt[-1]:
             si = numpy.where(ldt == start)[0][0]
         else:
             if mode == "verbose":
-                msg = "Requested start date not found, setting to first date"
+                msg = "Requested start date not found"
                 logger.warning(msg)
-            si = 0
+            si = default
     elif (isinstance(start, numbers.Number)):
-        si = max([0,int(start)])
+        si = max([0, int(start)])
     else:
         if mode == "verbose":
-            msg = "Unrecognised type for start, setting to first date"
+            msg = "Unrecognised type for start"
             logger.warning(msg)
-        si = 0
+        si = default
     return si
 
 def get_timestep(ds):
