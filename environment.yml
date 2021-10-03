@@ -1,0 +1,21 @@
+name: pfp_env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - cfchecker
+  - configobj
+  - python-dateutil
+  - matplotlib
+  - netcdf4
+  - numpy
+  - openpyxl
+  - pandas
+  - pyqt
+  - pytz
+  - scipy
+  - statsmodels
+  - xarray
+  - xlwt
+  - xlrd
+  - xlsxwriter

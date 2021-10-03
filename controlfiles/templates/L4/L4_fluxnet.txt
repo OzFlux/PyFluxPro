@@ -1,0 +1,58 @@
+level = L4
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse
+    out_filename = Right click to browse
+    plot_path = Right click to browse
+    era5 = Right click to browse
+[Options]
+    MaxGapInterpolate = 3
+[Drivers]
+    [[Fld]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fld_era5]]]]
+                source = era5
+        [[[MergeSeries]]]
+            source = Fld,Fld_era5
+    [[Fsd]]
+        [[[GapFillFromAlternate]]]
+            [[[[Fsd_era5]]]]
+                source = era5
+                fit = ols_thru0
+                lag = no
+        [[[MergeSeries]]]
+            source = Fsd,Fsd_era5
+    [[ps]]
+        [[[GapFillFromAlternate]]]
+            [[[[ps_era5]]]]
+                source = era5
+        [[[MergeSeries]]]
+            source = ps,ps_era5
+    [[RH]]
+        [[[GapFillFromAlternate]]]
+            [[[[RH_era5]]]]
+                source = era5
+        [[[MergeSeries]]]
+            source = RH,RH_era5
+    [[Ta]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ta_era5]]]]
+                source = era5
+        [[[MergeSeries]]]
+            source = Ta,Ta_era5
+    [[Ws]]
+        [[[GapFillFromAlternate]]]
+            [[[[Ws_era5]]]]
+                source = era5
+                fit = ols_thru0
+                lag = no
+        [[[MergeSeries]]]
+            source = Ws,Ws_era5
+    [[Precip]]
+        [[[GapFillFromAlternate]]]
+            [[[[Precip_era5]]]]
+                source = era5
+                fit = replace
+                lag = no
+        [[[MergeSeries]]]
+            source = Precip,Precip_era5

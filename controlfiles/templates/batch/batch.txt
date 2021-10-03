@@ -1,0 +1,28 @@
+level = batch
+[Options]
+    levels = L1,L2,L3,concatenate,climatology,cpd_mchugh,cpd_mcnew,cpd_barr,mpt,L4,L5,L6
+[Levels]
+    [[L1]]
+        0 = Right click to browse
+    [[L2]]
+        0 = Right click to browse
+    [[L3]]
+        0 = Right click to browse
+    [[concatenate]]
+        0 = Right click to browse
+    [[climatology]]
+        0 = Right click to browse
+    [[cpd_mchugh]]
+        0 = Right click to browse
+    [[cpd_mcnew]]
+        0 = Right click to browse
+    [[cpd_barr]]
+        0 = Right click to browse
+    [[mpt]]
+        0 = Right click to browse
+    [[L4]]
+        0 = Right click to browse
+    [[L5]]
+        0 = Right click to browse
+    [[L6]]
+        0 = Right click to browse

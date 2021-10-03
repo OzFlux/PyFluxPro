@@ -1,0 +1,93 @@
+level = fingerprint
+[Variables]
+    [[Fsd]]
+        name = Fsd
+        lower = -10
+        upper = 1200
+    [[Ta]]
+        name = Ta
+        lower = -10
+        upper = 50
+    [[Fa]]
+        name = Fa
+        lower = -200
+        upper = 1000
+    [[Fe]]
+        name = Fe
+        lower = -200
+        upper = 600
+    [[Fco2]]
+        name = Fco2
+        lower = -40
+        upper = 20
+    [[Fsu]]
+        name = Fsu
+        lower = -10
+        upper = 750
+    [[Fld]]
+        name = Fld
+        lower = 150
+        upper = 600
+    [[Flu]]
+        name = Flu
+        lower = 200
+        upper = 800
+    [[Fn]]
+        name = Fn
+        lower = -200
+        upper = 1000
+    [[H2O]]
+        name = AH
+        lower = 0
+        upper = 40
+    [[CO2]]
+        name = CO2
+        lower = 300
+        upper = 900
+    [[Ws]]
+        name = Ws
+        lower = 0
+        upper = 15
+    [[Wd]]
+        name = Wd
+        lower = 0
+        upper = 360
+    [[ustar]]
+        name = ustar
+        lower = 0
+        upper = 2.0
+    [[Fh]]
+        name = Fh
+        lower = -150
+        upper = 800
+    [[Fg]]
+        name = Fg
+        lower = -300
+        upper = 450
+    [[Ts]]
+        name = Ts
+        lower = -10
+        upper = 60
+    [[Sws]]
+        name = Sws
+        lower = 0
+        upper = 0.6
+    [[Precip]]
+        name = Precip
+        lower = 0
+        upper = 20
+    [[ps]]
+        name = ps
+        lower = 80
+        upper = 105
+[Plots]
+    [[Composite fingerprint]]
+        variables = Fsd,Ta,H2O,Fe,Fco2
+    [[Radiation fingerprint]]
+        variables = Fsd,Fsu,Fld,Flu,Fn
+    [[Meteorology fingerprint]]
+        variables = Ta,H2O,CO2,Ws,Wd
+    [[Flux fingerprint]]
+        variables = ustar,Fh,Fe,Fco2,Fa
+    [[Soil fingerprint]]
+        variables = Fg,Ts,Sws,Precip,ps

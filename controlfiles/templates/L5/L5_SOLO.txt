@@ -1,0 +1,42 @@
+level = L5
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse
+    out_filename = Right click to browse
+    plot_path = Right click to browse
+    cpd_filename = Right click to browse
+[Options]
+    MaxGapInterpolate = 3
+    MaxShortGapLength = 14
+    FilterList = Fco2
+    TurbulenceFilter = ustar
+    DayNightFilter = Fsd
+    AcceptDayTimes = Yes
+    TruncateToImports = Yes
+[ustar_threshold]
+    0 = YYYY-MM-DD hh:mm,YYYY-MM-DD hh:mm,<ustar_threshold>
+[Fluxes]
+    [[ustar]]
+        [[[GapFillUsingSOLO]]]
+            [[[[ustar_SOLO]]]]
+                drivers = Ws,Fn,Ta,SH
+        [[[MergeSeries]]]
+            source = ustar,ustar_SOLO
+    [[Fe]]
+        [[[GapFillUsingSOLO]]]
+            [[[[Fe_SOLO]]]]
+                drivers = Fa,SHD,Ta,Ws
+        [[[MergeSeries]]]
+            source = Fe,Fe_SOLO
+    [[Fh]]
+        [[[GapFillUsingSOLO]]]
+            [[[[Fh_SOLO]]]]
+                drivers = Fa,Ta,Ws
+        [[[MergeSeries]]]
+            source = Fh,Fh_SOLO
+    [[Fco2]]
+        [[[GapFillUsingSOLO]]]
+            [[[[Fco2_SOLO]]]]
+                drivers = Fn,Fg,SH,SHD,Ta,Ts
+        [[[MergeSeries]]]
+            source = Fco2,Fco2_SOLO

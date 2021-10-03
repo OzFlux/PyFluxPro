@@ -1,0 +1,41 @@
+[Variables]
+    [[Month]]
+        AltVar = Month 
+    [[Hour]]
+        AltVar = Hour
+    [[Minute]]
+        AltVar = Minute
+    [[Fsd]]
+        AltVar = Fsd 
+    [[Fsu]]
+        AltVar = Fsu
+    [[Flu]]
+        AltVar = Flu
+    [[Fld]]
+        AltVar = Fld
+    [[Fn]]
+        AltVar = Fn
+    [[Fg]]
+        AltVar = Fg
+    [[Fe]]
+        AltVar = Fe
+    [[Fh]]
+        AltVar = Fh
+    [[Fco2]]
+        AltVar = Fco2
+    [[ustar]]
+        AltVar = ustar
+    [[Ta]]
+        AltVar = Ta
+    [[H2O]]
+        AltVar = AH
+    [[CO2]]
+        AltVar = CO2
+    [[Precip]]
+        AltVar = Precip
+    [[Ws]]
+        AltVar = Ws
+    [[Sws]]
+        AltVar = Sws
+    [[Ts]]
+        AltVar = Ts

@@ -1,0 +1,51 @@
+Changes made from Python2 to Python3 version of PyFluxPro
+
+all        | 1) Copy directory PyFluxPro into new directory PyFluxPro3
+           | 2) Run 2to3 on PyFluxPro3 inside the directory which should be converted
+           | 
+           | 2to3 --help  # shows help message
+           | 2to3 .       # dry run, shows what will be changed between python2 and python3
+done       | 2to3 -w -n . # writes the new (python3) files and does not create backups of the old (python2) files
+
+3) Manual changes necessary since 2to3 does not find e.g. integer division accidental or deliberate 
+   using / instead of // for integer division
+   Dictionaries are quite different between python2 and 3
+   
+
+Result:
+
+a) integer division (used wing and search all files for /
+    pfp_clim.py       69, 238
+    pfp_compliance    99
+    pfp_cpd           546, 566, 567, 590, 591, 593
+    pfp_gf            149, 742
+    pfp_gfALT         350
+    pfp_io            608
+    pfp_plot          183, 351
+    pfp_rp            1389
+    pfp_ts            638, 2678
+    pfp_utils         2146
+
+b) python2 default strings are bytes but in python3 these are unicode
+   changes to opencsv file for write 'wb' to 'w' or specify what b means
+    pfp_gfSOLO         771, 780, 841, 850, 893, 902
+    pfp_io             396, 595, 694, 936
+   changes to opencsv file for read 'rb' to 'r'
+    pfp_io             159, 310
+
+c) timedelta element int64 is not a default but float(i) works
+    pfp_rpLT           117
+
+d) scipy curve_fit xdata: in py2 a dictionary for xdata was fine but it did not work in py3 
+   in curve_fit the check is for list, tuple or np.ndarray
+    pfp_rpLT 185,      186
+    pfp_rpLT.TRF       56
+
+e) general error, in pfp_rpLT in line 196 np.nan, but "import numpy" and not "import numpy as np"
+    np.nan     ==> numpy.nan
+
+f) Source vs source, DependencyCheck and ApplyFcStorage are the only two which request a 'Source' in the 
+   controlfile although the controlfilecheck will always set it back to 'source' when opening the file
+    pfp_ck             366, 367, 374
+    pfp_ts             1309
+

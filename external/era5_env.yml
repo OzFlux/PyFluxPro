@@ -1,0 +1,9 @@
+name: era5_env
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - cdsapi
+  - python-dateutil
+  - numpy
+  - pandas

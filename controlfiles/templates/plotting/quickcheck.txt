@@ -1,0 +1,45 @@
+[Files]
+    file_path = ../Sites/<site_name>/Data/Processed/<year>/
+    in_filename = <site_name>_<year>_L3.nc
+
+[Variables]
+    [[Month]]
+        name = Month 
+    [[Hour]]
+        name = Hour
+    [[Minute]]
+        name = Minute
+    [[Fsd]]
+        name = Fsd 
+    [[Fsu]]
+        name = Fsu
+    [[Flu]]
+        name = Flu
+    [[Fld]]
+        name = Fld
+    [[Fn]]
+        name = Fn
+    [[Fg]]
+        name = Fg
+    [[Fe]]
+        name = Fe
+    [[Fh]]
+        name = Fh
+    [[Fc]]
+        name = Fc
+    [[ustar]]
+        name = ustar
+    [[Ta]]
+        name = Ta
+    [[H2O]]
+        name = Ah
+    [[CO2]]
+        name = Cc
+    [[Precip]]
+        name = Precip
+    [[Ws]]
+        name = Ws
+    [[Sws]]
+        name = Sws
+    [[Ts]]
+        name = Ts

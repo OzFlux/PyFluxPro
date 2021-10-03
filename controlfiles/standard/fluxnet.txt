@@ -1,0 +1,41 @@
+[Variables]
+    [[Fsd]]
+        name = Fsd
+    [[Fsu]]
+        name = Fsu
+    [[Fld]]
+        name = Fld
+    [[Flu]]
+        name = Flu
+    [[Fn]]
+        name = Fn
+    [[Fa]]
+        name = Fa
+    [[ps]]
+        name = ps
+    [[Ta]]
+        name = Ta
+    [[AH]]
+        name = AH
+    [[RH]]
+        name = RH
+    [[CO2]]
+        name = CO2
+    [[Ts]]
+        name = Ts
+    [[Fg]]
+        name = Fg
+    [[Sws]]
+        name = Sws
+    [[Ws]]
+        name = Ws
+    [[Wd]]
+        name = Wd
+    [[Fh]]
+        name = Fh
+    [[Fe]]
+        name = Fe
+    [[Fco2]]
+        name = Fco2
+    [[ustar]]
+        name = ustar

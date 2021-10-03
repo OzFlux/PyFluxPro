@@ -1,0 +1,99 @@
+level = L3
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.nc)
+    out_filename = Right click to browse (*.nc)
+    plot_path = Right click to browse
+[Options]
+    UseL2Fluxes = Yes
+    zms = <height>
+    CO2Units = umol/mol
+    Fco2Units = umol/m^2/s
+[Soil]
+    FgDepth = <depth>
+    BulkDensity = <soil_bulk_density>
+    OrganicContent = <soil_organic_content>
+    SwsDefault = <soil_water_content_default>
+    SwsSeries = Sws
+[Variables]
+    [[Fn]]
+        [[[MergeSeries]]]
+            source = Fn_4cmpt,Fn
+        [[[RangeCheck]]]
+            lower = -150
+            upper = 1100
+    [[Ta]]
+        [[[MergeSeries]]]
+            source = Ta_<inst>_<height>m,Ta_SONIC_Av
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 50
+    [[RH]]
+        [[[MergeSeries]]]
+            source = RH_<inst>_<height>m,RH_IRGA_Av
+        [[[RangeCheck]]]
+            upper = 100
+            lower = 0
+    [[H2O]]
+        [[[MergeSeries]]]
+            source = H2O_IRGA_Av
+        [[[RangeCheck]]]
+            upper = 3000
+            lower = 0
+    [[CO2]]
+        [[[MergeSeries]]]
+            source = CO2_IRGA_Av
+        [[[RangeCheck]]]
+            lower = 250
+            upper = 900
+    [[Ws]]
+        [[[MergeSeries]]]
+            source = Ws_<inst>_Av,Ws_SONIC_Av
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 20
+    [[Wd]]
+        [[[MergeSeries]]]
+            source = Wd_<inst>_Av,Wd_SONIC_Av
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 360
+    [[Fg]]
+        [[[AverageSeries]]]
+            source = Fg_<depth>cma,Fg_<depth>cmb
+        [[[RangeCheck]]]
+            lower = -300
+            upper = 300
+    [[Sws]]
+        [[[AverageSeries]]]
+            source = Sws_<depth>cma,Sws_<depth>cmb
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 0.5
+    [[Ts]]
+        [[[AverageSeries]]]
+            source = Ts_<depth>cma,Ts_<depth>cmb
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 60
+[Plots]
+    [[Radiative fluxes]]
+        variables = Fsd,Fsu,Fld,Flu,Fn
+    [[Turbulent fluxes]]
+        variables = Fh,Fe,Fco2,ustar,Fm
+    [[Fh diagnostics]]
+        variables = Fh,Fh_EPFlag,W_SONIC_Vr,Tv_SONIC_Vr
+    [[Fe diagnostics]]
+        variables = Fe,Fe_EPFlag,W_SONIC_Vr,H2O_IRGA_Vr,CO2_IRGA_Vr
+    [[Fco2 diagnostics]]
+        variables = Fco2,Fco2_EPFlag,W_SONIC_Vr,H2O_IRGA_Vr,CO2_IRGA_Vr
+    [[Air temperature, humidity and CO2]]
+        variables = Ta,Ta_<inst>_<height>m,RH,RH_<inst>_<height>m,CO2_IRGA_Av
+    [[Soil temperature]]
+        variables = Precip,Ts,Ts_<depth>cma,Ts_<depth>cmb
+    [[Soil water content]]
+        variables = Precip,Sws,Sws_<depth>cma,Sws_<depth>cmb
+    [[Soil heat flux]]
+        variables = Precip,Fg,Fg_<depth>cma,Fg_<depth>cmb
+    [[Pressure, wind speed and direction]]
+        variables = ps,Ws,Ws_<inst>_Av,Ws_SONIC_Av,Wd,Wd_<inst>_Av,Wd_SONIC_Av

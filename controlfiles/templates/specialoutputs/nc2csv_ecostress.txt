@@ -1,0 +1,111 @@
+level = nc2csv_ecostress
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse
+    out_filename = Right click to browse
+
+[General]
+    Altitude = <altitude>
+    CanopyHeight = <canopy_height>
+    Citation = <portal_collection_citation>
+    DataPolicy = OzFlux (http://ozflux.its.monash.edu.au/ecosystem/site/licenceinfo.jspx)
+    DataURL = http://data.ozflux.org.au
+    FluxNetID = AU-<ID>
+    Institution = <institution>
+    LandCover = <land_cover>
+    LandUse = <land_use>
+    Latitude = <latitude>
+    LicenseType = CC BY 4.0
+    LicenseURL = https://creativecommons.org/licenses/by/4.0/
+    Longitude = <longitude>
+    MeasurementHeight = <measurement_height>
+    MetadataURL = http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
+    PIEmail = <pi_email>
+    PIName = <pi_name>
+    SiteName = <site_long_name>
+    SoilType = <soil_type>
+    SWCDepth = <soil_moisture_depth>
+    TaDepth = <air_temperature_height>
+    TSDepth = <soil_temperature_depth>
+
+[Variables]
+    [[LHF]]
+        name = Fe
+        units = W/m2
+        format = 0
+    [[SHF]]
+        name = Fh
+        units = W/m2
+        format = 0
+    [[GHF]]
+        name = Fg
+        units = W/m2
+        format = 0
+    [[GPP]]
+        name = GPP_SOLO
+        units = gC/m2/s
+        format = 0.00E+00
+    [[Ta]]
+        name = Ta
+        units = C
+        format = 0.00
+    [[T2]]
+        name = 
+        units = C
+        format = 0.00
+    [[VPD]]
+        name = VPD
+        units = kPa
+        format = 0.00
+    [[Rn]]
+        name = Fn
+        units = W/m2
+        format = 0
+    [[RdS]]
+        name = Fsd
+        units = W/m2
+        format = 0
+    [[RdL]]
+        name = Fld
+        units = W/m2
+        format = 0
+    [[RuS]]
+        name = Fsu
+        units = W/m2
+        format = 0
+    [[RuL]]
+        name = Flu
+        units = W/m2
+        format = 0
+    [[PAR]]
+        name = 
+        units = umol/m2/s
+        format = 0
+    [[PRESS]]
+        name = ps
+        units = kPa
+        format = 0.00
+    [[PREC]]
+        name = Precip
+        units = mm
+        format = 0.00
+    [[Rh]]
+        name = RH
+        units = %
+        format = 0.0
+    [[Wspd]]
+        name = Ws
+        units = m/s
+        format = 0.00
+    [[Wdir]]
+        name = Wd
+        units = degrees
+        format = 0
+    [[Ts]]
+        name = Ts
+        units = C
+        format = 0.00
+    [[SWC]]
+        name = Sws
+        units = % volmetric
+        format = 0.00

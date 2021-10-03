@@ -1,0 +1,237 @@
+level = L2
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.nc)
+    out_filename = Right click to browse (*.nc)
+    plot_path = Right click to browse
+[Options]
+    irga_type = Li-7500
+    SONIC_Check = Yes
+    IRGA_Check = Yes
+[Variables]
+    [[Fn_NR]]
+        [[[RangeCheck]]]
+            lower = -100
+            upper = 1000
+    [[Fld]]
+        [[[RangeCheck]]]
+            lower = 250
+            upper = 700
+    [[Flu]]
+        [[[RangeCheck]]]
+            lower = 300
+            upper = 700
+    [[Fsu]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 500
+    [[Fsd]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 1500
+    [[UzT]]
+        [[[RangeCheck]]]
+            lower = -0.2
+            upper = 1
+    [[UxT]]
+        [[[RangeCheck]]]
+            lower = -2
+            upper = 2
+    [[UyT]]
+        [[[RangeCheck]]]
+            lower = -2
+            upper = 2
+    [[UzA]]
+        [[[RangeCheck]]]
+            lower = -0.01
+            upper = 0.5
+    [[UxA]]
+        [[[RangeCheck]]]
+            lower = -1
+            upper = 1
+    [[UyA]]
+        [[[RangeCheck]]]
+            lower = -1
+            upper = 1
+    [[UzC]]
+        [[[RangeCheck]]]
+            lower = -2
+            upper = 2
+    [[UxC]]
+        [[[RangeCheck]]]
+            lower = -4
+            upper = 4
+    [[UyC]]
+        [[[RangeCheck]]]
+            lower = -4
+            upper = 4
+    [[UxUz]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 10
+    [[UyUz]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 10
+    [[UxUy]]
+        [[[RangeCheck]]]
+            lower = -1
+            upper = 1
+    [[Uz_SONIC_Vr]]
+        [[[RangeCheck]]]
+            lower = -2
+            upper = 2
+    [[Ux_SONIC_Vr]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 10
+    [[Uy_SONIC_Vr]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 10
+    [[Tv_SONIC_Av]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 50
+    [[Tv_SONIC_Vr]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 5
+    [[CO2_IRGA_Av]]
+        [[[RangeCheck]]]
+            lower = 500
+            upper = 2000
+    [[CO2_IRGA_Sd]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 50
+    [[CO2_IRGA_Vr]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 2500
+    [[AH_IRGA_Av]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 35
+    [[AH_IRGA_Sd]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 10
+    [[AH_IRGA_Vr]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 100
+    [[Ta_<inst>_<height>m]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 50
+    [[RH_<inst>_<height>m]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 110
+    [[AH_<inst>_<height>m]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 30
+    [[Ux_SONIC_Av]]
+        [[[RangeCheck]]]
+            lower = -20
+            upper = 20
+    [[Uy_SONIC_Av]]
+        [[[RangeCheck]]]
+            lower = -20
+            upper = 20
+    [[Uz_SONIC_Av]]
+        [[[RangeCheck]]]
+            lower = -1
+            upper = 1
+    [[Ws_SONIC_Av]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 20
+    [[Wd_SONIC_Av]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 360
+    [[Ws_<inst>_Av]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 20
+    [[Wd_<inst>_Av]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 360
+    [[Precip]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 50
+    [[ps]]
+        [[[RangeCheck]]]
+            lower = 95
+            upper = 105
+    [[Fg_<depth>cma]]
+        [[[RangeCheck]]]
+            lower = -100
+            upper = 150
+    [[Fg_<depth>cmb]]
+        [[[RangeCheck]]]
+            lower = -100
+            upper = 150
+    [[Fg_<depth>cmc]]
+        [[[RangeCheck]]]
+            lower = -100
+            upper = 150
+    [[Sws_<depth>cma]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 0.5
+    [[Sws_<depth>cmb]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 0.5
+    [[Sws_<depth>cmc]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 0.5
+    [[Ts_<depth>cma]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 60
+    [[Ts_<depth>cmb]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 60
+    [[Ts_<depth>cmc]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 60
+    [[Diag_SONIC]]
+        [[[RangeCheck]]]
+            lower = -0.5
+            upper = 20.5
+    [[Diag_IRGA]]
+        [[[RangeCheck]]]
+            lower = -0.5
+            upper = 10.5
+        [[[70]]]
+    [[AGC_IRGA]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 70
+[Plots]
+    [[Radiative fluxes]]
+        variables = Fsd,Fsu,Fld,Flu,Fn
+    [[Covariances (SONIC)]]
+        variables = UzT,UxT,UyT,UxUz,UyUz,Ux_SONIC_Vr,Uy_SONIC_Vr
+    [[Covariances (SONIC&IRGA)]]
+        variables = UzA,UxA,UyA,UzC,UxC,UyC
+    [[Air temperature, humidity and CO2]]
+        variables = Ta_<inst>_<height>m,Tv_SONIC_Av,AH_<inst>_<height>m,AH_IRGA_Av,CO2_IRGA_Av
+    [[Soil temperature & rain]]
+        variables = Ts_<depth>cma,Ts_<depth>cmb,Ts_<depth>cmc,Precip
+    [[Soil moisture & rain]]
+        variables = Sws_<depth>cma,Sws_<depth>cmb,Sws_<depth>cmc,Precip
+    [[Soil heat flux & rain]]
+        variables = Fg_<depth>cma,Fg_<depth>cmb,Fg_<depth>cmc,Precip
+    [[Pressure, wind speed, wind direction & rainfall]]
+        variables = ps,Ws_SONIC_Av,Ux_SONIC_Av,Uy_SONIC_Av,Uz_SONIC_Av,Wd_SONIC_Av,Precip

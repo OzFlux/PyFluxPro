@@ -1,0 +1,419 @@
+[Files]
+    required = file_path,in_filename,in_firstdatarow,in_headerrow,out_filename
+[Global]
+    [[Required]]
+        latitude =
+        longitude =
+        site_name =
+        time_step =
+    [[Forced]]
+        Conventions = CF-1.8
+        data_link = http://data.ozflux.org.au/
+        featureType = timeSeries
+        license_name = CC BY 4.0
+        license = https://creativecommons.org/licenses/by/4.0/
+        publisher_name = TERN Ecosystem Processes,OzFlux
+        ozflux_link = http://ozflux.org.au/
+    [[Recommended]]
+        acknowledgement =
+        canopy_height =
+        comment =
+        contact =
+        fluxnet_id =
+        history =
+        institution =
+        metadata_link =
+        references =
+        site_pi =
+        soil =
+        source =
+        title =
+        tower_height =
+        vegetation =
+[Variables]
+    [[AGC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = IRGA automatic gain control value
+    [[AH]]
+        [[[average]]]
+            [[[[g/m^3]]]]
+                long_name = Absolute humidity
+                standard_name = mass_concentration_of_water_vapor_in_air
+        [[[standard deviation]]]
+            [[[[g/m^3]]]]
+                long_name = Absolute humidity
+        [[[variance]]]
+            [[[[g^2/m^6]]]]
+                long_name = Absolute humidity
+    [[CO2]]
+        [[[average]]]
+            [[[[mg/m^3]]]]
+                long_name = CO2 concentration
+                standard_name = mass_concentration_of_carbon_dioxide_in_air
+            [[[[umol/mol]]]]
+                long_name = CO2 concentration
+                standard_name = mole_fraction_of_carbon_dioxide_in_air
+        [[[standard deviation]]]
+            [[[[mg/m^3]]]]
+                long_name = CO2 concentration
+            [[[[mmol/m^3]]]]
+                long_name = CO2 concentration
+            [[[[umol/mol]]]]
+                long_name = CO2 concentration
+        [[[variance]]]
+            [[[[mg^2/m^6]]]]
+                long_name = CO2 concentration
+            [[[[mmol^2/m^6]]]]
+                long_name = CO2 concentration
+            [[[[umol^2/mol^2]]]]
+                long_name = CO2 concentration
+    [[Diag_IRGA]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = IRGA diagnostic value
+    [[Diag_SONIC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Sonic diagnostic value
+    [[EC]]
+        [[[average]]]
+            [[[[dS/m]]]]
+                long_name = Electrical conductivity
+    [[Fa]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Available energy
+    [[Fco2]]
+        [[[average]]]
+            [[[[mg/m^2/s]]]]
+                long_name = CO2 flux
+            [[[[umol/m^2/s]]]]
+                long_name = CO2 flux
+                standard_name = surface_upward_mole_flux_of_carbon_dioxide
+    [[Fe]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[Fg]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Ground heat flux
+                standard_name = downward_heat_flux_at_ground_level_in_soil
+    [[Fh]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Sensible heat flux
+                standard_name = surface_upward_sensible_heat_flux
+    [[Fh2o]]
+        [[[average]]]
+            [[[[mmol/m^2/s]]]]
+                long_name = Water vapour flux
+    [[Fld]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Down-welling longwave radiation
+                standard_name = surface_downwelling_longwave_flux_in_air
+    [[Flu]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Up-welling longwave radiation
+                standard_name = surface_upwelling_longwave_flux_in_air
+    [[Fm]]
+        [[[average]]]
+            [[[[kg/m/s^2]]]]
+                long_name = Momentum flux
+                standard_name = magnitude_of_surface_downward_stress
+    [[Fn]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Net radiation
+                standard_name = surface_net_downward_radiative_flux
+    [[Fsd]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Down-welling shortwave radiation
+                standard_name = surface_downwelling_shortwave_flux_in_air
+    [[Fsu]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Up-welling shortwave radiation
+                standard_name = surface_upwelling_shortwave_flux_in_air
+    [[H2O]]
+        [[[average]]]
+            [[[[mmol/mol]]]]
+                long_name = H2O concentration
+                standard_name = mole_fraction_of_water_vapor_in_air
+    [[L]]
+        [[[average]]]
+            [[[[m]]]]
+                long_name = Monin-Obukhov length
+    [[PAR]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = Photosynthetically active radiation
+                standard_name = surface_downwelling_photosynthetic_photon_flux_in_air
+            [[[[mmol/m^2/s]]]]
+                long_name = Photosynthetically active radiation
+                standard_name = surface_downwelling_photosynthetic_photon_flux_in_air
+    [[Precip]]
+        [[[sum]]]
+            [[[[mm]]]]
+                long_name = Rainfall
+                standard_name = thickness_of_rainfall_amount
+    [[ps]]
+        [[[average]]]
+            [[[[Pa]]]]
+                long_name = Surface air pressure
+                standard_name = surface_air_pressure
+            [[[[hPa]]]]
+                long_name = Surface air pressure
+                standard_name = surface_air_pressure
+            [[[[kPa]]]]
+                long_name = Surface air pressure
+                standard_name = surface_air_pressure
+    [[RH]]
+        [[[average]]]
+            [[[[percent]]]]
+                long_name = Relative humidity
+                standard_name = relative_humidity
+            [[[[1]]]]
+                long_name = Relative humidity
+                standard_name = relative_humidity
+    [[SH]]
+        [[[average]]]
+            [[[[kg/kg]]]]
+                long_name = Specific humidity
+                standard_name = specific_humidity
+    [[SHD]]
+        [[[average]]]
+            [[[[kg/kg]]]]
+                long_name = Specific humidity deficit
+    [[Signal_CO2]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 signal strength
+    [[Signal_H2O]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = H2O signal strength
+    [[Sws]]
+        [[[average]]]
+            [[[[m^3/m^3]]]]
+                long_name = Soil water content
+                standard_name = volume_fraction_of_condensed_water_in_soil
+    [[Ta]]
+        [[[average]]]
+            [[[[degC]]]]
+                long_name = Air temperature
+                standard_name = air_temperature
+            [[[[K]]]]
+                long_name = Air temperature
+                standard_name = air_temperature
+        [[[standard deviation]]]
+            [[[[degC]]]]
+                long_name = Air temperature
+            [[[[K]]]]
+                long_name = Air temperature
+        [[[variance]]]
+            [[[[degC^2]]]]
+                long_name = Air temperature
+            [[[[K^2]]]]
+                long_name = Air temperature
+    [[Ts]]
+        [[[average]]]
+            [[[[degC]]]]
+                long_name = Soil temperature
+                standard_name = soil_temperature
+            [[[[K]]]]
+                long_name = Soil temperature
+                standard_name = soil_temperature
+    [[Tv]]
+        [[[average]]]
+            [[[[degC]]]]
+                long_name = Virtual temperature
+                standard_name = virtual_temperature
+            [[[[K]]]]
+                long_name = Virtual temperature
+                standard_name = virtual_temperature
+        [[[standard deviation]]]
+            [[[[degC]]]]
+                long_name = Virtual temperature
+            [[[[K]]]]
+                long_name = Virtual temperature
+        [[[variance]]]
+            [[[[degC^2]]]]
+                long_name = Virtual temperature
+            [[[[K^2]]]]
+                long_name = Virtual temperature
+    [[ustar]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = Friction velocity
+    [[U_]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = Along wind velocity component
+                standard_name = eastward_wind
+        [[[standard deviation]]]
+            [[[[m/s]]]]
+                long_name = Along wind velocity component
+        [[[variance]]]
+            [[[[m^2/s^2]]]]
+                long_name = Along wind velocity component
+    [[Ux]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = Longitudinal wind velocity component, sonic coordinates
+        [[[standard deviation]]]
+            [[[[m/s]]]]
+                long_name = Longitudinal wind velocity component, sonic coordinates
+        [[[variance]]]
+            [[[[m^2/s^2]]]]
+                long_name = Longitudinal wind velocity component, sonic coordinates
+    [[UxA]]
+        [[[average]]]
+            [[[[g/m^2/s]]]]
+                long_name = Covariance of Ux and H2O
+            [[[[mmol/m^2/s]]]]
+                long_name = Covariance of Ux and H2O
+    [[UxC]]
+        [[[average]]]
+            [[[[mg/m^2/s]]]]
+                long_name = Covariance of Ux and CO2
+            [[[[umol/m^2/s]]]]
+                long_name = Covariance of Ux and CO2
+    [[UxT]]
+        [[[average]]]
+            [[[[m.degC/s]]]]
+                long_name = Covariance of Ux and T
+            [[[[m.K/s]]]]
+                long_name = Covariance of Ux and T
+    [[UxUx]]
+        [[[average]]]
+            [[[[m^2/s^2]]]]
+                long_name = Variance of Ux
+    [[UxUy]]
+        [[[average]]]
+            [[[[m^2/s^2]]]]
+                long_name = Covariance of Ux and Uy
+    [[UxUz]]
+        [[[average]]]
+            [[[[m^2/s^2]]]]
+                long_name = Covariance of Ux and Uz
+    [[Uy]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = Lateral wind velocity component, sonic coordinates
+        [[[standard deviation]]]
+            [[[[m/s]]]]
+                long_name = Lateral wind velocity component, sonic coordinates
+        [[[variance]]]
+            [[[[m^2/s^2]]]]
+                long_name = Lateral wind velocity component, sonic coordinates
+    [[UyA]]
+        [[[average]]]
+            [[[[g/m^2/s]]]]
+                long_name = Covariance of Uy and H2O
+            [[[[mmol/m^2/s]]]]
+                long_name = Covariance of Uy and H2O
+    [[UyC]]
+        [[[average]]]
+            [[[[mg/m^2/s]]]]
+                long_name = Covariance of Uy and CO2
+            [[[[umol/m^2/s]]]]
+                long_name = Covariance of Uy and CO2
+    [[UyT]]
+        [[[average]]]
+            [[[[m.degC/s]]]]
+                long_name = Covariance of Uy and T
+            [[[[m.K/s]]]]
+                long_name = Covariance of Uy and T
+    [[UyUy]]
+        [[[average]]]
+            [[[[m^2/s^2]]]]
+                long_name = Variance of Uy
+    [[UyUz]]
+        [[[average]]]
+            [[[[m^2/s^2]]]]
+                long_name = Covariance of Uy and Uz
+    [[Uz]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = Vertical wind velocity component, sonic coordinates
+        [[[standard deviation]]]
+            [[[[m/s]]]]
+                long_name = Vertical wind velocity component, sonic coordinates
+        [[[variance]]]
+            [[[[m^2/s^2]]]]
+                long_name = Vertical wind velocity component, sonic coordinates
+    [[UzA]]
+        [[[average]]]
+            [[[[g/m^2/s]]]]
+                long_name = Covariance of Uz and H2O
+            [[[[mmol/m^2/s]]]]
+                long_name = Covariance of Uz and H2O
+    [[UzC]]
+        [[[average]]]
+            [[[[mg/m^2/s]]]]
+                long_name = Covariance of Uz and CO2
+            [[[[umol/m^2/s]]]]
+                long_name = Covariance of Uz and CO2
+    [[UzT]]
+        [[[average]]]
+            [[[[m.degC/s]]]]
+                long_name = Covariance of Uz and T
+            [[[[m.K/s]]]]
+                long_name = Covariance of Uz and T
+    [[UzUz]]
+        [[[average]]]
+            [[[[m^2/s^2]]]]
+                long_name = Variance of Uz
+    [[V_]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = Across wind velocity component
+                standard_name = northward_wind
+        [[[standard deviation]]]
+            [[[[m/s]]]]
+                long_name = Across wind velocity component
+        [[[variance]]]
+            [[[[m^2/s^2]]]]
+                long_name = Across wind velocity component
+    [[VP]]
+        [[[average]]]
+            [[[[hPa]]]]
+                long_name = Vapour pressure
+                standard_name = water_vapor_partial_pressure_in_air,water_vapor_partial_pressure_in_air
+            [[[[kPa]]]]
+                long_name = Vapour pressure
+                standard_name = water_vapor_partial_pressure_in_air,water_vapor_partial_pressure_in_air
+    [[VPD]]
+        [[[average]]]
+            [[[[hPa]]]]
+                long_name = Vapour pressure deficit
+                standard_name = water_vapor_saturation_deficit_in_air,water_vapor_saturation_deficit_in_air
+            [[[[kPa]]]]
+                long_name = Vapour pressure deficit
+                standard_name = water_vapor_saturation_deficit_in_air,water_vapor_saturation_deficit_in_air
+    [[W_]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = Vertical wind velocity component
+        [[[standard deviation]]]
+            [[[[m/s]]]]
+                long_name = Vertical wind velocity component
+        [[[variance]]]
+            [[[[m^2/s^2]]]]
+                long_name = Vertical wind velocity component
+    [[Wd]]
+        [[[average]]]
+            [[[[degrees]]]]
+                long_name = Wind direction
+                standard_name = wind_from_direction
+    [[Ws]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = Wind speed
+                standard_name = wind_speed

@@ -1,0 +1,479 @@
+[Files]
+    site_information = /mnt/OzFlux/Sites/site_information.xls
+
+[Global_attributes]
+    [[force]]
+        Conventions = CF-1.8
+        license_name = CC BY 4.0
+        license = https://creativecommons.org/licenses/by/4.0/
+        history = June 2021 processing
+        publisher_name = TERN Ecosystem Processes,OzFlux
+    [[deprecated]]
+        global = """end_datetime,start_datetime,Functions,doi,license_url,
+license_type,conventions,conventions_names,BulkDensity,FgDepth,OrganicContent,
+SwsDefault,SwsSeries,controlfile_name,end_date,irga_type,start_date,xl_datemode,
+xl_filename,xl_moddatetime"""
+    [[essentials]]
+        global = latitude,longitude,site_name,time_step,time_zone,fluxnet_id
+    [[rename_exact]]
+        EPDversion = python_version
+        elevation = altitude
+        data_url = data_link
+        metadata_url = metadata_link
+        nc_level = processing_level
+        nc_rundatetime = date_created
+        ozflux_url = ozflux_link
+        PythonVersion = python_version
+        QC_version = pyfluxpro_version
+        site_id = fluxnet_id
+
+[Options]
+    L2 = irga_type,SONIC_Check,IRGA_Check
+    L3 = """zms,UseL2Fluxes,2DCoordRotation,MassmanCorrection,ApplyFco2Storage,
+ApplyFcStorage,CorrectIndividualFg,CorrectFgForStorage,KeepIntermediateSeries,CO2Units,
+Fco2Units,FcUnits"""
+    concatenate = """NumberOfDimensions,MaxGapInterpolate,FixTimeStepMethod,
+Truncate,DoFingerprints,TruncateThreshold,SeriesToCheck"""
+    cpd_barr = Fsd_threshold,Num_bootstraps
+    cpd_mchugh = Fsd_threshold,Num_bootstraps,Output_results,Output_plots,Plot_TClass
+    cpd_mcnew = Fsd_threshold,Num_bootstraps
+    mpt = """hourly,percentile,percentile_check,ta_classes,ustar_classes,
+window_size_forward_mode,window_size_forward_mode_2,window_size_forward_mode_3,
+window_size_back_mode,window_size_back_mode_2,window_size_back_mode_3,bootstrapping_times,
+dump_dataset,no_bootstrapping,no_forward_mode_2,forward_mode,forward_mode_3,
+back_mode,back_mode_2,back_mode_3,groupby,seasons_group_allow_duplicates,threshold_check"""
+    L4 = MaxGapInterpolate,InterpolateType
+    L5 = """MaxGapInterpolate,MaxShortGapDays,FilterList,TurbulenceFilter,DayNightFilter,
+AcceptDayTimes,Fsd_threshold,TruncateToImports,KeepIntermediateSeries"""
+    L6 = MaxGapInterpolate
+
+[Variables]
+    # exclude variables that start with these strings
+    [[exclude]]
+        exclude = """eta,theta,Cpd,Cpm,Cpw,ET_PFP,Fco2_PFP,Fco2_raw,Fe_PFP,Fe_raw,
+Fg_Av,Fhv,Fh_PFP,Fm_PFP,Fn_4cmpt,Fn_NR,Fsd_Li,Fsd_syn,solar_altitude,Lv,
+RhoCp,rhod,rhom,rhow,ustar_PFP,Ddd,Day,Hdh,Hour,Minute,Month,Second,VPsat,
+xlDateTime,Year"""
+    # include variables that start with these strings
+    [[include]]
+        include = """AH,crs,CO2,DateTime,EC_,Fa,Fco2,Fe,Fg,Fh,Fld,Flu,Fm,
+Fn,Fsd,Fsu,H2O,latitude,longitude,L,PAR,Precip,ps,RH,SH,SHD,Sws,time,
+Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
+    # exact renames section
+    [[rename_exact]]
+        AGC_7500 = AGC_IRGA
+        Ah_7500_Av = Ah_IRGA_Av
+        Ah_7500_Sd = Ah_IRGA_Sd
+        Ah_7500_Vr = Ah_IRGA_Vr
+        AhAh = Ah_IRGA_Vr
+        Cc = CO2
+        Cc_7500_Av = CO2_IRGA_Av
+        Cc_7500_Sd = CO2_IRGA_Sd
+        Cc_7500_Vr = CO2_IRGA_Vr
+        CcCc = CO2_IRGA_Vr
+        Diag_7500 = Diag_IRGA
+        Diag_CSAT = Diag_SONIC
+        e = VP
+        esat = VPsat
+        Fn_KZ = Fn_4cmpt
+        # start Whroo data from LI840
+        Ah_LI840_1m = H2O_LI840_1m
+        Ah_LI840_2m = H2O_LI840_2m
+        Ah_LI840_4m = H2O_LI840_4m
+        Ah_LI840_8m = H2O_LI840_8m
+        Ah_LI840_16m = H2O_LI840_16m
+        Ah_LI840_32m = H2O_LI840_32m
+        AH_LI840_1m = H2O_LI840_1m
+        AH_LI840_2m = H2O_LI840_2m
+        AH_LI840_4m = H2O_LI840_4m
+        AH_LI840_8m = H2O_LI840_8m
+        AH_LI840_16m = H2O_LI840_16m
+        AH_LI840_32m = H2O_LI840_32m
+        Cc_LI840_1m = CO2_LI840_1m
+        Cc_LI840_2m = CO2_LI840_2m
+        Cc_LI840_4m = CO2_LI840_4m
+        Cc_LI840_8m = CO2_LI840_8m
+        Cc_LI840_16m = CO2_LI840_16m
+        Cc_LI840_32m = CO2_LI840_32m
+        Rh_LI840_1m = RH_LI840_1m
+        Rh_LI840_2m = RH_LI840_2m
+        Rh_LI840_4m = RH_LI840_4m
+        Rh_LI840_8m = RH_LI840_8m
+        Rh_LI840_16m = RH_LI840_16m
+        Rh_LI840_32m = RH_LI840_32m
+        # end Whroo data from LI840
+        q = SH
+        svwc = Sws
+        Ta_CSAT = Ta_SONIC_Av
+        Ta_CSAT_Av = Ta_SONIC_Av
+        Ta_CSAT_Sd = Ta_SONIC_Sd
+        Ta_CSAT_Vr = Ta_SONIC_Vr
+        Tv_CSAT = Tv_SONIC_Av
+        Tv_CSAT_Av = Tv_SONIC_Av
+        Tv_CSAT_Sd = Tv_SONIC_Sd
+        Tv_CSAT_Vr = Tv_SONIC_Vr
+        u = U_SONIC_Av
+        uu = U_SONIC_Vr
+        Ux = Ux_SONIC_Av
+        Ux_Sd = Ux_SONIC_Sd
+        UxUx = Ux_SONIC_Vr
+        Uy = Uy_SONIC_Av
+        Uy_Sd = Uy_SONIC_Sd
+        UyUy = Uy_SONIC_Vr
+        Uz = Uz_SONIC_Av
+        Uz_Sd = Uz_SONIC_Sd
+        UzUz = Uz_SONIC_Vr
+        v = V_SONIC_Av
+        vv = V_SONIC_Vr
+        w = W_SONIC_Av
+        ww = W_SONIC_Vr
+        Wd_CSAT = Wd_SONIC_Av
+        Wd_CSAT_Sd = Wd_SONIC_Sd
+        Wd_CSAT_Vr = Wd_SONIC_Vr
+        Ws_CSAT = Ws_SONIC_Av
+        Ws_CSAT_Sd = Ws_SONIC_Sd
+        Ws_CSAT_Vr = Ws_SONIC_Vr
+    # rename patterns
+    [[rename_pattern]]
+        Fc = Fco2
+        Ah = AH
+    # units mapping section
+    [[units_map]]
+        1 = 1
+        % = percent
+        C = degC
+        C2 = degC^2
+        deg = degrees
+        dS/m = dS/m
+        frac = m^3/m^3
+        fraction = fraction
+        g/m3 = g/m^3
+        g2/m6 = g^2/m^6
+        (g/m3)2 = g^2/m^6
+        g/m2/s = g/m^2/s
+        hPa = hPa
+        J/kg = J/kg
+        J/kg-K = J/kg/K
+        J/m3/K = J/m^3/K
+        J/m3-K = J/m^3/K
+        K = K
+        K2 = K^2
+        kg/kg = kg/kg
+        kg/m/s2 = kg/m/s^2
+        kg/m3 = kg/m^3
+        kPa = kPa
+        m = m
+        m/s = m/s
+        (m/s)2 = m^2/s^2
+        m2/s2 = m^2/s^2
+        m3/m3 = m^3/m^3
+        mC/s = m.degC/s
+        mK/s = m.K/s
+        mg/m3 = mg/m^3
+        mg2/m6 = mg^2/m^6
+        (mg/m3) = mg/m^3
+        (mg/m3)2 = mg^2/m^6
+        mg/m2/s = mg/m^2/s
+        mgC/m2/s = mg/m^2/s
+        mgCO2/m2/s = mg/m^2/s
+        mm = mm
+        mmol/m3 = mmol/m^3
+        mmol/mol = mmol/mol
+        mmol/m2/s = mmol/m^2/s
+        mmol/(m2 s) = mmol/m^2/s
+        (mmol/m3)2 = mmol^2/m^6
+        (mmol/mol)2 = mmol^2/mol^2
+        none = 1
+        ohm = ohm
+        Pa = Pa
+        umol/m3 = umol/m^3
+        umol/mol = umol/mol
+        umol/m2/s = umol/m^2/s
+        umol C/m2/s = umol/m^2/s
+        (umol/m3)2 = umol^2/m^6
+        (umol/mol)2 = umol^2/mol^2
+        V = V
+        W/m2 = W/m^2
+        # ACCESS and AWS units correction
+        W m-2 = W/m^2
+        W/m2/s = W/m^2
+        mm/30 minutes = mm
+        degT = degrees
+        kg m-2 = kg/m^2
+        kg kg-1 = kg/kg
+        m s-1 = m/s
+        # Tumbarumba
+        Foken flag = 1
+        unit vector = 1
+        mmol/s/m2 = mmol/m^2/s
+    # check units for these variabes and convert if necessary
+    [[units_convert]]
+        labels = Sws,RH
+    # deprecated attributes, variables and values
+    [[deprecated]]
+        variables = xlDateTime, ustar_filtered, Wd_X_new, Wd_Y_new
+        attributes = ancillary_variables, group_name, serial_number, nrecs, missing_value, standard name
+        units = not_defined,notdefined,not defined,none
+        height = <height>m,<height>,not_defined,notdefined,not defined,none
+        miscellaneous = not_defined,notdefined,not defined,none
+        standard_name = """not_defined,notdefined,not defined,none,
+electrical_conductivity,electric_conductivity,
+EC_650_6cm,EC_650_mux1_2m,EC_650_mux1_4m,EC_650_mux1_6m,EC_650_mux2_4m,EC_650_mux2_6m,
+Friction velocity"""
+    # essential attributes, must be present
+    [[essential]]
+        attributes = long_name
+    # variable attributes section
+    [[attributes]]
+        [[[AGC_IRGA]]]
+            long_name = IRGA automatic gain control value
+            statistic_type = average
+            units = 1
+        [[[AH]]]
+            long_name = Absolute humidity
+            standard_name = mass_concentration_of_water_vapor_in_air
+            statistic_type = average
+            units = g/m^3
+        [[[CO2]]]
+            long_name = CO2 concentration
+            standard_name = mass_concentration_of_carbon_dioxide_in_air,mole_fraction_of_carbon_dioxide_in_air
+            statistic_type = average
+            units = mg/m^3,umol/mol
+        [[[Diag_IRGA]]]
+            long_name = IRGA diagnostic value
+            statistic_type = average
+            units = 1
+        [[[Diag_SONIC]]]
+            long_name = Sonic diagnostic value
+            statistic_type = average
+            units = 1
+        [[[EC_]]]
+            long_name = Electrical conductivity
+            statistic_type = average
+            units = dS/m
+        [[[Fa]]]
+            long_name = Available energy
+            statistic_type = average
+            units = W/m^2
+        [[[Fco2]]]
+            long_name = CO2 flux
+            standard_name = not_defined,surface_upward_mole_flux_of_carbon_dioxide
+            statistic_type = average
+            units = mg/m^2/s,umol/m^2/s
+        [[[Fe]]]
+            long_name = Latent heat flux
+            standard_name = surface_upward_latent_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[Fg]]]
+            long_name = Ground heat flux
+            standard_name = downward_heat_flux_at_ground_level_in_soil
+            statistic_type = average
+            units = W/m^2
+        [[[Fh]]]
+            long_name = Sensible heat flux
+            standard_name = surface_upward_sensible_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[Fh2o]]]
+            long_name = Water vapour flux
+            statistic_type = average
+            units = mmol/m^2/s
+        [[[Fld]]]
+            long_name = Down-welling longwave radiation
+            standard_name = surface_downwelling_longwave_flux_in_air
+            statistic_type = average
+            units = W/m^2
+        [[[Flu]]]
+            long_name = Up-welling longwave radiation
+            standard_name = surface_upwelling_longwave_flux_in_air
+            statistic_type = average
+            units = W/m^2
+        [[[Fm]]]
+            long_name = Momentum flux
+            standard_name = magnitude_of_surface_downward_stress
+            statistic_type = average
+            units = kg/m/s^2
+        [[[Fn]]]
+            long_name = Net radiation
+            standard_name = surface_net_downward_radiative_flux
+            statistic_type = average
+            units = W/m^2
+        [[[Fsd]]]
+            long_name = Down-welling shortwave radiation
+            standard_name = surface_downwelling_shortwave_flux_in_air
+            statistic_type = average
+            units = W/m^2
+        [[[Fsu]]]
+            long_name = Up-welling shortwave radiation
+            standard_name = surface_upwelling_shortwave_flux_in_air
+            statistic_type = average
+            units = W/m^2
+        [[[H2O]]]
+            long_name = H2O concentration
+            standard_name = mass_concentration_of_water_vapor_in_air,mole_fraction_of_water_vapor_in_air
+            statistic_type = average
+            units = g/m^3,mmol/mol
+        [[[L]]]
+            long_name = Monin-Obukhov length
+            statistic_type = average
+            units = m
+        [[[PAR]]]
+            long_name = Photosynthetically active radiation
+            standard_name = surface_downwelling_photosynthetic_photon_flux_in_air,surface_downwelling_photosynthetic_photon_flux_in_air
+            statistic_type = average
+            units = umol/m^2/s,mmol/m^2/s
+        [[[Precip]]]
+            long_name = Rainfall
+            standard_name = thickness_of_rainfall_amount
+            statistic_type = sum
+            units = mm
+        [[[ps]]]
+            long_name = Surface air pressure
+            standard_name = surface_air_pressure,surface_air_pressure,surface_air_pressure
+            statistic_type = average
+            units = kPa,hPa,Pa
+        [[[RH]]]
+            long_name = Relative humidity
+            standard_name = relative_humidity
+            statistic_type = average
+            units = percent
+        [[[SH]]]
+            long_name = Specific humidity
+            standard_name = specific_humidity
+            statistic_type = average
+            units = kg/kg
+        [[[SHD]]]
+            long_name = Specific humidity deficit
+            statistic_type = average
+            units = kg/kg
+        [[[Sws]]]
+            long_name = Soil water content
+            standard_name = volume_fraction_of_condensed_water_in_soil
+            statistic_type = average
+            units = m^3/m^3
+        [[[Ta]]]
+            long_name = Air temperature
+            standard_name = air_temperature,air_temperature
+            statistic_type = average
+            units = degC,K
+        [[[Ts]]]
+            long_name = Soil temperature
+            standard_name = soil_temperature,soil_temperature
+            statistic_type = average
+            units = degC,K
+        [[[Tv]]]
+            long_name = Virtual temperature
+            standard_name = virtual_temperature,virtual_temperature
+            statistic_type = average
+            units = degC,K
+        [[[ustar]]]
+            long_name = Friction velocity
+            statistic_type = average
+            units = m/s
+        [[[U_]]]
+            long_name = Along wind velocity component
+            standard_name = eastward_wind
+            statistic_type = average
+            units = m/s
+        [[[Ux_]]]
+            long_name = Longitudinal wind velocity component, sonic coordinates
+            statistic_type = average
+            units = m/s
+        [[[UxA]]]
+            long_name = Covariance of Ux and H2O
+            statistic_type = average
+            units = g/m^2/s,mmol/m^2/s
+        [[[UxC]]]
+            long_name = Covariance of Ux and CO2
+            statistic_type = average
+            units = mg/m^2/s,umol/m^2/s
+        [[[UxT]]]
+            long_name = Covariance of Ux and T
+            statistic_type = average
+            units = m.C/s,m.K/s
+        [[[UxUx]]]
+            long_name = Variance of Ux
+            statistic_type = average
+            units = m^2/s^2
+        [[[UxUy]]]
+            long_name = Covariance of Ux and Uy
+            statistic_type = average
+            units = m^2/s^2
+        [[[UxUz]]]
+            long_name = Covariance of Ux and Uz
+            statistic_type = average
+            units = m^2/s^2
+        [[[Uy_]]]
+            long_name = Lateral wind velocity component, sonic coordinates
+            statistic_type = average
+            units = m/s
+        [[[UyA]]]
+            long_name = Covariance of Uy and H2O
+            statistic_type = average
+            units = g/m^2/s,mmol/m^2/s
+        [[[UyC]]]
+            long_name = Covariance of Uy and CO2
+            statistic_type = average
+            units = mg/m^2/s,umol/m^2/s
+        [[[UyT]]]
+            long_name = Covariance of Uy and T
+            statistic_type = average
+            units = m.C/s,m.K/s
+        [[[UyUy]]]
+            long_name = Variance of Uy
+            statistic_type = average
+            units = m^2/s^2
+        [[[UyUz]]]
+            long_name = Covariance of Uy and Uz
+            statistic_type = average
+            units = m^2/s^2
+        [[[Uz_]]]
+            long_name = Vertical wind velocity component, sonic coordinates
+            statistic_type = average
+            units = m/s
+        [[[UzA]]]
+            long_name = Covariance of Uz and H2O
+            statistic_type = average
+            units = g/m^2/s,mmol/m^2/s
+        [[[UzC]]]
+            long_name = Covariance of Uz and CO2
+            statistic_type = average
+            units = mg/m^2/s,umol/m^2/s
+        [[[UzT]]]
+            long_name = Covariance of Uz and T
+            statistic_type = average
+            units = m.C/s,m.K/s
+        [[[UzUz]]]
+            long_name = Variance of Uz
+            statistic_type = average
+            units = m^2/s^2
+        [[[V_]]]
+            long_name = Across wind velocity component
+            standard_name = northward_wind
+            statistic_type = average
+            units = m/s
+        [[[VP]]]
+            long_name = Vapour pressure
+            standard_name = water_vapor_partial_pressure_in_air,water_vapor_partial_pressure_in_air
+            statistic_type = average
+            units = kPa,hPa
+        [[[VPD]]]
+            long_name = Vapour pressure deficit
+            standard_name = water_vapor_saturation_deficit_in_air,water_vapor_saturation_deficit_in_air
+            statistic_type = average
+            units = kPa,hPa
+        [[[W_]]]
+            long_name = Vertical wind velocity component
+            statistic_type = average
+            units = m/s
+        [[[Wd]]]
+            long_name = Wind direction
+            standard_name = wind_from_direction
+            statistic_type = average
+            units = degrees
+        [[[Ws]]]
+            long_name = Wind speed
+            standard_name = wind_speed
+            statistic_type = average
+            units = m/s
