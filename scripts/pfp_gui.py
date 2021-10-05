@@ -1228,6 +1228,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM")
         # add them
         selected_item.appendRow([child0, child1])
@@ -1267,6 +1268,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(value)
             self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -1277,6 +1279,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(value)
             self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -1299,6 +1302,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, 1.0, 0.0")
         # add them
         selected_item.appendRow([child0, child1])
@@ -1322,6 +1326,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,<start_value>,YYYY-mm-dd HH:MM,<end_value>")
         # add them
         selected_item.appendRow([child0, child1])
@@ -1334,6 +1339,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(value)
             self.sections["Options"].appendRow([child0, child1])
         self.model.insertRow(self.section_headings.index("Variables"), self.sections["Options"])
@@ -1358,6 +1364,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # get the selected item from the index
         parent = idx.model().itemFromIndex(idx)
         child0 = QtGui.QStandardItem("plot_path")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Right click to browse")
         parent.appendRow([child0, child1])
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -1366,9 +1373,11 @@ class edit_cfg_L2(QtWidgets.QWidget):
     def add_qc_check(self, selected_item, new_qc):
         for key1 in new_qc:
             parent = QtGui.QStandardItem(key1)
+            parent.setEditable(False)
             for key in new_qc[key1]:
                 val = str(new_qc[key1][key])
                 child0 = QtGui.QStandardItem(key)
+                child0.setEditable(False)
                 child1 = QtGui.QStandardItem(val)
                 parent.appendRow([child0, child1])
             selected_item.appendRow(parent)
@@ -1402,6 +1411,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(value)
             self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -1410,6 +1420,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         for key in dict_to_add:
             val = str(dict_to_add[key])
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(val)
             section.appendRow([child0, child1])
 
@@ -2026,6 +2037,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in self.cfg[key1]:
                     value = self.cfg[key1][key2]
                     child0 = QtGui.QStandardItem(key2)
@@ -2035,6 +2047,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 self.model.appendRow(self.sections[key1])
             elif  key1 in ["Plots"]:
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg[key1][key2]:
@@ -2048,13 +2061,16 @@ class edit_cfg_L2(QtWidgets.QWidget):
             elif key1 in ["Variables"]:
                 # sections with 3 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in sorted(list(self.cfg[key1].keys())):
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in sorted(list(self.cfg[key1][key2].keys())):
                         parent3 = QtGui.QStandardItem(key3)
+                        parent3.setEditable(False)
                         for key4 in sorted(list(self.cfg[key1][key2][key3].keys())):
                             value = self.cfg[key1][key2][key3][key4]
                             child0 = QtGui.QStandardItem(key4)
+                            child0.setEditable(False)
                             child1 = QtGui.QStandardItem(value)
                             parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
