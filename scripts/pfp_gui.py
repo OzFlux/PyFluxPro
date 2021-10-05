@@ -2026,6 +2026,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in self.cfg[key1]:
                     value = self.cfg[key1][key2]
                     child0 = QtGui.QStandardItem(key2)
@@ -2035,6 +2036,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 self.model.appendRow(self.sections[key1])
             elif  key1 in ["Plots"]:
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg[key1][key2]:
@@ -2048,6 +2050,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
             elif key1 in ["Variables"]:
                 # sections with 3 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in sorted(list(self.cfg[key1].keys())):
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in sorted(list(self.cfg[key1][key2].keys())):
