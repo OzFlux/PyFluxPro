@@ -40,6 +40,9 @@
             [[[[g/m^3]]]]
                 long_name = Absolute humidity
                 standard_name = mass_concentration_of_water_vapor_in_air
+            [[[[kg/m^3]]]]
+                long_name = Absolute humidity
+                standard_name = mass_concentration_of_water_vapor_in_air
         [[[standard deviation]]]
             [[[[g/m^3]]]]
                 long_name = Absolute humidity
@@ -91,11 +94,19 @@
             [[[[umol/m^2/s]]]]
                 long_name = CO2 flux
                 standard_name = surface_upward_mole_flux_of_carbon_dioxide
+    [[Fco2_EPFlag]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 flux EddyPro QC flag
     [[Fe]]
         [[[average]]]
             [[[[W/m^2]]]]
                 long_name = Latent heat flux
                 standard_name = surface_upward_latent_heat_flux
+    [[Fe_EPFlag]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Latent heat flux EddyPro QC flag
     [[Fg]]
         [[[average]]]
             [[[[W/m^2]]]]
@@ -106,6 +117,10 @@
             [[[[W/m^2]]]]
                 long_name = Sensible heat flux
                 standard_name = surface_upward_sensible_heat_flux
+    [[Fh_EPFlag]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Sensible heat flux EddyPro QC flag
     [[Fh2o]]
         [[[average]]]
             [[[[mmol/m^2/s]]]]
@@ -125,6 +140,10 @@
             [[[[kg/m/s^2]]]]
                 long_name = Momentum flux
                 standard_name = magnitude_of_surface_downward_stress
+    [[Fm_EPFlag]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Momentum flux EddyPro QC flag
     [[Fn]]
         [[[average]]]
             [[[[W/m^2]]]]
@@ -145,6 +164,16 @@
             [[[[mmol/mol]]]]
                 long_name = H2O concentration
                 standard_name = mole_fraction_of_water_vapor_in_air
+        [[[standard deviation]]]
+            [[[[mmol/m^3]]]]
+                long_name = H2O concentration
+            [[[[mmol/mol]]]]
+                long_name = H2O concentration
+        [[[variance]]]
+            [[[[mmol^2/m^6]]]]
+                long_name = H2O concentration
+            [[[[mmol^2/mol^2]]]]
+                long_name = H2O concentration
     [[L]]
         [[[average]]]
             [[[[m]]]]
@@ -178,6 +207,9 @@
             [[[[percent]]]]
                 long_name = Relative humidity
                 standard_name = relative_humidity
+            [[[[fraction]]]]
+                long_name = Relative humidity
+                standard_name = relative_humidity
             [[[[1]]]]
                 long_name = Relative humidity
                 standard_name = relative_humidity
@@ -201,6 +233,9 @@
     [[Sws]]
         [[[average]]]
             [[[[m^3/m^3]]]]
+                long_name = Soil water content
+                standard_name = volume_fraction_of_condensed_water_in_soil
+            [[[[fraction]]]]
                 long_name = Soil water content
                 standard_name = volume_fraction_of_condensed_water_in_soil
     [[Ta]]

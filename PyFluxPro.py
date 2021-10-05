@@ -120,7 +120,8 @@ class pfp_main_ui(QWidget):
         # File menu item: Quit
         self.actionFileQuit = QAction(self)
         self.actionFileQuit.setText("Quit")
-        self.actionFileQuit.setShortcut('Ctrl+Z')
+        # the Vinod mod ...
+        self.actionFileQuit.setShortcut('Ctrl+Q')
         # Edit menu items
         self.actionEditPreferences = QAction(self)
         self.actionEditPreferences.setText("Preferences...")

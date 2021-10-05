@@ -15,6 +15,7 @@ dependencies:
   - pytz
   - scipy
   - statsmodels
+  - timezonefinder
   - xarray
   - xlwt
   - xlrd
