@@ -391,7 +391,7 @@ Friction velocity"""
         [[[UxT]]]
             long_name = Covariance of Ux and T
             statistic_type = average
-            units = m.C/s,m.K/s
+            units = m.degC/s,m.K/s
         [[[UxUx]]]
             long_name = Variance of Ux
             statistic_type = average
@@ -419,7 +419,7 @@ Friction velocity"""
         [[[UyT]]]
             long_name = Covariance of Uy and T
             statistic_type = average
-            units = m.C/s,m.K/s
+            units = m.degC/s,m.K/s
         [[[UyUy]]]
             long_name = Variance of Uy
             statistic_type = average
@@ -443,7 +443,7 @@ Friction velocity"""
         [[[UzT]]]
             long_name = Covariance of Uz and T
             statistic_type = average
-            units = m.C/s,m.K/s
+            units = m.degC/s,m.K/s
         [[[UzUz]]]
             long_name = Variance of Uz
             statistic_type = average

@@ -46,12 +46,14 @@ class MsgBox_ContinueOrQuit(QtWidgets.QMessageBox):
                                 QtWidgets.QMessageBox.No)
         self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
         self.button(QtWidgets.QMessageBox.No).setText("Quit")
+        self.setModal(False)
+        self.show()
         self.exec_()
 
 class MsgBox_Quit(QtWidgets.QMessageBox):
     def __init__(self, msg, title="Information", parent=None):
         super(MsgBox_Quit, self).__init__(parent)
-        if title == "Critical":
+        if title in ["Critical", "Error"]:
             self.setIcon(QtWidgets.QMessageBox.Critical)
         elif title == "Warning":
             self.setIcon(QtWidgets.QMessageBox.Warning)
@@ -61,6 +63,8 @@ class MsgBox_Quit(QtWidgets.QMessageBox):
         self.setWindowTitle(title)
         self.setStandardButtons(QtWidgets.QMessageBox.No)
         self.button(QtWidgets.QMessageBox.No).setText("Quit")
+        self.setModal(False)
+        self.show()
         self.exec_()
 
 class myTxtBox(QtWidgets.QInputDialog):
@@ -631,6 +635,9 @@ class edit_cfg_L1(QtWidgets.QWidget):
         self.cfg_changed = False
 
         self.tabs = main_gui.tabs
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "in_firstdatarow",
+                                "in_headerrow", "out_filename"]
 
         self.edit_L1_gui()
 
@@ -669,21 +676,27 @@ class edit_cfg_L1(QtWidgets.QWidget):
         for key1 in self.cfg:
             if key1 in ["Files", "Global"]:
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in sorted(list(self.cfg[key1].keys())):
                     value = self.cfg[key1][key2]
                     child0 = QtGui.QStandardItem(key2)
+                    if key2 in self.files_essential:
+                        child0.setEditable(False)
                     child1 = QtGui.QStandardItem(value)
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
             elif key1 in ["Variables"]:
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in sorted(list(self.cfg[key1].keys())):
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in sorted(list(self.cfg[key1][key2])):
                         parent3 = QtGui.QStandardItem(key3)
+                        parent3.setEditable(False)
                         for key4 in sorted(list(self.cfg[key1][key2][key3])):
                             value = self.cfg[key1][key2][key3][key4]
                             child0 = QtGui.QStandardItem(key4)
+                            child0.setEditable(False)
                             child1 = QtGui.QStandardItem(value)
                             parent3.appendRow([child0, child1])
                         parent2.appendRow(parent3)
@@ -825,11 +838,21 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
                 else:
                     pass
+            if ((str(parent.text()) == "Files") and (selected_item.column() == 0) and
+                (selected_item.text() not in self.files_essential)):
+                self.context_menu.actionRemoveItem = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveItem.setText("Remove item")
+                self.context_menu.addAction(self.context_menu.actionRemoveItem)
+                self.context_menu.actionRemoveItem.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Global":
-                self.context_menu.actionRemoveGlobal = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveGlobal.setText("Remove attribute")
-                self.context_menu.addAction(self.context_menu.actionRemoveGlobal)
-                self.context_menu.actionRemoveGlobal.triggered.connect(self.remove_item)
+                exclude = ["latitude", "longitude", "site_name", "time_step", "time_zone",
+                           "Conventions", "data_link", "featureType", "license_name", "license",
+                           "publisher_name", "ozflux_link"]
+                if selected_item.text() not in exclude:
+                    self.context_menu.actionRemoveGlobal = QtWidgets.QAction(self)
+                    self.context_menu.actionRemoveGlobal.setText("Remove attribute")
+                    self.context_menu.addAction(self.context_menu.actionRemoveGlobal)
+                    self.context_menu.actionRemoveGlobal.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Variables":
                 existing_entries = self.get_existing_entries()
                 if "xl" not in existing_entries and "csv" not in existing_entries:
@@ -881,7 +904,8 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveSubSubSection)
                     self.context_menu.actionRemoveSubSubSection.triggered.connect(self.remove_item)
         elif level == 3:
-            if ((str(idx.parent().data()) == "Attr") and (selected_item.column() == 0)):
+            if ((str(idx.parent().data()) == "Attr") and (selected_item.column() == 0) and
+                (selected_item.text() not in ["long_name", "statistic_type", "units"])):
                 self.context_menu.actionRemoveAttribute = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveAttribute.setText("Remove attribute")
                 self.context_menu.addAction(self.context_menu.actionRemoveAttribute)
@@ -1805,6 +1829,14 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveVariable)
                 self.context_menu.actionRemoveVariable.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Plots":
+                self.context_menu.actionDisablePlot = QtWidgets.QAction(self)
+                self.context_menu.actionDisablePlot.setText("Disable plot")
+                self.context_menu.addAction(self.context_menu.actionDisablePlot)
+                self.context_menu.actionDisablePlot.triggered.connect(self.disable_plot)
+                self.context_menu.actionEnablePlot = QtWidgets.QAction(self)
+                self.context_menu.actionEnablePlot.setText("Enable plot")
+                self.context_menu.addAction(self.context_menu.actionEnablePlot)
+                self.context_menu.actionEnablePlot.triggered.connect(self.enable_plot)
                 self.context_menu.actionRemovePlot = QtWidgets.QAction(self)
                 self.context_menu.actionRemovePlot.setText("Remove plot")
                 self.context_menu.addAction(self.context_menu.actionRemovePlot)
@@ -1844,10 +1876,12 @@ class edit_cfg_L2(QtWidgets.QWidget):
             if add_separator:
                 self.context_menu.addSeparator()
                 add_separator = False
-            self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
-            self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
-            self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
-            self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
+            if str(idx.data()) in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
+                                            "LowerCheck", "UpperCheck"]:
+                self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
+                self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
+                self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
         elif level == 3:
             if (str(idx.parent().data()) in ["ExcludeDates", "LowerCheck", "UpperCheck", "Linear"] and
                 str(idx.data()) != "0"):
@@ -1903,6 +1937,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
+                    if "[disabled]" in key2:
+                        continue
                     cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
@@ -1922,6 +1958,25 @@ class edit_cfg_L2(QtWidgets.QWidget):
                             val4 = str(subsubsection.child(l, 1).text())
                             cfg[key1][key2][key3][key4] = val4
         return cfg
+
+    def enable_plot(self):
+        """ Enable a plot by removing '[disabled]' from the title."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_text = selected_item.text()
+        if "[disabled]" in selected_text:
+            selected_text = selected_text.replace("[disabled]", "")
+        selected_item.setText(selected_text)
+        return
+
+    def disable_plot(self):
+        """ Disable a plot by adding '[disabled]' to the title."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_text = selected_item.text()
+        selected_text = "[disabled]" + selected_text
+        selected_item.setText(selected_text)
+        return
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -1974,6 +2029,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 for key2 in self.cfg[key1]:
                     value = self.cfg[key1][key2]
                     child0 = QtGui.QStandardItem(key2)
+                    child0.setEditable(False)
                     child1 = QtGui.QStandardItem(value)
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
@@ -1984,6 +2040,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     for key3 in self.cfg[key1][key2]:
                         value = self.cfg[key1][key2][key3]
                         child0 = QtGui.QStandardItem(key3)
+                        child0.setEditable(False)
                         child1 = QtGui.QStandardItem(value)
                         parent2.appendRow([child0, child1])
                     self.sections[key1].appendRow(parent2)

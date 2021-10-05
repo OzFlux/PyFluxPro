@@ -7,6 +7,8 @@ import platform
 import subprocess
 import traceback
 # 3rd party modules
+from configobj import ConfigObj
+import timezonefinder
 # PFP modules
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
@@ -760,120 +762,322 @@ def check_l1_controlfile(cfg):
     Usage:
     Side effects:
     Author: PRI
-    Date: June 2020
+    Date: October 2021
     """
-    ok = True
-    # check the expected sections are in the control file
-    for item in ["Files", "Global", "Variables"]:
-        if item not in list(cfg.keys()):
-            msg = " Section '" + item + "' not in control file"
-            logger.error(msg)
+    # quick and dirty use of try...except in a panic ahead to 2021 workshop
+    try:
+        ok = True
+        cfg_labels = sorted(list(cfg["Variables"].keys()))
+        std_name = "settings/l1.txt"
+        std = ConfigObj(std_name, indent_type="    ", list_values=False, write_empty_values=True)
+        std_labels = sorted(list(std["Variables"].keys()))
+        # initialise the messages dictionary
+        messages = {"ERROR":[], "WARNING": [], "INFO": []}
+        # check the files section
+        l1_check_files(cfg, std, messages)
+        # check the global attributes section
+        l1_check_global_attributes(cfg, std, messages)
+        # check variables whose name exactly matches an entry in the settings/l1.txt control file
+        done = []
+        label_matches = [l for l in cfg_labels if l in std_labels]
+        for cfg_label in label_matches:
+            std_label = cfg_label
+            # check variable 'Attr' section
+            l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
+            # append this variable name to the done list
+            done.append(cfg_label)
+        # check variables where the first characters of the name match an entry in settings/l1.txt
+        cfg_labels = sorted(list(cfg["Variables"].keys()))
+        for std_label in std_labels:
+            lsl = len(std_label)
+            label_matches = [l for l in cfg_labels if l[:min([len(l),lsl])] == std_label and l not in done]
+            for cfg_label in label_matches:
+                # check variable 'Attr' section
+                l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
+                # append this variable name to the done list
+                done.append(cfg_label)
+        display_messages(messages)
+        if len(messages["ERROR"]) > 0:
             ok = False
-    # check the directory exists
-    file_path = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "file_path", default=".")
-    if not os.path.isdir(file_path):
-        msg = " Input directory " + file_path + " not found"
-        error_message(msg, mode="correct")
+    except Exception:
         ok = False
-    # get the input file and check it exists
-    in_file_name = pfp_io.get_infilenamefromcf(cfg)
-    if not os.path.isfile(in_file_name):
-        msg = " Input file " + os.path.basename(in_file_name) + " not found"
-        error_message(msg, mode="correct")
-        ok = False
-    # check the header row entry are numbers
-    try:
-        opt = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "in_headerrow", default=2)
-        opt = int(opt) - 1
-    except ValueError:
-        msg = " In the Files section of the control file, in_headerrow is not a number"
-        error_message(msg, mode="correct")
-        ok = False
-    # check the first data row entry are numbers
-    try:
-        opt = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "in_firstdatarow", default=5)
-        opt = int(opt) - 1
-    except ValueError:
-        msg = " In the Files section of the control file, in_firstdatarow is not a number"
-        error_message(msg, mode="correct")
-        ok = False
-    # *************************
-    # *** global attributes ***
-    # *************************
-    # check time step is present and makes sense
-    try:
-        ts = int(cfg["Global"]["time_step"])
-    except ValueError:
-        msg = " Global attribute 'time_step' is not a number"
-        error_message(msg, mode="correct")
-        ok = False
-    if ts not in [15, 20, 30, 60]:
-        msg = " Global attribute 'time_step' must be 15, 20, 30 or 60"
-        error_message(msg, mode="correct")
-        ok = False
-    # check latitude and longitude are present and make sense
-    try:
-        lat = float(cfg["Global"]["latitude"])
-    except ValueError:
-        msg = " Global attribute 'latitude' is not a number"
-        error_message(msg, mode="correct")
-        ok = False
-    if lat < -90.0 or lat > 90.0:
-        msg = "Global attribute 'latitude' must be between -90 and 90"
-        error_message(msg, mode="correct")
-        ok = False
-    try:
-        lon = float(cfg["Global"]["longitude"])
-    except ValueError:
-        msg = " Global attribute 'longitude' is not a number"
-        error_message(msg, mode="correct")
-        ok = False
-    if lon < -180.0 or lat > 180.0:
-        msg = " Global attribute 'longitude' must be between -180 and 180"
-        error_message(msg, mode="correct")
-        ok = False
-    # *******************
-    # *** check units ***
-    # *******************
-    # the lists of units below need to be abstracted from the code and reconciled with
-    # the contents of controlfiles/standard/update_control_files.txt
-    units = {"co2": ["mg/m^3", "mmol/m^3", "umol/mol", "mg^2/m^6", "mmol^2/m^6",
-                     "mg/m^2/s", "umol/m^2/s", "umol^2/mol^2"],
-             "h2o": ["g/m^3", "kg/m^3", "mmol/m^3", "mmol/mol", "percent", "fraction",
-                     "kg/kg", "g^2/m^6", "mmol^2/m^6", "mmol^2/mol^2"],
-             "temperature": ["degC", "K", "degC^2", "K^2"],
-             "pressure": ["Pa", "hPa", "kPa"],
-             "soil": ["m^3/m^3", "dS/m"],
-             "radiation": ["W/m^2", "umol/m^2/s", "mmol/m^2/s"],
-             "covariance": ["g/m^2/s", "mg/m^2/s", "m.degC/s", "m.K/s", "m^2/s^2"],
-             "flux": ["kg/m/s^2"],
-             "precipitation": ["m", "mm"],
-             "wind": ["m/s", "degrees", "m^2/s^2"],
-             "heat": ["J/kg", "J/kg/K", "J/m^3/K"],
-             "misc": ["1", "V", "none", "ohm"]}
-    ok_units = []
-    for key in list(units.keys()):
-        ok_units += units[key]
-    ok_units = list(set(ok_units))
-    for label in list(cfg["Variables"].keys()):
-        if "units" not in cfg["Variables"][label]["Attr"]:
-            continue
-        var_units = cfg["Variables"][label]["Attr"]["units"]
-        if var_units not in ok_units:
-            msg = " Unrecognised units (" + var_units +") for variable " + label
-            logger.error(msg)
-            ok = False
+        error_message = " Error checking L1 control file, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
     return ok
-
-def error_message(msg, mode="correct"):
-    logger.error("!!!")
-    logger.error(msg)
-    if mode == "correct":
-        msg = " You can go back to the control file tab and correct the entry"
-        logger.error(msg)
-    logger.error("!!!")
+def display_messages(messages):
+    # gather variable error messages into a single list
+    error_messages = []
+    for item in messages["ERROR"]:
+        logger.error(item)
+        error_messages.append(item)
+    for item in messages["WARNING"]:
+        logger.warning(item)
+    for item in messages["INFO"]:
+        logger.info(item)
+    # convert error list to a comma separated string
+    if len(error_messages) > 0:
+        msg = "The following errors were found in the control file:\n\n"
+        for item in error_messages[:-1]:
+            msg += item + "\n"
+        msg += error_messages[-1] + "\n\n"
+        msg += "Fix the errors, close this window and run again."
+        # put up the message box
+        pfp_gui.MsgBox_Quit(msg, title="Errors")
     return
-
+def l1_check_files(cfg, std, messages):
+    # check the Files section exists
+    if ("Files" in cfg):
+        # check file_path is in the Files section
+        if "file_path" in cfg["Files"]:
+            file_path = cfg["Files"]["file_path"]
+            # check file_path directory exists
+            if os.path.isdir(file_path):
+                pass
+            else:
+                msg = "Files: " + file_path + " is not a directory"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'file_path' not in section"
+            messages["ERROR"].append(msg)
+        # check in_filename is in the Files section
+        if "in_filename" in cfg["Files"]:
+            file_name = cfg["Files"]["in_filename"]
+            file_parts = os.path.splitext(file_name)
+            # check the file type is supported
+            if (file_parts[-1].lower() in  [".xls", ".xlsx", ".csv"]):
+                file_uri = os.path.join(file_path, file_name)
+                if os.path.isfile(file_uri):
+                    pass
+                else:
+                    msg = "Files: " + file_name + " not found"
+                    messages["ERROR"].append(msg)
+            else:
+                msg = "Files: " + file_name + " doesn't end with .xls, .xlsx or .csv"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'in_filename' not in section"
+            messages["ERROR"].append(msg)
+        # check in_firstdatarow is in the Files section
+        if "in_firstdatarow" in cfg["Files"]:
+            # check to see if in_firdtdatarow is an integer
+            try:
+                i = int(cfg["Files"]["in_firstdatarow"])
+            except:
+                msg = "Files: 'in_firstdatarow' is not an integer"
+                messages["ERROR"].append(msg)
+        # check in_headerrow is in the Files section
+        if "in_headerrow" in cfg["Files"]:
+            # check to see if in_heafderrow is an integer
+            try:
+                i = int(cfg["Files"]["in_headerrow"])
+            except:
+                msg = "Files: 'in_headerrow' is not an integer"
+                messages["ERROR"].append(msg)
+        # check the output file type
+        if "out_filename" in cfg["Files"]:
+            file_name = cfg["Files"]["out_filename"]
+            file_parts = os.path.splitext(file_name)
+            if (file_parts[-1].lower() in [".nc"]):
+                pass
+            else:
+                msg = "Files: " + file_name + " doesn't end with .nc"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'out_filename' not in section"
+            messages["ERROR"].append(msg)
+    else:
+        msg = "'Files' section not in control file"
+        messages["ERROR"].append(msg)
+    return
+def l1_check_global_attributes(cfg, std, messages):
+    # check the 'Global' section exists
+    if "Global" in cfg:
+        # check the required global attributes exist
+        l1_check_global_required(cfg, std, messages)
+        # check the forced global attributes
+        l1_check_global_forced(cfg, std, messages)
+        # check the recommended global attributes
+        l1_check_global_recommended(cfg, std, messages)
+    return
+def l1_check_global_required(cfg, std, messages):
+    # check the global attributes
+    required = std["Global"]["Required"]
+    cfg_global = sorted(list(cfg["Global"].keys()))
+    # check the required global attributes are present
+    for item in required:
+        if item not in cfg_global:
+            msg = "Global: " + item + " not in section (required)"
+            messages["ERROR"].append(msg)
+    # check time step is present and makes sense
+    if "time_step" in cfg["Global"]:
+        try:
+            ts = int(cfg["Global"]["time_step"])
+        except ValueError:
+            msg = "Global: 'time_step' is not a number"
+            messages["ERROR"].append(msg)
+        if ts not in [15, 20, 30, 60]:
+            msg = "Global : 'time_step' must be 15, 20, 30 or 60"
+            messages["ERROR"].append(msg)
+    # check latitude is present and makes sense
+    if "latitude" in cfg["Global"]:
+        try:
+            lat = float(cfg["Global"]["latitude"])
+            if lat < -90.0 or lat > 90.0:
+                msg = "Global: 'latitude' must be between -90 and 90"
+                messages["ERROR"].append(msg)
+        except ValueError:
+            msg = "Global: 'latitude' is not a number"
+            messages["ERROR"].append(msg)
+    # check longitude is present and makes sense
+    if "longitude" in cfg["Global"]:
+        try:
+            lon = float(cfg["Global"]["longitude"])
+            if lon < -180.0 or lat > 180.0:
+                msg = "Global: 'longitude' must be between -180 and 180"
+                messages["ERROR"].append(msg)
+        except ValueError:
+            msg = "Global: 'longitude' is not a number"
+            messages["ERROR"].append(msg)
+    return
+def l1_check_global_forced(cfg, std, messages):
+    forced = std["Global"]["Forced"]
+    # force global attributes that have defined values
+    for item in forced:
+        cfg["Global"][item] = forced[item]
+        msg = "Global: setting " + item + " to " + forced[item]
+        #messages["INFO"].append(msg)
+    # and do the time zone
+    lon = float(cfg["Global"]["longitude"])
+    lat = float(cfg["Global"]["latitude"])
+    tf = timezonefinder.TimezoneFinder()
+    time_zone = tf.timezone_at(lng=lon, lat=lat)
+    if "time_zone" in cfg["Global"]:
+        if cfg["Global"]["time_zone"] != time_zone:
+            cfg["Global"]["time_zone"] = time_zone
+            msg = "Global: existing time zone replaced with " + time_zone
+            messages["WARNING"].append(msg)
+        else:
+            pass
+    else:
+        cfg["Global"]["time_zone"] = time_zone
+    return
+def l1_check_global_recommended(cfg, std, messages):
+    recommended = std["Global"]["Recommended"]
+    cfg_global = sorted(list(cfg["Global"].keys()))
+    # check recommended global attributes
+    for item in recommended:
+        if item not in cfg_global:
+            msg = "Global: recommended global attribute " + item + " not found"
+            messages["WARNING"].append(msg)
+    return
+def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
+    var_keys = list(cfg["Variables"][cfg_label].keys())
+    # check we have an 'Attr' section, remove variable if absent
+    if ("Attr" in var_keys):
+        var_attrs = list(cfg["Variables"][cfg_label]["Attr"].keys())
+        if "long_name" in var_attrs:
+            pass
+        else:
+            msg = cfg_label + ": no long_name variable attribute"
+            messages["ERROR"].append(msg)
+        # check statistic_type
+        if "statistic_type" in var_attrs:
+            l1_check_variables_statistic_type(cfg, std, cfg_label, std_label, messages)
+            # check units
+            if "units" in var_attrs:
+                l1_check_variables_units(cfg, std, cfg_label, std_label, messages)
+                l1_make_variables_attributes_consistent(cfg, std, cfg_label, std_label, messages)
+                if "standard_name" in var_attrs:
+                    l1_check_variables_standard_name(cfg, std, cfg_label, std_label, messages)
+                else:
+                    pass
+            else:
+                msg = cfg_label + ": no units variable attribute"
+                messages["ERROR"].append(msg)
+        else:
+            msg = cfg_label + ": no statistic_type variable attribute"
+            messages["ERROR"].append(msg)
+    else:
+        msg = cfg_label + ": 'Attr' section missing"
+        messages["ERROR"].append(msg)
+    # check the file extension, only xls, xlsx or csv allowed
+    file_parts = os.path.splitext(cfg["Files"]["in_filename"])
+    if ((file_parts[-1].lower() == "xls") or
+        (file_parts[-1].lower() == "xlsx")):
+        if (("xl" not in var_keys) or ("Function" not in var_keys)):
+            msg = cfg_label + ": 'xl' section missing"
+            messages["ERROR"].append(msg)
+    elif (file_parts[-1].lower() == "csv"):
+        if (("csv" not in var_keys) or ("Function" not in var_keys)):
+            msg = cfg_label + ": 'csv' section missing"
+            messages["ERROR"].append(msg)
+    else:
+        pass
+    return
+def l1_check_variables_statistic_type(cfg, std, cfg_label, std_label, messages):
+    cfg_attr = cfg["Variables"][cfg_label]["Attr"]
+    std_var = std["Variables"][std_label]
+    statistic_types = sorted(list(std_var.keys()))
+    cfg_stat_type = cfg_attr["statistic_type"]
+    if cfg_stat_type not in statistic_types:
+        msg = cfg_label + ": unrecognised statistic_type (" + cfg_stat_type + "), variable removed"
+        messages["ERROR"].append(msg)
+    return
+def l1_check_variables_units(cfg, std, cfg_label, std_label, messages):
+    cfg_attr = cfg["Variables"][cfg_label]["Attr"]
+    cfg_stat_type = cfg_attr["statistic_type"]
+    std_stat_type = std["Variables"][std_label][cfg_stat_type]
+    std_units = sorted(list(std_stat_type.keys()))
+    cfg_units = cfg_attr["units"]
+    if cfg_units not in std_units:
+        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+        messages["ERROR"].append(msg)
+    return
+def l1_check_variables_standard_name(cfg, std, cfg_label, std_label, messages):
+    cfg_attr = cfg["Variables"][cfg_label]["Attr"]
+    cfg_units = cfg_attr["units"]
+    cfg_stat_type = cfg_attr["statistic_type"]
+    std_stat_type = std["Variables"][std_label][cfg_stat_type]
+    if cfg_units in std_stat_type:
+        if (("standard_name" in cfg_attr) and
+            ("standard_name" not in std_stat_type[cfg_units])):
+            msg = cfg_label + ": standard_name not allowed, removing..."
+            messages["WARNING"].append(msg)
+            cfg["Variables"][cfg_label]["Attr"].pop("standard_name")
+        else:
+            pass
+    else:
+        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+        if msg not in messages["ERROR"]:
+            messages["ERROR"].append(msg)
+    return
+def l1_make_variables_attributes_consistent(cfg, std, cfg_label, std_label, messages):
+    cfg_attr = cfg["Variables"][cfg_label]["Attr"]
+    cfg_units = cfg_attr["units"]
+    cfg_stat_type = cfg_attr["statistic_type"]
+    std_stat_type = std["Variables"][std_label][cfg_stat_type]
+    if cfg_units in std_stat_type:
+        for item in std_stat_type[cfg_units]:
+            if (item not in cfg_attr):
+                # attribute not found so add it
+                msg = cfg_label + ": attribute (" + item + ") not found, adding..."
+                messages["WARNING"].append(msg)
+                cfg_attr[item] = std_stat_type[cfg_units][item]
+            elif (cfg_attr[item] != std_stat_type[cfg_units][item]):
+                # cfg attribute not the same as the std attribute, replace it
+                msg = cfg_label + ": invalid " + item + " (" + cfg_attr[item] + ")"
+                msg += ", replacing..."
+                messages["WARNING"].append(msg)
+                cfg_attr[item] = std_stat_type[cfg_units][item]
+            else:
+                pass
+    else:
+        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+        if msg not in messages["ERROR"]:
+            messages["ERROR"].append(msg)
+    return
 def l1_update_controlfile(cfg):
     """
     Purpose:
@@ -1158,7 +1362,10 @@ def l1_update_cfg_variables_attributes(cfg, std):
             if "units" in attr_cfg:
                 units_cfg = attr_cfg["units"]
             else:
-                units_cfg = None
+                # I just can't bring myself to write a = b = c ...
+                # Fortran would never allow such an abomination!
+                units_cfg = attr_std["units"]
+                attr_cfg["units"] = units_cfg
             if ((label_cfg[:llen] == label_std) and (units_cfg in units_std) and
                 (label_cfg[-3:] != "_Sd") and (label_cfg[-3:] != "_Vr")):
                 # the first letters and units match so update the long_name
