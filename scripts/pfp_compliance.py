@@ -629,6 +629,8 @@ def ParseL3ControlFile(cf, ds):
     Author: PRI
     Date: August 2019
     """
+    # PRI 7/10/2021 the code to get zms will give unpredictable results if CO2
+    #   profile data present
     ds.returncodes["message"] = "OK"
     ds.returncodes["value"] = 0
     l3_info = {"CO2": {}, "Fco2": {}, "status": {"value": 0, "message": "OK"}}
@@ -999,6 +1001,11 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
         else:
             msg = cfg_label + ": no statistic_type variable attribute"
             messages["ERROR"].append(msg)
+        # check height given for CO2 value
+        if "CO2" in cfg_label:
+            l1_check_variables_height(cfg, cfg_label, messages)
+        else:
+            pass
     else:
         msg = cfg_label + ": 'Attr' section missing"
         messages["ERROR"].append(msg)
@@ -1015,6 +1022,19 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
             messages["ERROR"].append(msg)
     else:
         pass
+    return
+def l1_check_variables_height(cfg, cfg_label, messages):
+    cfg_attr = cfg["Variables"][cfg_label]["Attr"]
+    if "height" in cfg_attr:
+        height = pfp_utils.strip_non_numeric(cfg_attr["height"])
+        if pfp_utils.is_number(height):
+            pass
+        else:
+            msg = cfg_label + ": 'height' attribute not a number"
+            messages["ERROR"].append(msg)
+    else:
+        msg = cfg_label + ": no 'height' attribute found"
+        messages["ERROR"].append(msg)
     return
 def l1_check_variables_statistic_type(cfg, std, cfg_label, std_label, messages):
     cfg_attr = cfg["Variables"][cfg_label]["Attr"]

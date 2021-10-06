@@ -214,7 +214,7 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         variables = xlDateTime, ustar_filtered, Wd_X_new, Wd_Y_new
         attributes = ancillary_variables, group_name, serial_number, nrecs, missing_value, standard name
         units = not_defined,notdefined,not defined,none
-        height = <height>m,<height>,not_defined,notdefined,not defined,none
+        height = not_defined,notdefined,not defined,none
         miscellaneous = not_defined,notdefined,not defined,none
         standard_name = """not_defined,notdefined,not defined,none,
 electrical_conductivity,electric_conductivity,
