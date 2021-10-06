@@ -6,20 +6,27 @@ level = L1
     in_firstdatarow = 4
     out_filename = Right click to browse (*.nc)
 [Global]
-    acknowledgement = 
-    contact = 
+    acknowledgement = '''This work used eddy covariance data collected by the TERN Ecosystem
+Processes facility. Ecosystem Processes would like to acknowledge the financial support of the
+Australian Federal Government via the National Collaborative Research Infrastructure Scheme
+and the Education Investment Fund.'''
+    altitude = <altitude>m
     canopy_height = <canopy_height>m
+    contact = 
     comment = 
-    conventions = CF-1.6
-    conventions_names = CF convention standard names table version 27, 28 Nov 2013, audited 4 Jan 2015
-    data_url = 
-    history = Cleaned by cleanup_netcdf_files.py
+    Conventions = CF-1.8
+    data_link = http://data.ozflux.org.au/
+    featureType = timeSeries
+    fluxnet_id =
+    history = 
     institution = 
     latitude = <latitude>
-    license_type = CC BY 4.0
-    license_url = https://creativecommons.org/licenses/by/4.0/
+    license = https://creativecommons.org/licenses/by/4.0/
+    license_name = CC BY 4.0
     longitude = <longitude>
-    metadata_url = 
+    metadata_link = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
+    ozflux_link = http://ozflux.org.au/
+    publisher_name = TERN Ecosystem Processes,OzFlux
     references = 
     site_name = <site_name>
     site_pi = 
@@ -28,9 +35,8 @@ level = L1
     title = Flux tower data set from the <site_name> site for the calendar year <year>
     time_step = 30
     time_zone = <country>/<time_zone>
-    tower_height = <tower_height>m
+    tower_height = 
     vegetation = 
-    altitude = <altitude>m
 [Variables]
     [[Fn]]
         [[[xl]]]

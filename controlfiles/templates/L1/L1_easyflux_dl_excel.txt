@@ -6,25 +6,28 @@ level = L1
     in_firstdatarow = 5
     out_filename = Right click to browse (*.nc)
 [Global]
-    acknowledgement = '''This work used eddy covariance data collected by the TERN-OzFlux facility. OzFlux
-would like to acknowledge the financial support of the Australian Federal Government via
-the National Collaborative Research Infrastructure Scheme and the Education Investment
-Fund.'''
-    contact = 
+    acknowledgement = '''This work used eddy covariance data collected by the TERN Ecosystem
+Processes facility. Ecosystem Processes would like to acknowledge the financial support of the
+Australian Federal Government via the National Collaborative Research Infrastructure Scheme
+and the Education Investment Fund.'''
+    altitude = <altitude>m
     canopy_height = <canopy_height>m
-    comment = CF metadata, OzFlux standard variable names
-    conventions = CF-1.6
-    conventions_names = CF convention standard names table version 27, 28 Nov 2013, audited 4 Jan 2015
-    data_url = http://data.ozflux.org.au/
-    history = Cleaned by cleanup_netcdf_files.py
+    contact = 
+    comment = 
+    Conventions = CF-1.8
+    data_link = http://data.ozflux.org.au/
+    featureType = timeSeries
+    fluxnet_id =
+    history = 
     institution = 
     latitude = <latitude>
-    license_type = CC BY 4.0
-    license_url = https://creativecommons.org/licenses/by/4.0/
+    license = https://creativecommons.org/licenses/by/4.0/
+    license_name = CC BY 4.0
     longitude = <longitude>
-    metadata_url = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
-    ozflux_url = http://ozflux.org.au/
-    references = None
+    metadata_link = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
+    ozflux_link = http://ozflux.org.au/
+    publisher_name = TERN Ecosystem Processes,OzFlux
+    references = 
     site_name = <site_name>
     site_pi = 
     soil = 
@@ -34,7 +37,6 @@ Fund.'''
     time_zone = <country>/<time_zone>
     tower_height = 
     vegetation = 
-    altitude = <altitude>m
 [Variables]
     [[Fco2_EF]]
         [[[xl]]]

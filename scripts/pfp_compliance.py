@@ -1386,13 +1386,6 @@ def l1_update_cfg_variables_attributes(cfg, std):
             if (label_cfg[:llen] == label_std) and (label_cfg[-3:] == "_Vr"):
                 attr_cfg["long_name"] = attr_std["long_name"]
                 attr_cfg["statistic_type"] = "variance"
-    ## remove undefined attributes
-    #labels_cfg = list(cfg["Variables"].keys())
-    #for label_cfg in labels_cfg:
-        #for attr in ["units", "standard_name"]:
-            #if attr in cfg["Variables"][label_cfg]["Attr"]:
-                #if cfg["Variables"][label_cfg]["Attr"][attr] in vattrs_deprecated_values:
-                    #cfg["Variables"][label_cfg]["Attr"].pop(attr)
     return cfg
 
 def update_cfg_variables_deprecated(cfg, std):

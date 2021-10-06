@@ -1948,8 +1948,6 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    if "[disabled]" in key2:
-                        continue
                     cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
@@ -1975,8 +1973,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         selected_text = selected_item.text()
-        if "[disabled]" in selected_text:
-            selected_text = selected_text.replace("[disabled]", "")
+        if "(disabled)" in selected_text:
+            selected_text = selected_text.replace("(disabled)", "")
         selected_item.setText(selected_text)
         return
 
@@ -1985,7 +1983,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         selected_text = selected_item.text()
-        selected_text = "[disabled]" + selected_text
+        if "(disabled)" not in selected_text:
+            selected_text = "(disabled)" + selected_text
         selected_item.setText(selected_text)
         return
 
@@ -2219,6 +2218,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def add_2dcoordrotation(self):
         """ Add 2DCoordRotation to the [Options] section."""
         child0 = QtGui.QStandardItem("2DCoordRotation")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -2226,6 +2226,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def add_applyfco2storage_to_options(self):
         """ Add storage term to Fco2 to the [Options] section."""
         child0 = QtGui.QStandardItem("ApplyFco2Storage")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -2238,6 +2239,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         parent = QtGui.QStandardItem("ApplyFco2Storage")
         child0 = QtGui.QStandardItem("source")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("")
         parent.appendRow([child0, child1])
         selected_item.appendRow(parent)
@@ -2251,6 +2253,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         parent = QtGui.QStandardItem("AverageSeries")
         child0 = QtGui.QStandardItem("source")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("")
         parent.appendRow([child0, child1])
         selected_item.appendRow(parent)
@@ -2259,6 +2262,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def add_correctindividualfg(self):
         """ Add correct individual Fg to the [Options] section."""
         child0 = QtGui.QStandardItem("CorrectIndividualFg")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -2266,6 +2270,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def add_correctfgforstorage(self):
         """ Add correct Fg for storage to the [Options] section."""
         child0 = QtGui.QStandardItem("CorrectFgForStorage")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -2273,6 +2278,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def add_co2units_to_options(self):
         """ Add CO2 units to the [Options] section."""
         child0 = QtGui.QStandardItem("CO2Units")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("umol/mol")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -2315,6 +2321,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM")
         # add them
         selected_item.appendRow([child0, child1])
@@ -2323,6 +2330,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def add_fco2units_to_options(self):
         """ Add Fco2 units to the [Options] section."""
         child0 = QtGui.QStandardItem("Fco2Units")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("umol/m^2/s")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -2349,6 +2357,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # get the selected item from the index
         parent = idx.model().itemFromIndex(idx)
         child0 = QtGui.QStandardItem("file_path")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Right click to browse")
         parent.appendRow([child0, child1])
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -2368,6 +2377,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         for key in new_import:
             val = new_import[key]
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(val)
             new_variable.appendRow([child0, child1])
         self.sections["Imports"].appendRow(new_variable)
@@ -2380,6 +2390,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # get the selected item from the index
         parent = idx.model().itemFromIndex(idx)
         child0 = QtGui.QStandardItem("in_filename")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Right click to browse")
         parent.appendRow([child0, child1])
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -2388,6 +2399,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def add_keepintermediateseries(self):
         """ Add KeepIntermediateSeries to the [Options] section."""
         child0 = QtGui.QStandardItem("KeepIntermediateSeries")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("No")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -2395,6 +2407,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def add_massmancorrection(self):
         """ Add Massman correction to the [Options] section."""
         child0 = QtGui.QStandardItem("MassmanCorrection")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -2409,6 +2422,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         for key in new_massman:
             value = new_massman[key]
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(value)
             self.sections["Massman"].appendRow([child0, child1])
         self.model.insertRow(self.section_headings.index("Variables"), self.sections["Massman"])
@@ -2422,6 +2436,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         parent = QtGui.QStandardItem("MergeSeries")
         child0 = QtGui.QStandardItem("source")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("")
         parent.appendRow([child0, child1])
         selected_item.appendRow(parent)
@@ -2434,6 +2449,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # get the selected item from the index
         parent = idx.model().itemFromIndex(idx)
         child0 = QtGui.QStandardItem("out_filename")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Right click to browse")
         parent.appendRow([child0, child1])
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -2446,6 +2462,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # get the selected item from the index
         parent = idx.model().itemFromIndex(idx)
         child0 = QtGui.QStandardItem("plot_path")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Right click to browse")
         parent.appendRow([child0, child1])
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -2458,6 +2475,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
             for key in new_qc[key1]:
                 val = str(new_qc[key1][key])
                 child0 = QtGui.QStandardItem(key)
+                child0.setEditable(False)
                 child1 = QtGui.QStandardItem(val)
                 parent.appendRow([child0, child1])
             selected_item.appendRow(parent)
@@ -2480,6 +2498,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         for key in new_plot:
             val = new_plot[key]
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(str(val))
             parent.appendRow([child0, child1])
         self.sections["Plots"].appendRow(parent)
@@ -2490,6 +2509,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         for key in dict_to_add:
             val = str(dict_to_add[key])
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(val)
             section.appendRow([child0, child1])
 
@@ -2507,6 +2527,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         for key in new_plot:
             val = new_plot[key]
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(str(val))
             parent.appendRow([child0, child1])
         self.sections["Plots"].appendRow(parent)
@@ -2515,6 +2536,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def add_usel2fluxes(self):
         """ Add UseL2Fluxes to the [Options] section."""
         child0 = QtGui.QStandardItem("UseL2Fluxes")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -2527,6 +2549,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
             for key in new_var_qc[key3]:
                 val = new_var_qc[key3][key]
                 child0 = QtGui.QStandardItem(key)
+                child0.setEditable(False)
                 child1 = QtGui.QStandardItem(str(val))
                 parent3.appendRow([child0, child1])
             parent2.appendRow(parent3)
@@ -2552,6 +2575,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def add_zms(self):
         """ Add zms to the [Options] section."""
         child0 = QtGui.QStandardItem("zms")
+        child0.setEditable(False)
         child1 = QtGui.QStandardItem("")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
@@ -2909,10 +2933,14 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveVariable)
                 self.context_menu.actionRemoveVariable.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Plots":
-                #self.context_menu.actionDisablePlot = QtWidgets.QAction(self)
-                #self.context_menu.actionDisablePlot.setText("Disable plot")
-                #self.context_menu.addAction(self.context_menu.actionDisablePlot)
-                #self.context_menu.actionDisablePlot.triggered.connect(self.disable_plot)
+                self.context_menu.actionDisablePlot = QtWidgets.QAction(self)
+                self.context_menu.actionDisablePlot.setText("Disable plot")
+                self.context_menu.addAction(self.context_menu.actionDisablePlot)
+                self.context_menu.actionDisablePlot.triggered.connect(self.disable_plot)
+                self.context_menu.actionEnablePlot = QtWidgets.QAction(self)
+                self.context_menu.actionEnablePlot.setText("Enable plot")
+                self.context_menu.addAction(self.context_menu.actionEnablePlot)
+                self.context_menu.actionEnablePlot.triggered.connect(self.enable_plot)
                 self.context_menu.actionRemovePlot = QtWidgets.QAction(self)
                 self.context_menu.actionRemovePlot.setText("Remove plot")
                 self.context_menu.addAction(self.context_menu.actionRemovePlot)
@@ -2964,13 +2992,6 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 self.context_menu.actionRemoveMergeSeriesItem.triggered.connect(self.remove_item)
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
-
-    def disable_plot(self):
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        selected_item.setForeground(QtGui.QBrush(QtGui.QColor("red")))
 
     def edit_L3_gui(self):
         """ Edit L3 control file GUI."""
@@ -3042,6 +3063,26 @@ class edit_cfg_L3(QtWidgets.QWidget):
                             cfg[key1][key2][key3][key4] = val4
         return cfg
 
+    def enable_plot(self):
+        """ Enable a plot by removing '[disabled]' from the title."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_text = selected_item.text()
+        if "(disabled)" in selected_text:
+            selected_text = selected_text.replace("(disabled)", "")
+        selected_item.setText(selected_text)
+        return
+
+    def disable_plot(self):
+        """ Disable a plot by adding '[disabled]' to the title."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_text = selected_item.text()
+        if "(disabled)" not in selected_text:
+            selected_text = "(disabled)" + selected_text
+        selected_item.setText(selected_text)
+        return
+
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
         # index of the selected item
@@ -3090,20 +3131,24 @@ class edit_cfg_L3(QtWidgets.QWidget):
             if key1 in ["Files", "Global", "Output", "Options", "Soil", "Massman"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in self.cfg[key1]:
                     value = self.cfg[key1][key2]
                     child0 = QtGui.QStandardItem(key2)
+                    child0.setEditable(False)
                     child1 = QtGui.QStandardItem(value)
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
             elif key1 in ["Plots", "Imports"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in self.cfg[key1][key2]:
                         value = self.cfg[key1][key2][key3]
                         child0 = QtGui.QStandardItem(key3)
+                        child0.setEditable(False)
                         child1 = QtGui.QStandardItem(value)
                         parent2.appendRow([child0, child1])
                     self.sections[key1].appendRow(parent2)
@@ -3111,15 +3156,18 @@ class edit_cfg_L3(QtWidgets.QWidget):
             elif key1 in ["Variables"]:
                 # sections with 3 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
                 for key2 in sorted(list(self.cfg[key1].keys())):
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in sorted(list(self.cfg[key1][key2].keys())):
                         if key3 in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
                                     "ApplyFco2Storage", "MergeSeries", "AverageSeries"]:
                             parent3 = QtGui.QStandardItem(key3)
+                            parent3.setEditable(False)
                             for key4 in sorted(list(self.cfg[key1][key2][key3].keys())):
                                 value = self.cfg[key1][key2][key3][key4]
                                 child0 = QtGui.QStandardItem(key4)
+                                child0.setEditable(False)
                                 child1 = QtGui.QStandardItem(value)
                                 parent3.appendRow([child0, child1])
                             parent2.appendRow(parent3)

@@ -450,6 +450,8 @@ def do_run_l2(cfg):
         if "Plots" in list(cfg.keys()):
             logger.info("Plotting L1 and L2 data")
             for nFig in cfg['Plots'].keys():
+                if "(disabled)" in nFig:
+                    continue
                 plt_cf = cfg['Plots'][str(nFig)]
                 if 'type' in plt_cf.keys():
                     if str(plt_cf['type']).lower() == 'xy':
@@ -499,6 +501,8 @@ def do_run_l3(cfg):
         if "Plots" in list(cfg.keys()):
             logger.info("Plotting L3 data")
             for nFig in cfg['Plots'].keys():
+                if "(disabled)" in nFig:
+                    continue
                 plt_cf = cfg['Plots'][str(nFig)]
                 if 'Type' in plt_cf.keys():
                     if str(plt_cf['Type']).lower() =='xy':
