@@ -1,4 +1,4 @@
-name: pfp_env
+name: pfp_dev
 channels:
   - conda-forge
 dependencies:

@@ -49,6 +49,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[AH_<inst>_<height>m]]
         [[[Attr]]]
+            height = <height>m
             instrument = <instrument_type>
             long_name = Absolute humidity
             standard_name = mass_concentration_of_water_vapor_in_air
@@ -59,6 +60,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[AH_IRGA_Av]]
         [[[Attr]]]
+            height = <height>m
             instrument = <irga_type>
             long_name = Absolute humidity
             standard_name = mass_concentration_of_water_vapor_in_air
@@ -69,6 +71,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[AH_IRGA_Vr]]
         [[[Attr]]]
+            height = <height>m
             instrument = <irga_type>
             long_name = Absolute humidity
             statistic_type = variance
@@ -78,6 +81,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[CO2_IRGA_Av]]
         [[[Attr]]]
+            height = <height>m
             instrument = <irga_type>
             long_name = CO2 concentration
             standard_name = mass_concentration_of_carbon_dioxide_in_air
@@ -88,6 +92,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[CO2_IRGA_Vr]]
         [[[Attr]]]
+            height = <height>m
             instrument = <irga_type>
             long_name = CO2 concentration
             statistic_type = variance
@@ -148,6 +153,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[Fld]]
         [[[Attr]]]
+            height = <height>m
             instrument = Kipp and Zonen CNR4
             long_name = Down-welling longwave radiation
             standard_name = surface_downwelling_longwave_flux_in_air
@@ -158,6 +164,7 @@ and the Education Investment Fund.'''
             sheet = slow_rad
     [[Flu]]
         [[[Attr]]]
+            height = <height>m
             instrument = Kipp and Zonen CNR4
             long_name = Up-welling longwave radiation
             standard_name = surface_upwelling_longwave_flux_in_air
@@ -168,6 +175,7 @@ and the Education Investment Fund.'''
             sheet = slow_rad
     [[Fn_NR]]
         [[[Attr]]]
+            height = <height>m
             instrument = NR Lite
             long_name = Net radiation
             standard_name = surface_net_downward_radiative_flux
@@ -178,6 +186,7 @@ and the Education Investment Fund.'''
             sheet = slow_rad
     [[Fsd]]
         [[[Attr]]]
+            height = <height>m
             instrument = Kipp and Zonen CNR4
             long_name = Down-welling shortwave radiation
             standard_name = surface_downwelling_shortwave_flux_in_air
@@ -188,6 +197,7 @@ and the Education Investment Fund.'''
             sheet = slow_rad
     [[Fsu]]
         [[[Attr]]]
+            height = <height>m
             instrument = Kipp and Zonen CNR4
             long_name = Up-welling shortwave radiation
             standard_name = surface_upwelling_shortwave_flux_in_air
@@ -198,6 +208,7 @@ and the Education Investment Fund.'''
             sheet = slow_rad
     [[Precip]]
         [[[Attr]]]
+            height = <height>m
             instrument = <instrument_type>
             long_name = Rainfall
             standard_name = thickness_of_rainfall_amount
@@ -208,6 +219,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[RH_<inst>_<height>m]]
         [[[Attr]]]
+            height = <height>m
             instrument = <instrument_type>
             long_name = Relative humidity
             standard_name = relative_humidity
@@ -251,6 +263,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[Ta_<inst>_<height>m]]
         [[[Attr]]]
+            height = <height>m
             instrument = <instrument_type>
             long_name = Air temperature
             standard_name = air_temperature
@@ -303,6 +316,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[Tv_SONIC_Av]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Virtual temperature
             standard_name = virtual_temperature
@@ -313,6 +327,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[Tv_SONIC_Vr]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Virtual temperature
             statistic_type = variance
@@ -322,6 +337,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UxA]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>,<irga_type>
             long_name = Covariance of Ux and H2O
             statistic_type = average
@@ -331,6 +347,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UxC]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>,<irga_type>
             long_name = Covariance of Ux and CO2
             statistic_type = average
@@ -340,6 +357,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UxT]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Covariance of Ux and T
             statistic_type = average
@@ -349,6 +367,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UxUy]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Covariance of Ux and Uy
             statistic_type = average
@@ -358,6 +377,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UxUz]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Covariance of Ux and Uz
             statistic_type = average
@@ -367,6 +387,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[Ux_SONIC_Av]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Longitudinal wind velocity component, sonic coordinates
             statistic_type = average
@@ -376,6 +397,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[Ux_SONIC_Vr]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Longitudinal wind velocity component, sonic coordinates
             statistic_type = variance
@@ -385,6 +407,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UyA]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>,<irga_type>
             long_name = Covariance of Uy and H2O
             statistic_type = average
@@ -394,6 +417,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UyC]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>,<irga_type>
             long_name = Covariance of Uy and CO2
             statistic_type = average
@@ -403,6 +427,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UyT]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Covariance of Uy and T
             statistic_type = average
@@ -412,6 +437,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UyUz]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Covariance of Uy and Uz
             statistic_type = average
@@ -421,6 +447,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[Uy_SONIC_Av]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Lateral wind velocity component, sonic coordinates
             statistic_type = average
@@ -430,6 +457,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[Uy_SONIC_Vr]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Lateral wind velocity component, sonic coordinates
             statistic_type = variance
@@ -439,6 +467,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UzA]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>,<irga_type>
             long_name = Covariance of Uz and H2O
             statistic_type = average
@@ -448,6 +477,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UzC]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>,<irga_type>
             long_name = Covariance of Uz and CO2
             statistic_type = average
@@ -457,6 +487,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[UzT]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Covariance of Uz and T
             statistic_type = average
@@ -466,6 +497,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[Uz_SONIC_Av]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Vertical wind velocity component, sonic coordinates
             statistic_type = average
@@ -475,6 +507,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[Uz_SONIC_Vr]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Vertical wind velocity component, sonic coordinates
             statistic_type = variance
@@ -484,6 +517,7 @@ and the Education Investment Fund.'''
             sheet = slow_flux
     [[Vbat]]
         [[[Attr]]]
+            height = <height>m
             instrument = Campbell Scientific CR3000 logger
             long_name = Battery voltage at logger
             units = V
@@ -492,6 +526,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[Wd_<inst>_Av]]
         [[[Attr]]]
+            height = <height>m
             instrument = <instrument_type>
             long_name = Wind direction
             standard_name = wind_from_direction
@@ -502,6 +537,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[Wd_SONIC_Av]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Wind direction
             standard_name = wind_from_direction
@@ -512,6 +548,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[Ws_<inst>_Av]]
         [[[Attr]]]
+            height = <height>m
             instrument = <instrument_type>
             long_name = Wind speed
             standard_name = wind_speed
@@ -522,6 +559,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[Ws_SONIC_Av]]
         [[[Attr]]]
+            height = <height>m
             instrument = <sonic_type>
             long_name = Wind speed
             standard_name = wind_speed
@@ -532,6 +570,7 @@ and the Education Investment Fund.'''
             sheet = slow_met
     [[ps]]
         [[[Attr]]]
+            height = <height>m
             instrument = <instrument_type>
             long_name = Surface air pressure
             standard_name = surface_air_pressure

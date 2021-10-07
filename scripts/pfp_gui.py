@@ -67,6 +67,23 @@ class MsgBox_Quit(QtWidgets.QMessageBox):
         self.show()
         self.exec_()
 
+class MsgBox_Continue(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_Continue, self).__init__(parent)
+        if title in ["Critical", "Error"]:
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.Yes)
+        self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
+        self.setModal(False)
+        self.show()
+        self.exec_()
+
 class myTxtBox(QtWidgets.QInputDialog):
     def __init__(self, title="", prompt="", parent=None):
         super(myTxtBox, self).__init__(parent)
@@ -653,6 +670,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
         self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         # connect the context menu requested signal to appropriate slot
         self.view.customContextMenuRequested.connect(self.context_menu)
+        self.view.doubleClicked.connect(self.double_click)
         # do the QTreeView layout
         vbox = QtWidgets.QVBoxLayout()
         vbox.addWidget(self.view)
@@ -666,6 +684,12 @@ class edit_cfg_L1(QtWidgets.QWidget):
         for row in range(self.model.rowCount()):
             idx = self.model.index(row, 0)
             self.view.expand(idx)
+
+    def double_click(self):
+        """ Save the selected text on double click events."""
+        idx = self.view.selectedIndexes()
+        self.double_click_selected_text = idx[0].data()
+        return
 
     def get_model_from_data(self):
         """ Build the data model."""
@@ -745,6 +769,15 @@ class edit_cfg_L1(QtWidgets.QWidget):
             for i in range(selected_item.rowCount()):
                 existing_entries.append(str(selected_item.child(i, 0).text()))
         return existing_entries
+    
+    def get_sibling_names(self):
+        idx = self.view.selectedIndexes()[0]
+        parent = idx.parent().model().itemFromIndex(idx.parent())
+        sibling_names = []
+        if parent.hasChildren():
+            for i in range(parent.rowCount()):
+                sibling_names.append(str(parent.child(i, 0).text()))
+        return sibling_names
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -773,6 +806,17 @@ class edit_cfg_L1(QtWidgets.QWidget):
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_text = selected_item.text()
+        parent = selected_item.parent()
+        if parent.text() in ["Global", "Variables", "Attr", "Plots"]:
+            sibling_names = self.get_sibling_names()
+            if len(list(set(sibling_names))) != len(sibling_names):
+                msg = "'" + selected_text + "' already exists in " + parent.text() + " section"
+                MsgBox_Continue(msg)
+                selected_item.setText(self.double_click_selected_text)
+                return
         # update the control file contents
         self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed

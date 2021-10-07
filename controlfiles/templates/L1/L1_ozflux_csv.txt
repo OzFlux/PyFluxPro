@@ -13,13 +13,13 @@ Australian Federal Government via the National Collaborative Research Infrastruc
 and the Education Investment Fund.'''
     altitude = <altitude>m
     canopy_height = <canopy_height>m
-    comment = ""
-    contact = ""
+    comment = 
+    contact = 
     data_link = http://data.ozflux.org.au/
     featureType = timeSeries
-    fluxnet_id = ""
+    fluxnet_id = 
     history = June 2021 processing
-    institution = ""
+    institution = 
     latitude = <latitude>
     license = https://creativecommons.org/licenses/by/4.0/
     license_name = CC BY 4.0
@@ -27,16 +27,16 @@ and the Education Investment Fund.'''
     metadata_link = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
     ozflux_link = http://ozflux.org.au/
     publisher_name = TERN Ecosystem Processes,OzFlux
-    references = ""
+    references = 
     site_name = <site_name>
-    site_pi = ""
-    soil = ""
-    source = ""
+    site_pi = 
+    soil = 
+    source = 
     time_step = 30
     time_zone = <country>/<time_zone>
     title = Flux tower data set from the <site_name> site for the calendar year <year>
-    tower_height = ""
-    vegetation = ""
+    tower_height = 
+    vegetation = 
 [Variables]
     [[AGC_IRGA]]
         [[[Attr]]]
