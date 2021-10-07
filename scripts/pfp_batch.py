@@ -104,6 +104,8 @@ def do_L2_batch(main_ui, level):
             if "Plots" in list(cf_l2.keys()):
                 logger.info("Plotting L1 and L2 data")
                 for nFig in list(cf_l2['Plots'].keys()):
+                    if "(disabled)" in nFig:
+                        continue
                     plt_cf = cf_l2['Plots'][str(nFig)]
                     if 'type' in plt_cf.keys():
                         if str(plt_cf['type']).lower() == 'xy':
@@ -150,6 +152,8 @@ def do_L3_batch(main_ui, level):
             if "Plots" in list(cf_l3.keys()):
                 logger.info("Plotting L3 data")
                 for nFig in list(cf_l3['Plots'].keys()):
+                    if "(disabled)" in nFig:
+                        continue
                     plt_cf = cf_l3['Plots'][str(nFig)]
                     if 'type' in plt_cf.keys():
                         if str(plt_cf['type']).lower() == 'xy':

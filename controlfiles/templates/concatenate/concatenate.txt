@@ -1,6 +1,6 @@
 level = concatenate
 [Options]
-    MaxGapInterpolate = 3    # maximum gap length (hours) for filling by interpolation
+    MaxGapInterpolate = 3
 [Files]
     [[Out]]
         ncFileName = Right click to browse ...

@@ -75,6 +75,10 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         Diag_CSAT = Diag_SONIC
         e = VP
         esat = VPsat
+        Fco2_EPFlag = Fco2_EP_QC
+        Fe_EPFlag = Fe_EP_QC
+        Fh_EPFlag = Fh_EP_QC
+        Fm_EPFlag = Fm_EP_QC
         Fn_KZ = Fn_4cmpt
         # start Whroo data from LI840
         Ah_LI840_1m = H2O_LI840_1m
@@ -214,7 +218,7 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         variables = xlDateTime, ustar_filtered, Wd_X_new, Wd_Y_new
         attributes = ancillary_variables, group_name, serial_number, nrecs, missing_value, standard name
         units = not_defined,notdefined,not defined,none
-        height = <height>m,<height>,not_defined,notdefined,not defined,none
+        height = not_defined,notdefined,not defined,none
         miscellaneous = not_defined,notdefined,not defined,none
         standard_name = """not_defined,notdefined,not defined,none,
 electrical_conductivity,electric_conductivity,
@@ -239,6 +243,10 @@ Friction velocity"""
             standard_name = mass_concentration_of_carbon_dioxide_in_air,mole_fraction_of_carbon_dioxide_in_air
             statistic_type = average
             units = mg/m^3,umol/mol
+        [[[CO2_Samples]]]
+            long_name = CO2 concentration accepted samples
+            statistic_type = sum
+            units = 1
         [[[Diag_IRGA]]]
             long_name = IRGA diagnostic value
             statistic_type = average
@@ -260,11 +268,55 @@ Friction velocity"""
             standard_name = not_defined,surface_upward_mole_flux_of_carbon_dioxide
             statistic_type = average
             units = mg/m^2/s,umol/m^2/s
+        [[[Fco2_EP]]]
+            long_name = CO2 flux
+            standard_name = not_defined,surface_upward_mole_flux_of_carbon_dioxide
+            statistic_type = average
+            units = mg/m^2/s,umol/m^2/s
+        [[[Fco2_EF]]]
+            long_name = CO2 flux
+            standard_name = not_defined,surface_upward_mole_flux_of_carbon_dioxide
+            statistic_type = average
+            units = mg/m^2/s,umol/m^2/s
+        [[[Fco2_EP_QC]]]
+            long_name = Carbon dioxide flux EddyPro QC flag
+            statistic_type = average
+            units = 1
+        [[[Fco2_EF_QC]]]
+            long_name = Carbon dioxide flux EasyFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[Fco2_EF_Num]]]
+            long_name = Carbon dioxide flux EasyFlux accepted samples
+            statistic_type = sum
+            units = 1
         [[[Fe]]]
             long_name = Latent heat flux
             standard_name = surface_upward_latent_heat_flux
             statistic_type = average
             units = W/m^2
+        [[[Fe_EP]]]
+            long_name = Latent heat flux
+            standard_name = surface_upward_latent_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[Fe_EF]]]
+            long_name = Latent heat flux
+            standard_name = surface_upward_latent_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[Fe_EP_QC]]]
+            long_name = Latent heat flux EddyPro QC flag
+            statistic_type = average
+            units = 1
+        [[[Fe_EF_QC]]]
+            long_name = Latent heat flux EasyFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[Fe_EF_Num]]]
+            long_name = Latent heat flux EasyFlux accepted samples
+            statistic_type = sum
+            units = 1
         [[[Fg]]]
             long_name = Ground heat flux
             standard_name = downward_heat_flux_at_ground_level_in_soil
@@ -275,10 +327,48 @@ Friction velocity"""
             standard_name = surface_upward_sensible_heat_flux
             statistic_type = average
             units = W/m^2
-        [[[Fh2o]]]
+        [[[Fh_EP]]]
+            long_name = Sensible heat flux
+            standard_name = surface_upward_sensible_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[Fh_EF]]]
+            long_name = Sensible heat flux
+            standard_name = surface_upward_sensible_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[Fh_EP_QC]]]
+            long_name = Sensible heat flux EddyPro QC flag
+            statistic_type = average
+            units = 1
+        [[[Fh_EF_QC]]]
+            long_name = Sensible heat flux EasyFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[Fh_EF_Num]]]
+            long_name = Sensible heat flux EasyFlux accepted samples
+            statistic_type = sum
+            units = 1
+        [[[Fh2o_EP]]]
             long_name = Water vapour flux
             statistic_type = average
             units = mmol/m^2/s
+        [[[Fh2o_EF]]]
+            long_name = Water vapour flux
+            statistic_type = average
+            units = mmol/m^2/s
+        [[[Fh2o_EP_QC]]]
+            long_name = Water vapour flux EddyPro QC flag
+            statistic_type = average
+            units = 1
+        [[[Fh2o_EF_QC]]]
+            long_name = Water vapour flux EasyFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[Fh2o_EF_Num]]]
+            long_name = Water vapour flux EasyFlux accepted samples
+            statistic_type = sum
+            units = 1
         [[[Fld]]]
             long_name = Down-welling longwave radiation
             standard_name = surface_downwelling_longwave_flux_in_air
@@ -294,6 +384,28 @@ Friction velocity"""
             standard_name = magnitude_of_surface_downward_stress
             statistic_type = average
             units = kg/m/s^2
+        [[[Fm_EP]]]
+            long_name = Momentum flux
+            standard_name = magnitude_of_surface_downward_stress
+            statistic_type = average
+            units = kg/m/s^2
+        [[[Fm_EF]]]
+            long_name = Momentum flux
+            standard_name = magnitude_of_surface_downward_stress
+            statistic_type = average
+            units = kg/m/s^2
+        [[[Fm_EP_QC]]]
+            long_name = Momentum flux EddyPro QC flag
+            statistic_type = average
+            units = 1
+        [[[Fm_EF_QC]]]
+            long_name = Momentum flux EasyFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[Fm_EF_Num]]]
+            long_name = Momentum flux EasyFlux accepted samples
+            statistic_type = sum
+            units = 1
         [[[Fn]]]
             long_name = Net radiation
             standard_name = surface_net_downward_radiative_flux
@@ -314,6 +426,10 @@ Friction velocity"""
             standard_name = mass_concentration_of_water_vapor_in_air,mole_fraction_of_water_vapor_in_air
             statistic_type = average
             units = g/m^3,mmol/mol
+        [[[H2O_Samples]]]
+            long_name = H2O concentration accepted samples
+            statistic_type = sum
+            units = 1
         [[[L]]]
             long_name = Monin-Obukhov length
             statistic_type = average
@@ -347,6 +463,21 @@ Friction velocity"""
             long_name = Specific humidity deficit
             statistic_type = average
             units = kg/kg
+        [[[Signal_CO2]]]
+            height = <height>m
+            instrument = <irga_type>
+            long_name = CO2 signal strength
+            statistic_type = average
+            units = 1
+        [[[Signal_H2O]]]
+            height = <height>m
+            instrument = <irga_type>
+            long_name = H2O signal strength
+            statistic_type = average
+            units = 1
+        [[[xl]]]
+            name = H2O_sig_strgth_Min
+            sheet = CSFormat
         [[[Sws]]]
             long_name = Soil water content
             standard_name = volume_fraction_of_condensed_water_in_soil
@@ -360,6 +491,10 @@ Friction velocity"""
         [[[Ts]]]
             long_name = Soil temperature
             standard_name = soil_temperature,soil_temperature
+            statistic_type = average
+            units = degC,K
+        [[[Tstar]]]
+            long_name = Scaling temperature
             statistic_type = average
             units = degC,K
         [[[Tv]]]

@@ -6,22 +6,22 @@ level = L3
     plot_path = Right click to browse
 [Options]
     UseL2Fluxes = Yes
-    zms =
+    zms = ""
     CO2Units = umol/mol
     Fco2Units = umol/m^2/s
 [Soil]
-    FgDepth =
-    BulkDensity =
-    OrganicContent =
-    SwsDefault =
+    FgDepth = ""
+    BulkDensity = ""
+    OrganicContent = ""
+    SwsDefault = ""
     SwsSeries = Sws
 [Variables]
-    [[Fn]]
+    [[CO2]]
         [[[MergeSeries]]]
-            source = Fn_4cmpt,Fn
+            source = CO2_IRGA_Av
         [[[RangeCheck]]]
-            lower = -150
-            upper = 1100
+            lower = 250
+            upper = 900
     [[Fco2]]
         [[[MergeSeries]]]
             source = Fco2_EF
@@ -34,6 +34,12 @@ level = L3
         [[[RangeCheck]]]
             lower = -100
             upper = 600
+    [[Fg]]
+        [[[AverageSeries]]]
+            source = Fg_<depth>cma,Fg_<depth>cmb
+        [[[RangeCheck]]]
+            lower = -300
+            upper = 300
     [[Fh]]
         [[[MergeSeries]]]
             source = Fh_EF
@@ -46,60 +52,54 @@ level = L3
         [[[RangeCheck]]]
             lower = -1
             upper = 1
-    [[Ta]]
+    [[Fn]]
         [[[MergeSeries]]]
-            source = Ta_<inst>_<height>m,Ta_SONIC_Av
+            source = Fn_4cmpt,Fn
         [[[RangeCheck]]]
-            lower = -10
-            upper = 50
-    [[RH]]
-        [[[MergeSeries]]]
-            source = RH_<inst>_<height>m,RH_IRGA_Av
-        [[[RangeCheck]]]
-            upper = 100
-            lower = 0
+            lower = -150
+            upper = 1100
     [[H2O]]
         [[[MergeSeries]]]
             source = H2O_IRGA_Av
         [[[RangeCheck]]]
+            lower = 0
             upper = 3000
-            lower = 0
-    [[CO2]]
+    [[RH]]
         [[[MergeSeries]]]
-            source = CO2_IRGA_Av
-        [[[RangeCheck]]]
-            lower = 250
-            upper = 900
-    [[Ws]]
-        [[[MergeSeries]]]
-            source = Ws_<inst>_Av,Ws_SONIC_Av
+            source = RH_<inst>_<height>m,RH_IRGA_Av
         [[[RangeCheck]]]
             lower = 0
-            upper = 20
-    [[Wd]]
-        [[[MergeSeries]]]
-            source = Wd_<inst>_Av,Wd_SONIC_Av
-        [[[RangeCheck]]]
-            lower = 0
-            upper = 360
-    [[Fg]]
-        [[[AverageSeries]]]
-            source = Fg_<depth>cma,Fg_<depth>cmb
-        [[[RangeCheck]]]
-            lower = -300
-            upper = 300
+            upper = 100
     [[Sws]]
         [[[AverageSeries]]]
             source = Sws_<depth>cma,Sws_<depth>cmb
         [[[RangeCheck]]]
             lower = 0
             upper = 0.5
+    [[Ta]]
+        [[[MergeSeries]]]
+            source = Ta_<inst>_<height>m,Ta_SONIC_Av
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 50
     [[Ts]]
         [[[AverageSeries]]]
             source = Ts_<depth>cma,Ts_<depth>cmb
         [[[RangeCheck]]]
             lower = 0
             upper = 60
+    [[Wd]]
+        [[[MergeSeries]]]
+            source = Wd_<inst>_Av,Wd_SONIC_Av
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 360
+    [[Ws]]
+        [[[MergeSeries]]]
+            source = Ws_<inst>_Av,Ws_SONIC_Av
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 20
 [Plots]
     [[Radiative fluxes]]
         variables = Fsd,Fsu,Fld,Flu,Fn

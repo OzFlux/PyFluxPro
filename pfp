@@ -1,6 +1,6 @@
 #!/bin/bash
 # activate the environment
-source activate pfp_env
+source activate pfp_dev
 # wait until the command has completed
 wait
 # check the command line arguments

@@ -629,6 +629,8 @@ def ParseL3ControlFile(cf, ds):
     Author: PRI
     Date: August 2019
     """
+    # PRI 7/10/2021 the code to get zms will give unpredictable results if CO2
+    #   profile data present
     ds.returncodes["message"] = "OK"
     ds.returncodes["value"] = 0
     l3_info = {"CO2": {}, "Fco2": {}, "status": {"value": 0, "message": "OK"}}
@@ -999,6 +1001,11 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
         else:
             msg = cfg_label + ": no statistic_type variable attribute"
             messages["ERROR"].append(msg)
+        # check height given for CO2 value
+        if "CO2" in cfg_label:
+            l1_check_variables_height(cfg, cfg_label, messages)
+        else:
+            pass
     else:
         msg = cfg_label + ": 'Attr' section missing"
         messages["ERROR"].append(msg)
@@ -1015,6 +1022,19 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
             messages["ERROR"].append(msg)
     else:
         pass
+    return
+def l1_check_variables_height(cfg, cfg_label, messages):
+    cfg_attr = cfg["Variables"][cfg_label]["Attr"]
+    if "height" in cfg_attr:
+        height = pfp_utils.strip_non_numeric(cfg_attr["height"])
+        if pfp_utils.is_number(height):
+            pass
+        else:
+            msg = cfg_label + ": 'height' attribute not a number"
+            messages["ERROR"].append(msg)
+    else:
+        msg = cfg_label + ": no 'height' attribute found"
+        messages["ERROR"].append(msg)
     return
 def l1_check_variables_statistic_type(cfg, std, cfg_label, std_label, messages):
     cfg_attr = cfg["Variables"][cfg_label]["Attr"]
@@ -1292,109 +1312,116 @@ def l1_update_cfg_variables_attributes(cfg, std):
     miscellaneous_deprecated = pfp_utils.string_to_list(stdvd["miscellaneous"])
     standard_name_deprecated = pfp_utils.string_to_list(stdvd["standard_name"])
     # list of standard attribute values
-    labels_std = list(std["Variables"]["attributes"].keys())
-    labels_cfg = list(cfg["Variables"].keys())
+    std_labels = list(std["Variables"]["attributes"].keys())
+    cfg_labels = list(cfg["Variables"].keys())
     # add any essential variable attributes that are missing, deprecate those no longer used
-    for label in labels_cfg:
-        vattrs_cfg = list(cfg["Variables"][label]["Attr"].keys())
+    for label in cfg_labels:
+        cfg_vattrs = list(cfg["Variables"][label]["Attr"].keys())
         for vattr in vattrs_essential:
-            if vattr not in vattrs_cfg:
+            if vattr not in cfg_vattrs:
                 cfg["Variables"][label]["Attr"][vattr] = label
-        vattrs_cfg = list(cfg["Variables"][label]["Attr"].keys())
+
+        cfg_vattrs = list(cfg["Variables"][label]["Attr"].keys())
         for vattr in attributes_deprecated:
-            if vattr in vattrs_cfg:
+            if vattr in cfg_vattrs:
                 del cfg["Variables"][label]["Attr"][vattr]
-        vattrs_cfg = list(cfg["Variables"][label]["Attr"].keys())
-        for vattr in vattrs_cfg:
+        cfg_vattrs = list(cfg["Variables"][label]["Attr"].keys())
+        for vattr in cfg_vattrs:
             value = cfg["Variables"][label]["Attr"][vattr]
             if vattr == "units":
-                if ((value in units_deprecated) or
-                    (len(str(value)) == 0)):
+                if ((value in units_deprecated) or (len(str(value)) == 0)):
                     cfg["Variables"][label]["Attr"].pop(vattr)
             elif vattr == "height":
-                if ((value in height_deprecated) or
-                    (len(str(value)) == 0)):
+                if ((value in height_deprecated) or (len(str(value)) == 0)):
                     cfg["Variables"][label]["Attr"].pop(vattr)
             elif vattr == "standard_name":
-                if ((value in standard_name_deprecated) or
-                    (len(str(value)) == 0)):
+                if ((value in standard_name_deprecated) or (len(str(value)) == 0)):
                     cfg["Variables"][label]["Attr"].pop(vattr)
             elif len(str(value)) == 0:
                 cfg["Variables"][label]["Attr"].pop(vattr)
             else:
-                if ((value in miscellaneous_deprecated) or
-                    (len(str(value)) == 0)):
+                if ((value in miscellaneous_deprecated) or (len(str(value)) == 0)):
                     cfg["Variables"][label]["Attr"].pop(vattr)
     # coerce units into a standard form
     old_units = list(std["Variables"]["units_map"].keys())
     new_units = [std["Variables"]["units_map"][o] for o in old_units]
     ok_units = list(set(old_units + new_units))
-    for label_cfg in labels_cfg:
-        if "units" not in cfg["Variables"][label_cfg]["Attr"]:
+    cfg_labels = list(cfg["Variables"].keys())
+    for cfg_label in cfg_labels:
+        if "units" not in cfg["Variables"][cfg_label]["Attr"]:
             continue
-        cfg_units = cfg["Variables"][label_cfg]["Attr"]["units"]
+        cfg_units = cfg["Variables"][cfg_label]["Attr"]["units"]
         if cfg_units not in ok_units:
-            msg = " Unrecognised units " + cfg_units + " for variable " + label_cfg
+            msg = " Unrecognised units " + cfg_units + " for variable " + cfg_label
             logger.warning(msg)
             continue
         if cfg_units.lower() == "none":
-            cfg["Variables"][label_cfg]["Attr"].pop("units")
+            cfg["Variables"][cfg_label]["Attr"].pop("units")
         elif len(cfg_units) == 0:
-            cfg["Variables"][label_cfg]["Attr"].pop("units")
+            cfg["Variables"][cfg_label]["Attr"].pop("units")
         elif cfg_units in old_units:
-            cfg["Variables"][label_cfg]["Attr"]["units"] = std["Variables"]["units_map"][cfg_units]
+            cfg["Variables"][cfg_label]["Attr"]["units"] = std["Variables"]["units_map"][cfg_units]
         else:
             pass
     # force some variable attributes to particular values
-    for label_std in labels_std:
-        # length of the label stub in the standard control file
-        llen = len(label_std)
-        # pointer to attributes in standard control file
-        attr_std = std["Variables"]["attributes"][label_std]
-        # list of permitted units for variables that match this stub
-        units_std = pfp_utils.string_to_list(attr_std["units"])
-        # loop over variables in the L1 control file
-        labels_cfg = [l for l in list(cfg["Variables"].keys()) if l[:len(label_std)] == label_std]
-        for label_cfg in labels_cfg:
-            # pointer to attributes in user control file
-            attr_cfg = cfg["Variables"][label_cfg]["Attr"]
-            # units string given in the L1 control file
-            if "units" in attr_cfg:
-                units_cfg = attr_cfg["units"]
-            else:
-                # I just can't bring myself to write a = b = c ...
-                # Fortran would never allow such an abomination!
-                units_cfg = attr_std["units"]
-                attr_cfg["units"] = units_cfg
-            if ((label_cfg[:llen] == label_std) and (units_cfg in units_std) and
-                (label_cfg[-3:] != "_Sd") and (label_cfg[-3:] != "_Vr")):
-                # the first letters and units match so update the long_name
-                attr_cfg["long_name"] = attr_std["long_name"]
-                # update the statistic type
-                attr_cfg["statistic_type"] = attr_std["statistic_type"]
-                if ("standard_name" in attr_std):
-                    # list of standard names for variables that match this stub
-                    names_std = pfp_utils.string_to_list(attr_std["standard_name"])
-                    # update the standard name
-                    idx = units_std.index(units_cfg)
-                    if idx > len(names_std):
-                        idx = 0
-                    attr_cfg["standard_name"] = names_std[idx]
-            if (label_cfg[:llen] == label_std) and (label_cfg[-3:] == "_Sd"):
-                attr_cfg["long_name"] = attr_std["long_name"]
-                attr_cfg["statistic_type"] = "standard deviation"
-            if (label_cfg[:llen] == label_std) and (label_cfg[-3:] == "_Vr"):
-                attr_cfg["long_name"] = attr_std["long_name"]
-                attr_cfg["statistic_type"] = "variance"
-    ## remove undefined attributes
-    #labels_cfg = list(cfg["Variables"].keys())
-    #for label_cfg in labels_cfg:
-        #for attr in ["units", "standard_name"]:
-            #if attr in cfg["Variables"][label_cfg]["Attr"]:
-                #if cfg["Variables"][label_cfg]["Attr"][attr] in vattrs_deprecated_values:
-                    #cfg["Variables"][label_cfg]["Attr"].pop(attr)
+    cfg_labels = list(cfg["Variables"].keys())
+    std_labels = list(std["Variables"]["attributes"].keys())
+    # exact matches first
+    exact_matches = [l for l in cfg_labels if l in std_labels]
+    for cfg_label in exact_matches:
+        l1_update_cfg_coerce_variable_attributes(cfg, std, cfg_label, cfg_label)
+    # then partial matches
+    for std_label in std_labels:
+        # partial matches with exact matches excluded
+        lsl = len(std_label)
+        partial_matches = [l for l in cfg_labels
+                           if l[:min([len(l),lsl])] == std_label and
+                           l not in exact_matches]
+        for cfg_label in partial_matches:
+            l1_update_cfg_coerce_variable_attributes(cfg, std, cfg_label, std_label)
     return cfg
-
+def l1_update_cfg_coerce_variable_attributes(cfg, std, label_cfg, label_std):
+    """
+    Purpose:
+     Coerce the variable attributes in the control file to the values
+     in the standard file.
+    Author: PRI
+    Date: October 2021
+    """
+    # pointer to attributes in user control file
+    attr_cfg = cfg["Variables"][label_cfg]["Attr"]
+    attr_std = std["Variables"]["attributes"][label_std]
+    units_std = pfp_utils.string_to_list(attr_std["units"])
+    # units string given in the L1 control file
+    if "units" in attr_cfg:
+        units_cfg = attr_cfg["units"]
+    else:
+        units_cfg = attr_std["units"]
+        attr_cfg["units"] = units_cfg
+    if (units_cfg in units_std):
+        if (label_cfg[-3:] == "_Sd"):
+            # units match and it's a standard deviation
+            attr_cfg["long_name"] = attr_std["long_name"]
+            attr_cfg["statistic_type"] = "standard deviation"
+        elif (label_cfg[-3:] == "_Vr"):
+            # units match and it's a variance
+            attr_cfg["long_name"] = attr_std["long_name"]
+            attr_cfg["statistic_type"] = "variance"
+        else:
+            # units match and it's not a standard deviation or a variance
+            attr_cfg["long_name"] = attr_std["long_name"]
+            # update the statistic type
+            attr_cfg["statistic_type"] = attr_std["statistic_type"]
+            if ("standard_name" in attr_std):
+                # list of standard names for variables that match this stub
+                names_std = pfp_utils.string_to_list(attr_std["standard_name"])
+                # update the standard name
+                idx = units_std.index(units_cfg)
+                if idx > len(names_std):
+                    idx = 0
+                if names_std[idx] != "not_defined":
+                    attr_cfg["standard_name"] = names_std[idx]
+    return
 def update_cfg_variables_deprecated(cfg, std):
     """
     Purpose:
