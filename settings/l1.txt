@@ -98,12 +98,20 @@
         [[[average]]]
             [[[[1]]]]
                 long_name = CO2 flux EddyPro QC flag
+    [[Fco2_EP_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 flux EddyPro QC flag
     [[Fe]]
         [[[average]]]
             [[[[W/m^2]]]]
                 long_name = Latent heat flux
                 standard_name = surface_upward_latent_heat_flux
     [[Fe_EPFlag]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Latent heat flux EddyPro QC flag
+    [[Fe_EP_QC]]
         [[[average]]]
             [[[[1]]]]
                 long_name = Latent heat flux EddyPro QC flag
@@ -118,6 +126,10 @@
                 long_name = Sensible heat flux
                 standard_name = surface_upward_sensible_heat_flux
     [[Fh_EPFlag]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Sensible heat flux EddyPro QC flag
+    [[Fh_EP_QC]]
         [[[average]]]
             [[[[1]]]]
                 long_name = Sensible heat flux EddyPro QC flag
@@ -141,6 +153,10 @@
                 long_name = Momentum flux
                 standard_name = magnitude_of_surface_downward_stress
     [[Fm_EPFlag]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Momentum flux EddyPro QC flag
+    [[Fm_EP_QC]]
         [[[average]]]
             [[[[1]]]]
                 long_name = Momentum flux EddyPro QC flag

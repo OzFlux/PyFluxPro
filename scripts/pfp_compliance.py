@@ -2223,7 +2223,7 @@ def parse_cfg_variables_value(k, v):
     else:
         pass
     # remove white space and quotes
-    if k in ["ExcludeDates", "CorrectWindDirection", "LowerCheck", "UpperCheck"]:
+    if k in ["ExcludeDates", "ExcludeHours", "CorrectWindDirection", "LowerCheck", "UpperCheck"]:
         # don't remove white space between date and time
         strip_list = ['"', "'"]
     elif k in ["Attr"]:

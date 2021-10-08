@@ -129,6 +129,8 @@ class pfp_main_ui(QWidget):
         self.actionRunCurrent = QAction(self)
         self.actionRunCurrent.setText("Current...")
         self.actionRunCurrent.setShortcut('Ctrl+R')
+        self.actionRunClearLogWindow = QAction(self)
+        self.actionRunClearLogWindow.setText("Clear log window")
         self.actionStopCurrent = QAction(self)
         self.actionStopCurrent.setText("Stop run")
         # Plot menu items
@@ -173,6 +175,7 @@ class pfp_main_ui(QWidget):
         self.menuEdit.addAction(self.actionEditPreferences)
         # Run menu
         self.menuRun.addAction(self.actionRunCurrent)
+        self.menuRun.addAction(self.actionRunClearLogWindow)
         # Plot menu
         self.menuPlot.addAction(self.actionPlotFcVersusUstar)
         self.menuPlot.addAction(self.actionPlotFingerprints)
@@ -239,6 +242,7 @@ class pfp_main_ui(QWidget):
         self.actionEditPreferences.triggered.connect(self.edit_preferences)
         # Run menu actions
         self.actionRunCurrent.triggered.connect(self.run_current)
+        self.actionRunClearLogWindow.triggered.connect(self.run_clear_log_window)
         # Plot menu actions
         self.actionPlotFcVersusUstar.triggered.connect(pfp_top_level.do_plot_fcvsustar)
         self.actionPlotFingerprints.triggered.connect(pfp_top_level.do_plot_fingerprints)
@@ -760,6 +764,12 @@ class pfp_main_ui(QWidget):
 
     def tabSelected(self, arg=None):
         self.tabs.tab_index_current = arg
+
+    def run_clear_log_window(self):
+        """ Clear the Log window"""
+        # the Log window is always tab index 0
+        tb = self.tabs.widget(0)
+        tb.clear()
 
     def run_current(self):
         self.stop_flag = False
