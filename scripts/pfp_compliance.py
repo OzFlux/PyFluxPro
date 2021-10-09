@@ -473,6 +473,12 @@ def ParseConcatenateControlFile(cf):
         else:
             msg = " File not found (" + os.path.basename(file_name) + ")"
             logger.warning(msg)
+    # check to see if we have any files to concatenate
+    if len(inc["in_file_names"]) == 0:
+        msg = " No input files to concatenate"
+        logger.error(msg)
+        inc["OK"] = False
+        return info
     # get the output file name
     if "ncFileName" not in cf["Files"]["Out"]:
         msg = " No ncFileName key in Out subsection of Files section"
