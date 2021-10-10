@@ -408,13 +408,7 @@ def plot_fingerprint(cf):
             plt.xlabel(label)
             if n!= 0:
                 plt.setp(ax.get_yticklabels(), visible=False)
-        if "Files" in cf:
-            if "plot_path" in cf["Files"]:
-                plot_path = cf["Files"]["plot_path"]+"fingerprints/"
-            else:
-                plot_path = "plots/"
-        else:
-            plot_path = "plots/"
+        plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
         pngname = plot_path + site_name.replace(" ","") + "_" + level + "_"
@@ -796,10 +790,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
         else:
             logger.error('  plttimeseries: series '+ThisOne+' not in data structure')
         # get the plot path and save a hard copy of the plot
-        if "plot_path" in cf["Files"]:
-            plot_path = os.path.join(cf["Files"]["plot_path"],Level)
-        else:
-            plot_path = "plots/"
+        plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
         fname = os.path.join(plot_path, SiteName.replace(' ','')+'_'+Level+'_'+p['PlotDescription'].replace(' ','')+'.png')
@@ -1261,10 +1252,8 @@ def plot_quickcheck(cf):
 
 def plot_setup(cf, title):
     p = {}
-    if "plot_path" in cf["Files"]:
-        p["plot_path"] = os.path.join(cf["Files"]["plot_path"], cf["level"])
-    else:
-        p["plot_path"] = os.path.join("plots", cf["level"])
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots")
+    p["plot_path"] = os.path.join(plot_path, cf["level"], "")
     p['PlotDescription'] = str(title)
     var_string = cf['Plots'][str(title)]['variables']
     p['SeriesList'] = pfp_utils.string_to_list(var_string)
@@ -1412,10 +1401,7 @@ def plotxy(cf, title, plt_cf, dsa, dsb):
             xyplot(xb,yb,sub=[1,2,2],regr=1,xlabel=xname,ylabel=yname)
     plt.draw()
     pfp_utils.mypause(0.5)
-    if "plot_path" in cf["Files"]:
-        plot_path = os.path.join(cf["Files"]["plot_path"],Level)
-    else:
-        plot_path = "plots/"
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
     fname = os.path.join(plot_path, SiteName.replace(' ','')+'_'+Level+'_'+PlotDescription.replace(' ','')+'.png')

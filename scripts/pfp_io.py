@@ -1325,18 +1325,20 @@ def write_csv_fluxnet(cf):
     csvfile.close()
     return 1
 
-def get_controlfilecontents(ControlFileName, mode="verbose"):
+def get_controlfilecontents(cfg_file_uri, mode="verbose"):
+    """
+    Purpose:
+     Open a control fie and return its contents.
+    Author: PRI
+    Date: Back in the day
+    """
     if mode != "quiet":
         logger.info(" Processing the control file")
-    if len(ControlFileName) != 0:
-        cf = ConfigObj(ControlFileName, indent_type="    ", list_values=False)
-        cf["controlfile_name"] = ControlFileName
-    else:
-        cf = ConfigObj()
-    if "Files" in cf:
-        if "plot_path" not in list(cf["Files"].keys()):
-            cf["Files"]["plot_path"] = "plots/"
-    return cf
+    try:
+        cfg = ConfigObj(cfg_file_uri, indent_type="    ", list_values=False)
+    except Exception:
+        raise RuntimeError("Unable to open control file")
+    return cfg
 
 def get_ncdtype(Series):
     sd = Series.dtype.name

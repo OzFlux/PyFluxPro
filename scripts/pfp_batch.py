@@ -40,8 +40,9 @@ def do_batch_fingerprints(cfg):
     cfg_fp = pfp_io.get_controlfilecontents(cfg_fp_uri)
     file_name = pfp_io.get_outfilenamefromcf(cfg)
     file_path = os.path.join(os.path.split(file_name)[0], "")
+    plot_path = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "plot_path", default="plots/")
     cfg_fp["Files"] = {"file_path": file_path, "in_filename": os.path.split(file_name)[1],
-                       "plot_path": cfg["Files"]["plot_path"]}
+                       "plot_path": plot_path}
     cfg_fp["Options"] = {"call_mode": "batch", "show_plots": "No"}
     msg = "Doing fingerprint plots using " + cfg_fp["Files"]["in_filename"]
     logger.info(msg)

@@ -290,9 +290,8 @@ def cpd_mcnew_main(cfg):
     else:
         file_name = cfg['Files']['in_filename'].replace(".nc","_CPD_McNew.xlsx")
         results_path = os.path.join(cfg['Files']['file_path'], file_name)
-    plot_path = "plots/"
-    if "plot_path" in cfg["Files"]:
-        plot_path = os.path.join(cfg["Files"]["plot_path"], "CPD", "")
+    plot_path = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "plot_path", default="plots/")
+    plot_path = os.path.join(plot_path, "CPD", "")
     if not os.path.isdir(plot_path):
         os.makedirs(plot_path)
     # read the input file
