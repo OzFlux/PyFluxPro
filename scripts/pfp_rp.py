@@ -1273,7 +1273,8 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
         plt.tight_layout()
         sdt = ddv["DateTime"]["data"][0].strftime("%Y%m%d")
         edt = ddv["DateTime"]["data"][-1].strftime("%Y%m%d")
-        plot_path = os.path.join(cf["Files"]["plot_path"], "L6", "")
+        plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
+        plot_path = os.path.join(plot_path, "L6", "")
         if not os.path.exists(plot_path): os.makedirs(plot_path)
         figure_name = site_name.replace(" ","")+"_CarbonBudget"+item+"_"+sdt+"_"+edt+'.png'
         figure_path = os.path.join(plot_path, figure_name)
@@ -1304,7 +1305,8 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
     plt.tight_layout()
     sdt = ddv["DateTime"]["data"][0].strftime("%Y%m%d")
     edt = ddv["DateTime"]["data"][-1].strftime("%Y%m%d")
-    plot_path = cf["Files"]["plot_path"]+"L6/"
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
+    plot_path = os.path.join(plot_path, "L6", "")
     if not os.path.exists(plot_path): os.makedirs(plot_path)
     figname = plot_path+site_name.replace(" ","")+"_SEB"
     figname = figname+"_"+sdt+"_"+edt+'.png'
@@ -1404,8 +1406,10 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
         # save a hard copy of the plot
         sdt = year_list[0]
         edt = year_list[-1]
-        plot_path = os.path.join(cf["Files"]["plot_path"], "L6", "")
-        if not os.path.exists(plot_path): os.makedirs(plot_path)
+        plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
+        plot_path = os.path.join(plot_path, "L6", "")
+        if not os.path.exists(plot_path):
+            os.makedirs(plot_path)
         figure_name = site_name.replace(" ", "")+"_Cumulative"+item+"_"+sdt+"_"+edt+'.png'
         figure_path = os.path.join(plot_path, figure_name)
         fig.savefig(figure_path, format='png')

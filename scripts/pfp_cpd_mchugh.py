@@ -301,9 +301,10 @@ def CPD_run(cf):
     else:
         file_name = cf['Files']['in_filename'].replace(".nc","_CPD_McHugh.xlsx")
         file_out = os.path.join(cf['Files']['file_path'], file_name)
-    plot_path = "plots/"
-    if "plot_path" in cf["Files"]: plot_path = os.path.join(cf["Files"]["plot_path"],"CPD/")
-    if not os.path.isdir(plot_path): os.makedirs(plot_path)
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
+    plot_path = os.path.join(plot_path, "CPD", "")
+    if not os.path.isdir(plot_path):
+        os.makedirs(plot_path)
     results_path = path_out
     if not os.path.isdir(results_path): os.makedirs(results_path)
     # get a dictionary of the variable names
