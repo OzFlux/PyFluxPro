@@ -200,16 +200,10 @@ class myTxtBox(QtWidgets.QInputDialog):
 
 class file_explore(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(file_explore, self).__init__()
-
         self.ds = main_gui.ds
         self.tabs = main_gui.tabs
         self.figure_number = 0
-
-        #self.get_data_from_file()
-        #if self.ds.returncodes["value"] != 0: return
-
         self.view = QtWidgets.QTreeView()
         self.model = QtGui.QStandardItemModel()
         self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -431,11 +425,8 @@ class file_explore(QtWidgets.QWidget):
 
 class edit_cfg_batch(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_batch, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.main_gui = main_gui
         self.tabs = main_gui.tabs
         self.implemented_levels = ["L1", "L2", "L3",
@@ -616,6 +607,7 @@ class edit_cfg_batch(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "batch"
         model = self.model
         # there must be a way to do this recursively
@@ -801,17 +793,12 @@ class edit_cfg_batch(QtWidgets.QWidget):
 
 class edit_cfg_L1(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_L1, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
-
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
         # disable editing of essential entries in Files
         self.files_essential = ["file_path", "in_filename", "in_firstdatarow",
                                 "in_headerrow", "out_filename"]
-
         self.edit_L1_gui()
 
     def add_attribute(self):
@@ -1074,6 +1061,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "L1"
         model = self.model
         # there must be a way to do this recursively
@@ -1396,14 +1384,9 @@ class edit_cfg_L1(QtWidgets.QWidget):
 
 class edit_cfg_L2(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_L2, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
-
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
-
         self.edit_L2_gui()
 
     def add_dependencycheck(self):
@@ -2203,6 +2186,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "L2"
         model = self.model
         # there must be a way to do this recursively
@@ -2494,11 +2478,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
 class edit_cfg_L3(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_L3, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
         self.edit_L3_gui()
 
@@ -3318,6 +3299,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         """ Iterate over the model and get the data."""
         # create a new control file object
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         # set the control file level
         cfg["level"] = "L3"
         model = self.model
@@ -3561,8 +3543,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
 class edit_cfg_climatology(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_climatology, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
         self.edit_climatology_gui()
 
@@ -3877,14 +3858,9 @@ class edit_cfg_climatology(QtWidgets.QWidget):
 
 class edit_cfg_concatenate(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_concatenate, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
-
         self.edit_concatenate_gui()
 
     def edit_concatenate_gui(self):
@@ -3957,6 +3933,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "concatenate"
         model = self.model
         # there must be a way to do this recursively
@@ -4314,14 +4291,6 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
 
-    def parse_cfg_values(self, k, v, strip_list):
-        """ Parse key values to remove unnecessary characters."""
-        for c in strip_list:
-            if c in v:
-                v = v.replace(c, "")
-                self.cfg_changed = True
-        return v
-
     def remove_option(self):
         """ Remove an option."""
         # loop over selected items in the tree
@@ -4368,8 +4337,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
 class edit_cfg_cpd_barr(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_cpd_barr, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
         self.edit_cpd_barr_gui()
 
@@ -4557,6 +4525,7 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "cpd_barr"
         model = self.model
         # there must be a way to do this recursively
@@ -4710,8 +4679,7 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
 class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_cpd_mchugh, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
         self.edit_cpd_mchugh_gui()
 
@@ -5053,8 +5021,7 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
 class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_cpd_mcnew, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
         self.edit_cpd_mcnew_gui()
 
@@ -5396,8 +5363,7 @@ class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
 class edit_cfg_mpt(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_mpt, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.cfg)
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
         self.edit_mpt_gui()
 
@@ -5585,6 +5551,7 @@ class edit_cfg_mpt(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "mpt"
         model = self.model
         # there must be a way to do this recursively
@@ -5737,14 +5704,9 @@ class edit_cfg_mpt(QtWidgets.QWidget):
 
 class edit_cfg_L4(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_L4, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
-
         self.edit_l4_gui()
 
     def add_alternate(self):
@@ -6462,6 +6424,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "L4"
         model = self.model
         # there must be a way to do this recursively
@@ -6742,14 +6705,9 @@ class edit_cfg_L4(QtWidgets.QWidget):
 
 class edit_cfg_L5(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_L5, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
-
         self.edit_l5_gui()
 
     def add_acceptdaytimes(self):
@@ -7679,6 +7637,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "L5"
         model = self.model
         # there must be a way to do this recursively
@@ -7977,14 +7936,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
 class edit_cfg_L6(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_L6, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
-
         self.edit_l6_gui()
 
     def add_er_variable(self):
@@ -8311,6 +8265,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "L6"
         model = self.model
         # there must be a way to do this recursively
@@ -8541,14 +8496,9 @@ class edit_cfg_L6(QtWidgets.QWidget):
 
 class edit_cfg_nc2csv_biomet(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_nc2csv_biomet, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
-
         self.edit_nc2csv_biomet_gui()
 
     def edit_nc2csv_biomet_gui(self):
@@ -8613,6 +8563,7 @@ class edit_cfg_nc2csv_biomet(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "nc2csv_biomet"
         model = self.model
         # there must be a way to do this recursively
@@ -8835,14 +8786,9 @@ class edit_cfg_nc2csv_biomet(QtWidgets.QWidget):
 
 class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_nc2csv_ecostress, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
-
         self.edit_nc2csv_ecostress_gui()
 
     def edit_nc2csv_ecostress_gui(self):
@@ -8907,6 +8853,7 @@ class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "nc2csv_ecostress"
         model = self.model
         # there must be a way to do this recursively
@@ -9139,14 +9086,9 @@ class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
 
 class edit_cfg_nc2csv_fluxnet(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_nc2csv_fluxnet, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
-
         self.edit_nc2csv_fluxnet_gui()
 
     def edit_nc2csv_fluxnet_gui(self):
@@ -9211,6 +9153,7 @@ class edit_cfg_nc2csv_fluxnet(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "nc2csv_fluxnet"
         model = self.model
         # there must be a way to do this recursively
@@ -9443,14 +9386,9 @@ class edit_cfg_nc2csv_fluxnet(QtWidgets.QWidget):
 
 class edit_cfg_nc2csv_reddyproc(QtWidgets.QWidget):
     def __init__(self, main_gui):
-
         super(edit_cfg_nc2csv_reddyproc, self).__init__()
-
-        self.cfg = copy.deepcopy(main_gui.cfg)
-
-        self.cfg_changed = False
+        self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
-
         self.edit_nc2csv_reddyproc_gui()
 
     def edit_nc2csv_reddyproc_gui(self):
@@ -9515,6 +9453,7 @@ class edit_cfg_nc2csv_reddyproc(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
         cfg["level"] = "nc2csv_reddyproc"
         model = self.model
         # there must be a way to do this recursively

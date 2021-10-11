@@ -37,6 +37,7 @@ class DataStructure(object):
         self.averageserieslist = []
         self.intermediate = []
         self.returncodes = {"value":0,"message":"OK"}
+        self.filepath = ""
 
 def coerce_to_numeric(value):
     if isinstance(value, numbers.Number):
@@ -1984,6 +1985,7 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
     logger.info(" Reading netCDF file " + os.path.basename(ncFullName))
     #netCDF4.default_encoding = 'latin-1'
     ds = DataStructure()
+    ds.filepath = ncFullName
     # check to see if the requested file exists, return empty ds if it doesn't
     if not os.path.isfile(ncFullName):
         msg = " netCDF file " + ncFullName + " not found"

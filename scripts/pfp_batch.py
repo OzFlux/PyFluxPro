@@ -1,4 +1,5 @@
 # standard modules
+import copy
 import datetime
 import logging
 import os
@@ -49,8 +50,7 @@ def do_batch_fingerprints(cfg):
     pfp_plot.plot_fingerprint(cfg_fp)
     logger.info("Finished fingerprint plots")
     return
-def do_L1_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_L1_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
         if main_ui.stop_flag:
@@ -76,8 +76,7 @@ def do_L1_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_L2_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_L2_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
         if main_ui.stop_flag:
@@ -124,8 +123,7 @@ def do_L2_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_L3_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_L3_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
         if main_ui.stop_flag:
@@ -172,8 +170,7 @@ def do_L3_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_ecostress_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_ecostress_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
         if main_ui.stop_flag:
@@ -195,8 +192,7 @@ def do_ecostress_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_fluxnet_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_fluxnet_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
         if main_ui.stop_flag:
@@ -211,8 +207,7 @@ def do_fluxnet_batch(main_ui, level):
         logger.info(msg)
         logger.info("")
     return
-def do_reddyproc_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_reddyproc_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
         if main_ui.stop_flag:
@@ -227,8 +222,7 @@ def do_reddyproc_batch(main_ui, level):
         logger.info(msg)
         logger.info("")
     return
-def do_concatenate_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_concatenate_batch(main_ui, cf_level):
     sites = sorted(list(cf_level.keys()), key=int)
     for i in sites:
         if not os.path.isfile(cf_level[i]):
@@ -266,8 +260,7 @@ def do_concatenate_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_climatology_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_climatology_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         if not os.path.isfile(cf_level[i]):
             msg = " Control file " + cf_level[i] + " not found"
@@ -295,8 +288,7 @@ def do_climatology_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_cpd_barr_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_cpd_barr_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
         if main_ui.stop_flag:
@@ -324,8 +316,7 @@ def do_cpd_barr_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_cpd_mchugh_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_cpd_mchugh_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
         if main_ui.stop_flag:
@@ -353,8 +344,7 @@ def do_cpd_mchugh_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_cpd_mcnew_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_cpd_mcnew_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
         if main_ui.stop_flag:
@@ -382,8 +372,7 @@ def do_cpd_mcnew_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_mpt_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_mpt_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
         if main_ui.stop_flag:
@@ -411,8 +400,7 @@ def do_mpt_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_L4_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_L4_batch(main_ui, cf_level):
     sites = sorted(list(cf_level.keys()), key=int)
     for i in sites:
         if not os.path.isfile(cf_level[i]):
@@ -454,8 +442,7 @@ def do_L4_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_L5_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_L5_batch(main_ui, cf_level):
     sites = sorted(list(cf_level.keys()), key=int)
     for i in sites:
         if not os.path.isfile(cf_level[i]):
@@ -497,8 +484,7 @@ def do_L5_batch(main_ui, level):
             logger.error(error_message)
             continue
     return
-def do_L6_batch(main_ui, level):
-    cf_level = main_ui.cfg["Levels"][level]
+def do_L6_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         if not os.path.isfile(cf_level[i]):
             msg = " Control file " + cf_level[i] + " not found"
@@ -538,7 +524,8 @@ def do_L6_batch(main_ui, level):
             continue
     return
 def do_levels_batch(main_ui):
-    cf_batch = main_ui.cfg
+    tab_index_running = main_ui.tabs.tab_index_running
+    cf_batch = main_ui.tabs.tab_dict[tab_index_running].get_data_from_model()
     logger = logging.getLogger("pfp_log")
     start = datetime.datetime.now()
     msg = "Started batch processing at " + start.strftime("%Y%m%d%H%M")
@@ -570,50 +557,49 @@ def do_levels_batch(main_ui):
             continue
         if level.lower() == "l1":
             # L1 processing
-            do_L1_batch(main_ui, level)
+            do_L1_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "l2":
             # L2 processing
-            do_L2_batch(main_ui, level)
+            do_L2_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "l3":
             # L3 processing
-            do_L3_batch(main_ui, level)
+            do_L3_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "ecostress":
             # convert netCDF files to ECOSTRESS CSV files
-            do_ecostress_batch(main_ui, level)
+            do_ecostress_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "fluxnet":
             # convert netCDF files to FluxNet CSV files
-            do_fluxnet_batch(main_ui, level)
+            do_fluxnet_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "reddyproc":
             # convert netCDF files to REddyProc CSV files
-            do_reddyproc_batch(main_ui, level)
+            do_reddyproc_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "concatenate":
             # concatenate netCDF files
-            do_concatenate_batch(main_ui, level)
+            do_concatenate_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "climatology":
             # climatology
-            do_climatology_batch(main_ui, level)
+            do_climatology_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "cpd_barr":
             # ustar threshold from change point detection
-            do_cpd_barr_batch(main_ui, level)
+            do_cpd_barr_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "cpd_mchugh":
             # ustar threshold from change point detection
-            do_cpd_mchugh_batch(main_ui, level)
+            do_cpd_mchugh_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "cpd_mcnew":
             # ustar threshold from change point detection
-            do_cpd_mcnew_batch(main_ui, level)
+            do_cpd_mcnew_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "mpt":
             # ustar threshold from change point detection
-            do_mpt_batch(main_ui, level)
+            do_mpt_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "l4":
             # L4 processing
-            do_L4_batch(main_ui, level)
+            do_L4_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "l5":
             # L5 processing
-            do_L5_batch(main_ui, level)
+            do_L5_batch(main_ui, cf_batch["Levels"][level])
         elif level.lower() == "l6":
             # L6 processing
-            do_L6_batch(main_ui, level)
-    #logger = pfp_log.change_logger_filename("pfp_log", "batch")
+            do_L6_batch(main_ui, cf_batch["Levels"][level])
     end = datetime.datetime.now()
     msg = " Finished batch processing at " + end.strftime("%Y%m%d%H%M")
     logger.info(msg)

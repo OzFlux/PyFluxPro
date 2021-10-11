@@ -364,7 +364,7 @@ def do_file_split_run(ui):
         error_message = traceback.format_exc()
         logger.error(error_message)
 # top level routines for the Run menu
-def do_run_batch(main_ui):
+def do_run_batch(self):
     """
     Purpose:
      Top level routine for running the batch processing.
@@ -377,15 +377,15 @@ def do_run_batch(main_ui):
     Date: September 2020
     """
     try:
-        pfp_batch.do_levels_batch(main_ui)
+        pfp_batch.do_levels_batch(self)
     except Exception:
         msg = " Error running batch processing, see below for details ..."
         logger.error(msg)
         error_message = traceback.format_exc()
         logger.error(error_message)
-    main_ui.actionStopCurrent.disconnect()
-    main_ui.menuRun.removeAction(main_ui.actionStopCurrent)
-    main_ui.actionRunCurrent.setDisabled(False)
+    self.actionStopCurrent.disconnect()
+    self.menuRun.removeAction(self.actionStopCurrent)
+    self.actionRunCurrent.setDisabled(False)
     return
 def do_run_l1(cfg):
     """
@@ -534,7 +534,8 @@ def do_run_l4(main_gui):
     """
     try:
         logger.info("Starting L4 processing")
-        cfg = main_gui.cfg
+        tab_index_running = main_gui.tabs.tab_index_running
+        cfg = main_gui.tabs.tab_dict[tab_index_running].get_data_from_model()
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -542,7 +543,6 @@ def do_run_l4(main_gui):
             return
         ds3 = pfp_io.nc_read_series(in_filepath)
         if ds3.returncodes["value"] != 0: return
-        #ds3.globalattributes['controlfile_name'] = cfg['controlfile_name']
         sitename = ds3.globalattributes['site_name']
         if "Options" not in cfg:
             cfg["Options"]={}
@@ -577,7 +577,8 @@ def do_run_l5(main_gui):
     """
     try:
         logger.info("Starting L5 processing")
-        cfg = main_gui.cfg
+        tab_index_running = main_gui.tabs.tab_index_running
+        cfg = main_gui.tabs.tab_dict[tab_index_running].get_data_from_model()
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -585,7 +586,6 @@ def do_run_l5(main_gui):
             return
         ds4 = pfp_io.nc_read_series(in_filepath)
         if ds4.returncodes["value"] != 0: return
-        #ds4.globalattributes['controlfile_name'] = cfg['controlfile_name']
         sitename = ds4.globalattributes['site_name']
         if "Options" not in cfg:
             cfg["Options"] = {}
@@ -628,7 +628,8 @@ def do_run_l6(main_gui):
     """
     try:
         logger.info("Starting L6 processing")
-        cfg = main_gui.cfg
+        tab_index_running = main_gui.tabs.tab_index_running
+        cfg = main_gui.tabs.tab_dict[tab_index_running].get_data_from_model()
         in_filepath = pfp_io.get_infilenamefromcf(cfg)
         if not pfp_utils.file_exists(in_filepath):
             in_filename = os.path.split(in_filepath)
@@ -636,7 +637,6 @@ def do_run_l6(main_gui):
             return
         ds5 = pfp_io.nc_read_series(in_filepath)
         if ds5.returncodes["value"] != 0: return
-        #ds5.globalattributes['controlfile_name'] = cfg['controlfile_name']
         sitename = ds5.globalattributes['site_name']
         if "Options" not in cfg:
             cfg["Options"] = {}
@@ -836,26 +836,10 @@ def do_plot_closeplots():
     matplotlib.pyplot.close("all")
     return
 # top level routines for the Utilities menu
-def do_utilities_climatology(nc_file_uri=None, cfg=None, mode="standard"):
+def do_utilities_climatology_custom(main_ui):
     try:
+        cfg = main_ui.tabs.tab_dict[main_ui.tabs.tab_index_running].get_data_from_model()
         logger.info("Starting climatology")
-        if mode == "standard":
-            # get the base path of script or Pyinstaller application
-            base_path = pfp_utils.get_base_path()
-            stdname = os.path.join(base_path, "controlfiles", "standard", "climatology.txt")
-            if not os.path.exists(stdname):
-                msg = " Climatology: unable to find standard control file climatology.txt"
-                logger.error(msg)
-                return
-            cfg = pfp_io.get_controlfilecontents(stdname)
-            file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
-            in_filename = os.path.split(nc_file_uri)[1]
-            out_filename = in_filename.replace(".nc", "_Climatology.xls")
-            cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
-                            "out_filename": out_filename}
-        else:
-            pass
-        logger.info(" Doing the climatology")
         pfp_clim.climatology(cfg)
         logger.info("Finished climatology")
         logger.info("")
@@ -864,8 +848,56 @@ def do_utilities_climatology(nc_file_uri=None, cfg=None, mode="standard"):
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
     return
-def do_utilities_ustar_cpd_barr(nc_file_uri=None, cfg=None, mode="standard"):
+def do_utilities_climatology_standard(main_ui, nc_file_uri):
+    try:
+        logger.info("Starting climatology")
+        # get the base path of script or Pyinstaller application
+        base_path = pfp_utils.get_base_path()
+        stdname = os.path.join(base_path, "controlfiles", "standard", "climatology.txt")
+        if not os.path.exists(stdname):
+            msg = " Climatology: unable to find standard control file climatology.txt"
+            logger.error(msg)
+            return
+        cfg = pfp_io.get_controlfilecontents(stdname)
+        file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
+        in_filename = os.path.split(nc_file_uri)[1]
+        out_filename = in_filename.replace(".nc", "_Climatology.xls")
+        cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
+                        "out_filename": out_filename}
+        pfp_clim.climatology(cfg)
+        logger.info("Finished climatology")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing climatology, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
+    return
+def do_utilities_ustar_cpd_barr_custom(main_ui):
+    """
+    Purpose:
+     Calculate the u* threshold using the Change Point Detection method described in
+     Barr et al. 2013, AFM 171-172, pp31-45.
+     This code is a line-by-line translation of the original Barr MATLAB scripts
+     into Python.
+    """
+    try:
+        cfg = main_ui.tabs.tab_dict[main_ui.tabs.tab_index_running].get_data_from_model()
+        logger.info("Starting CPD u* threshold detection (Barr)")
+        pfp_cpd_barr.cpd_barr_main(cfg)
+        logger.info("Finished CPD u* threshold detection (Barr)")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing CPD u* threshold (Barr), see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
+    return
+def do_utilities_ustar_cpd_barr_standard(main_ui, nc_file_uri):
     """
     Purpose:
      Calculate the u* threshold using the Change Point Detection method described in
@@ -875,23 +907,19 @@ def do_utilities_ustar_cpd_barr(nc_file_uri=None, cfg=None, mode="standard"):
     """
     try:
         logger.info("Starting CPD u* threshold detection (Barr)")
-        if mode == "standard":
-            # get the base path of script or Pyinstaller application
-            base_path = pfp_utils.get_base_path()
-            stdname = os.path.join(base_path, "controlfiles", "standard", "cpd_barr.txt")
-            if not os.path.exists(stdname):
-                msg = " CPD (Barr): unable to find standard control file cpd_barr.txt"
-                logger.error(msg)
-                return
-            cfg = pfp_io.get_controlfilecontents(stdname)
-            file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
-            in_filename = os.path.split(nc_file_uri)[1]
-            out_filename = in_filename.replace(".nc", "_CPD_Barr.xlsx")
-            cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
-                            "out_filename": out_filename}
-        else:
-            pass
-        logger.info(" Doing CPD u* threshold detection (Barr)")
+        # get the base path of script or Pyinstaller application
+        base_path = pfp_utils.get_base_path()
+        stdname = os.path.join(base_path, "controlfiles", "standard", "cpd_barr.txt")
+        if not os.path.exists(stdname):
+            msg = " CPD (Barr): unable to find standard control file cpd_barr.txt"
+            logger.error(msg)
+            return
+        cfg = pfp_io.get_controlfilecontents(stdname)
+        file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
+        in_filename = os.path.split(nc_file_uri)[1]
+        out_filename = in_filename.replace(".nc", "_CPD_Barr.xlsx")
+        cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
+                        "out_filename": out_filename}
         pfp_cpd_barr.cpd_barr_main(cfg)
         logger.info("Finished CPD u* threshold detection (Barr)")
         logger.info("")
@@ -900,8 +928,9 @@ def do_utilities_ustar_cpd_barr(nc_file_uri=None, cfg=None, mode="standard"):
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
     return
-def do_utilities_ustar_cpd_mchugh(main_ui, nc_file_uri=None, cfg=None, mode="standard"):
+def do_utilities_ustar_cpd_mchugh_custom(main_ui):
     """
     Purpose:
      Calculate the u* threshold using the Change Point Detection method described in
@@ -909,24 +938,8 @@ def do_utilities_ustar_cpd_mchugh(main_ui, nc_file_uri=None, cfg=None, mode="sta
      This code is the original implementation by Ian McHugh and is a wee bit slow.
     """
     try:
+        cfg = main_ui.tabs.tab_dict[main_ui.tabs.tab_index_running].get_data_from_model()
         logger.info("Starting CPD u* threshold detection (McHugh)")
-        if mode == "standard":
-            # get the base path of script or Pyinstaller application
-            base_path = pfp_utils.get_base_path()
-            stdname = os.path.join(base_path, "controlfiles", "standard", "cpd_mchugh.txt")
-            if not os.path.exists(stdname):
-                msg = " CPD (McHugh): unable to find standard control file cpd_mchugh.txt"
-                logger.error(msg)
-                return
-            cfg = pfp_io.get_controlfilecontents(stdname)
-            file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
-            in_filename = os.path.split(nc_file_uri)[1]
-            out_filename = in_filename.replace(".nc", "_CPD_McHugh.xlsx")
-            cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
-                            "out_filename": out_filename}
-        else:
-            pass
-        logger.info(" Doing CPD u* threshold detection (McHugh)")
         pfp_cpd_mchugh.cpd_mchugh_main(cfg)
         logger.info("Finished CPD u* threshold detection (McHugh)")
         logger.info("")
@@ -937,7 +950,60 @@ def do_utilities_ustar_cpd_mchugh(main_ui, nc_file_uri=None, cfg=None, mode="sta
         logger.error(error_message)
     main_ui.actionRunCurrent.setDisabled(False)
     return
-def do_utilities_ustar_cpd_mcnew(nc_file_uri=None, cfg=None, mode="standard"):
+def do_utilities_ustar_cpd_mchugh_standard(main_ui, nc_file_uri):
+    """
+    Purpose:
+     Calculate the u* threshold using the Change Point Detection method described in
+     Barr et al. 2013, AFM 171-172, pp31-45.
+     This code is the original implementation by Ian McHugh and is a wee bit slow.
+    """
+    try:
+        logger.info("Starting CPD u* threshold detection (McHugh)")
+        # get the base path of script or Pyinstaller application
+        base_path = pfp_utils.get_base_path()
+        stdname = os.path.join(base_path, "controlfiles", "standard", "cpd_mchugh.txt")
+        if not os.path.exists(stdname):
+            msg = " CPD (McHugh): unable to find standard control file cpd_mchugh.txt"
+            logger.error(msg)
+            return
+        cfg = pfp_io.get_controlfilecontents(stdname)
+        file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
+        in_filename = os.path.split(nc_file_uri)[1]
+        out_filename = in_filename.replace(".nc", "_CPD_McHugh.xlsx")
+        cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
+                        "out_filename": out_filename}
+        pfp_cpd_mchugh.cpd_mchugh_main(cfg)
+        logger.info("Finished CPD u* threshold detection (McHugh)")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing CPD u* threshold (McHugh), see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
+    return
+def do_utilities_ustar_cpd_mcnew_custom(main_ui):
+    """
+    Purpose:
+     Calculate the u* threshold using the Change Point Detection method described in
+     Barr et al. 2013, AFM 171-172, pp31-45.
+     This code is a second implementation of Barr et al by Ian McHugh circa 2020.  It
+     is ~10 times faster than the original implementation.
+    """
+    try:
+        cfg = main_ui.tabs.tab_dict[main_ui.tabs.tab_index_running].get_data_from_model()
+        logger.info("Starting CPD u* threshold detection (McNew)")
+        pfp_cpd_mcnew.cpd_mcnew_main(cfg)
+        logger.info("Finished CPD u* threshold detection (McNew)")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing CPD u* threshold (McNew), see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
+    return
+def do_utilities_ustar_cpd_mcnew_standard(main_ui, nc_file_uri):
     """
     Purpose:
      Calculate the u* threshold using the Change Point Detection method described in
@@ -947,23 +1013,19 @@ def do_utilities_ustar_cpd_mcnew(nc_file_uri=None, cfg=None, mode="standard"):
     """
     try:
         logger.info("Starting CPD u* threshold detection (McNew)")
-        if mode == "standard":
-            # get the base path of script or Pyinstaller application
-            base_path = pfp_utils.get_base_path()
-            stdname = os.path.join(base_path, "controlfiles", "standard", "cpd_mcnew.txt")
-            if not os.path.exists(stdname):
-                msg = " CPD (McNew): unable to find standard control file cpd_mcnew.txt"
-                logger.error(msg)
-                return
-            cfg = pfp_io.get_controlfilecontents(stdname)
-            file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
-            in_filename = os.path.split(nc_file_uri)[1]
-            out_filename = in_filename.replace(".nc", "_CPD_McNew.xlsx")
-            cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
-                            "out_filename": out_filename}
-        else:
-            pass
-        logger.info(" Doing CPD u* threshold detection (McNew)")
+        # get the base path of script or Pyinstaller application
+        base_path = pfp_utils.get_base_path()
+        stdname = os.path.join(base_path, "controlfiles", "standard", "cpd_mcnew.txt")
+        if not os.path.exists(stdname):
+            msg = " CPD (McNew): unable to find standard control file cpd_mcnew.txt"
+            logger.error(msg)
+            return
+        cfg = pfp_io.get_controlfilecontents(stdname)
+        file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
+        in_filename = os.path.split(nc_file_uri)[1]
+        out_filename = in_filename.replace(".nc", "_CPD_McNew.xlsx")
+        cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
+                        "out_filename": out_filename}
         pfp_cpd_mcnew.cpd_mcnew_main(cfg)
         logger.info("Finished CPD u* threshold detection (McNew)")
         logger.info("")
@@ -972,8 +1034,31 @@ def do_utilities_ustar_cpd_mcnew(nc_file_uri=None, cfg=None, mode="standard"):
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
     return
-def do_utilities_ustar_mpt(nc_file_uri=None, cfg=None, mode="standard"):
+def do_utilities_ustar_mpt_custom(main_ui):
+    """
+    Purpose:
+     Calculate the u* threshold using the Moving Point Threshold (MPT) method.
+     This code calls the original FluxNet MPT C code.  The executable for this is
+     in PyFluxPro/mpt/bin.
+    Side effects:
+     Calls pfp_mpt.mpt_main
+    """
+    try:
+        cfg = main_ui.tabs.tab_dict[main_ui.tabs.tab_index_running].get_data_from_model()
+        logger.info("Starting u* threshold detection (MPT)")
+        pfp_mpt.mpt_main(cfg)
+        logger.info("Finished MPT u* threshold detection")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing MPT u* threshold, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
+    return
+def do_utilities_ustar_mpt_standard(main_ui, nc_file_uri):
     """
     Purpose:
      Calculate the u* threshold using the Moving Point Threshold (MPT) method.
@@ -984,23 +1069,19 @@ def do_utilities_ustar_mpt(nc_file_uri=None, cfg=None, mode="standard"):
     """
     try:
         logger.info("Starting u* threshold detection (MPT)")
-        if mode == "standard":
-            # get the base path of script or Pyinstaller application
-            base_path = pfp_utils.get_base_path()
-            stdname = os.path.join(base_path, "controlfiles", "standard", "mpt.txt")
-            if not os.path.exists(stdname):
-                msg = " MPT: unable to find standard control file cpd_mcnew.txt"
-                logger.error(msg)
-                return
-            cfg = pfp_io.get_controlfilecontents(stdname)
-            file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
-            in_filename = os.path.split(nc_file_uri)[1]
-            out_filename = in_filename.replace(".nc", "_MPT.xls")
-            cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
-                            "out_filename": out_filename}
-        else:
-            pass
-        logger.info(" Doing MPT u* threshold detection")
+        # get the base path of script or Pyinstaller application
+        base_path = pfp_utils.get_base_path()
+        stdname = os.path.join(base_path, "controlfiles", "standard", "mpt.txt")
+        if not os.path.exists(stdname):
+            msg = " MPT: unable to find standard control file cpd_mcnew.txt"
+            logger.error(msg)
+            return
+        cfg = pfp_io.get_controlfilecontents(stdname)
+        file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
+        in_filename = os.path.split(nc_file_uri)[1]
+        out_filename = in_filename.replace(".nc", "_MPT.xlsx")
+        cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
+                        "out_filename": out_filename}
         pfp_mpt.mpt_main(cfg)
         logger.info("Finished MPT u* threshold detection")
         logger.info("")
@@ -1009,8 +1090,8 @@ def do_utilities_ustar_mpt(nc_file_uri=None, cfg=None, mode="standard"):
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
     return
-
 def do_utilities_cfcheck(nc_file_uri):
     try:
         logger.info("Starting CF check")
