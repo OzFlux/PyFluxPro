@@ -1,4 +1,5 @@
 # standard modules
+import copy
 import datetime
 import faulthandler
 import logging
@@ -205,7 +206,6 @@ class pfp_main_ui(QWidget):
         self.tabs.tab_index_all = 0
         self.tabs.tab_index_current = 0
         self.tabs.tab_dict = {}
-        self.tabs.cfg_dict = {}
         # make the tabs closeable
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.closeTab)
@@ -250,11 +250,11 @@ class pfp_main_ui(QWidget):
         self.actionPlotTimeSeries.triggered.connect(pfp_top_level.do_plot_timeseries)
         self.actionPlotClosePlots.triggered.connect(pfp_top_level.do_plot_closeplots)
         # Utilities menu actions
-        self.actionUtilitiesClimatology.triggered.connect(self.utilities_climatology)
-        self.actionUtilitiesUstarCPDBarr.triggered.connect(self.utilities_ustar_cpd_barr)
+        self.actionUtilitiesClimatology.triggered.connect(self.utilities_climatology_standard)
+        self.actionUtilitiesUstarCPDBarr.triggered.connect(self.utilities_ustar_cpd_barr_standard)
         self.actionUtilitiesUstarCPDMcHugh.triggered.connect(self.utilities_ustar_cpd_mchugh_standard)
-        self.actionUtilitiesUstarCPDMcNew.triggered.connect(self.utilities_ustar_cpd_mcnew)
-        self.actionUtilitiesUstarMPT.triggered.connect(self.utilities_ustar_mpt)
+        self.actionUtilitiesUstarCPDMcNew.triggered.connect(self.utilities_ustar_cpd_mcnew_standard)
+        self.actionUtilitiesUstarMPT.triggered.connect(self.utilities_ustar_mpt_standard)
         self.actionUtilitiesCFCheck.triggered.connect(self.utilities_cfcheck)
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
@@ -323,8 +323,6 @@ class pfp_main_ui(QWidget):
             # we are opening a control file
             self.open_control_file()
         elif isinstance(self.file, netCDF4._netCDF4.Dataset):
-            # close the netCDF file
-            self.file.close()
             # we are opening a netCDF file
             self.open_netcdf_file()
         else:
@@ -337,114 +335,87 @@ class pfp_main_ui(QWidget):
 
     def open_control_file(self):
         logger = logging.getLogger(name="pfp_log")
-        self.cfg = self.file
         # check to see if the processing level is defined in the control file
-        if "level" not in self.cfg:
+        if "level" not in self.file:
             # if not, then sniff the control file to see what it is
-            self.cfg["level"] = self.get_cf_level()
+            self.file["level"] = self.get_cf_level()
             # and save the control file
-            self.cfg.write()
+            self.file.write()
         # create a QtTreeView to edit the control file
-        if self.cfg["level"] in ["L1"]:
+        if self.file["level"] in ["L1"]:
             # update control file to new syntax
-            if not pfp_compliance.l1_update_controlfile(self.cfg): return
+            if not pfp_compliance.l1_update_controlfile(self.file): return
             # put the GUI for editing the L1 control file in a new tab
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L1(self)
-            # get the control file data from the L1 edit GUI
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["L2"]:
-            if not pfp_compliance.l2_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["L2"]:
+            if not pfp_compliance.l2_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L2(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["L3"]:
-            if not pfp_compliance.l3_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["L3"]:
+            if not pfp_compliance.l3_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L3(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["concatenate"]:
-            if not pfp_compliance.concatenate_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["concatenate"]:
+            if not pfp_compliance.concatenate_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_concatenate(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["climatology"]:
-            if not pfp_compliance.climatology_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["climatology"]:
+            if not pfp_compliance.climatology_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_climatology(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["cpd_barr"]:
-            if not pfp_compliance.cpd_barr_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["cpd_barr"]:
+            if not pfp_compliance.cpd_barr_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_cpd_barr(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["cpd_mchugh"]:
-            if not pfp_compliance.cpd_mchugh_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["cpd_mchugh"]:
+            if not pfp_compliance.cpd_mchugh_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_cpd_mchugh(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["cpd_mcnew"]:
-            if not pfp_compliance.cpd_mcnew_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["cpd_mcnew"]:
+            if not pfp_compliance.cpd_mcnew_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_cpd_mcnew(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["mpt"]:
-            if not pfp_compliance.mpt_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["mpt"]:
+            if not pfp_compliance.mpt_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_mpt(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["L4"]:
-            if not pfp_compliance.l4_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["L4"]:
+            if not pfp_compliance.l4_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L4(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["L5"]:
-            if not pfp_compliance.l5_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["L5"]:
+            if not pfp_compliance.l5_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L5(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["L6"]:
-            if not pfp_compliance.l6_update_controlfile(self.cfg): return
+        elif self.file["level"] in ["L6"]:
+            if not pfp_compliance.l6_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L6(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["nc2csv_biomet"]:
+        elif self.file["level"] in ["nc2csv_biomet"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_biomet(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["nc2csv_ecostress"]:
+        elif self.file["level"] in ["nc2csv_ecostress"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_ecostress(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["nc2csv_fluxnet"]:
+        elif self.file["level"] in ["nc2csv_fluxnet"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_fluxnet(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["nc2csv_reddyproc"]:
+        elif self.file["level"] in ["nc2csv_reddyproc"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_reddyproc(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
-        elif self.cfg["level"] in ["batch"]:
+        elif self.file["level"] in ["batch"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_batch(self)
-            self.tabs.cfg_dict[self.tabs.tab_index_all] = self.tabs.tab_dict[self.tabs.tab_index_all].get_data_from_model()
         else:
-            logger.error(" Unrecognised control file type: " + self.cfg["level"])
+            logger.error(" Unrecognised control file type: " + self.file["level"])
             return
-        # file type and uri
-        self.tabs.cfg_dict[self.tabs.tab_index_all]["file"] = self.file
-        self.tabs.cfg_dict[self.tabs.tab_index_all]["file_uri"] = self.file_uri
         # add a tab for the control file
-        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], os.path.basename(str(self.file_uri)))
+        tab_title = os.path.basename(str(self.file_uri))
+        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
-        if self.tabs.tab_dict[self.tabs.tab_index_all].cfg_changed:
-            self.update_tab_text()
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         return
 
     def open_netcdf_file(self):
+        file_uri = self.file.filepath()
+        # close the netCDF file
+        self.file.close()
         # read the netCDF file to a data structure
-        self.ds = pfp_io.nc_read_series(self.file_uri)
+        self.ds = pfp_io.nc_read_series(file_uri)
         if self.ds.returncodes["value"] != 0:
             return
-        file_path_parts = os.path.split(self.file_uri)
-        self.file_path = file_path_parts[0]
-        self.file_name = file_path_parts[1]
         # display the netcdf file in the GUI
         self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
         # return if something went wrong
         if self.tabs.tab_dict[self.tabs.tab_index_all].ds.returncodes["value"] != 0:
             return
-        # create the cfg dictionary
-        self.tabs.cfg_dict[self.tabs.tab_index_all] = {}
-        # put the file path into the tabs dictionary
-        self.tabs.cfg_dict[self.tabs.tab_index_all]["file"] = self.file
-        self.tabs.cfg_dict[self.tabs.tab_index_all]["file_uri"] = self.file_uri
         # add a tab for the netCDF file contents
-        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], self.file_name)
+        tab_title = os.path.basename(self.ds.filepath)
+        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         return
@@ -452,58 +423,58 @@ class pfp_main_ui(QWidget):
     def get_cf_level(self):
         """ Sniff the control file to find out it's type."""
         logger = logging.getLogger(name="pfp_log")
-        self.cfg["level"] = ""
+        self.file["level"] = ""
         # check for L1
         if self.check_cfg_L1():
             logger.info(" L1 control file detected")
-            self.cfg["level"] = "L1"
+            self.file["level"] = "L1"
         # check for L2
         elif self.check_cfg_L2():
             logger.info(" L2 control file detected")
-            self.cfg["level"] = "L2"
+            self.file["level"] = "L2"
         # check for L3
         elif self.check_cfg_L3():
             logger.info(" L3 control file detected")
-            self.cfg["level"] = "L3"
+            self.file["level"] = "L3"
         # check for concatenate
         elif self.check_cfg_concatenate():
             logger.info(" Concatenate control file detected")
-            self.cfg["level"] = "concatenate"
+            self.file["level"] = "concatenate"
         # check for L4
         elif self.check_cfg_L4():
             logger.info(" L4 control file detected")
-            self.cfg["level"] = "L4"
+            self.file["level"] = "L4"
         # check for L5
         elif self.check_cfg_L5():
             logger.info(" L5 control file detected")
-            self.cfg["level"] = "L5"
+            self.file["level"] = "L5"
         # check for L6
         elif self.check_cfg_L6():
             logger.info(" L6 control file detected")
-            self.cfg["level"] = "L6"
+            self.file["level"] = "L6"
         else:
             logger.info(" Unable to detect level, enter manually ...")
             text, ok = QInputDialog.getText(self, 'Processing level', 'Enter the processing level:')
             if ok:
-                self.cfg["level"] = text
-        return self.cfg["level"]
+                self.file["level"] = text
+        return self.file["level"]
 
     def check_cfg_L1(self):
         """ Return true if a control file is an L1 file."""
         result = False
         try:
-            cfg_sections = list(self.cfg.keys())
+            cfg_sections = list(self.file.keys())
             # remove the common sections
             common_sections = ["level", "controlfile_name", "Files", "Global", "Output",
                                "Plots", "General", "Options", "Soil", "Massman", "GUI"]
-            for section in list(self.cfg.keys()):
+            for section in list(self.file.keys()):
                 if section in common_sections:
                     cfg_sections.remove(section)
             # now loop over the remaining sections
             for section in cfg_sections:
-                subsections = list(self.cfg[section].keys())
+                subsections = list(self.file[section].keys())
                 for subsection in subsections:
-                    if "Attr" in list(self.cfg[section][subsection].keys()):
+                    if "Attr" in list(self.file[section][subsection].keys()):
                         result = True
                         break
         except:
@@ -515,7 +486,7 @@ class pfp_main_ui(QWidget):
         result = False
         try:
             got_sections = False
-            cfg_sections = list(self.cfg.keys())
+            cfg_sections = list(self.file.keys())
             if (("Files" in cfg_sections) and
                 ("Variables" in cfg_sections)):
                 got_sections = True
@@ -524,10 +495,10 @@ class pfp_main_ui(QWidget):
             qc_list = ["RangeCheck", "DiurnalCheck", "ExcludeDates", "DependencyCheck", "UpperCheck",
                        "LowerCheck", "ExcludeHours", "Linear", "CorrectWindDirection"]
             for section in ["Variables"]:
-                subsections = list(self.cfg[section].keys())
+                subsections = list(self.file[section].keys())
                 for subsection in subsections:
                     for qc in qc_list:
-                        if qc in list(self.cfg[section][subsection].keys()):
+                        if qc in list(self.file[section][subsection].keys()):
                             got_qc = True
                             break
             # final check
@@ -541,7 +512,7 @@ class pfp_main_ui(QWidget):
         """ Return true if a control file is an L3 file."""
         result = False
         try:
-            cfg_sections = list(self.cfg.keys())
+            cfg_sections = list(self.file.keys())
             if ((("General" in cfg_sections) or
                 ("Soil" in cfg_sections) or
                 ("Massman" in cfg_sections)) and
@@ -555,10 +526,10 @@ class pfp_main_ui(QWidget):
         """ Return true if control file is concatenation."""
         result = False
         try:
-            cfg_sections = list(self.cfg.keys())
+            cfg_sections = list(self.file.keys())
             if "Files" in cfg_sections:
-                if (("Out" in list(self.cfg["Files"].keys())) and
-                    ("In" in list(self.cfg["Files"].keys()))):
+                if (("Out" in list(self.file["Files"].keys())) and
+                    ("In" in list(self.file["Files"].keys()))):
                     result = True
         except:
             result = False
@@ -568,13 +539,13 @@ class pfp_main_ui(QWidget):
         """ Return true if control file is L4."""
         result = False
         try:
-            cfg_sections = list(self.cfg.keys())
+            cfg_sections = list(self.file.keys())
             for section in cfg_sections:
                 if section in ["Variables", "Drivers", "Fluxes"]:
-                    subsections = list(self.cfg[section].keys())
+                    subsections = list(self.file[section].keys())
                     for subsection in subsections:
-                        if (("GapFillFromAlternate" in list(self.cfg[section][subsection].keys())) or
-                            ("GapFillFromClimatology" in list(self.cfg[section][subsection].keys()))):
+                        if (("GapFillFromAlternate" in list(self.file[section][subsection].keys())) or
+                            ("GapFillFromClimatology" in list(self.file[section][subsection].keys()))):
                             result = True
                             break
         except:
@@ -585,13 +556,13 @@ class pfp_main_ui(QWidget):
         """ Return true if control file is L5."""
         result = False
         try:
-            cfg_sections = list(self.cfg.keys())
+            cfg_sections = list(self.file.keys())
             for section in cfg_sections:
                 if section in ["Variables", "Drivers", "Fluxes"]:
-                    subsections = list(self.cfg[section].keys())
+                    subsections = list(self.file[section].keys())
                     for subsection in subsections:
-                        if (("GapFillUsingSOLO" in list(self.cfg[section][subsection].keys())) or
-                            ("GapFillUsingMDS" in list(self.cfg[section][subsection].keys()))):
+                        if (("GapFillUsingSOLO" in list(self.file[section][subsection].keys())) or
+                            ("GapFillUsingMDS" in list(self.file[section][subsection].keys()))):
                             result = True
                             break
         except:
@@ -602,7 +573,7 @@ class pfp_main_ui(QWidget):
         """ Return true if control file is L6."""
         result = False
         try:
-            cfg_sections = list(self.cfg.keys())
+            cfg_sections = list(self.file.keys())
             if ("EcosystemRespiration" in cfg_sections or
                 "NetEcosystemExchange" in cfg_sections or
                 "GrossPrimaryProductivity" in cfg_sections):
@@ -623,20 +594,17 @@ class pfp_main_ui(QWidget):
         logger = logging.getLogger(name="pfp_log")
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
-        if isinstance(self.tabs.cfg_dict[tab_index_current]["file"],
-                      ConfigObj):
-            # we are opening a control file
+        content = self.tabs.tab_dict[tab_index_current].get_data_from_model()
+        if isinstance(content, ConfigObj):
+            # we are saving a control file
             self.save_control_file()
-        elif isinstance(self.tabs.cfg_dict[tab_index_current]["file"],
-                        netCDF4._netCDF4.Dataset):
-            # we are opening a netCDF file
+        elif isinstance(content, pfp_io.DataStructure):
+            # we are saving a data structure
             self.save_netcdf_file()
         else:
-            # unrecognised file type
-            msg = "File must be either a control file or a netCDF file"
+            # unrecognised content type
+            msg = "Object must be either a control file or a data structure"
             logger.error(msg)
-            error_message = traceback.format_exc()
-            logger.error(error_message)
         return
 
     def save_control_file(self):
@@ -644,20 +612,13 @@ class pfp_main_ui(QWidget):
         logger = logging.getLogger(name="pfp_log")
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
-        # get the control file name
-        cfg_filename = self.tabs.cfg_dict[tab_index_current]["file_uri"]
         # get the updated control file data
-
         cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
-
         # check to make sure we are not overwriting the template version
-        if "template" not in cfg_filename:
-            # set the control file name
-            cfg.filename = cfg_filename
-        else:
+        if "template" in cfg.filename:
             msg = " You are trying to write to the template folder.\n"
             msg = msg + "Please save this control file to a different location."
-            msgbox = pfp_gui.myMessageBox(msg)
+            pfp_gui.myMessageBox(msg)
             # put up a "Save as ..." dialog
             cfg_filename = QFileDialog.getSaveFileName(self, "Save as ...")[0]
             # return without doing anything if cancel used
@@ -672,25 +633,19 @@ class pfp_main_ui(QWidget):
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
-        # reset the cfg changed logical to false
-        self.tabs.tab_dict[tab_index_current].cfg_changed = False
         return
 
     def save_netcdf_file(self):
         """Save the current tab as a netCDF file."""
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
-        # get the netCDF file name
-        nc_file_uri = self.tabs.cfg_dict[tab_index_current]["file_uri"]
         # get the updated control file data
         ds = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # write the data structure to file
-        pfp_io.NetCDFWrite(nc_file_uri, ds)
+        pfp_io.NetCDFWrite(ds.filepath, ds)
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
-        # reset the cfg changed logical to false
-        self.tabs.tab_dict[tab_index_current].cfg_changed = False
         return
 
     def file_save_as(self):
@@ -698,64 +653,50 @@ class pfp_main_ui(QWidget):
         logger = logging.getLogger(name="pfp_log")
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
-        # put up a "Save as ..." dialog
-        file_uri = self.tabs.cfg_dict[tab_index_current]["file_uri"]
-        file_uri = QFileDialog.getSaveFileName(self, "Save as ...", file_uri)[0]
-        # return without doing anything if cancel used
-        if len(str(file_uri)) == 0:
-            return
-        self.tabs.cfg_dict[tab_index_current]["file_uri"] = file_uri
-        if isinstance(self.tabs.cfg_dict[tab_index_current]["file"],
-                      ConfigObj):
-            # we are opening a control file
-            self.save_as_control_file()
-        elif isinstance(self.tabs.cfg_dict[tab_index_current]["file"],
-                        netCDF4._netCDF4.Dataset):
+        content = self.tabs.tab_dict[tab_index_current].get_data_from_model()
+        if isinstance(content, ConfigObj):
+            # we are saving a control file
+            file_uri = content.filename
+            file_uri = QFileDialog.getSaveFileName(self, "Save as ...", file_uri)[0]
+            if len(str(file_uri)) == 0:
+                return
+            content.filename = file_uri
+            self.save_as_control_file(content)
+        elif isinstance(content, pfp_io.DataStructure):
             # we are opening a netCDF file
-            self.save_as_netcdf_file()
+            file_uri = content.filepath
+            file_uri = QFileDialog.getSaveFileName(self, "Save as ...", file_uri)[0]
+            if len(str(file_uri)) == 0:
+                return
+            content.filepath = file_uri
+            self.save_as_netcdf_file(content)
         else:
             # unrecognised file type
             msg = "File must be either a control file or a netCDF file"
             logger.error(msg)
-            error_message = traceback.format_exc()
-            logger.error(error_message)
         return
 
-    def save_as_control_file(self):
+    def save_as_control_file(self, cfg):
         """ Save the current tab with a different name."""
-        logger = logging.getLogger(name="pfp_log")
-        # get the current tab index
         tab_index_current = self.tabs.tab_index_current
-        file_uri = self.tabs.cfg_dict[tab_index_current]["file_uri"]
-        # get the updated control file data
-        cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
-        # set the control file name
-        cfg.filename = str(file_uri)
+        logger = logging.getLogger(name="pfp_log")
         # write the control file
         logger.info(" Saving " + cfg.filename)
         cfg.write()
-        # update the control file name
-        self.tabs.cfg_dict[tab_index_current]["file_uri"] = cfg.filename
         # update the tab text
-        self.tabs.setTabText(tab_index_current, os.path.basename(str(file_uri)))
-        # reset the cfg changed logical to false
-        self.tabs.tab_dict[tab_index_current].cfg_changed = False
+        tab_title = os.path.basename(str(cfg.filename))
+        self.tabs.setTabText(tab_index_current, tab_title)
         return
 
-    def save_as_netcdf_file(self):
+    def save_as_netcdf_file(self, ds):
         """ Save the current tab with a different name."""
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
-        # get the netCDF file name
-        file_uri = self.tabs.cfg_dict[tab_index_current]["file_uri"]
-        # get the updated control file data
-        ds = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # write the data structure to file
-        pfp_io.NetCDFWrite(file_uri, ds)
+        pfp_io.NetCDFWrite(ds.filepath, ds)
         # update the tab text
-        self.tabs.setTabText(tab_index_current, os.path.basename(str(file_uri)))
-        # reset the cfg changed logical to false
-        self.tabs.tab_dict[tab_index_current].cfg_changed = False
+        tab_title = os.path.basename(str(ds.filepath))
+        self.tabs.setTabText(tab_index_current, tab_title)
         return
 
     def edit_preferences(self):
@@ -783,14 +724,14 @@ class pfp_main_ui(QWidget):
         # disable the Run/Current menu option
         self.actionRunCurrent.setDisabled(True)
         # get the updated control file data
-        self.cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
+        cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # set the focus back to the log tab
         self.tabs.setCurrentIndex(0)
         # call the appropriate processing routine depending on the level
         self.tabs.tab_index_running = tab_index_current
-        if self.tabs.cfg_dict[tab_index_current]["level"] == "batch":
+        if cfg["level"] == "batch":
             # check the L1 control file to see if it is OK to run
-            if not pfp_compliance.check_batch_controlfile(self.cfg): return
+            if not pfp_compliance.check_batch_controlfile(cfg): return
             # add stop to run menu
             self.menuRun.addAction(self.actionStopCurrent)
             self.actionStopCurrent.triggered.connect(self.stop_current)
@@ -798,46 +739,54 @@ class pfp_main_ui(QWidget):
             worker = pfp_threading.Worker(pfp_top_level.do_run_batch, self)
             # start the worker
             self.threadpool.start(worker)
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "L1":
+        elif cfg["level"] == "L1":
             # check the L1 control file to see if it is OK to run
-            if pfp_compliance.check_l1_controlfile(self.cfg):
-                pfp_top_level.do_run_l1(self.cfg)
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "L2":
-            pfp_top_level.do_run_l2(self.cfg)
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "L3":
-            pfp_top_level.do_run_l3(self.cfg)
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "concatenate":
-            pfp_top_level.do_file_concatenate(self.cfg)
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "climatology":
-            self.utilities_climatology(cfg=self.cfg, mode="custom")
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "cpd_barr":
-            self.utilities_ustar_cpd_barr(cfg=self.cfg, mode="custom")
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "cpd_mchugh":
+            if pfp_compliance.check_l1_controlfile(cfg):
+                pfp_top_level.do_run_l1(cfg)
+                self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "L2":
+            pfp_top_level.do_run_l2(cfg)
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "L3":
+            pfp_top_level.do_run_l3(cfg)
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "concatenate":
+            pfp_top_level.do_file_concatenate(cfg)
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "climatology":
+            self.utilities_climatology_custom()
+        elif cfg["level"] == "cpd_barr":
+            self.utilities_ustar_cpd_barr_custom()
+        elif cfg["level"] == "cpd_mchugh":
             self.utilities_ustar_cpd_mchugh_custom()
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "cpd_mcnew":
-            self.utilities_ustar_cpd_mcnew(cfg=self.cfg, mode="custom")
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "mpt":
-            pfp_top_level.do_utilities_ustar_mpt(cfg=self.cfg, mode="custom")
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "L4":
+        elif cfg["level"] == "cpd_mcnew":
+            self.utilities_ustar_cpd_mcnew_custom()
+        elif cfg["level"] == "mpt":
+            self.utilities_ustar_mpt_custom()
+        elif cfg["level"] == "L4":
             pfp_top_level.do_run_l4(self)
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "L5":
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "L5":
             pfp_top_level.do_run_l5(self)
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "L6":
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "L6":
             pfp_top_level.do_run_l6(self)
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_biomet":
-            pfp_top_level.do_file_convert_nc2biomet(self.cfg, mode="custom")
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_ecostress":
-            pfp_top_level.do_file_convert_nc2ecostress(self.cfg)
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_fluxnet":
-            pfp_top_level.do_file_convert_nc2fluxnet(self.cfg)
-        elif self.tabs.cfg_dict[tab_index_current]["level"] == "nc2csv_reddyproc":
-            pfp_top_level.do_file_convert_nc2reddyproc(self.cfg, mode="custom")
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "nc2csv_biomet":
+            pfp_top_level.do_file_convert_nc2biomet(self, mode="custom")
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "nc2csv_ecostress":
+            pfp_top_level.do_file_convert_nc2ecostress(self)
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "nc2csv_fluxnet":
+            pfp_top_level.do_file_convert_nc2fluxnet(self)
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "nc2csv_reddyproc":
+            pfp_top_level.do_file_convert_nc2reddyproc(self, mode="custom")
+            self.actionRunCurrent.setDisabled(False)
         else:
             logger.error("Level not implemented yet ...")
-        # enable the Run/Current menu option
-        self.actionRunCurrent.setDisabled(False)
         return
-
     def stop_current(self):
         # put up a message box, continue or quit
         msg = "Do you want to quit processing?"
@@ -847,7 +796,6 @@ class pfp_main_ui(QWidget):
             msg = "Processing will stop when this level is finished"
             result = pfp_gui.myMessageBox(msg)
         return
-
     def closeTab (self, currentIndex):
         """ Close the selected tab."""
         # check to see if the tab contents have been saved
@@ -863,12 +811,6 @@ class pfp_main_ui(QWidget):
         # delete the tab
         currentQWidget.deleteLater()
         self.tabs.removeTab(currentIndex)
-        # remove the corresponding entry in cfg_dict
-        self.tabs.cfg_dict.pop(currentIndex)
-        # and renumber the keys
-        for n in list(self.tabs.cfg_dict.keys()):
-            if n > currentIndex:
-                self.tabs.cfg_dict[n-1] = self.tabs.cfg_dict.pop(n)
         # remove the corresponding entry in tab_dict
         self.tabs.tab_dict.pop(currentIndex)
         # and renumber the keys
@@ -878,88 +820,97 @@ class pfp_main_ui(QWidget):
         # decrement the tab index
         self.tabs.tab_index_all = self.tabs.tab_index_all - 1
         return
-
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-
-    def utilities_climatology(self, cfg=None, mode="standard"):
-        logger = logging.getLogger(name="pfp_log")
-        if mode == "standard":
-            nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
-            if not os.path.exists(nc_file_uri):
-                logger.info( " Climatology: no netCDF file chosen")
-                return
-            worker = pfp_threading.Worker(pfp_top_level.do_utilities_climatology,
-                                          nc_file_uri=nc_file_uri, mode=mode)
-        else:
-            worker = pfp_threading.Worker(pfp_top_level.do_utilities_climatology,
-                                          cfg=cfg, mode=mode)
+        return
+    def utilities_climatology_custom(self):
+        # run climatology from a control file
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_climatology_custom, self)
         self.threadpool.start(worker)
-
-    def utilities_ustar_cpd_barr(self, cfg=None, mode="standard"):
+        return
+    def utilities_climatology_standard(self):
+        # run climatology from the Utilities menu
+        # disable the Run/Current menu option
+        self.actionRunCurrent.setDisabled(True)
         logger = logging.getLogger(name="pfp_log")
-        if mode == "standard":
-            nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
-            if not os.path.exists(nc_file_uri):
-                logger.info( " CPD (Barr): no netCDF file chosen")
-                return
-            worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_barr,
-                                          nc_file_uri=nc_file_uri, mode=mode)
-        else:
-            worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_barr,
-                                          cfg=cfg, mode=mode)
+        nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
+        if not os.path.exists(nc_file_uri):
+            logger.info( " Climatology: no netCDF file chosen")
+            return
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_climatology_standard,
+                                      self, nc_file_uri)
         self.threadpool.start(worker)
-
+        return
+    def utilities_ustar_cpd_barr_custom(self):
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_barr_custom, self)
+        self.threadpool.start(worker)
+        return
+    def utilities_ustar_cpd_barr_standard(self):
+        # disable the Run/Current menu option
+        self.actionRunCurrent.setDisabled(True)
+        logger = logging.getLogger(name="pfp_log")
+        nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
+        if not os.path.exists(nc_file_uri):
+            logger.info( " CPD (Barr): no netCDF file chosen")
+            return
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_barr_standard,
+                                      self, nc_file_uri)
+        self.threadpool.start(worker)
+        return
+    def utilities_ustar_cpd_mchugh_custom(self):
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_mchugh_custom, self)
+        self.threadpool.start(worker)
+        return
     def utilities_ustar_cpd_mchugh_standard(self):
         # disable the Run/Current menu option
         self.actionRunCurrent.setDisabled(True)
+        logger = logging.getLogger(name="pfp_log")
         nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
         if not os.path.exists(nc_file_uri):
             logger.info( " CPD (McHugh): no netCDF file chosen")
             return
-        worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_mchugh,
-                                      self, nc_file_uri=nc_file_uri, mode="standard")
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_mchugh_standard,
+                                      self, nc_file_uri)
         self.threadpool.start(worker)
         return
-    def utilities_ustar_cpd_mchugh_custom(self):
+    def utilities_ustar_cpd_mcnew_custom(self):
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_mcnew_custom, self)
+        self.threadpool.start(worker)
+        return
+    def utilities_ustar_cpd_mcnew_standard(self):
         # disable the Run/Current menu option
         self.actionRunCurrent.setDisabled(True)
-        worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_mchugh,
-                                      self, cfg=self.cfg, mode="custom")
+        logger = logging.getLogger(name="pfp_log")
+        nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
+        if not os.path.exists(nc_file_uri):
+            logger.info( " CPD (McNew): no netCDF file chosen")
+            return
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_mcnew_standard,
+                                      self, nc_file_uri)
         self.threadpool.start(worker)
         return
-    def utilities_ustar_cpd_mcnew(self, cfg=None, mode="standard"):
+    def utilities_ustar_mpt_custom(self):
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_mpt_custom, self)
+        self.threadpool.start(worker)
+        return
+    def utilities_ustar_mpt_standard(self):
+        # disable the Run/Current menu option
+        self.actionRunCurrent.setDisabled(True)
         logger = logging.getLogger(name="pfp_log")
-        if mode == "standard":
-            nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
-            if not os.path.exists(nc_file_uri):
-                logger.info( " CPD (McNew): no netCDF file chosen")
-                return
-            worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_mcnew,
-                                          nc_file_uri=nc_file_uri, mode=mode)
-        else:
-            worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_cpd_mcnew,
-                                          cfg=cfg, mode=mode)
+        nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
+        if not os.path.exists(nc_file_uri):
+            logger.info( " CPD (MPT): no netCDF file chosen")
+            return
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_mpt_standard,
+                                      self, nc_file_uri)
         self.threadpool.start(worker)
-
-    def utilities_ustar_mpt(self, cfg=None, mode="standard"):
-        if mode == "standard":
-            nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
-            if not os.path.exists(nc_file_uri):
-                logger.info( " CPD (MPT): no netCDF file chosen")
-                return
-            worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_mpt,
-                                          nc_file_uri=nc_file_uri, mode=mode)
-        else:
-            worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_mpt,
-                                          cfg=cfg, mode=mode)
-        self.threadpool.start(worker)
-
+        return
     def utilities_cfcheck(self):
+        logger = logging.getLogger(name="pfp_log")
         nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
         if not os.path.exists(nc_file_uri):
             logger.info( " CF check: no netCDF file chosen")
@@ -967,7 +918,7 @@ class pfp_main_ui(QWidget):
         worker = pfp_threading.Worker(pfp_top_level.do_utilities_cfcheck,
                                       nc_file_uri)
         self.threadpool.start(worker)
-
+        return
 if (__name__ == '__main__'):
     # get the application name and version
     pfp_version = cfg.version_name + " " + cfg.version_number

@@ -749,7 +749,7 @@ def parse_variable_attributes(attributes):
         attributes[attr] = value
     return attributes
 
-def check_batch_controlfile(cfg):
+def check_batch_controlfile(self):
     """
     Purpose:
      Check the L1 control file to make sure it contains all information
