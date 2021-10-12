@@ -649,25 +649,41 @@ def check_for_missing_data(series_list, label_list):
     return 1
 
 def get_ustar_thresholds(cf, ds):
+    """
+    Purpose
+     Get the annual ustar thresholds from a results workbook or from the
+     ustar_threshold section in the control file.
+    """
+    # try...except used in desparation ahead of the October 2021 workshop
+    # let's see how long it stays here ...
     ustar_dict = {}
-    if "cpd_filename" in cf["Files"]:
-        results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["cpd_filename"])
-        if os.path.isfile(results_name):
-            ustar_dict["cpd"] = get_ustarthreshold_from_results(results_name)
+    ustar_out = {}
+    try:
+        if "cpd_filename" in cf["Files"]:
+            results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["cpd_filename"])
+            if os.path.isfile(results_name):
+                ustar_dict["cpd"] = get_ustarthreshold_from_results(results_name)
+            else:
+                msg = " CPD results file not found (" + results_name + ")"
+                logger.warning(msg)
+        elif "mpt_filename" in cf["Files"]:
+            results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["mpt_filename"])
+            if os.path.isfile(results_name):
+                ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
+            else:
+                msg = " MPT results file not found (" + results_name + ")"
+                logger.warning(msg)
+        elif "ustar_threshold" in cf:
+            ts = int(ds.globalattributes["time_step"])
+            ustar_dict["cf"] = get_ustarthreshold_from_cf(cf, ts)
         else:
-            msg = " CPD results file not found (" + results_name + ")"
-            logger.warning(msg)
-    if "mpt_filename" in cf["Files"]:
-        results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["mpt_filename"])
-        if os.path.isfile(results_name):
-            ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
-        else:
-            msg = " MPT results file not found (" + results_name + ")"
-            logger.warning(msg)
-    if "ustar_threshold" in cf:
-        ts = int(ds.globalattributes["time_step"])
-        ustar_dict["cf"] = get_ustarthreshold_from_cf(cf, ts)
-    ustar_out = cleanup_ustar_dict(ds, ustar_dict)
+            msg = " No source for ustar threshold found in " + os.path.basename(cf.filename)
+        ustar_out = cleanup_ustar_dict(ds, ustar_dict)
+    except Exception:
+        msg = " An error occured getting the ustar threshold"
+        logger.error(msg)
+        ds.returncodes["value"] = 1
+        ds.returncodes["message"] = msg
     return ustar_out
 
 def get_daynight_indicator(cf, ds):
@@ -1098,22 +1114,8 @@ def get_ustarthreshold_from_results(results_name):
            ustar_dict is a dictionary of ustar thresholds, 1 entry per year
     Author: PRI
     Date: July 2015
+          October 2021 - rewrite to use pandas, add trap for failed open
     """
-    #ustar_dict = collections.OrderedDict()
-    #cpd_wb = xlrd.open_workbook(results_name)
-    #annual_ws = cpd_wb.sheet_by_name("Annual")
-    #header_list = [x for x in annual_ws.row_values(0)]
-    #year_list = sorted([str(int(x)) for x in annual_ws.col_values(0)[1:]])
-    #for i,year in enumerate(year_list):
-        #ustar_dict[year] = collections.OrderedDict()
-        #for item in header_list:
-            #xlcol = header_list.index(item)
-            #val = annual_ws.col_values(xlcol)[i+1]
-            #typ = annual_ws.col_types(xlcol)[i+1]
-            #if typ == 2:
-                #ustar_dict[year][item] = float(val)
-            #else:
-                #ustar_dict[year][item] = float(c.missing_value)
     df = pandas.read_excel(results_name, sheet_name="Annual", index_col=0)
     df.index = df.index.map(str)
     ustar_dict = df.to_dict('index')

@@ -297,6 +297,8 @@ def l5qc(main_gui, cf, ds4):
         return ds5
     # apply the turbulence filter (if requested)
     pfp_ck.ApplyTurbulenceFilter(cf, ds5, l5_info)
+    if ds5.returncodes["value"] != 0:
+        return ds5
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds5)
     # gap fill using marginal distribution sampling
