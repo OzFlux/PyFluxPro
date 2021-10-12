@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 import subprocess
+import tempfile
 # 3rd party
 import numpy
 import pandas
@@ -86,7 +87,14 @@ def mpt_main(cf):
     nc_file_path = os.path.join(base_file_path, nc_file_name)
     ds = pfp_io.nc_read_series(nc_file_path)
     if ds.returncodes["value"] != 0: return
-    out_file_paths = run_mpt_code(cf, ds, nc_file_name)
+    # get a temporary directory for the log, input and output files
+    tmp_dir = tempfile.TemporaryDirectory(prefix="pfp_mpt_")
+    mpt = {"paths": {"tmp_base": tmp_dir.name}}
+    for item in ["input", "output", "log"]:
+        path = os.path.join(tmp_dir.name, item)
+        os.makedirs(path)
+        mpt["paths"][item] = path
+    out_file_paths = run_mpt_code(cf, ds, mpt)
     if len(out_file_paths) == 0:
         return
     ustar_results = read_mpt_output(out_file_paths)
@@ -94,7 +102,7 @@ def mpt_main(cf):
     xl_write_mpt(mpt_file_path, ustar_results)
     return
 
-def run_mpt_code(cf, ds, nc_file_name):
+def run_mpt_code(cf, ds, mpt):
     """
     Purpose:
      Runs the MPT u* threshold detection code for each year in the data set.
@@ -119,10 +127,11 @@ def run_mpt_code(cf, ds, nc_file_name):
             msg = " MPT: Using variable " + cf["Variables"][label]["name"] + " for " + label
             logger.info(msg)
     fmt = "%12i,%f,%f,%f,%f,%f,%f,%f"
-    log_file_path = os.path.join("mpt", "log", "mpt.log")
+
+    log_file_path = os.path.join(mpt["paths"]["log"], "mpt.log")
     mptlogfile = open(log_file_path, "w")
-    in_base_path = os.path.join("mpt", "input", "")
-    out_base_path = os.path.join("mpt", "output", "")
+    in_base_path = os.path.join(mpt["paths"]["input"], "")
+    out_base_path = os.path.join(mpt["paths"]["output"], "")
     # get the time step
     ts = int(float(ds.globalattributes["time_step"]))
     if (ts != 30) and (ts != 60):
@@ -139,8 +148,8 @@ def run_mpt_code(cf, ds, nc_file_name):
     for year in years:
         msg = " MPT: processing year " + str(year)
         logger.info(msg)
-        in_name = nc_file_name.replace(".nc","_"+str(year)+"_MPT.csv")
-        in_full_path = os.path.join(in_base_path, in_name)
+        #in_name = ds.filepath.replace(".nc","_"+str(year)+"_MPT.csv")
+        in_full_path = os.path.join(in_base_path, "mpt_"+str(year)+".csv")
         out_full_path = in_full_path.replace("input", "output").replace(".csv", "_ut.txt")
         data = make_data_array(cf, ds, year)
         numpy.savetxt(in_full_path, data, header=header, delimiter=",", comments="", fmt=fmt)

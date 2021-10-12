@@ -4,6 +4,7 @@ import datetime
 import logging
 import os
 import subprocess
+import tempfile
 # 3rd party modules
 import dateutil
 import numpy
@@ -307,19 +308,25 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
             l5s["gui"]["nda_factor"] = l5s["outputs"][output]["solo_settings"]["nda_factor"]
             l5s["gui"]["learning_rate"] = l5s["outputs"][output]["solo_settings"]["learning_rate"]
             l5s["gui"]["iterations"] = l5s["outputs"][output]["solo_settings"]["iterations"]
-        # write the inf files for sofm, solo and seqsolo
-        gfSOLO_writeinffiles(l5s)
+        # get a temporary directory with a unique name
+        tmp_dir = tempfile.TemporaryDirectory(prefix="pfp_solo_")
+        l5s["tmp_dir"] = tmp_dir.name
+        for item in ["inf", "input", "output", "log"]:
+            os.makedirs(os.path.join(tmp_dir.name, item))
         # run SOFM
-        result = gfSOLO_runsofm(ds, drivers, target, nRecs, si=si, ei=ei)
+        gfSOLO_write_sofm_inf(l5s)
+        result = gfSOLO_runsofm(ds, drivers, target, nRecs, l5s, si=si, ei=ei)
         if result != 1:
             return
         # run SOLO
-        result = gfSOLO_runsolo(ds, drivers, target, nRecs, si=si, ei=ei)
+        gfSOLO_write_solo_inf(l5s)
+        result = gfSOLO_runsolo(ds, drivers, target, nRecs, l5s, si=si, ei=ei)
         if result != 1:
             return
         # run seqsolo and put the solo_modelled data into the ds series
+        gfSOLO_write_seqsolo_inf(l5s)
         result = gfSOLO_runseqsolo(ds, drivers, target, output, nRecs,
-                                   flag_code, si=si, ei=ei)
+                                   l5s, flag_code, si=si, ei=ei)
         if result != 1:
             return
         # plot the results
@@ -800,10 +807,11 @@ def gfSOLO_run(ds, l5_info, called_by):
         logger.info(" Finished auto (days) run ...")
 
 def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,
-                      flag_code, si=0, ei=-1):
+                      solo, flag_code, si=0, ei=-1):
     '''
     Run SEQSOLO.
     '''
+    td = solo["tmp_dir"]
     # get the number of drivers
     ndrivers = len(drivers)
     # add an extra column for the target data
@@ -835,33 +843,30 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,
     # keep track of the good data indices
     goodindex = iind[index]
     # and then write the seqsolo input file
-    seqsolofile = open('solo/input/seqsolo_input.csv', 'w')
+    seqsolo_input = os.path.join(td, "input", "seqsolo_input.csv")
+    seqsolofile = open(seqsolo_input, 'w')
     wr = csv.writer(seqsolofile, delimiter=',')
     for i in range(gooddata.shape[0]):
         wr.writerow(gooddata[i, 0:ndrivers + 1])
     seqsolofile.close()
     # if the output file from a previous run exists, delete it
-    if os.path.exists('solo/output/seqOut2.out'):
-        os.remove('solo/output/seqOut2.out')
+    seqsolo_seqOut2_output = os.path.join(td, "output", "seqOut2.out")
+    if os.path.exists(seqsolo_seqOut2_output):
+        os.remove(seqsolo_seqOut2_output)
     # now run SEQSOLO
-    seqsolologfile = open('solo/log/seqsolo.log', 'w')
-
-    #if platform.system() == "Windows":
-        #subprocess.call(['./solo/bin/seqsolo.exe', 'solo/inf/seqsolo.inf'], stdout=seqsolologfile)
-    #else:
-        #subprocess.call(['./solo/bin/seqsolo', 'solo/inf/seqsolo.inf'], stdout=seqsolologfile)
-
+    seqsolo_log = os.path.join(td, "log", "seqsolo.log")
+    seqsolologfile = open(seqsolo_log, 'w')
     # get the base path of script or Pyinstaller application
     base_path = pfp_utils.get_base_path()
     seqsolo_exe = os.path.join(base_path, "solo", "bin", "seqsolo")
-    subprocess.call([seqsolo_exe, 'solo/inf/seqsolo.inf'], stdout=seqsolologfile)
-
+    seqsolo_inf = os.path.join(td, "inf", "seqsolo.inf")
+    subprocess.call([seqsolo_exe, seqsolo_inf], stdout=seqsolologfile)
     seqsolologfile.close()
     # check to see if the solo output file exists, this is used to indicate that solo ran correctly
-    if os.path.exists('solo/output/seqOut2.out'):
+    if os.path.exists(seqsolo_seqOut2_output):
         # now read in the seqsolo results, use the seqOut2 file so that the learning capability of
         # seqsolo can be used via the "learning rate" and "Iterations" GUI options
-        seqdata = numpy.genfromtxt('solo/output/seqOut2.out')
+        seqdata = numpy.genfromtxt(seqsolo_seqOut2_output)
         # put the SOLO modelled data back into the data series
         if ei == -1:
             dsb.series[outputlabel]['Data'][si:][goodindex] = seqdata[:, 1]
@@ -875,10 +880,11 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,
         logger.error(msg)
         return 0
 
-def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, si=0, ei=-1):
+def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     '''
     Run SOFM, the pre-processor for SOLO.
     '''
+    td = solo["tmp_dir"]
     # get the number of drivers
     ndrivers = len(drivers)
     # add an extra column for the target data
@@ -912,40 +918,38 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, si=0, ei=-1):
         logger.info(msg)
         nRecs = len(goodlines)
     # now write the drivers to the SOFM input file
-    sofmfile = open('solo/input/sofm_input.csv', 'w')
+    sofm_input = os.path.join(td, "input", "sofm_input.csv")
+    sofmfile = open(sofm_input, 'w')
     wr = csv.writer(sofmfile, delimiter=',')
     for i in range(sofminputdata.shape[0]):
         wr.writerow(sofminputdata[i, 0:ndrivers])
     sofmfile.close()
     # if the output file from a previous run exists, delete it
-    if os.path.exists('solo/output/sofm_4.out'):
-        os.remove('solo/output/sofm_4.out')
+    sofm_output_4 = os.path.join(td, "output", "sofm_4.out")
+    if os.path.exists(sofm_output_4):
+        os.remove(sofm_output_4)
     # now run SOFM
-    sofmlogfile = open('solo/log/sofm.log', 'w')
-
-    #if platform.system() == "Windows":
-        #subprocess.call(['./solo/bin/sofm.exe', 'solo/inf/sofm.inf'], stdout=sofmlogfile)
-    #else:
-        #subprocess.call(['./solo/bin/sofm', 'solo/inf/sofm.inf'], stdout=sofmlogfile)
-
+    sofm_log = os.path.join(td, "log", "sofm.log")
+    sofmlogfile = open(sofm_log, 'w')
     # get the base path of script or Pyinstaller application
     base_path = pfp_utils.get_base_path()
     sofm_exe = os.path.join(base_path, "solo", "bin", "sofm")
-    subprocess.call([sofm_exe, 'solo/inf/sofm.inf'], stdout=sofmlogfile)
-
+    sofm_inf = os.path.join(td, "inf", "sofm.inf")
+    subprocess.call([sofm_exe, sofm_inf], stdout=sofmlogfile)
     sofmlogfile.close()
     # check to see if the sofm output file exists, this is used to indicate that sofm ran correctly
-    if os.path.exists('solo/output/sofm_4.out'):
+    if os.path.exists(sofm_output_4):
         return 1
     else:
         msg = " SOFM did not run correctly, check the GUI and the log files"
         logger.error(msg)
         return 0
 
-def gfSOLO_runsolo(dsb, drivers, targetlabel, nRecs, si=0, ei=-1):
+def gfSOLO_runsolo(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     '''
     Run SOLO.
     '''
+    td = solo["tmp_dir"]
     ndrivers = len(drivers)
     # add an extra column for the target data
     soloinputdata = numpy.zeros((nRecs, ndrivers+1))
@@ -971,49 +975,53 @@ def gfSOLO_runsolo(dsb, drivers, targetlabel, nRecs, si=0, ei=-1):
     for i in range(ndrivers + 1):
         gooddata[:, i] = soloinputdata[:, i][index]
     # and then write the solo input file, the name is assumed by the solo.inf control file
-    solofile = open('solo/input/solo_input.csv', 'w')
+    solo_input = os.path.join(td, "input", "solo_input.csv")
+    solofile = open(solo_input, 'w')
     wr = csv.writer(solofile, delimiter=',')
     for i in range(gooddata.shape[0]):
         wr.writerow(gooddata[i, 0:ndrivers + 1])
     solofile.close()
     # if the output file from a previous run exists, delete it
-    if os.path.exists('solo/output/eigenValue.out'):
-        os.remove('solo/output/eigenValue.out')
+    solo_eigenValue_output = os.path.join(td, "output", "eigenValue.out")
+    if os.path.exists(solo_eigenValue_output):
+        os.remove(solo_eigenValue_output)
     # now run SOLO
-    solologfile = open('solo/log/solo.log', 'w')
-
-    #if platform.system() == "Windows":
-        #subprocess.call(['./solo/bin/solo.exe', 'solo/inf/solo.inf'], stdout=solologfile)
-    #else:
-        #subprocess.call(['./solo/bin/solo', 'solo/inf/solo.inf'], stdout=solologfile)
-
+    solo_log = os.path.join(td, "log", "solo.log")
+    solologfile = open(solo_log, 'w')
     # get the base path of script or Pyinstaller application
     base_path = pfp_utils.get_base_path()
     solo_exe = os.path.join(base_path, "solo", "bin", "solo")
-    subprocess.call([solo_exe, 'solo/inf/solo.inf'], stdout=solologfile)
-
+    solo_inf = os.path.join(td, "inf", "solo.inf")
+    subprocess.call([solo_exe, solo_inf], stdout=solologfile)
     solologfile.close()
     # check to see if the solo output file exists, this is used to indicate that solo ran correctly
-    if os.path.exists('solo/output/eigenValue.out'):
+    if os.path.exists(solo_eigenValue_output):
         return 1
     else:
         msg = " SOLO did not run correctly, check the GUI and the log files"
         logger.error(msg)
         return 0
 
-def gfSOLO_writeinffiles(solo):
+def gfSOLO_write_sofm_inf(solo):
+    td = solo["tmp_dir"]
     # sofm inf file
-    f = open('solo/inf/sofm.inf','w')
+    sofm_inf = os.path.join(td, "inf", "sofm.inf")
+    sofm_input = os.path.join(td, "input", "sofm_input.csv")
+    sofm_output_1 = os.path.join(td, "output", "sofm_1.out")
+    sofm_output_2 = os.path.join(td, "output", "sofm_2.out")
+    sofm_output_3 = os.path.join(td, "output", "sofm_3.out")
+    sofm_output_4 = os.path.join(td, "output", "sofm_4.out")
+    f = open(sofm_inf,'w')
     f.write(str(solo["gui"]["nodes_target"])+'\n')
     f.write(str(solo["gui"]["training"])+'\n')
     f.write(str(20)+'\n')
     f.write(str(0.01)+'\n')
     f.write(str(1234)+'\n')
-    f.write('solo/input/sofm_input.csv'+'\n')
-    f.write('solo/output/sofm_1.out'+'\n')
-    f.write('solo/output/sofm_2.out'+'\n')
-    f.write('solo/output/sofm_3.out'+'\n')
-    f.write('solo/output/sofm_4.out'+'\n')
+    f.write(sofm_input+'\n')
+    f.write(sofm_output_1+'\n')
+    f.write(sofm_output_2+'\n')
+    f.write(sofm_output_3+'\n')
+    f.write(sofm_output_4+'\n')
     f.write(str(50)+'\n')
     f.write('### Comment lines ###\n')
     f.write('Line 1: No. of nodes - default is the number of drivers plus 1 (changeable via GUI if used)\n')
@@ -1028,26 +1036,43 @@ def gfSOLO_writeinffiles(solo):
     f.write('Line 10: fourth output filename with path relative to current directory (used by SOLO)\n')
     f.write('Line 11: No. iterations per write of weights to screen - default is 50\n')
     f.close()
+    return
+def gfSOLO_write_solo_inf(solo):
+    td = solo["tmp_dir"]
     # solo inf file
-    f = open('solo/inf/solo.inf','w')
+    solo_inf = os.path.join(td, "inf", "solo.inf")
+    sofm_output_4 = os.path.join(td, "output", "sofm_4.out")
+    solo_input = os.path.join(td, "input", "solo_input.csv")
+    solo_eigenValue_output = os.path.join(td, "output", "eigenValue.out")
+    solo_eigenVector_output = os.path.join(td, "output", "eigenVector.out")
+    solo_accumErr_output = os.path.join(td, "output", "accumErr.out")
+    solo_accumRR_output = os.path.join(td, "output", "accumRR.out")
+    solo_trainProcess_output = os.path.join(td, "output", "trainProcess.out")
+    solo_freqTable_output = os.path.join(td, "output", "freqTable.out")
+    solo_hidOutputWt_output = os.path.join(td, "output", "hidOutputWt.out")
+    solo_errorMap_output = os.path.join(td, "output", "errorMap.out")
+    solo_finResult_output = os.path.join(td, "output", "finResult.out")
+    solo_trainWin_output = os.path.join(td, "output", "trainWin.out")
+    solo_trainWout_output = os.path.join(td, "output", "trainWout.out")
+    f = open(solo_inf,'w')
     f.write(str(solo["gui"]["nodes_target"])+'\n')
     f.write(str(solo["gui"]["nda_factor"])+'\n')
-    f.write('solo/output/sofm_4.out'+'\n')
-    f.write('solo/input/solo_input.csv'+'\n')
+    f.write(sofm_output_4+'\n')
+    f.write(solo_input+'\n')
     f.write('training'+'\n')
     f.write(str(5678)+'\n')
     f.write(str(0)+'\n')
-    f.write('solo/output/eigenValue.out'+'\n')
-    f.write('solo/output/eigenVector.out'+'\n')
-    f.write('solo/output/accumErr.out'+'\n')
-    f.write('solo/output/accumRR.out'+'\n')
-    f.write('solo/output/trainProcess.out'+'\n')
-    f.write('solo/output/freqTable.out'+'\n')
-    f.write('solo/output/hidOutputWt.out'+'\n')
-    f.write('solo/output/errorMap.out'+'\n')
-    f.write('solo/output/finResult.out'+'\n')
-    f.write('solo/output/trainWin.out'+'\n')
-    f.write('solo/output/trainWout.out'+'\n')
+    f.write(solo_eigenValue_output+'\n')
+    f.write(solo_eigenVector_output+'\n')
+    f.write(solo_accumErr_output+'\n')
+    f.write(solo_accumRR_output+'\n')
+    f.write(solo_trainProcess_output+'\n')
+    f.write(solo_freqTable_output+'\n')
+    f.write(solo_hidOutputWt_output+'\n')
+    f.write(solo_errorMap_output+'\n')
+    f.write(solo_finResult_output+'\n')
+    f.write(solo_trainWin_output+'\n')
+    f.write(solo_trainWout_output+'\n')
     f.write('### Comment lines ###\n')
     f.write('Line 1: No. of nodes - default is the number of drivers plus 1 (changeable via GUI if used)\n')
     f.write('Line 2: multiplier for minimum number of points per node (NdaFactor) - default is 5 (ie 5*(no. of drivers+1) (changeable via GUI if used)\n')
@@ -1058,29 +1083,47 @@ def gfSOLO_writeinffiles(solo):
     f.write('Line 7: "calThreshold", not used by SOLO\n')
     f.write('Lines 8 to 18: output files from SOLO with path relative to current directory\n')
     f.close()
+    return
+def gfSOLO_write_seqsolo_inf(solo):
+    td = solo["tmp_dir"]
     # seqsolo inf file
-    f = open('solo/inf/seqsolo.inf','w')
+    seqsolo_inf = os.path.join(td, "inf", "seqsolo.inf")
+    sofm_output_4 = os.path.join(td, "output", "sofm_4.out")
+    seqsolo_input = os.path.join(td, "input", "seqsolo_input.csv")
+    solo_eigenValue_output = os.path.join(td, "output", "eigenValue.out")
+    solo_eigenVector_output = os.path.join(td, "output", "eigenVector.out")
+    solo_trainWout_output = os.path.join(td, "output", "trainWout.out")
+    solo_freqTable_output = os.path.join(td, "output", "freqTable.out")
+    solo_errorMap_output = os.path.join(td, "output", "errorMap.out")
+    solo_finResult_output = os.path.join(td, "output", "finResult.out")
+    solo_trainingRMSE_output = os.path.join(td, "output", "trainingRMSE.out")
+    seqsolo_seqOut0_output = os.path.join(td, "output", "seqOut0.out")
+    seqsolo_seqOut1_output = os.path.join(td, "output", "seqOut1.out")
+    seqsolo_seqOut2_output = os.path.join(td, "output", "seqOut2.out")
+    seqsolo_seqHidOutW_output = os.path.join(td, "output", "seqHidOutW.out")
+    seqsolo_seqFreqMap_output = os.path.join(td, "output", "seqFreqMap.out")
+    f = open(seqsolo_inf,'w')
     f.write(str(solo["gui"]["nodes_target"])+'\n')
     f.write(str(0)+'\n')
     f.write(str(solo["gui"]["learning_rate"])+'\n')
     f.write(str(solo["gui"]["iterations"])+'\n')
-    f.write('solo/output/sofm_4.out'+'\n')
-    f.write('solo/input/seqsolo_input.csv'+'\n')
+    f.write(sofm_output_4+'\n')
+    f.write(seqsolo_input+'\n')
     f.write('simulation'+'\n')
     f.write(str(9100)+'\n')
     f.write(str(0)+'\n')
-    f.write('solo/output/eigenValue.out'+'\n')
-    f.write('solo/output/eigenVector.out'+'\n')
-    f.write('solo/output/trainWout.out'+'\n')
-    f.write('solo/output/freqTable.out'+'\n')
-    f.write('solo/output/errorMap.out'+'\n')
-    f.write('solo/output/finResult.out'+'\n')
-    f.write('solo/output/trainingRMSE.out'+'\n')
-    f.write('solo/output/seqOut0.out'+'\n')
-    f.write('solo/output/seqOut1.out'+'\n')
-    f.write('solo/output/seqOut2.out'+'\n')
-    f.write('solo/output/seqHidOutW.out'+'\n')
-    f.write('solo/output/seqFreqMap.out'+'\n')
+    f.write(solo_eigenValue_output+'\n')
+    f.write(solo_eigenVector_output+'\n')
+    f.write(solo_trainWout_output+'\n')
+    f.write(solo_freqTable_output+'\n')
+    f.write(solo_errorMap_output+'\n')
+    f.write(solo_finResult_output+'\n')
+    f.write(solo_trainingRMSE_output+'\n')
+    f.write(seqsolo_seqOut0_output+'\n')
+    f.write(seqsolo_seqOut1_output+'\n')
+    f.write(seqsolo_seqOut2_output+'\n')
+    f.write(seqsolo_seqHidOutW_output+'\n')
+    f.write(seqsolo_seqFreqMap_output+'\n')
     f.write(str(c.missing_value)+'\n')
     f.write('### Comment lines ###\n')
     f.write('Line 1: No. of nodes - default is the number of drivers plus 1 (changeable via GUI if used)\n')
@@ -1095,7 +1138,7 @@ def gfSOLO_writeinffiles(solo):
     f.write('Lines 10 to 21: output files from SEQSOLO with path relative to current directory\n')
     f.write('Line 22: missing data value, default value is c.missing_value.0\n')
     f.close()
-
+    return
 def gf_getdiurnalstats(DecHour,Data,ts):
     nInts = 24*int((60/ts)+0.5)
     Num = numpy.ma.zeros(nInts,dtype=int)
