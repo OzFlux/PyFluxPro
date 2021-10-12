@@ -5,6 +5,7 @@ import glob
 import logging
 import os
 import subprocess
+import tempfile
 # 3rd party modules
 import dateutil
 import numpy
@@ -34,8 +35,13 @@ def GapFillUsingMDS(ds, l5_info, called_by):
     ts = int(float(ds.globalattributes["time_step"]))
     site_name = ds.globalattributes["site_name"]
     level = ds.globalattributes["processing_level"]
+    # get a temporary directory for the log, input and output filoes
+    tmp_dir = tempfile.TemporaryDirectory(prefix="pfp_mds_")
+    td = tmp_dir.name
+    for item in ["input", "output", "log"]:
+        os.makedirs(os.path.join(tmp_dir.name, item))
     # define the MDS input file location
-    in_base_path = os.path.join("mds", "input")
+    in_base_path = os.path.join(td, "input")
     # get a list of CSV files in the input directory
     in_path_files = glob.glob(os.path.join(in_base_path, "*.csv"))
     # and clean them out
@@ -43,7 +49,7 @@ def GapFillUsingMDS(ds, l5_info, called_by):
         if os.path.exists(in_file):
             os.remove(in_file)
     # define the MDS output file location
-    out_base_path = os.path.join("mds", "output", "")
+    out_base_path = os.path.join(td, "output", "")
     # get a list of CSV files in the output directory
     out_path_files = glob.glob(os.path.join(out_base_path, "*.csv"))
     # and clean them out
@@ -56,7 +62,7 @@ def GapFillUsingMDS(ds, l5_info, called_by):
     last_year = ldt["Data"][-2].year
     # now loop over the series to be gap filled using MDS
     # open a log file for the MDS C code output
-    log_file_path = os.path.join("mds", "log", "mds.log")
+    log_file_path = os.path.join(td, "log", "mds.log")
     mdslogfile = open(log_file_path, "w")
     for fig_num, mds_label in enumerate(l5im["outputs"].keys()):
         logger.info(" Doing MDS gap filling for %s", l5im["outputs"][mds_label]["target"])
@@ -78,7 +84,7 @@ def GapFillUsingMDS(ds, l5_info, called_by):
         cmd = gfMDS_make_cmd_string(l5im["outputs"][mds_label])
         # then we spawn a subprocess for the MDS C code
         subprocess.call(cmd, stdout=mdslogfile)
-        mds_out_file = os.path.join("mds", "output", "mds.csv")
+        mds_out_file = os.path.join(td, "output", "mds.csv")
         os.rename(mds_out_file, out_file_path)
         gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by)
         # mask long gaps, if requested
@@ -109,6 +115,11 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by):
     Author: PRI
     Date: May 2018
     """
+    # get the MDS flag value from the processing level
+    processing_level = ds.globalattributes["processing_level"]
+    level_number = pfp_utils.strip_non_numeric(processing_level)
+    # MDS flag will be 470 at L4, 570 and L5
+    mds_flag_value = int(level_number)*100 + 70
     # get the name for the description variable attribute
     descr_level = "description_" + str(ds.globalattributes["processing_level"])
     ldt = pfp_utils.GetVariable(ds, "DateTime")
@@ -133,7 +144,7 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by):
             idx = numpy.where((numpy.ma.getmaskarray(var_in["Data"]) == True) &
                               (abs(data - c.missing_value) > c.eps))[0]
             flag = numpy.array(var_in["Flag"])
-            flag[idx] = numpy.int32(470)
+            flag[idx] = numpy.int32(mds_flag_value)
             attr = copy.deepcopy(var_in["Attr"])
             pfp_utils.append_to_attribute(attr, {descr_level: "Gap filled using MDS"})
             var_out = {"Label":mds_label, "Data":data, "Flag":flag, "Attr":attr}
@@ -292,6 +303,11 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     Author: PRI
     Date: Back in the day
     """
+    # get the MDS flag value from the processing level
+    processing_level = ds.globalattributes["processing_level"]
+    level_number = pfp_utils.strip_non_numeric(processing_level)
+    # MDS flag will be 470 at L4, 570 and L5
+    mds_flag_value = int(level_number)*100 + 70
     # get the timestep
     ts = int(float(ds.globalattributes["time_step"]))
     # get a local copy of the datetime series
@@ -334,7 +350,7 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
 
     # histogram of window size
     time_window = pfp_utils.GetVariable(ds, "MDS_"+target+"_TIMEWINDOW")
-    idx = numpy.where(mds["Flag"] == 40)[0]
+    idx = numpy.where(mds["Flag"] == mds_flag_value)[0]
     if len(idx) != 0:
         tw_hist_data = time_window["Data"][idx]
         rect2 = [0.40,pd["margin_bottom"],pd["xy_width"],pd["xy_height"]]
