@@ -782,7 +782,8 @@ def check_l1_controlfile(cfg):
     try:
         ok = True
         cfg_labels = sorted(list(cfg["Variables"].keys()))
-        std_name = "settings/l1.txt"
+        base_path = pfp_utils.get_base_path()
+        std_name = os.path.join(base_path, "controlfiles", "standard", "settings_l1.txt")
         std = ConfigObj(std_name, indent_type="    ", list_values=False, write_empty_values=True)
         std_labels = sorted(list(std["Variables"].keys()))
         # initialise the messages dictionary
