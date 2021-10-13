@@ -19,96 +19,96 @@ from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def CheckCFCompliance(nc_file_uri):
-    """
-    Purpose:
-     Run the CF Conventions checker on a netCDF file.
-    Side effects:
-     Creates 3 text files in the same folder as the netCDF file
-     and with the following suffixes:
-      _cfchecker.all - contains all messages from cfchecker
-      _cfchecker.errors - contains all ERROR messages from cfchecker
-      _cfchecker.warnings - contains all WARNING messages from cfchecker
-    Author: PRI
-    Date: July 2021
-    """
-    msg = " Checking CF compliance for " + os.path.basename(nc_file_uri)
-    logger.info(msg)
-    try:
-        # cfchecker log file for all messages
-        cf_file_uri = nc_file_uri.replace(".nc", "_cfchecker.all")
-        # cfchecker log file for error messages
-        cf_error_uri = cf_file_uri.replace("_cfchecker.all", "_cfchecker.errors")
-        # cfchecker log file for warning messages
-        cf_warning_uri = cf_file_uri.replace("_cfchecker.all", "_cfchecker.warnings")
-        # with a little work, cfchecker could be used directly in PFP
-        # path to Python running this show
-        env_bin = os.path.join(sys.exec_prefix, "bin")
-        # path to cfchecks in that Python install
-        env_cfchecks = os.path.join(env_bin, "cfchecks")
-        # command to run with path to cfchecks
-        cmd = [env_cfchecks, "-v 1.8", nc_file_uri]
-        with open(cf_file_uri, "w") as f:
-            # run cfchecks as a subprocess at this stage
-            subprocess.run(cmd, stdout=f)
-        # parse the output of cfchecker and write warnings and errors to separate files
-        # error file
-        error_file = open(cf_error_uri, "w")
-        n_errors = 0
-        # warning file
-        warning_file = open(cf_warning_uri, "w")
-        n_warnings = 0
-        # read the cfchecker log file
-        with open(cf_file_uri) as f:
-            for line in f:
-                if "CHECKING NetCDF FILE" in line:
-                    # line containing the file name
-                    error_file.write(line)
-                    warning_file.write(line)
-                    continue
-                if "Checking variable:" in line:
-                    # line containing the variable name
-                    parts = line.split(" ")
-                    variable_name = parts[2].rstrip()
-                    continue
-                if (("ERROR:" in line) and ('variable_name' in locals())):
-                    # line containing error messages
-                    line_out = " " + variable_name + " " + line
-                    error_file.write(line_out)
-                    n_errors += 1
-                    continue
-                if (("WARN:" in line) and ('variable_name' in locals())):
-                    # line containing warning messages
-                    line_out = " " + variable_name + " " + line
-                    warning_file.write(line_out)
-                    n_warnings += 1
-                    continue
-        # close the error and warning files
-        error_file.close()
-        warning_file.close()
-        # tell the user what we found
-        if n_errors > 0:
-            # number of errors found by cfchecker
-            msg = " CF checks returned " + str(n_errors) + " errors"
-            logger.error(msg)
-            msg = "  Check " + cf_error_uri + " for details"
-            logger.error(msg)
-        if n_warnings > 0:
-            # number of warnings found by cfchecker
-            msg = " CF checks returned " + str(n_warnings) + " warnings"
-            logger.warning(msg)
-            msg = "  Check " + cf_warning_uri + " for details"
-            logger.warning(msg)
-        # info message to user about errors and warnings
-        msg = " CF checks returned " + str(n_errors) + " errors and "
-        msg += str(n_warnings) + " warnings"
-        logger.info(msg)
-    except Exception:
-        msg = "Error during CF compliance check of " + os.path.split(nc_file_uri)[1]
-        logger.error(msg)
-        error_message = traceback.format_exc()
-        logger.error(error_message)
-    return
+#def CheckCFCompliance(nc_file_uri):
+    #"""
+    #Purpose:
+     #Run the CF Conventions checker on a netCDF file.
+    #Side effects:
+     #Creates 3 text files in the same folder as the netCDF file
+     #and with the following suffixes:
+      #_cfchecker.all - contains all messages from cfchecker
+      #_cfchecker.errors - contains all ERROR messages from cfchecker
+      #_cfchecker.warnings - contains all WARNING messages from cfchecker
+    #Author: PRI
+    #Date: July 2021
+    #"""
+    #msg = " Checking CF compliance for " + os.path.basename(nc_file_uri)
+    #logger.info(msg)
+    #try:
+        ## cfchecker log file for all messages
+        #cf_file_uri = nc_file_uri.replace(".nc", "_cfchecker.all")
+        ## cfchecker log file for error messages
+        #cf_error_uri = cf_file_uri.replace("_cfchecker.all", "_cfchecker.errors")
+        ## cfchecker log file for warning messages
+        #cf_warning_uri = cf_file_uri.replace("_cfchecker.all", "_cfchecker.warnings")
+        ## with a little work, cfchecker could be used directly in PFP
+        ## path to Python running this show
+        #env_bin = os.path.join(sys.exec_prefix, "bin")
+        ## path to cfchecks in that Python install
+        #env_cfchecks = os.path.join(env_bin, "cfchecks")
+        ## command to run with path to cfchecks
+        #cmd = [env_cfchecks, "-v 1.8", nc_file_uri]
+        #with open(cf_file_uri, "w") as f:
+            ## run cfchecks as a subprocess at this stage
+            #subprocess.run(cmd, stdout=f)
+        ## parse the output of cfchecker and write warnings and errors to separate files
+        ## error file
+        #error_file = open(cf_error_uri, "w")
+        #n_errors = 0
+        ## warning file
+        #warning_file = open(cf_warning_uri, "w")
+        #n_warnings = 0
+        ## read the cfchecker log file
+        #with open(cf_file_uri) as f:
+            #for line in f:
+                #if "CHECKING NetCDF FILE" in line:
+                    ## line containing the file name
+                    #error_file.write(line)
+                    #warning_file.write(line)
+                    #continue
+                #if "Checking variable:" in line:
+                    ## line containing the variable name
+                    #parts = line.split(" ")
+                    #variable_name = parts[2].rstrip()
+                    #continue
+                #if (("ERROR:" in line) and ('variable_name' in locals())):
+                    ## line containing error messages
+                    #line_out = " " + variable_name + " " + line
+                    #error_file.write(line_out)
+                    #n_errors += 1
+                    #continue
+                #if (("WARN:" in line) and ('variable_name' in locals())):
+                    ## line containing warning messages
+                    #line_out = " " + variable_name + " " + line
+                    #warning_file.write(line_out)
+                    #n_warnings += 1
+                    #continue
+        ## close the error and warning files
+        #error_file.close()
+        #warning_file.close()
+        ## tell the user what we found
+        #if n_errors > 0:
+            ## number of errors found by cfchecker
+            #msg = " CF checks returned " + str(n_errors) + " errors"
+            #logger.error(msg)
+            #msg = "  Check " + cf_error_uri + " for details"
+            #logger.error(msg)
+        #if n_warnings > 0:
+            ## number of warnings found by cfchecker
+            #msg = " CF checks returned " + str(n_warnings) + " warnings"
+            #logger.warning(msg)
+            #msg = "  Check " + cf_warning_uri + " for details"
+            #logger.warning(msg)
+        ## info message to user about errors and warnings
+        #msg = " CF checks returned " + str(n_errors) + " errors and "
+        #msg += str(n_warnings) + " warnings"
+        #logger.info(msg)
+    #except Exception:
+        #msg = "Error during CF compliance check of " + os.path.split(nc_file_uri)[1]
+        #logger.error(msg)
+        #error_message = traceback.format_exc()
+        #logger.error(error_message)
+    #return
 
 def check_executables():
     # check for the executable files required

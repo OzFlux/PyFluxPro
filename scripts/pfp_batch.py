@@ -20,16 +20,16 @@ from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def do_batch_cfcheck(cfg):
-    """
-    Purpose:
-     Wrapper to call CF compliance check routine.
-    Author: PRI
-    Date: July 2021
-    """
-    nc_file_uri = pfp_io.get_outfilenamefromcf(cfg)
-    pfp_compliance.CheckCFCompliance(nc_file_uri)
-    return
+#def do_batch_cfcheck(cfg):
+    #"""
+    #Purpose:
+     #Wrapper to call CF compliance check routine.
+    #Author: PRI
+    #Date: July 2021
+    #"""
+    #nc_file_uri = pfp_io.get_outfilenamefromcf(cfg)
+    #pfp_compliance.CheckCFCompliance(nc_file_uri)
+    #return
 def do_batch_fingerprints(cfg):
     """
     Purpose:
@@ -249,7 +249,7 @@ def do_concatenate_batch(main_ui, cf_level):
             msg = "Finished concatenation with " + cf_file_name[1]
             logger.info(msg)
             # do the CF compliance check
-            do_batch_cfcheck(cf_cc)
+            #do_batch_cfcheck(cf_cc)
             # and then plot the fingerprints for the concatenated files
             do_batch_fingerprints(cf_cc)
             logger.info("")
@@ -431,7 +431,7 @@ def do_L4_batch(main_ui, cf_level):
             msg = "Finished L4 processing with " + cf_file_name[1]
             logger.info(msg)
             # do the CF compliance check
-            do_batch_cfcheck(cf_l4)
+            #do_batch_cfcheck(cf_l4)
             # plot the L4 fingerprints
             do_batch_fingerprints(cf_l4)
             logger.info("")
@@ -473,7 +473,7 @@ def do_L5_batch(main_ui, cf_level):
             msg = "Finished L5 processing with " + cf_file_name[1]
             logger.info(msg)
             # do the CF compliance check
-            do_batch_cfcheck(cf_l5)
+            #do_batch_cfcheck(cf_l5)
             # plot the L5 fingerprints
             do_batch_fingerprints(cf_l5)
             logger.info("")
@@ -514,7 +514,7 @@ def do_L6_batch(main_ui, cf_level):
             msg = "Finished L6 processing with " + cf_file_name[1]
             logger.info(msg)
             # do the CF compliance check
-            do_batch_cfcheck(cf_l6)
+            #do_batch_cfcheck(cf_l6)
             logger.info("")
         except Exception:
             msg = "Error occurred during L6 with " + cf_file_name[1]
