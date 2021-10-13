@@ -5,6 +5,7 @@ import logging
 import os
 import platform
 import subprocess
+import sys
 import traceback
 # 3rd party modules
 from configobj import ConfigObj
@@ -41,7 +42,12 @@ def CheckCFCompliance(nc_file_uri):
         # cfchecker log file for warning messages
         cf_warning_uri = cf_file_uri.replace("_cfchecker.all", "_cfchecker.warnings")
         # with a little work, cfchecker could be used directly in PFP
-        cmd = ["cfchecks", "-v 1.8", nc_file_uri]
+        # path to Python running this show
+        env_bin = os.path.join(sys.exec_prefix, "bin")
+        # path to cfchecks in that Python install
+        env_cfchecks = os.path.join(env_bin, "cfchecks")
+        # command to run with path to cfchecks
+        cmd = [env_cfchecks, "-v 1.8", nc_file_uri]
         with open(cf_file_uri, "w") as f:
             # run cfchecks as a subprocess at this stage
             subprocess.run(cmd, stdout=f)
