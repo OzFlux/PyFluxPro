@@ -156,8 +156,8 @@ class pfp_main_ui(QWidget):
         self.actionUtilitiesUstarCPDMcNew.setText("CPD (McNew)")
         self.actionUtilitiesUstarMPT = QAction(self)
         self.actionUtilitiesUstarMPT.setText("MPT")
-        self.actionUtilitiesCFCheck = QAction(self)
-        self.actionUtilitiesCFCheck.setText("CF check")
+        #self.actionUtilitiesCFCheck = QAction(self)
+        #self.actionUtilitiesCFCheck.setText("CF check")
         # add the actions to the menus
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
@@ -192,7 +192,7 @@ class pfp_main_ui(QWidget):
         # Utilities menu
         self.menuUtilities.addAction(self.actionUtilitiesClimatology)
         self.menuUtilities.addAction(self.menuUtilitiesUstar.menuAction())
-        self.menuUtilities.addAction(self.actionUtilitiesCFCheck)
+        #self.menuUtilities.addAction(self.actionUtilitiesCFCheck)
         # add individual menus to menu bar
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
@@ -255,7 +255,7 @@ class pfp_main_ui(QWidget):
         self.actionUtilitiesUstarCPDMcHugh.triggered.connect(self.utilities_ustar_cpd_mchugh_standard)
         self.actionUtilitiesUstarCPDMcNew.triggered.connect(self.utilities_ustar_cpd_mcnew_standard)
         self.actionUtilitiesUstarMPT.triggered.connect(self.utilities_ustar_mpt_standard)
-        self.actionUtilitiesCFCheck.triggered.connect(self.utilities_cfcheck)
+        #self.actionUtilitiesCFCheck.triggered.connect(self.utilities_cfcheck)
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
         # add the L5 GUI
@@ -909,16 +909,16 @@ class pfp_main_ui(QWidget):
                                       self, nc_file_uri)
         self.threadpool.start(worker)
         return
-    def utilities_cfcheck(self):
-        logger = logging.getLogger(name="pfp_log")
-        nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
-        if not os.path.exists(nc_file_uri):
-            logger.info( " CF check: no netCDF file chosen")
-            return
-        worker = pfp_threading.Worker(pfp_top_level.do_utilities_cfcheck,
-                                      nc_file_uri)
-        self.threadpool.start(worker)
-        return
+    #def utilities_cfcheck(self):
+        #logger = logging.getLogger(name="pfp_log")
+        #nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
+        #if not os.path.exists(nc_file_uri):
+            #logger.info( " CF check: no netCDF file chosen")
+            #return
+        #worker = pfp_threading.Worker(pfp_top_level.do_utilities_cfcheck,
+                                      #nc_file_uri)
+        #self.threadpool.start(worker)
+        #return
 if (__name__ == '__main__'):
     # get the application name and version
     pfp_version = cfg.version_name + " " + cfg.version_number

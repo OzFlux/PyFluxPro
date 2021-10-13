@@ -1092,15 +1092,15 @@ def do_utilities_ustar_mpt_standard(main_ui, nc_file_uri):
         logger.error(error_message)
     main_ui.actionRunCurrent.setDisabled(False)
     return
-def do_utilities_cfcheck(nc_file_uri):
-    try:
-        logger.info("Starting CF check")
-        pfp_compliance.CheckCFCompliance(nc_file_uri)
-        logger.info("Finished CF check")
-        logger.info("")
-    except Exception:
-        error_message = " An error occured while doing the CF check, see below for details ..."
-        logger.error(error_message)
-        error_message = traceback.format_exc()
-        logger.error(error_message)
-    return
+#def do_utilities_cfcheck(nc_file_uri):
+    #try:
+        #logger.info("Starting CF check")
+        #pfp_compliance.CheckCFCompliance(nc_file_uri)
+        #logger.info("Finished CF check")
+        #logger.info("")
+    #except Exception:
+        #error_message = " An error occured while doing the CF check, see below for details ..."
+        #logger.error(error_message)
+        #error_message = traceback.format_exc()
+        #logger.error(error_message)
+    #return
