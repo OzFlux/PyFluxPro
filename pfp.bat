@@ -2,7 +2,7 @@
 rem
 rem Remember the good old days of DOS batch files ... ?
 rem
-call conda activate pfp_dev
+call conda activate pfp_env
 if "%1"=="" goto :interactive
 if "%1"=="batch" goto :batch
 goto :end
