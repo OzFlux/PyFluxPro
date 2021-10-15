@@ -800,6 +800,10 @@ class pfp_main_ui(QWidget):
         return
     def closeTab (self, currentIndex):
         """ Close the selected tab."""
+        # the tab close button ("x") shows on MacOS even though it is disabled
+        # here we trap user attempts to close the log window
+        if (currentIndex == 0):
+            return
         # check to see if the tab contents have been saved
         tab_text = str(self.tabs.tabText(currentIndex))
         if "*" in tab_text:
