@@ -745,7 +745,7 @@ class pfp_main_ui(QWidget):
             # check the L1 control file to see if it is OK to run
             if pfp_compliance.check_l1_controlfile(cfg):
                 pfp_top_level.do_run_l1(cfg)
-                self.actionRunCurrent.setDisabled(False)
+            self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "L2":
             pfp_top_level.do_run_l2(cfg)
             self.actionRunCurrent.setDisabled(False)
@@ -800,6 +800,10 @@ class pfp_main_ui(QWidget):
         return
     def closeTab (self, currentIndex):
         """ Close the selected tab."""
+        # the tab close button ("x") shows on MacOS even though it is disabled
+        # here we trap user attempts to close the log window
+        if (currentIndex == 0):
+            return
         # check to see if the tab contents have been saved
         tab_text = str(self.tabs.tabText(currentIndex))
         if "*" in tab_text:
