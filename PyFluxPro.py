@@ -29,7 +29,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 # PFP modules
-sys.path.append('scripts')
+sys.path.insert(0, 'scripts')
 from scripts import cfg
 from scripts import pfp_compliance
 from scripts import pfp_gui
