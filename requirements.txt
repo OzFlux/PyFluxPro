@@ -1,0 +1,16 @@
+configobj
+python-dateutil
+matplotlib
+netcdf4
+numpy
+openpyxl
+pandas
+pyqt
+pytz
+scipy
+statsmodels
+timezonefinder
+xarray
+xlwt
+xlrd
+xlsxwriter

@@ -29,7 +29,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 # PFP modules
-sys.path.append('scripts')
+sys.path.insert(0, 'scripts')
 from scripts import cfg
 from scripts import pfp_compliance
 from scripts import pfp_gui
@@ -594,6 +594,12 @@ class pfp_main_ui(QWidget):
         logger = logging.getLogger(name="pfp_log")
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
+        # trap user attempts to save the Log window :=) thanks, Craig Macfarlane!
+        if tab_index_current == 0:
+            msg = "Log files are automatically saved" + "\n"
+            msg += "in the PyFluxPro"+ os.sep + "logfiles folder"
+            pfp_gui.MsgBox_Continue(msg)
+            return
         content = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         if isinstance(content, ConfigObj):
             # we are saving a control file
@@ -653,6 +659,12 @@ class pfp_main_ui(QWidget):
         logger = logging.getLogger(name="pfp_log")
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
+        # trap user attempts to save the Log window :=) thanks, Craig Macfarlane!
+        if tab_index_current == 0:
+            msg = "Log files are automatically saved" + "\n"
+            msg += "in the PyFluxPro"+ os.sep + "logfiles folder"
+            pfp_gui.MsgBox_Continue(msg)
+            return
         content = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         if isinstance(content, ConfigObj):
             # we are saving a control file
