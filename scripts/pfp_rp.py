@@ -138,19 +138,18 @@ def cleanup_ustar_dict(ds, ustar_in):
             years.append(int(year))
     ustar_out = {}
     for year in data_years:
-        ustar_out[str(year)] = {"ustar_mean": float(-9999)}
-        for item in ["cpd", "mpt", "cf"]:
+        ustar_out[str(year)] = {"ustar_mean": numpy.nan}
+        for item in ["cf", "cpd", "mpt"]:
             if item in ustar_in:
                 if str(year) in ustar_in[item]:
-                    if ((ustar_in[item][str(year)]["ustar_mean"] != float(-9999)) and
-                         ustar_out[str(year)]["ustar_mean"] == float(-9999)):
+                    if ((not numpy.isnan(ustar_in[item][str(year)]["ustar_mean"])) and
+                        (numpy.isnan(ustar_out[str(year)]["ustar_mean"]))):
                         ustar_out[str(year)]["ustar_mean"] = ustar_in[item][str(year)]["ustar_mean"]
     # get the average of good ustar threshold values
     good_values = []
     for year in sorted(list(ustar_out.keys())):
-        ustar_threshold = float(ustar_out[year]["ustar_mean"])
-        if ustar_threshold != float(-9999):
-            good_values.append(ustar_threshold)
+        if not numpy.isnan(ustar_out[year]["ustar_mean"]):
+            good_values.append(ustar_out[year]["ustar_mean"])
     if len(good_values) == 0:
         msg = " No u* thresholds found, using default of 0.25 m/s"
         logger.error(msg)
@@ -158,7 +157,7 @@ def cleanup_ustar_dict(ds, ustar_in):
     ustar_threshold_mean = numpy.sum(numpy.array(good_values))/len(good_values)
     # replace missing vaues with mean
     for year in sorted(list(ustar_out.keys())):
-        if ustar_out[year]["ustar_mean"] == float(-9999):
+        if numpy.isnan(ustar_out[year]["ustar_mean"]):
             ustar_out[year]["ustar_mean"] = ustar_threshold_mean
     return ustar_out
 
@@ -666,14 +665,14 @@ def get_ustar_thresholds(cf, ds):
             else:
                 msg = " CPD results file not found (" + results_name + ")"
                 logger.warning(msg)
-        elif "mpt_filename" in cf["Files"]:
+        if "mpt_filename" in cf["Files"]:
             results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["mpt_filename"])
             if os.path.isfile(results_name):
                 ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
             else:
                 msg = " MPT results file not found (" + results_name + ")"
                 logger.warning(msg)
-        elif "ustar_threshold" in cf:
+        if "ustar_threshold" in cf:
             ts = int(ds.globalattributes["time_step"])
             ustar_dict["cf"] = get_ustarthreshold_from_cf(cf, ts)
         else:

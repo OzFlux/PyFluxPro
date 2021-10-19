@@ -79,7 +79,7 @@ def cpd_barr_main(cf):
     pb = {"nYears": len(years), "n": 0}
     for n, year in enumerate(years):
         pb["n"] = n + 1
-        ustar_results[year] = {}
+        ustar_results[year] = {"ustar_mean": numpy.nan, "ustar_sig": numpy.nan}
         start = datetime.datetime(year, 1, 1, 0, 0) + datetime.timedelta(minutes=ts)
         end = datetime.datetime(year+1, 1, 1, 0, 0)
         Fsd = pfp_utils.GetVariable(ds, names["Fsd"], start=start, end=end, out_type="nan")

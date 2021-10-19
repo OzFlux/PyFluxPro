@@ -821,6 +821,28 @@ def check_l1_controlfile(cfg):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return ok
+def check_l5_controlfile(cfg):
+    """
+    Purpose:
+     Check the L5 control file to make sure it contains all information
+     needed to run L5 and that all information is correct.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: October 2021
+    """
+    ok = True
+    # initialise the messages dictionary
+    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    # check to see if both cpd_filename and ustar_threshold section exist
+    if "ustar_threshold"in cfg:
+        if "cpd_filename" in cfg["Files"]:
+            msg = "ustar_threshold section and Files/cpd_filename present"
+            messages["ERROR"].append(msg)
+    display_messages(messages)
+    if len(messages["ERROR"]) > 0:
+        ok = False
+    return ok
 def display_messages(messages):
     # gather variable error messages into a single list
     error_messages = []
