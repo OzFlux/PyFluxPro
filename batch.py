@@ -37,6 +37,6 @@ if (__name__ == '__main__'):
     cfg_batch = ConfigObj(cfg_file_name, indent_type="    ", list_values=False,
                           write_empty_values=True)
 
-    main_ui = Bunch(stop_flag=False, cfg=cfg_batch)
+    main_ui = Bunch(stop_flag=False, cfg=cfg_batch, mode="batch")
 
     pfp_batch.do_levels_batch(main_ui)
