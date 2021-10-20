@@ -15,7 +15,8 @@ import netCDF4
 # check the OS and set the matplotlib backend accordingly
 if platform.system() == "Darwin":
     # set backend to "macosx" on Macs
-    matplotlib.use("macosx")
+    #matplotlib.use("macosx")
+    matplotlib.use("QT5Agg")
 elif platform.system() == "Windows":
     # set backend to "QT5Agg" for Windows
     matplotlib.use("QT5Agg")
@@ -748,11 +749,11 @@ class pfp_main_ui(QWidget):
             self.menuRun.addAction(self.actionStopCurrent)
             self.actionStopCurrent.triggered.connect(self.stop_current)
             # get a worker thread
-            #worker = pfp_threading.Worker(pfp_top_level.do_run_batch, self)
+            worker = pfp_threading.Worker(pfp_top_level.do_run_batch, self)
             # start the worker
-            #self.threadpool.start(worker)
+            self.threadpool.start(worker)
             # no threading
-            pfp_top_level.do_run_batch(self)
+            #pfp_top_level.do_run_batch(self)
         elif cfg["level"] == "L1":
             # check the L1 control file to see if it is OK to run
             if pfp_compliance.check_l1_controlfile(cfg):

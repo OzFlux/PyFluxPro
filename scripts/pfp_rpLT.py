@@ -448,6 +448,8 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
     if iel["gui"]["show_plots"]:
         plt.ion()
     else:
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
         plt.ioff()
     fig = plt.figure(pd["fig_num"], figsize=(13, 8))
     fig.clf()
@@ -557,6 +559,7 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
         plt.ioff()
     else:
         plt.close(fig)
+        plt.switch_backend(current_backend)        
         plt.ion()
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     return
