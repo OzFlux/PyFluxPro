@@ -50,12 +50,12 @@ Miniconda3 installs a minimal version of Python that does not include all of the
 * 1. Open a command (or terminal) window and use "cd" to navigate to the PyFluxPro directory.
 * 2. At the command prompt in the PyFluxPro directory, type "conda env create -f environment.yml" to create the virtual environment.  This process downloads and installs the packages required by PyFluxPro which may take several minutes.  The default name of the environment created is "pfp_env".
 * 3. Once the environment has been created, you must activate the environment before running PyFluxPro using;
-  * a) On Windows, type "activate pfp_env" at the command prompt in the PyFluxPro directory.
-  * b) On Linux and Mac OSX, type "source activate pfp_env" at the command prompt in the PyFluxPro directory.
+  * a) On Windows, type "conda activate pfp_env" at the command prompt in the PyFluxPro directory.
+  * b) On Linux and Mac OSX, type "conda activate pfp_env" at the command prompt in the PyFluxPro directory.
 * 4. PyFluxPro should now be ready to use.
 
 ## Building the executable files for Linux and Mac OSX
-This step is only required if you are using PyFuxPro on Linux or Mac OSX.  The executable files are downloaded when the PyFluxPro repository is cloned under the Windows operating system.  Building the executable files for use on Linux and Mac OSX requires the GNU Compiler Collection (C and C++) and the GNU make utility to be installed.  These are usually installed by default for Mac OSX and common Linux distributions.
+This step is only required if you are using PyFuxPro on Linux or Mac OSX.  The executable files are downloaded when the PyFluxPro repository is cloned under the Windows operating system.  Building the executable files for use on Linux and Mac OSX requires the GNU Compiler Collection (C and C++) and the GNU make utility to be installed.  These are usually installed by default for common Linux distributions.  On MacOS, you may nee to install XCode, including the command line tools.
 
 The build process is controlled by the "make_nix" shell script file in the PyFluxPro directory.  To run the script file:
 * 1. Use "cd" to navigate to the PyFluxPro directory.
@@ -70,7 +70,7 @@ PyFluxPro is still being actively developed and there are frequent changes to fi
 
 To update a PyFluxPro installation done by "git", follow these steps:
 * 1. Open a command line window or terminal session and use the "cd" command to navigate to the PyFluxPro directory created during the installation step above.  Note that while the install is done from the directory one level above the PyFluxPro directory, the update is done from the PyFluxPro directory.
-* 2. Type "git pull origin master" at the command prompt in the PyFluxPro directory.  This will update the PyFluxPro installation.
+* 2. Type "git pull origin main" at the command prompt in the PyFluxPro directory.  This will update the PyFluxPro installation.
 * 3. It is a good idea to update the virtual environment when you update PyFluxPro.  To do this, type "conda env update -f environment.yml" at the command prompt in the PyFluxPro directory.  If you have difficulty with this, see https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html for instructions on removing and creating a virtual environment.
 
 # Running PyFluxPro
