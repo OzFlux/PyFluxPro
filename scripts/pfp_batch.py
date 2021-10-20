@@ -524,9 +524,16 @@ def do_L6_batch(main_ui, cf_level):
             continue
     return
 def do_levels_batch(main_ui):
-    tab_index_running = main_ui.tabs.tab_index_running
-    cf_batch = main_ui.tabs.tab_dict[tab_index_running].get_data_from_model()
     logger = logging.getLogger("pfp_log")
+    if main_ui.mode == "interactive":
+        tab_index_running = main_ui.tabs.tab_index_running
+        cf_batch = main_ui.tabs.tab_dict[tab_index_running].get_data_from_model()
+    elif main_ui.mode == "batch":
+        cf_batch = main_ui.cfg
+    else:
+        msg = "Unrecognised option for mode (" + main_ui.mode + ")"
+        logger.error(msg)
+        raise RuntimeError
     start = datetime.datetime.now()
     msg = "Started batch processing at " + start.strftime("%Y%m%d%H%M")
     logger.info(msg)

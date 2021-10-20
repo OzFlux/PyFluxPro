@@ -72,6 +72,8 @@ logger = pfp_log.CreateLogger(logger_name, log_file_name=log_file_name)
 class pfp_main_ui(QWidget):
     def __init__(self, pfp_version, textBox):
         super(pfp_main_ui, self).__init__()
+        # set the mode attribute
+        self.mode = "interactive"
         # menu bar
         self.menubar = QMenuBar(self)
         # File menu
