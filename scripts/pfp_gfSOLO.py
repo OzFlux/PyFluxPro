@@ -347,6 +347,8 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     if l5s["gui"]["show_plots"]:
         plt.ion()
     else:
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
         plt.ioff()
     if plt.fignum_exists(1):
         fig = plt.figure(1)
@@ -481,6 +483,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
         plt.ioff()
     else:
         plt.close()
+        plt.switch_backend(current_backend)        
         plt.ion()
 
 def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
@@ -510,6 +513,8 @@ def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
     if l5s["gui"]["show_plots"]:
         plt.ion()
     else:
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
         plt.ioff()
     if plt.fignum_exists(0):
         fig = plt.figure(0)
@@ -543,6 +548,7 @@ def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
         pfp_utils.mypause(0.5)
         plt.ioff()
     else:
+        plt.switch_backend(current_backend)        
         plt.ion()
 
 def gfSOLO_plotsummary(ds, solo):
@@ -572,6 +578,8 @@ def gfSOLO_plotsummary(ds, solo):
     if solo["gui"]["show_plots"]:
         plt.ion()
     else:
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
         plt.ioff()
     # plot the summary statistics
     # set up the subplots on the page
@@ -629,6 +637,7 @@ def gfSOLO_plotsummary(ds, solo):
         plt.ioff()
     else:
         plt.close()
+        plt.switch_backend(current_backend)        
         plt.ion()
 
 def gfSOLO_plotsummary_getdata(dt_start, dt_end, result):

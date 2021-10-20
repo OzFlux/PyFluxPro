@@ -341,6 +341,8 @@ def plot_fingerprint(cf):
         if show_plots:
             plt.ion()
         else:
+            current_backend = plt.get_backend()
+            plt.switch_backend("agg")
             plt.ioff()
         fig = plt.figure(nFig, figsize=(13,8))
         fig.clf()
@@ -420,6 +422,7 @@ def plot_fingerprint(cf):
             plt.ioff()
         else:
             plt.close(fig)
+            plt.switch_backend(current_backend)        
             plt.ion()
 
 def plot_fluxnet(cf):
@@ -693,6 +696,8 @@ def plottimeseries(cf, nFig, dsa, dsb):
     if show_plots.lower() == "yes":
         plt.ion()
     else:
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
         plt.ioff()
     # check to see if a figure with the same title already exists
     fig_titles = []
@@ -802,6 +807,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
         plt.ioff()
     else:
         plt.close(fig)
+        plt.switch_backend(current_backend)        
         plt.ion()
     return
 
@@ -1372,6 +1378,8 @@ def plotxy(cf, title, plt_cf, dsa, dsb):
     if show_plots.lower() == "yes":
         plt.ion()
     else:
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
         plt.ioff()
     fig = plt.figure()
     fig.clf()
@@ -1413,6 +1421,7 @@ def plotxy(cf, title, plt_cf, dsa, dsb):
         plt.ioff()
     else:
         plt.close(fig)
+        plt.switch_backend(current_backend)        
         plt.ion()
     return
 

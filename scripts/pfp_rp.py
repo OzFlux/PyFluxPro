@@ -1255,6 +1255,8 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
         if cf["Options"]["call_mode"].lower()=="interactive":
             plt.ion()
         else:
+            current_backend = plt.get_backend()
+            plt.switch_backend("agg")
             plt.ioff()
         fig = plt.figure(figsize=(16,4))
         fig.canvas.manager.set_window_title("Carbon Budget: "+item.replace("_",""))
@@ -1287,11 +1289,14 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
             plt.ioff()
         else:
             plt.close(fig)
+            plt.switch_backend(current_backend)        
             plt.ion()
     # plot time series of Fn,Fg,Fh,Fe
     if cf["Options"]["call_mode"].lower()=="interactive":
         plt.ion()
     else:
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
         plt.ioff()
     fig = plt.figure(figsize=(16,4))
     fig.canvas.manager.set_window_title("Surface Energy Budget")
@@ -1319,6 +1324,7 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
         plt.ioff()
     else:
         plt.close(fig)
+        plt.switch_backend(current_backend)        
         plt.ion()
 
 def L6_summary_plotcumulative(cf, ds, cumulative_dict):
@@ -1343,6 +1349,8 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
         if cf["Options"]["call_mode"].lower()=="interactive":
             plt.ion()
         else:
+            current_backend = plt.get_backend()
+            plt.switch_backend("agg")
             plt.ioff()
         fig = plt.figure(figsize=(8,8))
         fig.canvas.manager.set_window_title("Cumulative plots: "+item.replace("_",""))
@@ -1421,6 +1429,7 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
             plt.ioff()
         else:
             plt.close(fig)
+            plt.switch_backend(current_backend)        
             plt.ion()
 
 def L6_summary_createseriesdict(cf,ds):
