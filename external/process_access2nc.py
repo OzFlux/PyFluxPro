@@ -4,7 +4,7 @@ import datetime
 import faulthandler
 import logging
 import os
-#import shutil
+import shutil
 import sys
 import _pickle as cPickle
 # 3rd party modules
@@ -26,30 +26,8 @@ import scripts.pfp_utils as pfp_utils
 
 faulthandler.enable()
 
-#now = datetime.datetime.now()
-#logToFile_name = "access_" + now.strftime("%Y%m%d%H%M") + ".log"
-#if not os.path.isdir("logfiles"):
-    #os.mkdir("logfiles")
-#logToFile_name = os.path.join("logfiles", logToFile_name)
-## log to file
-#logToFile = logging.getLogger("logToFile")
-#logToFile.setLevel(logging.DEBUG)
-#fh = logging.FileHandler(logToFile_name)
-#fh.setLevel(logging.DEBUG)
-#formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s', '%H:%M:%S')
-#fh.setFormatter(formatter)
-#logToFile.addHandler(fh)
-## log to screen
-#logToScreen = logging.getLogger("logToScreen")
-#logToScreen.setLevel(logging.DEBUG)
-#sh = logging.StreamHandler()
-#sh.setLevel(logging.DEBUG)
-#formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s', '%H:%M:%S')
-#sh.setFormatter(formatter)
-#logToScreen.addHandler(sh)
-
 now = datetime.datetime.now()
-log_file_name = "cleanup_" + now.strftime("%Y%m%d%H%M") + ".log"
+log_file_name = "access2nc_" + now.strftime("%Y%m%d%H%M") + ".log"
 log_file_path = "logfiles"
 if not os.path.isdir(log_file_path):
     os.mkdir(log_file_path)
@@ -88,7 +66,10 @@ def build_concatenation_dictionary(site_info, cfg):
         access_file_path = os.path.join(existing_access_base_path, site, "Data", "ACCESS")
         access_file_name = site + "_ACCESS" + ".nc"
         out_file_name = os.path.join(access_file_path, access_file_name)
-        in_file_names = [out_file_name]
+        if cfg["Files"].as_bool("from_cleaned"):
+            access_file_path = os.path.join(access_file_path, "cleaned")
+        in_file_name = os.path.join(access_file_path, access_file_name)
+        in_file_names = [in_file_name]
         concatenation_info[site] = {"NetCDFConcatenate": {}, "RemoveIntermediateSeries": {}}
         cisn = concatenation_info[site]["NetCDFConcatenate"]
         cisn["OK"] = True
@@ -287,7 +268,7 @@ def calculate_ws_and_wd_from_u_and_v(ds):
 
 logger = logging.getLogger("pfp_log")
 # read the control file
-cfg_file_path = "ACCESS.txt"
+cfg_file_path = "process_access2nc.txt"
 msg = " Loading the control file"
 logger.info(msg)
 cfg = pfp_io.get_controlfilecontents(cfg_file_path)
@@ -490,8 +471,9 @@ for site in sites:
     dss_ats[site].globalattributes["time_zone"] = site_info[site]["Time zone"]
     dss_ats[site].globalattributes["latitude"] = site_info[site]["Latitude"]
     dss_ats[site].globalattributes["longitude"] = site_info[site]["Longitude"]
-    dss_ats[site].globalattributes["start_date"] = str(dt_loc_nogaps[0])
-    dss_ats[site].globalattributes["end_date"] = str(dt_loc_nogaps[-1])
+    dss_ats[site].globalattributes["time_coverage_start"] = str(dt_loc_nogaps[0])
+    dss_ats[site].globalattributes["time_coverage_end"] = str(dt_loc_nogaps[-1])
+    dss_ats[site].globalattributes["processing_level"] = "L1"
     # we discard the base time plus 6 hour data for non-precipitation variables
     file_id = data_nogaps[site]["file_id"]
     idx = numpy.array([i for i, l in enumerate(file_id) if l[-3:] != "006"])
@@ -641,7 +623,7 @@ for site in sites:
     cis_file_path = os.path.join(existing_access_base_path, site, "Data", "ACCESS", "cis")
     if not os.path.isdir(cis_file_path):
         os.mkdir(cis_file_path)
-    cfg_cis = ConfigObj(cis)
+    cfg_cis = ConfigObj(cis, indent_type="    ", list_values=False)
     cfg_cis.filename = os.path.join(cis_file_path, cis_file_name)
     cfg_cis.write()
 

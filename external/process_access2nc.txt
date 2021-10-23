@@ -2,7 +2,11 @@
     existing_access_base_path = /mnt/OzFlux/Sites/
     new_access_base_path = /rdsi/market/access_regftp/download/
     site_master_file_path = /mnt/OzFlux/site_master.xls
+    from_cleaned = True
     from_file = False
+[Options]
+    move_to_processed = no
+    concatenate_with_existing = no
 [Variables]
     [[AH]]
         [[[Attr]]]
@@ -107,7 +111,7 @@
             long_name = Surface air pressure
             standard_name = surface_air_pressure
             statistic_type = average
-            units = kPa
+            units = Pa
     [[RH]]
         [[[nc]]]
             name = rh2m
@@ -131,7 +135,7 @@
             long_name = Soil water content
             standard_name = soil_moisture_content
             statistic_type = average
-            units = m^3/m^3
+            units = kg/m^2
     [[Ta]]
         [[[nc]]]
             name = temp_scrn
@@ -139,7 +143,7 @@
             long_name = Air temperature
             standard_name = air_temperature
             statistic_type = average
-            units = degC
+            units = K
     [[Ts]]
         [[[nc]]]
             name = soil_temp
@@ -147,7 +151,7 @@
             long_name = Soil temperature
             standard_name = soil_temperature
             statistic_type = average
-            units = degC
+            units = K
     [[U]]
         [[[nc]]]
             name = u10
