@@ -16,15 +16,6 @@ import scripts.pfp_utils as pfp_utils
 
 faulthandler.enable()
 
-## log to screen
-#logToScreen = logging.getLogger("logToScreen")
-#logToScreen.setLevel(logging.DEBUG)
-#sh = logging.StreamHandler()
-#sh.setLevel(logging.DEBUG)
-#formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s', '%H:%M:%S')
-#sh.setFormatter(formatter)
-#logToScreen.addHandler(sh)
-
 now = datetime.datetime.now()
 log_file_name = "cleanup_" + now.strftime("%Y%m%d%H%M") + ".log"
 log_file_path = "logfiles"
@@ -58,16 +49,14 @@ def read_site_master(site_master_file_path, sheet_name):
             site_info[site_name][item] = xl_sheet.cell(n,i).value
     return site_info
 
-cfg_file_path = "ACCESS.txt"
+cfg_file_path = "clean_access_files.txt"
 msg = " Loading the control file"
-#logToScreen.info(msg)
 logger.info(msg)
 cfg = pfp_io.get_controlfilecontents(cfg_file_path)
-#cfg_labels = [l for l in list(cfg["Variables"].keys()) if "nc" in list(cfg["Variables"][l].keys())]
 # read the site master workbook
 site_info = read_site_master(cfg["Files"]["site_master_file_path"], "ACCESS")
 sites = list(site_info.keys())
-#sites = ["Ridgefield"]
+#sites = ["Calperum"]
 n_sites = len(sites)
 base_path = cfg["Files"]["existing_access_base_path"]
 
@@ -76,16 +65,28 @@ rename_pattern = {"u_": "U_", "v_": "V_"}
 
 # loop over sites
 for site in sites:
-    #logToScreen.info("Processing " + site)
+    msg = " Processing " + str(site)
     logger.info(msg)
     access_name = site + "_ACCESS.nc"
     access_uri = os.path.join(base_path, site, "Data", "ACCESS", "downloaded", access_name)
     if not os.path.isfile(access_uri):
         msg = "ACCESS file " + access_name + " not found"
-        #logToScreen.info(msg)
         logger.info(msg)
         continue
     ds = pfp_io.NetCDFRead(access_uri)
+    # remove deprecated global attributes
+    gattrs = ["nc_level", "start_date", "end_date", "xl_datemode"]
+    for gattr in gattrs:
+        if gattr in list(ds.globalattributes.keys()):
+            ds.globalattributes.pop(gattr)
+    # add required global attributes
+    ds.globalattributes["processing_level"] = "L1"
+    ds.globalattributes["site_name"] = site
+    ds.globalattributes["latitude"] = site_info[site]["Latitude"]
+    ds.globalattributes["longitude"] = site_info[site]["Longitude"]
+    ds.globalattributes["altitude"] = site_info[site]["Altitude"]
+    ds.globalattributes["time_zone"] = site_info[site]["Time zone"]
+    ds.globalattributes["time_step"] = site_info[site]["Time step"]
     # remove unwanted variables
     labels = list(ds.series.keys())
     for label in labels:
@@ -132,24 +133,15 @@ for site in sites:
         condition = numpy.ma.getmaskarray(var["Data"]) & (numpy.mod(var["Flag"],10) == 0)
         idx = numpy.ma.where(condition == True)[0]
         if len(idx) != 0:
-            #msg = " "+label+": "+str(len(idx))+" missing values with flag = 0 (forced to 8)"
-            #logger.warning(msg)
             var["Flag"][idx] = numpy.int32(8)
             pfp_utils.CreateVariable(ds, var)
 
-    # rename the new ACCESS file
-    #uid = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    #access_rename_uri = access_uri.replace(".nc", "_"+uid+".nc")
-    #os.rename(access_uri, access_rename_uri)
     # write out the new ACCESS file
     msg = "Writing " + access_name
-    #logToScreen.info(msg)
     logger.info(msg)
-    #access_path = os.path.join(base_path, site, "Data", "ACCESS", "cleaned")
-    access_path = os.path.join(base_path, site, "Data", "ACCESS")
+    access_path = os.path.join(base_path, site, "Data", "ACCESS", "cleaned")
     if not os.path.isdir(access_path):
         os.mkdir(access_path)
     access_uri = os.path.join(access_path, access_name)
     pfp_io.NetCDFWrite(access_uri, ds)
-#logToScreen("Finished")
 logger.info("Finished")

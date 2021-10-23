@@ -2234,8 +2234,12 @@ def get_datetime_from_nctime(ds):
     Author: PRI
     Date: September 2014
     """
-    nRecs = int(ds.globalattributes["nc_nrecs"])
-    time_step = int(ds.globalattributes["time_step"])
+    if "nc_nrecs" in list(ds.globalattributes.keys()):
+        nRecs = int(ds.globalattributes["nc_nrecs"])
+    else:
+        nRecs = len(ds.series["time"]["Data"])
+        ds.globalattributes["nc_nrecs"] = nRecs
+    time_step = int(float(ds.globalattributes["time_step"]))
     nc_time_data = ds.series["time"]["Data"]
     nc_time_units = ds.series["time"]["Attr"]["units"]
     # we only handle time units in days, hours or seconds

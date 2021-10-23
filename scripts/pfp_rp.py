@@ -673,7 +673,7 @@ def get_ustar_thresholds(cf, ds):
                 msg = " MPT results file not found (" + results_name + ")"
                 logger.warning(msg)
         if "ustar_threshold" in cf:
-            ts = int(ds.globalattributes["time_step"])
+            ts = int(float(ds.globalattributes["time_step"]))
             ustar_dict["cf"] = get_ustarthreshold_from_cf(cf, ts)
         else:
             msg = " No source for ustar threshold found in " + os.path.basename(cf.filename)
