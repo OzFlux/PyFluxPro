@@ -422,7 +422,7 @@ def plot_fingerprint(cf):
             plt.ioff()
         else:
             plt.close(fig)
-            plt.switch_backend(current_backend)        
+            plt.switch_backend(current_backend)
             plt.ion()
 
 def plot_fluxnet(cf):
@@ -807,7 +807,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
         plt.ioff()
     else:
         plt.close(fig)
-        plt.switch_backend(current_backend)        
+        plt.switch_backend(current_backend)
         plt.ion()
     return
 
@@ -1323,6 +1323,7 @@ def plot_onetimeseries_left(fig,n,ThisOne,xarray,yarray,p):
     # set the axes limits
     ts_ax_left.set_xlim(p['XAxMin'],p['XAxMax'])
     ts_ax_left.set_ylim(p['LYAxMin'],p['LYAxMax'])
+    ts_ax_left.tick_params(axis='y', colors='b')
     # check to see if this is the first graph
     if n == 0:
         # if it is, label the X axis
@@ -1359,6 +1360,7 @@ def plot_onetimeseries_right(fig,n,ThisOne,xarray,yarray,p):
     ts_ax_right.plot(xarray,yarray,'r-')
     ts_ax_right.set_xlim(p['XAxMin'],p['XAxMax'])
     ts_ax_right.set_ylim(p['RYAxMin'],p['RYAxMax'])
+    ts_ax_right.tick_params(axis='y', colors='r')
     if n==0:
         ts_ax_right.set_xlabel('Date',visible=True)
     else:
@@ -1421,7 +1423,7 @@ def plotxy(cf, title, plt_cf, dsa, dsb):
         plt.ioff()
     else:
         plt.close(fig)
-        plt.switch_backend(current_backend)        
+        plt.switch_backend(current_backend)
         plt.ion()
     return
 
