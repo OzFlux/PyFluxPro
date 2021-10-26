@@ -254,6 +254,9 @@
             [[[[fraction]]]]
                 long_name = Soil water content
                 standard_name = volume_fraction_of_condensed_water_in_soil
+            [[[[percent]]]]
+                long_name = Soil water content
+                standard_name = volume_fraction_of_condensed_water_in_soil
     [[Ta]]
         [[[average]]]
             [[[[degC]]]]
