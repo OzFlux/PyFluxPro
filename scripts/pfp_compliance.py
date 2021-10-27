@@ -1598,6 +1598,7 @@ def update_cfg_variable_attributes(cfg, std):
                         if re in drivers:
                             idx = drivers.index(re)
                             drivers[idx] = std["Variables"]["rename_exact"][re]
+                    drivers = pfp_utils.list_to_string(drivers)
                     cfg[section_name][label_cfg][gfm][gfv]["drivers"] = drivers
 
                 # rename if first characters of variable name match pattern
@@ -1615,13 +1616,16 @@ def update_cfg_variable_attributes(cfg, std):
                     drivers = cfg[section_name][label_cfg][gfm][gfv]["drivers"]
                     drivers = pfp_utils.string_to_list(drivers)
                     for rp in renames_pattern:
-
-                        if rp in drivers:
-                            idx = drivers.index(re)
-                            drivers[idx] = std["Variables"]["rename_exact"][re]
+                        srp = std["Variables"]["rename_pattern"][rp]
+                        for driver in list(drivers):
+                            if (driver.split("_")[0] == rp):
+                                new_name = driver.replace(driver.split("_")[0], srp)
+                                idx = drivers.index(driver)
+                                drivers[idx] = new_name
+                    drivers = pfp_utils.list_to_string(drivers)
+                    cfg[section_name][label_cfg][gfm][gfv]["drivers"] = drivers
             else:
                 continue
-
     return cfg
 
 def update_cfg_variables_rename(cfg, std):
