@@ -1411,7 +1411,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_excludedates(self):
         """ Add an exclude dates check to a variable."""
-        new_qc = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM"}}
+        new_qc = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM"}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -1428,14 +1428,14 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
         child0.setEditable(False)
-        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM")
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM")
         # add them
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
     def add_excludehours(self):
         """ Add an exclude hours check to a variable."""
-        new_qc = {"ExcludeHours":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, HH:MM, HH:MM, ..."}}
+        new_qc = {"ExcludeHours":{"0":"YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM,HH:MM,HH:MM, ..."}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -1452,7 +1452,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
         child0.setEditable(False)
-        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, HH:MM, HH:MM, ...")
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM,HH:MM,HH:MM, ...")
         # add them
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
@@ -1505,7 +1505,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_linear(self):
         """ Add a linear correction to a variable."""
-        new_qc = {"Linear": {"0": "YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, 1.0, 0.0"}}
+        new_qc = {"Linear": {"0": "YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 1.0, 0.0"}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -1522,7 +1522,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
         child0.setEditable(False)
-        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, 1.0, 0.0")
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 1.0, 0.0")
         # add them
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
@@ -1716,7 +1716,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_winddirectioncorrection(self):
         """ Add the wind direction correction check to a variable."""
-        new_qc = {"CorrectWindDirection":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <correction>"}}
+        new_qc = {"CorrectWindDirection":{"0":"YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, <correction>"}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -1732,7 +1732,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
-        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <correction>")
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, <correction>")
         # add them
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
@@ -2573,7 +2573,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
 
     def add_excludedates(self):
         """ Add an exclude dates check to a variable."""
-        new_qc = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM"}}
+        new_qc = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM"}}
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -2590,7 +2590,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
         child0.setEditable(False)
-        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM")
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM")
         # add them
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
@@ -5749,7 +5749,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
 
     def add_excludedates(self):
         """ Add an exclude dates check to a variable."""
-        dict_to_add = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM"}}
+        dict_to_add = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM"}}
         # add the subsubsection (ExcludeDates)
         self.add_subsubsection(dict_to_add)
 
@@ -5762,7 +5762,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
         child0.setEditable(False)
-        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM")
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM")
         # add them
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
@@ -6748,14 +6748,14 @@ class edit_cfg_L5(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
-        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM")
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM")
         # add them
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
     def add_excludedates(self):
         """ Add an exclude dates check to a variable."""
-        dict_to_add = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM"}}
+        dict_to_add = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM"}}
         # add the subsubsection (ExcludeDates)
         self.add_subsubsection(dict_to_add)
 
@@ -7042,7 +7042,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
         self.sections["ustar_threshold"].setEditable(False)
         child0 = QtGui.QStandardItem("0")
         child0.setEditable(False)
-        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <ustar_threshold>")
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, <ustar_threshold>")
         self.sections["ustar_threshold"].appendRow([child0, child1])
         idx = self.section_headings.index("Fluxes")
         self.model.insertRow(idx, self.sections["ustar_threshold"])
@@ -7058,7 +7058,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
         # get the children
         child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
         child0.setEditable(False)
-        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM, YYYY-mm-dd HH:MM, <ustar_threshold>")
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, <ustar_threshold>")
         # add them
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
