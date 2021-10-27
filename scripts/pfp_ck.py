@@ -294,6 +294,12 @@ def do_SONICcheck(cf, ds, code=3):
     Author: PRI
     Date: Back in the day
     """
+    # check to see if the user has disabled the IRGA check
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SONIC_Check", default="Yes")
+    if opt.lower() == "no":
+        msg = " *** SONIC_Check disbled in control file"
+        logger.warning(msg)
+        return
     msg = " Doing the SONIC check"
     logger.info(msg)
     nrecs = int(ds.globalattributes["nc_nrecs"])
@@ -737,6 +743,8 @@ def do_IRGAcheck(cf,ds):
     # check to see if the user has disabled the IRGA check
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "IRGA_Check", default="Yes")
     if opt.lower() == "no":
+        msg = " *** IRGA_Check disbled in control file"
+        logger.warning(msg)
         return
     # get the IRGA type from the control file
     irga_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "irga_type", default="not found")
