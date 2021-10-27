@@ -2830,6 +2830,14 @@ def linear_function(B,x):
     """
     return B[0]*x + B[1]
 
+def list_to_string(l):
+    """ Convert list to comma separated string."""
+    if isinstance(l, list):
+        s = ",".join(l)
+    else:
+        s = ""
+    return s
+
 def make_attribute_dictionary(attr=None):
     """
     Purpose:
