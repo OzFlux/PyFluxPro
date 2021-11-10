@@ -1087,7 +1087,9 @@ def l1_check_variables_units(cfg, std, cfg_label, std_label, messages):
     std_units = sorted(list(std_stat_type.keys()))
     cfg_units = cfg_attr["units"]
     if cfg_units not in std_units:
-        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+        #if cfg_label == "Fh_EP_QC":
+            #print("ooops")
+        msg = cfg_label + ": unrecognised units 1 (" + cfg_units + ")"
         messages["ERROR"].append(msg)
     return
 def l1_check_variables_standard_name(cfg, std, cfg_label, std_label, messages):
@@ -1104,7 +1106,7 @@ def l1_check_variables_standard_name(cfg, std, cfg_label, std_label, messages):
         else:
             pass
     else:
-        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+        msg = cfg_label + ": unrecognised units 2 (" + cfg_units + ")"
         if msg not in messages["ERROR"]:
             messages["ERROR"].append(msg)
     return
@@ -1129,7 +1131,7 @@ def l1_make_variables_attributes_consistent(cfg, std, cfg_label, std_label, mess
             else:
                 pass
     else:
-        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+        msg = cfg_label + ": unrecognised units 3 (" + cfg_units + ")"
         if msg not in messages["ERROR"]:
             messages["ERROR"].append(msg)
     return
@@ -1433,6 +1435,7 @@ def l1_update_cfg_coerce_variable_attributes(cfg, std, label_cfg, label_std):
     else:
         units_cfg = attr_std["units"]
         attr_cfg["units"] = units_cfg
+    print((units_cfg in units_std), label_cfg, label_std, units_cfg, units_std)
     if (units_cfg in units_std):
         if (label_cfg[-3:] == "_Sd"):
             # units match and it's a standard deviation

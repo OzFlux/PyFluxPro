@@ -76,6 +76,7 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         e = VP
         esat = VPsat
         Fco2_EPFlag = Fco2_EP_QC
+        Fc_EPFlag = Fco2_EP_QC
         Fe_EPFlag = Fe_EP_QC
         Fh_EPFlag = Fh_EP_QC
         Fm_EPFlag = Fm_EP_QC
@@ -197,6 +198,7 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         (umol/m3)2 = umol^2/m^6
         (umol/mol)2 = umol^2/mol^2
         V = V
+        mV = mV
         W/m2 = W/m^2
         # ACCESS and AWS units correction
         W m-2 = W/m^2
