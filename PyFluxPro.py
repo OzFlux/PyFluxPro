@@ -1,31 +1,16 @@
 # standard modules
-import copy
 import datetime
 import faulthandler
 import logging
 import os
-import platform
 import sys
 import traceback
 import warnings
 # 3rd party modules
 from configobj import ConfigObj
 import matplotlib
+matplotlib.use("QT5Agg")
 import netCDF4
-# check the OS and set the matplotlib backend accordingly
-if platform.system() == "Darwin":
-    # set backend to "macosx" on Macs
-    #matplotlib.use("macosx")
-    matplotlib.use("QT5Agg")
-elif platform.system() == "Windows":
-    # set backend to "QT5Agg" for Windows
-    matplotlib.use("QT5Agg")
-elif platform.system() == "Linux":
-    # set backend to "QT5Agg" for Linux
-    matplotlib.use("QT5Agg")
-else:
-    # use whatever ...
-    pass
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -38,27 +23,16 @@ from scripts import pfp_io
 from scripts import pfp_log
 from scripts import pfp_threading
 from scripts import pfp_top_level
+from scripts import pfp_utils
 
 faulthandler.enable()
 warnings.filterwarnings("ignore", category=Warning)
 
 # now check the logfiles and plots directories are present
-dir_list = ["logfiles/", "plots/"]
-for item in dir_list:
-    if not os.path.exists(item):
-        os.makedirs(item)
-# now check the solo/inf, solo/input, solo/log and solo/output directories are present
-dir_list = ["solo/inf/", "solo/input/", "solo/log/", "solo/output/"]
-for item in dir_list:
-    if not os.path.exists(item):
-        os.makedirs(item)
-# next we make sure the MPT directories are present ...
-dir_list = ["mpt/input/", "mpt/log/", "mpt/output/"]
-for item in dir_list:
-    if not os.path.exists(item):
-        os.makedirs(item)
-# ... and make sure the MDS directories are present
-dir_list = ["mds/input/", "mds/log/", "mds/output/"]
+base_path = pfp_utils.get_base_path()
+logfiles_path = os.path.join(base_path, "logfiles", "")
+plots_path = os.path.join(base_path, "plots", "")
+dir_list = [logfiles_path, plots_path]
 for item in dir_list:
     if not os.path.exists(item):
         os.makedirs(item)
@@ -66,7 +40,7 @@ for item in dir_list:
 now = datetime.datetime.now()
 logger_name = "pfp_log"
 log_file_name = "pfp_" + now.strftime("%Y%m%d%H%M") + ".log"
-log_file_name = os.path.join("logfiles", log_file_name)
+log_file_name = os.path.join(logfiles_path, log_file_name)
 logger = pfp_log.CreateLogger(logger_name, log_file_name=log_file_name)
 
 class pfp_main_ui(QWidget):
