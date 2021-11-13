@@ -1,10 +1,8 @@
 # standard modules
-import copy
 import datetime
 import faulthandler
 import logging
 import os
-import platform
 import sys
 import traceback
 import warnings
