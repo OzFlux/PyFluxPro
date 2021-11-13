@@ -43,7 +43,7 @@
             [[[[kg/m^3]]]]
                 long_name = Absolute humidity
                 standard_name = mass_concentration_of_water_vapor_in_air
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[g/m^3]]]]
                 long_name = Absolute humidity
         [[[variance]]]
@@ -57,7 +57,7 @@
             [[[[umol/mol]]]]
                 long_name = CO2 concentration
                 standard_name = mole_fraction_of_carbon_dioxide_in_air
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[mg/m^3]]]]
                 long_name = CO2 concentration
             [[[[mmol/m^3]]]]
@@ -180,7 +180,7 @@
             [[[[mmol/mol]]]]
                 long_name = H2O concentration
                 standard_name = mole_fraction_of_water_vapor_in_air
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[mmol/m^3]]]]
                 long_name = H2O concentration
             [[[[mmol/mol]]]]
@@ -265,7 +265,7 @@
             [[[[K]]]]
                 long_name = Air temperature
                 standard_name = air_temperature
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[degC]]]]
                 long_name = Air temperature
             [[[[K]]]]
@@ -291,7 +291,7 @@
             [[[[K]]]]
                 long_name = Virtual temperature
                 standard_name = virtual_temperature
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[degC]]]]
                 long_name = Virtual temperature
             [[[[K]]]]
@@ -310,7 +310,7 @@
             [[[[m/s]]]]
                 long_name = Along wind velocity component
                 standard_name = eastward_wind
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[m/s]]]]
                 long_name = Along wind velocity component
         [[[variance]]]
@@ -320,7 +320,7 @@
         [[[average]]]
             [[[[m/s]]]]
                 long_name = Longitudinal wind velocity component, sonic coordinates
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[m/s]]]]
                 long_name = Longitudinal wind velocity component, sonic coordinates
         [[[variance]]]
@@ -360,7 +360,7 @@
         [[[average]]]
             [[[[m/s]]]]
                 long_name = Lateral wind velocity component, sonic coordinates
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[m/s]]]]
                 long_name = Lateral wind velocity component, sonic coordinates
         [[[variance]]]
@@ -396,7 +396,7 @@
         [[[average]]]
             [[[[m/s]]]]
                 long_name = Vertical wind velocity component, sonic coordinates
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[m/s]]]]
                 long_name = Vertical wind velocity component, sonic coordinates
         [[[variance]]]
@@ -429,7 +429,7 @@
             [[[[m/s]]]]
                 long_name = Across wind velocity component
                 standard_name = northward_wind
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[m/s]]]]
                 long_name = Across wind velocity component
         [[[variance]]]
@@ -439,23 +439,23 @@
         [[[average]]]
             [[[[hPa]]]]
                 long_name = Vapour pressure
-                standard_name = water_vapor_partial_pressure_in_air,water_vapor_partial_pressure_in_air
+                standard_name = water_vapor_partial_pressure_in_air
             [[[[kPa]]]]
                 long_name = Vapour pressure
-                standard_name = water_vapor_partial_pressure_in_air,water_vapor_partial_pressure_in_air
+                standard_name = water_vapor_partial_pressure_in_air
     [[VPD]]
         [[[average]]]
             [[[[hPa]]]]
                 long_name = Vapour pressure deficit
-                standard_name = water_vapor_saturation_deficit_in_air,water_vapor_saturation_deficit_in_air
+                standard_name = water_vapor_saturation_deficit_in_air
             [[[[kPa]]]]
                 long_name = Vapour pressure deficit
-                standard_name = water_vapor_saturation_deficit_in_air,water_vapor_saturation_deficit_in_air
+                standard_name = water_vapor_saturation_deficit_in_air
     [[W_]]
         [[[average]]]
             [[[[m/s]]]]
                 long_name = Vertical wind velocity component
-        [[[standard deviation]]]
+        [[[standard_deviation]]]
             [[[[m/s]]]]
                 long_name = Vertical wind velocity component
         [[[variance]]]

@@ -4,8 +4,6 @@ import inspect
 import logging
 import os
 import platform
-import subprocess
-import sys
 import traceback
 # 3rd party modules
 from configobj import ConfigObj
@@ -783,7 +781,7 @@ def check_l1_controlfile(cfg):
         ok = True
         cfg_labels = sorted(list(cfg["Variables"].keys()))
         base_path = pfp_utils.get_base_path()
-        std_name = os.path.join(base_path, "controlfiles", "standard", "settings_l1.txt")
+        std_name = os.path.join(base_path, "controlfiles", "standard", "check_l1_controlfile.txt")
         std = ConfigObj(std_name, indent_type="    ", list_values=False, write_empty_values=True)
         std_labels = sorted(list(std["Variables"].keys()))
         # initialise the messages dictionary
@@ -1161,6 +1159,16 @@ def l1_update_controlfile(cfg):
     except Exception:
         ok = False
         msg = " Unable to load standard control file " + stdname
+    # check to see if we can load the check_l1_controlfiles.txt standard control file
+    try:
+        # get the base path of script or Pyinstaller application
+        base_path = pfp_utils.get_base_path()
+        chkname = os.path.join(base_path, "controlfiles", "standard",
+                               "check_l1_controlfiles.txt")
+        chk = pfp_io.get_controlfilecontents(chkname, mode="quiet")
+    except Exception:
+        ok = False
+        msg = " Unable to load standard control file " + chkname
     # initialise the return logical
     ok = True
     try:
@@ -1173,7 +1181,7 @@ def l1_update_controlfile(cfg):
         cfg = update_cfg_global_attributes(cfg, std)
         cfg = update_cfg_variables_deprecated(cfg, std)
         cfg = update_cfg_variables_rename(cfg, std)
-        cfg = l1_update_cfg_variables_attributes(cfg, std)
+        cfg = l1_update_cfg_variables_attributes(cfg, std, chk)
     except Exception:
         ok = False
         msg = " An error occurred updating the L1 control file contents"
@@ -1330,7 +1338,7 @@ def update_cfg_syntax(cfg, std):
             del cfg[key1]
     return cfg
 
-def l1_update_cfg_variables_attributes(cfg, std):
+def l1_update_cfg_variables_attributes(cfg, std, chk):
     """
     Purpose:
      Update the variable attributes.
@@ -1402,22 +1410,22 @@ def l1_update_cfg_variables_attributes(cfg, std):
             pass
     # force some variable attributes to particular values
     cfg_labels = list(cfg["Variables"].keys())
-    std_labels = list(std["Variables"]["attributes"].keys())
+    chk_labels = list(chk["Variables"].keys())
     # exact matches first
-    exact_matches = [l for l in cfg_labels if l in std_labels]
+    exact_matches = [l for l in cfg_labels if l in chk_labels]
     for cfg_label in exact_matches:
-        l1_update_cfg_coerce_variable_attributes(cfg, std, cfg_label, cfg_label)
+        l1_update_cfg_coerce_variable_attributes(cfg, std, chk, cfg_label, cfg_label)
     # then partial matches
-    for std_label in std_labels:
+    for chk_label in chk_labels:
         # partial matches with exact matches excluded
-        lsl = len(std_label)
+        lsl = len(chk_label)
         partial_matches = [l for l in cfg_labels
-                           if l[:min([len(l),lsl])] == std_label and
+                           if l[:min([len(l),lsl])] == chk_label and
                            l not in exact_matches]
         for cfg_label in partial_matches:
-            l1_update_cfg_coerce_variable_attributes(cfg, std, cfg_label, std_label)
+            l1_update_cfg_coerce_variable_attributes(cfg, std, chk, cfg_label, chk_label)
     return cfg
-def l1_update_cfg_coerce_variable_attributes(cfg, std, label_cfg, label_std):
+def l1_update_cfg_coerce_variable_attributes(cfg, std, chk, cfg_label, chk_label):
     """
     Purpose:
      Coerce the variable attributes in the control file to the values
@@ -1426,40 +1434,45 @@ def l1_update_cfg_coerce_variable_attributes(cfg, std, label_cfg, label_std):
     Date: October 2021
     """
     # pointer to attributes in user control file
-    attr_cfg = cfg["Variables"][label_cfg]["Attr"]
-    attr_std = std["Variables"]["attributes"][label_std]
-    units_std = pfp_utils.string_to_list(attr_std["units"])
-    # units string given in the L1 control file
-    if "units" in attr_cfg:
-        units_cfg = attr_cfg["units"]
-    else:
-        units_cfg = attr_std["units"]
-        attr_cfg["units"] = units_cfg
-    print((units_cfg in units_std), label_cfg, label_std, units_cfg, units_std)
-    if (units_cfg in units_std):
-        if (label_cfg[-3:] == "_Sd"):
-            # units match and it's a standard deviation
-            attr_cfg["long_name"] = attr_std["long_name"]
-            attr_cfg["statistic_type"] = "standard deviation"
-        elif (label_cfg[-3:] == "_Vr"):
-            # units match and it's a variance
-            attr_cfg["long_name"] = attr_std["long_name"]
-            attr_cfg["statistic_type"] = "variance"
-        else:
-            # units match and it's not a standard deviation or a variance
-            attr_cfg["long_name"] = attr_std["long_name"]
-            # update the statistic type
-            attr_cfg["statistic_type"] = attr_std["statistic_type"]
-            if ("standard_name" in attr_std):
-                # list of standard names for variables that match this stub
-                names_std = pfp_utils.string_to_list(attr_std["standard_name"])
-                # update the standard name
-                idx = units_std.index(units_cfg)
-                if idx > len(names_std):
-                    idx = 0
-                if names_std[idx] != "not_defined":
-                    attr_cfg["standard_name"] = names_std[idx]
+    attr_cfg = cfg["Variables"][cfg_label]["Attr"]
+
+
+
+
+    #attr_chk = std["Variables"]["attributes"][label_std]
+    #units_std = pfp_utils.string_to_list(attr_std["units"])
+    ## units string given in the L1 control file
+    #if "units" in attr_cfg:
+        #units_cfg = attr_cfg["units"]
+    #else:
+        #units_cfg = attr_std["units"]
+        #attr_cfg["units"] = units_cfg
+    #print((units_cfg in units_std), label_cfg, label_std, units_cfg, units_std)
+    #if (units_cfg in units_std):
+        #if (label_cfg[-3:] == "_Sd"):
+            ## units match and it's a standard deviation
+            #attr_cfg["long_name"] = attr_std["long_name"]
+            #attr_cfg["statistic_type"] = "standard deviation"
+        #elif (label_cfg[-3:] == "_Vr"):
+            ## units match and it's a variance
+            #attr_cfg["long_name"] = attr_std["long_name"]
+            #attr_cfg["statistic_type"] = "variance"
+        #else:
+            ## units match and it's not a standard deviation or a variance
+            #attr_cfg["long_name"] = attr_std["long_name"]
+            ## update the statistic type
+            #attr_cfg["statistic_type"] = attr_std["statistic_type"]
+            #if ("standard_name" in attr_std):
+                ## list of standard names for variables that match this stub
+                #names_std = pfp_utils.string_to_list(attr_std["standard_name"])
+                ## update the standard name
+                #idx = units_std.index(units_cfg)
+                #if idx > len(names_std):
+                    #idx = 0
+                #if names_std[idx] != "not_defined":
+                    #attr_cfg["standard_name"] = names_std[idx]
     return
+
 def update_cfg_variables_deprecated(cfg, std):
     """
     Purpose:
