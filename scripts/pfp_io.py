@@ -535,6 +535,15 @@ def ReadExcelWorkbook(l1_info):
             logger.warning(msg)
         # choose the first datetime column
         timestamp = timestamps[0]
+        # remove rows with no timestamp
+        # time stamp as an array
+        lts = dfs[df_name][timestamp].to_numpy()
+        # boolean array of true/false if not a time
+        idx = numpy.isnat(lts)
+        # indices of recognised time stamps
+        idx_ok = numpy.where(idx == False)[0]
+        # drop rows with no time stamp
+        dfs[df_name] = dfs[df_name].loc[dfs[df_name].index[idx_ok]]
         # set the data frame index to the time stamp
         dfs[df_name].set_index(timestamp, inplace=True)
         # round the datetime index to the nearest second
