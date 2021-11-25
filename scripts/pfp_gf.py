@@ -263,7 +263,7 @@ def ReadAlternateFiles(ds, l4_info):
     for f in files:
         # if the file has not already been read, do it now
         if f not in ds_alt:
-            ds_alternate = pfp_io.nc_read_series(f, fixtimestepmethod="round")
+            ds_alternate = pfp_io.NetCDFRead(f, fixtimestepmethod="round")
             if ds_alternate.returncodes["value"] != 0: return ds_alt
             gfalternate_matchstartendtimes(ds, ds_alternate)
             ds_alt[f] = ds_alternate
@@ -1267,7 +1267,7 @@ def ImportSeries(cf,ds):
             msg = " ImportSeries: variable name not found in control file, skipping ..."
             logger.warning(msg)
             continue
-        ds_import = pfp_io.nc_read_series(import_filename)
+        ds_import = pfp_io.NetCDFRead(import_filename)
         if ds_import.returncodes["value"] != 0: return
         ts_import = int(float(ds_import.globalattributes["time_step"]))
         ldt_import = ds_import.series["DateTime"]["Data"]

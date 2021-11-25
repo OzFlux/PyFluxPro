@@ -540,94 +540,6 @@ def ParseL1ControlFile(cf):
     l1ire["Global"] = copy.deepcopy(cf["Global"])
     # get the variables
     l1ire["Variables"] = copy.deepcopy(cf["Variables"])
-    # checks of the 'Variables' sections would go here
-    for label in list(l1ire["Variables"].keys()):
-
-        # check the 'xl' subsection is present
-        ok = True
-        if (("xl" not in list(l1ire["Variables"][label].keys())) and
-            ("csv" not in list(l1ire["Variables"][label].keys()))):
-            # the xl or csv subsections can be missing if Function is present
-            if "Function" in list(l1ire["Variables"][label].keys()):
-                pass
-            else:
-                msg = " Skipping " + label + " (subsections 'xl', 'csv' or 'Function' not found)"
-                logger.warning(msg)
-                ok = False
-
-        # check the 'Attr' subsection is present
-        if "Attr" not in list(l1ire["Variables"][label].keys()):
-            msg = " Skipping " + label + " (subsection 'Attr' not found)"
-            logger.warning(msg)
-            ok = False
-        if not ok:
-            del l1ire["Variables"][label]
-            continue
-        # check 'sheet' and 'name' are in the 'xl' subsection
-        ok = True
-        if "xl" in list(l1ire["Variables"][label].keys()):
-            for item in ["sheet", "name"]:
-                if item not in list(l1ire["Variables"][label]["xl"].keys()):
-                    msg = " Skipping " + label + " ('" + item + "' not found in 'xl' subsection)"
-                    logger.warning(msg)
-                    ok = False
-        elif "csv" in list(l1ire["Variables"][label].keys()):
-            for item in ["name"]:
-                if item not in list(l1ire["Variables"][label]["csv"].keys()):
-                    msg = " Skipping " + label + " ('" + item + "' not found in 'csv' subsection)"
-                    logger.warning(msg)
-                    ok = False
-        # check the 'Function' subsection
-        elif "Function" in list(l1ire["Variables"][label].keys()):
-            # check 'func' is in the 'Function' subsection
-            if "func" not in list(l1ire["Variables"][label]["Function"].keys()):
-                msg = " Skipping " + label + " ('func' not found in 'Function' subsection)"
-                logger.warning(msg)
-                ok = False
-            # check the function name and arguments
-            else:
-                # get a list of function names in pfp_func_units
-                implemented_func_units = [name for name,data in inspect.getmembers(pfp_func_units,inspect.isfunction)]
-                implemented_func_stats = [name for name,data in inspect.getmembers(pfp_func_stats,inspect.isfunction)]
-                implemented_functions = implemented_func_units + implemented_func_stats
-                function_string = l1ire["Variables"][label]["Function"]["func"]
-                function_name = function_string[:function_string.index("(")]
-                # check the function name is implemented
-                if function_name not in implemented_functions:
-                    msg = " Skipping " + label + " (function " + function_name + " not implemented)"
-                    logger.warning(msg)
-                    ok = False
-                # check the arguments are being read in
-                else:
-                    function_args = function_string[function_string.index("(")+1:-1].split(",")
-                    nargs = len(function_args)
-                    if function_name in ["Linear"]:
-                        nargs = 1
-                    for item in function_args[:nargs]:
-                        if item not in list(l1ire["Variables"].keys()):
-                            msg = " Skipping " + label + " (function argument '" + item + "' not found)"
-                            logger.warning(msg)
-                            ok = False
-                        else:
-                            pass
-        # we should never get here
-        else:
-            msg = " These are not the droids you are looking for!"
-            logger.error(msg)
-            ok = False
-        if not ok:
-            del l1ire["Variables"][label]
-            continue
-        # check the 'Attr' subsection
-        ok = True
-        for item in ["long_name"]:
-            if item not in list(l1ire["Variables"][label]["Attr"].keys()):
-                msg = " Skipping " + label + " (subsection '" + item + "' not found)"
-                logger.warning(msg)
-                ok = False
-        if not ok:
-            del l1ire["Variables"][label]
-            continue
     return l1_info
 
 def ParseL3ControlFile(cf, ds):
@@ -1055,6 +967,39 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
             messages["ERROR"].append(msg)
     else:
         pass
+    # check any use of Function
+    if "Function" in var_keys:
+        # check 'func' key is in the 'Function' section
+        if "func" in cfg["Variables"][cfg_label]["Function"]:
+            # get the function name
+            function_string = cfg["Variables"][cfg_label]["Function"]["func"]
+            function_name = function_string.split("(")[0]
+            # get a list of function names in pfp_func_units and pfp_func_stats
+            implemented_func_units = [name for name,data in
+                                      inspect.getmembers(pfp_func_units,inspect.isfunction)]
+            implemented_func_stats = [name for name,data in
+                                      inspect.getmembers(pfp_func_stats,inspect.isfunction)]
+            implemented_functions = implemented_func_units + implemented_func_stats
+            # check the function name is implemented
+            if function_name not in implemented_functions:
+                msg = " Skipping " + cfg_label + " (function " + function_name + " not implemented)"
+                messages["ERROR"].append(msg)
+            # check the arguments are being read in
+            else:
+                function_args = function_string[function_string.index("(")+1:-1].split(",")
+                nargs = len(function_args)
+                if function_name in ["Linear"]:
+                    nargs = 1
+                for item in function_args[:nargs]:
+                    if item not in list(cfg["Variables"].keys()):
+                        msg = " Skipping " + cfg_label + " (function argument '"
+                        msg += item + "' not found)"
+                        messages["ERROR"].append(msg)
+                    else:
+                        pass
+        else:
+            msg = cfg_label + ": 'func' not found in 'Function' subsection"
+            messages["ERROR"].append(msg)
     return
 def l1_check_variables_height(cfg, cfg_label, messages):
     cfg_attr = cfg["Variables"][cfg_label]["Attr"]
@@ -1085,9 +1030,7 @@ def l1_check_variables_units(cfg, std, cfg_label, std_label, messages):
     std_units = sorted(list(std_stat_type.keys()))
     cfg_units = cfg_attr["units"]
     if cfg_units not in std_units:
-        #if cfg_label == "Fh_EP_QC":
-            #print("ooops")
-        msg = cfg_label + ": unrecognised units 1 (" + cfg_units + ")"
+        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
         messages["ERROR"].append(msg)
     return
 def l1_check_variables_standard_name(cfg, std, cfg_label, std_label, messages):
@@ -1104,7 +1047,7 @@ def l1_check_variables_standard_name(cfg, std, cfg_label, std_label, messages):
         else:
             pass
     else:
-        msg = cfg_label + ": unrecognised units 2 (" + cfg_units + ")"
+        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
         if msg not in messages["ERROR"]:
             messages["ERROR"].append(msg)
     return
@@ -1129,7 +1072,7 @@ def l1_make_variables_attributes_consistent(cfg, std, cfg_label, std_label, mess
             else:
                 pass
     else:
-        msg = cfg_label + ": unrecognised units 3 (" + cfg_units + ")"
+        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
         if msg not in messages["ERROR"]:
             messages["ERROR"].append(msg)
     return
@@ -1164,7 +1107,7 @@ def l1_update_controlfile(cfg):
         # get the base path of script or Pyinstaller application
         base_path = pfp_utils.get_base_path()
         chkname = os.path.join(base_path, "controlfiles", "standard",
-                               "check_l1_controlfiles.txt")
+                               "check_l1_controlfile.txt")
         chk = pfp_io.get_controlfilecontents(chkname, mode="quiet")
     except Exception:
         ok = False
@@ -1177,14 +1120,20 @@ def l1_update_controlfile(cfg):
         ok = False
         msg = " An error occurred updating the L1 control file syntax"
     # clean up the variable names
-    try:
-        cfg = update_cfg_global_attributes(cfg, std)
-        cfg = update_cfg_variables_deprecated(cfg, std)
-        cfg = update_cfg_variables_rename(cfg, std)
-        cfg = l1_update_cfg_variables_attributes(cfg, std, chk)
-    except Exception:
-        ok = False
-        msg = " An error occurred updating the L1 control file contents"
+    cfg = update_cfg_global_attributes(cfg, std)
+    cfg = update_cfg_variables_deprecated(cfg, std)
+    cfg = update_cfg_variables_rename(cfg, std)
+    cfg = l1_update_cfg_variables_attributes(cfg, std, chk)
+    cfg = l1_update_cfg_variables_function(cfg, std)
+    #try:
+        #cfg = update_cfg_global_attributes(cfg, std)
+        #cfg = update_cfg_variables_deprecated(cfg, std)
+        #cfg = update_cfg_variables_rename(cfg, std)
+        #cfg = l1_update_cfg_variables_attributes(cfg, std, chk)
+        #cfg = l1_update_cfg_variables_function(cfg, std)
+    #except Exception:
+        #ok = False
+        #msg = " An error occurred updating the L1 control file contents"
     if ok:
         # check to see if the control file object has been changed
         if cfg != cfg_original:
@@ -1365,7 +1314,6 @@ def l1_update_cfg_variables_attributes(cfg, std, chk):
         for vattr in vattrs_essential:
             if vattr not in cfg_vattrs:
                 cfg["Variables"][label]["Attr"][vattr] = label
-
         cfg_vattrs = list(cfg["Variables"][label]["Attr"].keys())
         for vattr in attributes_deprecated:
             if vattr in cfg_vattrs:
@@ -1387,6 +1335,20 @@ def l1_update_cfg_variables_attributes(cfg, std, chk):
             else:
                 if ((value in miscellaneous_deprecated) or (len(str(value)) == 0)):
                     cfg["Variables"][label]["Attr"].pop(vattr)
+        cfg_vattrs = list(cfg["Variables"][label]["Attr"].keys())
+        if "statistic_type" not in cfg_vattrs:
+            if label[-3:] == "_Sd":
+                cfg["Variables"][label]["Attr"]["statistic_type"] = "standard_deviation"
+            elif label[-3:] == "_Vr":
+                cfg["Variables"][label]["Attr"]["statistic_type"] = "variance"
+            elif "Precip" in label:
+                if cfg["Variables"][label]["Attr"]["units"] in ["mm"]:
+                    cfg["Variables"][label]["Attr"]["statistic_type"] = "sum"
+            else:
+                cfg["Variables"][label]["Attr"]["statistic_type"] = "average"
+        else:
+            if cfg["Variables"][label]["Attr"]["statistic_type"] == "standard deviation":
+                cfg["Variables"][label]["Attr"]["statistic_type"] = "standard_deviation"
     # coerce units into a standard form
     old_units = list(std["Variables"]["units_map"].keys())
     new_units = [std["Variables"]["units_map"][o] for o in old_units]
@@ -1400,21 +1362,23 @@ def l1_update_cfg_variables_attributes(cfg, std, chk):
             msg = " Unrecognised units " + cfg_units + " for variable " + cfg_label
             logger.warning(msg)
             continue
-        if cfg_units.lower() == "none":
-            cfg["Variables"][cfg_label]["Attr"].pop("units")
-        elif len(cfg_units) == 0:
-            cfg["Variables"][cfg_label]["Attr"].pop("units")
-        elif cfg_units in old_units:
-            cfg["Variables"][cfg_label]["Attr"]["units"] = std["Variables"]["units_map"][cfg_units]
-        else:
-            pass
+        if cfg_units in old_units:
+            # another horrible shim ...
+            if cfg_units == "frac" and "Sws" in cfg_label:
+                cfg["Variables"][cfg_label]["Attr"]["units"] = "m^3/m^3"
+            elif cfg_units == "frac" and "RH" in cfg_label:
+                cfg["Variables"][cfg_label]["Attr"]["units"] = "fraction"
+            else:
+                cfg["Variables"][cfg_label]["Attr"]["units"] = std["Variables"]["units_map"][cfg_units]
     # force some variable attributes to particular values
     cfg_labels = list(cfg["Variables"].keys())
+    cfg_done = []
     chk_labels = list(chk["Variables"].keys())
     # exact matches first
     exact_matches = [l for l in cfg_labels if l in chk_labels]
     for cfg_label in exact_matches:
-        l1_update_cfg_coerce_variable_attributes(cfg, std, chk, cfg_label, cfg_label)
+        l1_update_cfg_coerce_variable_attributes(cfg, chk, cfg_label, cfg_label)
+        cfg_done.append(cfg_label)
     # then partial matches
     for chk_label in chk_labels:
         # partial matches with exact matches excluded
@@ -1423,9 +1387,10 @@ def l1_update_cfg_variables_attributes(cfg, std, chk):
                            if l[:min([len(l),lsl])] == chk_label and
                            l not in exact_matches]
         for cfg_label in partial_matches:
-            l1_update_cfg_coerce_variable_attributes(cfg, std, chk, cfg_label, chk_label)
+            l1_update_cfg_coerce_variable_attributes(cfg, chk, cfg_label, chk_label)
+            cfg_done.append(cfg_label)
     return cfg
-def l1_update_cfg_coerce_variable_attributes(cfg, std, chk, cfg_label, chk_label):
+def l1_update_cfg_coerce_variable_attributes(cfg, chk, cfg_label, chk_label):
     """
     Purpose:
      Coerce the variable attributes in the control file to the values
@@ -1434,45 +1399,46 @@ def l1_update_cfg_coerce_variable_attributes(cfg, std, chk, cfg_label, chk_label
     Date: October 2021
     """
     # pointer to attributes in user control file
-    attr_cfg = cfg["Variables"][cfg_label]["Attr"]
-
-
-
-
-    #attr_chk = std["Variables"]["attributes"][label_std]
-    #units_std = pfp_utils.string_to_list(attr_std["units"])
-    ## units string given in the L1 control file
-    #if "units" in attr_cfg:
-        #units_cfg = attr_cfg["units"]
-    #else:
-        #units_cfg = attr_std["units"]
-        #attr_cfg["units"] = units_cfg
-    #print((units_cfg in units_std), label_cfg, label_std, units_cfg, units_std)
-    #if (units_cfg in units_std):
-        #if (label_cfg[-3:] == "_Sd"):
-            ## units match and it's a standard deviation
-            #attr_cfg["long_name"] = attr_std["long_name"]
-            #attr_cfg["statistic_type"] = "standard deviation"
-        #elif (label_cfg[-3:] == "_Vr"):
-            ## units match and it's a variance
-            #attr_cfg["long_name"] = attr_std["long_name"]
-            #attr_cfg["statistic_type"] = "variance"
-        #else:
-            ## units match and it's not a standard deviation or a variance
-            #attr_cfg["long_name"] = attr_std["long_name"]
-            ## update the statistic type
-            #attr_cfg["statistic_type"] = attr_std["statistic_type"]
-            #if ("standard_name" in attr_std):
-                ## list of standard names for variables that match this stub
-                #names_std = pfp_utils.string_to_list(attr_std["standard_name"])
-                ## update the standard name
-                #idx = units_std.index(units_cfg)
-                #if idx > len(names_std):
-                    #idx = 0
-                #if names_std[idx] != "not_defined":
-                    #attr_cfg["standard_name"] = names_std[idx]
+    cfg_attrs = cfg["Variables"][cfg_label]["Attr"]
+    if "units" not in cfg_attrs:
+        msg = cfg_label + " has no 'units' attribute"
+        logger.warning(msg)
+        return
+    cfg_units = cfg_attrs["units"]
+    # get the statistic type
+    statistic_type = cfg_attrs["statistic_type"]
+    # get a list of units for this variable and statistic type
+    chk_units = list(chk["Variables"][chk_label][statistic_type].keys())
+    # check variable units are in this list
+    if cfg_units not in chk_units:
+        msg = cfg_label + " has unrecognised units (" + cfg_units + ")"
+        logger.warning(msg)
+        return
+    # get the attributes for this variable
+    chk_attrs = chk["Variables"][chk_label][statistic_type][cfg_units]
+    for chk_attr in chk_attrs:
+        cfg_attrs[chk_attr] = chk_attrs[chk_attr]
+    cfg["Variables"][cfg_label]["Attr"] = cfg_attrs
     return
-
+def l1_update_cfg_variables_function(cfg, std):
+    """
+    Purpose:
+     Updatte function names.
+    Usage:
+    Author: PRI
+    Date: November 2021
+    """
+    old_function_names = list(std["Functions"].keys())
+    cfg_labels = list(cfg["Variables"].keys())
+    for cfg_label in cfg_labels:
+        if "Function" in cfg["Variables"][cfg_label]:
+            old_function = cfg["Variables"][cfg_label]["Function"]["func"]
+            old_function_name = old_function.split("(")[0]
+            if old_function_name in old_function_names:
+                new_function_name = std["Functions"][old_function_name]
+                new_function = old_function.replace(old_function_name, new_function_name)
+                cfg["Variables"][cfg_label]["Function"]["func"] = new_function
+    return cfg
 def update_cfg_variables_deprecated(cfg, std):
     """
     Purpose:
@@ -1673,53 +1639,23 @@ def update_cfg_variables_rename(cfg, std):
             new_name = std["Variables"]["rename_exact"][label_cfg]
             renamed[label_cfg] = new_name
             cfg[section_name].rename(label_cfg, new_name)
-
     # rename pattern matches
     renames_pattern = list(std["Variables"]["rename_pattern"].keys())
     for rp in renames_pattern:
-        #llen = len(rp)
         srp = std["Variables"]["rename_pattern"][rp]
-        #klen = len(srp)
         # loop over the variables in the control file
         for label_cfg in list(cfg[section_name].keys()):
             # check and if required, rename the "name" key value
             if "name" in list(cfg[section_name][label_cfg].keys()):
                 name = cfg[section_name][label_cfg]["name"]
-                # 20210913 PRI - manual rebase
-                #if ((name[:llen] == rp) and (name[:klen] != srp)):
-                    #if len(name) > len(rp):
-                        #if name[len(rp)] == "_":
-                            #new_name = name.replace(name[:llen], srp)
-                            #cfg[section_name][label_cfg]["name"] = new_name
-                        #else:
-                            ## different variable name, leave it alone
-                            #pass
-                    #else:
-                        #new_name = name.replace(name[:llen], srp)
-                        #cfg[section_name][label_cfg]["name"] = new_name
                 if (name.split("_")[0] == rp):
                     new_name = name.replace(name.split("_")[0], srp)
                     cfg[section_name][label_cfg]["name"] = new_name
             # check and if required, rename the variable itself
-            # 20210913 PRI - manual rebase
-            #if ((label_cfg[:llen] == rp) and (label_cfg[:klen] != srp)):
-                #if len(label_cfg) > len(rp):
-                    #if label_cfg[len(rp)] == "_":
-                        #new_name = label_cfg.replace(label_cfg[:llen], srp)
-                        #renamed[label_cfg] = new_name
-                        #cfg[section_name].rename(label_cfg, new_name)
-                    #else:
-                        ## different variable name, leave it alone
-                        #pass
-                #else:
-                    #new_name = label_cfg.replace(label_cfg[:llen], srp)
-                    #renamed[label_cfg] = new_name
-                    #cfg[section_name].rename(label_cfg, new_name)
             if (label_cfg.split("_")[0] == rp):
                 new_name = label_cfg.replace(label_cfg.split("_")[0], srp)
                 renamed[label_cfg] = new_name
                 cfg["Variables"].rename(label_cfg, new_name)
-
     # do any functions
     for label_cfg in list(cfg[section_name].keys()):
         if "Function" in cfg[section_name][label_cfg]:
@@ -1728,7 +1664,6 @@ def update_cfg_variables_rename(cfg, std):
                 if old_label in func_str:
                     func_str = func_str.replace(old_label, renamed[old_label])
                     cfg[section_name][label_cfg]["Function"]["func"] = func_str
-
     # loop over the variables in the Plots section of the control file
     if "Plots" in list(cfg.keys()):
         plots = list(cfg["Plots"])

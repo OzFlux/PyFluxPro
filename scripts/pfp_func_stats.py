@@ -31,7 +31,7 @@ def Standard_deviation_from_variance(ds, Sd_out, Vr_in):
     sd["Data"] = numpy.ma.sqrt(vr["Data"])
     sd["Attr"]["units"] = vr_units[vr["Attr"]["units"]]
     if "statistic_type" in sd["Attr"]:
-        sd["Attr"]["statistic_type"] = "standard deviation"
+        sd["Attr"]["statistic_type"] = "standard_deviation"
     pfp_utils.CreateVariable(ds, sd)
     return 1
 

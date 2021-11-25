@@ -316,7 +316,7 @@ def CPD_run(cf):
         else:
             names[item] = item
     # read the netcdf file
-    ds = pfp_io.nc_read_series(file_in)
+    ds = pfp_io.NetCDFRead(file_in)
     if ds.returncodes["value"] != 0: return
     ts = int(float(ds.globalattributes["time_step"]))
     # get the datetime

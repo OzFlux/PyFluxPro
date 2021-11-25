@@ -305,7 +305,7 @@ and the Education Investment Fund.'''
             statistic_type = average
             units = K
         [[[Function]]]
-            func = ConvertK2C(Ta_<inst>_<height>m)
+            func = K_to_C(Ta_<inst>_<height>m)
         [[[xl]]]
             name = TA_1_1_1
             sheet = biomet
@@ -318,7 +318,7 @@ and the Education Investment Fund.'''
             statistic_type = average
             units = K
         [[[Function]]]
-            func = ConvertK2C(Ts_<depth>cma)
+            func = K_to_C(Ts_<depth>cma)
         [[[xl]]]
             name = TS_1_1_1
             sheet = biomet
@@ -331,7 +331,7 @@ and the Education Investment Fund.'''
             statistic_type = average
             units = K
         [[[Function]]]
-            func = ConvertK2C(Ts_<depth>cmb)
+            func = K_to_C(Ts_<depth>cmb)
         [[[xl]]]
             name = TS_1_1_2
             sheet = biomet
@@ -344,7 +344,7 @@ and the Education Investment Fund.'''
             statistic_type = average
             units = K
         [[[Function]]]
-            func = ConvertK2C(Tv_SONIC_Av)
+            func = K_to_C(Tv_SONIC_Av)
         [[[xl]]]
             name = sonic_temperature
             sheet = full_output
@@ -473,7 +473,7 @@ and the Education Investment Fund.'''
             statistic_type = average
             units = Pa
         [[[Function]]]
-            func = ConvertPa2kPa(ps)
+            func = Pa_to_kPa(ps)
         [[[xl]]]
             name = air_pressure
             sheet = full_output

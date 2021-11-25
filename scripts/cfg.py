@@ -1,5 +1,9 @@
 version_name = "PyFluxPro"
-version_number = "V3.3.0"
+version_number = "V3.3.1"
+# V3.3.1 - November 2021, post workshop bug fixes
+#        - mainy cleaning up L1 checks before running
+#        - trap frac ==> m^3/m^3 for RH
+#        - make sure statistic_type added for variances
 # V3.3.0 - mid-June 2021
 #        - changes required for DSA compliance phase 1
 #          - deprecated "group_name" and "serial_number" variable attributes

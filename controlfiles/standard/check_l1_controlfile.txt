@@ -43,11 +43,17 @@
             [[[[kg/m^3]]]]
                 long_name = Absolute humidity
                 standard_name = mass_concentration_of_water_vapor_in_air
+            [[[[mmol/m^3]]]]
+                long_name = Absolute humidity
         [[[standard_deviation]]]
             [[[[g/m^3]]]]
                 long_name = Absolute humidity
+            [[[[mmol/m^3]]]]
+                long_name = Absolute humidity
         [[[variance]]]
             [[[[g^2/m^6]]]]
+                long_name = Absolute humidity
+            [[[[mmol^2/m^6]]]]
                 long_name = Absolute humidity
     [[CO2]]
         [[[average]]]

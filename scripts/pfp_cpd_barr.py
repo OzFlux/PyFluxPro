@@ -60,7 +60,7 @@ def cpd_barr_main(cf):
         msg = " CPD (Barr): Using variable " + names[item] + " for " + item
         logger.info(msg)
     # read the netcdf file
-    ds = pfp_io.nc_read_series(file_in)
+    ds = pfp_io.NetCDFRead(file_in)
     if ds.returncodes["value"] != 0: return
     # get the single-point storage, Fc_single, if available
     if apply_storage and "Fco2_storage" not in list(ds.series.keys()):

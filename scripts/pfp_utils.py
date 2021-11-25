@@ -647,7 +647,7 @@ def convert_units_co2_attributes_rangecheck(CO2, func, Ta=None, ps=None, ts=None
         else:
             # rangecheck_lower is the wrong length
             msg = "Variable attribute " + item + " is the wrong length"
-            print(msg)
+            logger.error(msg)
     return
 
 def convert_units_co2_attributes_validrange(CO2, func, Ta=None, ps=None, ts=None):
@@ -1296,8 +1296,8 @@ def CopyVariable(var_in):
         elif isinstance(var_in[item], numpy.ndarray):
             var_out[item] = var_in[item].copy()
         else:
-            print("Unrecognised object in variable")
-    #return copy.deepcopy(var)
+            msg = "Unrecognised object in variable"
+            logger.error(msg)
     return var_out
 
 def CreateDatetimeRange(start,stop,step=datetime.timedelta(minutes=30)):

@@ -217,9 +217,9 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         labels = Sws,RH
     # deprecated attributes, variables and values
     [[deprecated]]
-        variables = xlDateTime, ustar_filtered, Wd_X_new, Wd_Y_new
-        attributes = ancillary_variables, group_name, serial_number, nrecs, missing_value, standard name
-        units = not_defined,notdefined,not defined,none
+        variables = xlDateTime,ustar_filtered,Wd_X_new,Wd_Y_new
+        attributes = ancillary_variables,group_name,serial_number,nrecs,missing_value,standard name
+        units = not_defined,notdefined,not defined
         height = not_defined,notdefined,not defined,none
         miscellaneous = not_defined,notdefined,not defined,none
         standard_name = """not_defined,notdefined,not defined,none,
@@ -614,3 +614,27 @@ Friction velocity"""
             standard_name = wind_speed
             statistic_type = average
             units = m/s
+[Functions]
+    # PFP2.7
+    AhfromRH = percent_to_gH2Opm3
+    AhfromMR = mmolpmol_to_gH2Opm3
+    ConvertK2C = K_to_C
+    ConvertPa2kPa = Pa_to_kPa
+    ConverthPa2kPa = hPa_to_kPa
+    ConvertRHtoPercent = fraction_to_percent
+    ConvertPercent2m3pm3 = percent_to_m3pm3
+    MRfromAh = gH2Opm3_to_mmolpmol
+    MRfromRH = percent_to_mmolpmol
+    # PFP3.2 ecce02ab11
+    Convert_fraction_to_percent = fraction_to_percent
+    Convert_gH2Opm3_to_percent = gH2Opm3_to_percent
+    Convert_gH2Opm3_to_mmolpm3 = gH2Opm3_to_mmolpm3
+    Convert_gH2Opm3_to_mmolpmol = gH2Opm3_to_mmolpmol
+    Convert_hPa_to_kPa = hPa_to_kPa
+    Convert_Pa_to_kPa = Pa_to_kPa
+    Convert_K_to_C = K_to_C
+    Convert_kgpm3_to_gpm3 = kgpm3_to_gpm3
+    Convert_mmolpm3_to_gH2Opm3 = mmolpm3_to_gH2Opm3
+    Convert_mmolpmol_to_gH2Opm3 = mmolpmol_to_gH2Opm3
+    Convert_percent_to_mmolpmol = percent_to_mmolpmol
+    Convert_percent_to_gH2Opm3 = percent_to_gH2Opm3
