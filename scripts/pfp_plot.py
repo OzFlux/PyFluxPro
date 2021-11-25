@@ -304,12 +304,12 @@ def pltfingerprint_readncfiles(cf):
     ds = {}
     if "Files" in cf:
         infilename = pfp_io.get_infilenamefromcf(cf)
-        ds[infilename] = pfp_io.nc_read_series(infilename)
+        ds[infilename] = pfp_io.NetCDFRead(infilename)
     for var in list(cf["Variables"].keys()):
         if "in_filename" in cf["Variables"][var]:
             if cf["Variables"][var]["in_filename"] not in ds:
                 infilename = cf["Variables"][var]["in_filename"]
-                ds[cf["Variables"][var]["in_filename"]] = pfp_io.nc_read_series(infilename)
+                ds[cf["Variables"][var]["in_filename"]] = pfp_io.NetCDFRead(infilename)
                 if ds[cf["Variables"][var]["in_filename"]].returncodes["value"] != 0: return ds
     return ds
 
@@ -431,7 +431,7 @@ def plot_fluxnet(cf):
     series_list = list(cf["Variables"].keys())
     infilename = pfp_io.get_infilenamefromcf(cf)
 
-    ds = pfp_io.nc_read_series(infilename)
+    ds = pfp_io.NetCDFRead(infilename)
     if ds.returncodes["value"] != 0: return
     site_name = ds.globalattributes["site_name"]
     ldt=ds.series["DateTime"]["Data"]
@@ -1015,7 +1015,7 @@ def plot_quickcheck(cf):
     # get the netCDF filename
     ncfilename = pfp_io.get_infilenamefromcf(cf)
     # read the netCDF file and return the data structure "ds"
-    ds = pfp_io.nc_read_series(ncfilename)
+    ds = pfp_io.NetCDFRead(ncfilename)
     if ds.returncodes["value"] != 0: return
     series_list = list(ds.series.keys())
     # get the time step

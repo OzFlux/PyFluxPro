@@ -259,7 +259,7 @@ class file_explore(QtWidgets.QWidget):
             #self.ds.returncodes["value"] = 1
             #self.ds.returncodes["message"] = "No netCDF file chosen"
             #return
-        #self.ds = pfp_io.nc_read_series(file_path)
+        #self.ds = pfp_io.NetCDFRead(file_path)
         #if self.ds.returncodes["value"] != 0: return
         #file_path_parts = os.path.split(file_path)
         #self.file_path = file_path_parts[0]

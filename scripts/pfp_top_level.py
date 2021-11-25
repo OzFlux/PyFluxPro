@@ -437,7 +437,7 @@ def do_run_l2(cfg):
             in_filename = os.path.split(in_filepath)
             logger.error("File "+in_filename[1]+" not found")
             return
-        ds1 = pfp_io.nc_read_series(in_filepath)
+        ds1 = pfp_io.NetCDFRead(in_filepath)
         if ds1.returncodes["value"] != 0: return
         ds2 = pfp_levels.l2qc(cfg, ds1)
         if ds2.returncodes["value"] != 0:
@@ -488,7 +488,7 @@ def do_run_l3(cfg):
             in_filename = os.path.split(in_filepath)
             logger.error("File "+in_filename[1]+" not found")
             return
-        ds2 = pfp_io.nc_read_series(in_filepath)
+        ds2 = pfp_io.NetCDFRead(in_filepath)
         if ds2.returncodes["value"] != 0: return
         ds3 = pfp_levels.l3qc(cfg, ds2)
         if ds3.returncodes["value"] != 0:
@@ -541,7 +541,7 @@ def do_run_l4(main_gui):
             in_filename = os.path.split(in_filepath)
             logger.error("File "+in_filename[1]+" not found")
             return
-        ds3 = pfp_io.nc_read_series(in_filepath)
+        ds3 = pfp_io.NetCDFRead(in_filepath)
         if ds3.returncodes["value"] != 0: return
         sitename = ds3.globalattributes['site_name']
         if "Options" not in cfg:
@@ -584,7 +584,7 @@ def do_run_l5(main_gui):
             in_filename = os.path.split(in_filepath)
             logger.error("File "+in_filename[1]+" not found")
             return
-        ds4 = pfp_io.nc_read_series(in_filepath)
+        ds4 = pfp_io.NetCDFRead(in_filepath)
         if ds4.returncodes["value"] != 0: return
         sitename = ds4.globalattributes['site_name']
         if "Options" not in cfg:
@@ -635,7 +635,7 @@ def do_run_l6(main_gui):
             in_filename = os.path.split(in_filepath)
             logger.error("File "+in_filename[1]+" not found")
             return
-        ds5 = pfp_io.nc_read_series(in_filepath)
+        ds5 = pfp_io.NetCDFRead(in_filepath)
         if ds5.returncodes["value"] != 0: return
         sitename = ds5.globalattributes['site_name']
         if "Options" not in cfg:
@@ -678,7 +678,7 @@ def do_plot_fcvsustar():
         if len(file_path) == 0 or not os.path.isfile(file_path):
             return
         # read the netCDF file
-        ds = pfp_io.nc_read_series(file_path)
+        ds = pfp_io.NetCDFRead(file_path)
         if ds.returncodes["value"] != 0: return
         logger.info("Plotting Fc versus u* ...")
         pfp_plot.plot_fcvsustar(ds)

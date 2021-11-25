@@ -85,7 +85,7 @@ def mpt_main(cf):
     base_file_path = cf["Files"]["file_path"]
     nc_file_name = cf["Files"]["in_filename"]
     nc_file_path = os.path.join(base_file_path, nc_file_name)
-    ds = pfp_io.nc_read_series(nc_file_path)
+    ds = pfp_io.NetCDFRead(nc_file_path)
     if ds.returncodes["value"] != 0: return
     # get a temporary directory for the log, input and output files
     tmp_dir = tempfile.TemporaryDirectory(prefix="pfp_mpt_")

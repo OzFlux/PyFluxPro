@@ -1553,43 +1553,43 @@ def CalculateStandardDeviations(ds):
     # get a dictionary of variances and the stanard deviations we want from them
     d = {"AH_IRGA_Vr": {"sd_label": "AH_IRGA_Sd",
                         "long_name": "Absolute humidity",
-                        "statistic_type": "standard deviation",
+                        "statistic_type": "standard_deviation",
                         "units": "g/m^3"},
          "H2O_IRGA_Vr": {"sd_label": "H2O_IRGA_Sd",
                          "long_name": "H2O concentration",
-                         "statistic_type": "standard deviation",
+                         "statistic_type": "standard_deviation",
                          "units": "mmol/m^3"},
          "CO2_IRGA_Vr": {"sd_label": "CO2_IRGA_Sd",
                          "long_name": "CO2 concentration",
-                         "statistic_type": "standard deviation",
+                         "statistic_type": "standard_deviation",
                          "units": "mg/m^3"},
          "Ux_SONIC_Vr": {"sd_label": "Ux_SONIC_Sd",
                          "long_name": "Longitudinal wind velocity component, sonic coordinates",
-                         "statistic_type": "standard deviation",
+                         "statistic_type": "standard_deviation",
                          "units": "m/s"},
          "Uy_SONIC_Vr": {"sd_label": "Uy_SONIC_Sd",
                          "long_name": "Lateral wind velocity component, sonic coordinates",
-                         "statistic_type": "standard deviation",
+                         "statistic_type": "standard_deviation",
                          "units": "m/s"},
          "Uz_SONIC_Vr": {"sd_label": "Uz_SONIC_Sd",
                          "long_name": "Vertical wind velocity component, sonic coordinates",
-                         "statistic_type": "standard deviation",
+                         "statistic_type": "standard_deviation",
                          "units": "m/s"},
          "Tv_SONIC_Vr": {"sd_label": "Tv_SONIC_Sd",
                          "long_name": "Virtual temperature",
-                         "statistic_type": "standard deviation",
+                         "statistic_type": "standard_deviation",
                          "units": "degC"},
          "U_SONIC_Vr": {"sd_label": "U_SONIC_Sd",
                          "long_name": "Along wind velocity component",
-                         "statistic_type": "standard deviation",
+                         "statistic_type": "standard_deviation",
                          "units": "m/s"},
          "V_SONIC_Vr": {"sd_label": "V_SONIC_Sd",
                          "long_name": "Across wind velocity component",
-                         "statistic_type": "standard deviation",
+                         "statistic_type": "standard_deviation",
                          "units": "m/s"},
          "W_SONIC_Vr": {"sd_label": "W_SONIC_Sd",
                          "long_name": "Vertical wind velocity component",
-                         "statistic_type": "standard deviation",
+                         "statistic_type": "standard_deviation",
                          "units": "m/s"}}
     # get a list of variables in the data structure
     labels = list(ds.series.keys())
@@ -2781,7 +2781,7 @@ def ReplaceOnDiff(cf,ds,series=''):
                         if alt_filename not in open_ncfiles:
                             n = len(open_ncfiles)
                             open_ncfiles.append(alt_filename)
-                            ds_alt[n] = pfp_io.nc_read_series(alt_filename)
+                            ds_alt[n] = pfp_io.NetCDFRead(alt_filename)
                             if ds_alt[n].returncodes["value"] != 0: return
                         else:
                             n = open_ncfiles.index(alt_filename)

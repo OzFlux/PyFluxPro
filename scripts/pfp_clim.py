@@ -194,7 +194,7 @@ def climatology(cf):
         return
     xl_filename = nc_filename.replace(".nc","_Climatology.xls")
     xlFile = xlwt.Workbook()
-    ds = pfp_io.nc_read_series(nc_filename)
+    ds = pfp_io.NetCDFRead(nc_filename)
     if ds.returncodes["value"] != 0: return
     # calculate Fa if it is not in the data structure
     got_Fa = True

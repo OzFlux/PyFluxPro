@@ -81,7 +81,7 @@ def copy_datastructure(cf,ds_in):
             # get the netCDF file name at the "input" level
             outfilename = get_outfilenamefromcf(cf)
             # read the netCDF file at the "input" level
-            ds_file = nc_read_series(outfilename)
+            ds_file = NetCDFRead(outfilename)
             if ds_file.returncodes["value"] != 0: return
             dt_file = ds_file.series['DateTime']['Data']
             sd_file = str(dt_file[0])
@@ -353,7 +353,7 @@ def DataFrameToDataStructure(df, l1_info):
 
 def nc_2xls(ncfilename, outputlist=None):
     # read the netCDF file
-    ds = nc_read_series(ncfilename,checktimestep=False)
+    ds = NetCDFRead(ncfilename,checktimestep=False)
     if ds.returncodes["value"] != 0: return
     nRecs = int(ds.globalattributes["nc_nrecs"])
     nCols = len(list(ds.series.keys()))
@@ -675,7 +675,7 @@ def write_tsv_reddyproc(cf):
     csvfile = open(csvFileName,'w')
     writer = csv.writer(csvfile,dialect='excel-tab')
     # read the netCDF file
-    ds = nc_read_series(ncFileName)
+    ds = NetCDFRead(ncFileName)
     if ds.returncodes["value"] != 0: return
     # get the datetime series
     dt = ds.series["DateTime"]["Data"]
@@ -859,7 +859,7 @@ def smap_write_csv(cf):
     ncFileName = get_infilenamefromcf(cf)
     csvFileName_base = get_outfilenamefromcf(cf)
     # read the netCDF file
-    ds = nc_read_series(ncFileName)
+    ds = NetCDFRead(ncFileName)
     if ds.returncodes["value"] != 0: return
     ts = int(float(ds.globalattributes["time_step"]))
     nRecs = int(ds.globalattributes["nc_nrecs"])
@@ -976,7 +976,7 @@ def write_csv_ecostress(cf):
     csv_file = open(csv_file_name, 'w')
     csv_writer = csv.writer(csv_file)
     # read the netCDF file
-    ds = nc_read_series(nc_file_name)
+    ds = NetCDFRead(nc_file_name)
     if ds.returncodes["value"] != 0: return 0
     nRecs = int(ds.globalattributes["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
@@ -1091,7 +1091,7 @@ def write_csv_ep_biomet(cf):
     csvfile = open(csvFileName, "w")
     writer = csv.writer(csvfile)
     # read the netCDF file
-    ds = nc_read_series(ncFileName)
+    ds = NetCDFRead(ncFileName)
     if ds.returncodes["value"] != 0: return 0
     nrecs = int(ds.globalattributes["nc_nrecs"])
     # get the date and time data
@@ -1173,7 +1173,7 @@ def write_csv_fluxnet(cf):
     csvfile = open(csvFileName,'w')
     writer = csv.writer(csvfile)
     # read the netCDF file
-    ds = nc_read_series(ncFileName)
+    ds = NetCDFRead(ncFileName)
     if ds.returncodes["value"] != 0: return 0
     ts = int(float(ds.globalattributes["time_step"]))
     ts_delta = datetime.timedelta(minutes=ts)
@@ -1793,13 +1793,13 @@ def netcdf_concatenate_read_input_files(info):
     """
     data = OrderedDict()
     file_name = info["NetCDFConcatenate"]["in_file_names"][0]
-    data[file_name] = nc_read_series(file_name)
+    data[file_name] = NetCDFRead(file_name)
     if data[file_name].returncodes["value"] != 0:
         return data
     ts0 = int(float(data[file_name].globalattributes["time_step"]))
     level0 = data[file_name].globalattributes["processing_level"]
     for file_name in info["NetCDFConcatenate"]["in_file_names"][1:]:
-        ds = nc_read_series(file_name)
+        ds = NetCDFRead(file_name)
         if ds.returncodes["value"] != 0:
             return data
         tsn = int(float(ds.globalattributes["time_step"]))
@@ -1906,7 +1906,7 @@ def ncsplit_run(split_gui):
     logger.info(msg)
     # read the input file into the input data structure
     #ds_in = split_gui.ds
-    ds_in = nc_read_series(infilename)
+    ds_in = NetCDFRead(infilename)
     if ds_in.returncodes["value"] != 0: return
     ts = int(float(ds_in.globalattributes["time_step"]))
     ldt_in = ds_in.series["DateTime"]["Data"]
@@ -2146,18 +2146,77 @@ def nc_read_var(ncFile,ThisOne):
                 attr[vattr] = ",".join([str(i) for i in va])
             else:
                 attr[vattr] = va
-        # 26/09/2021 PRI - temporary fix to trap old files without "statistic_type"
-        if "statistic_type" not in attr:
-            if "Precip" in ThisOne:
-                attr["statistic_type"] = "sum"
-            elif ThisOne[-3:] == "_Sd":
-                attr["statistic_type"] = "standard deviation"
-            elif ThisOne[-3:] == "_Vr":
-                attr["statistic_type"] = "variance"
-            else:
-                attr["statistic_type"] = "average"
-
     return data, flag, attr
+
+def ds_update(ds):
+    """
+    Purpose:
+     Update the contents of a data structure.
+     This is where we can change variable names, attributes etc if we change
+     some aspect of netCDF files.  For example, V3.3.0 used for ODW2021
+     used "standard deviation" as a statistic type.  This changed to
+     "statistic_type" in V3.3.1.
+     This routine updates a data structure if required.  If the data structure
+     is modified, the original netCDF file is overwritten with the modified
+     data structure.
+    Usage:
+    Side effects:
+     The original netCDF file is overwritten if the data structure is changed.
+    Author: PRI
+    Date: November 2021
+    """
+    ds_changed = False
+    # get a list of the variables in the data structure
+    labels = list(ds.series.keys())
+    # loop over the variables in the data structure
+    for label in labels:
+        # get the variable
+        variable = pfp_utils.GetVariable(ds, label)
+        # check "statistic_type" is present
+        variable_changed = ds_update_statistic_type(variable)
+        # check to see if this variable has been changed
+        if variable_changed:
+            # write the variable to the data structure if it has changed
+            pfp_utils.CreateVariable(ds, variable)
+            ds_changed = True
+    # check to see if the data structure has changed
+    if ds_changed:
+        # write the changed data structure to file
+        file_name = os.path.basename(ds.filepath)
+        msg = "  Saving updated file " + file_name
+        logger.info(msg)
+        NetCDFWrite(ds.filepath, ds)
+    return ds
+
+def ds_update_statistic_type(variable):
+    """
+    Purpose:
+     Update the statistic_type attribute of a variable.
+    Usage:
+    Author: PRI
+    Date: November 2021
+    """
+    variable_changed = False
+    if variable["Label"] not in ["time", "DateTime"]:
+        if "statistic_type" not in variable["Attr"]:
+            # set the statistic_type attribute
+            variable_changed = True
+            if "Precip" in variable["Label"]:
+                variable["Attr"]["statistic_type"] = "sum"
+            elif variable["Label"][-3:] == "_Sd":
+                variable["Attr"]["statistic_type"] = "standard_deviation"
+            elif variable["Label"][-3:] == "_Vr":
+                variable["Attr"]["statistic_type"] = "variance"
+            else:
+                variable["Attr"]["statistic_type"] = "average"
+        # replace "standard deviation" with "standard_deviation"
+        else:
+            if variable["Attr"]["statistic_type"] == "standard deviation":
+                variable["Attr"]["statistic_type"] = "standard_deviation"
+                variable_changed = True
+    else:
+        pass
+    return variable_changed
 
 def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round"):
     """
@@ -2175,6 +2234,7 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round"):
     ds = nc_read_series(nc_file_uri,
                         checktimestep=checktimestep,
                         fixtimestepmethod=fixtimestepmethod)
+    ds = ds_update(ds)
     return ds
 
 def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3):

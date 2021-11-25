@@ -1,6 +1,6 @@
 level = concatenate
 [Options]
-    MaxGapInterpolate = 3
+    MaxGapInterpolate = 0
 [Files]
     [[Out]]
         ncFileName = Right click to browse ...

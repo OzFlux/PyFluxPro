@@ -382,7 +382,7 @@ class pfp_main_ui(QWidget):
         # close the netCDF file
         self.file.close()
         # read the netCDF file to a data structure
-        self.ds = pfp_io.nc_read_series(file_uri)
+        self.ds = pfp_io.NetCDFRead(file_uri)
         if self.ds.returncodes["value"] != 0:
             return
         # display the netcdf file in the GUI
@@ -689,7 +689,7 @@ class pfp_main_ui(QWidget):
         return
 
     def edit_preferences(self):
-        print("Edit/Preferences goes here")
+        logger.debug("Edit/Preferences goes here")
         pass
 
     def tabSelected(self, arg=None):

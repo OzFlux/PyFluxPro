@@ -85,22 +85,16 @@ class change_point_detect(object):
         if not resample: n_trials = 1
         #if write_to_dir: _check_path_exists(write_to_dir)
         stats = self.get_season_stats(years=years)
-        #print('Getting change points for year:')
         df_list = []
         for year in stats.index:
             if not stats.loc[year, 'sufficient_data']:
-                #print('    {}: insufficient data... skipping!'.format(year))
                 msg = "  CPD (McNew): Insufficient valid data for {}".format(str(year))
                 logger.info(msg)
                 continue
             msg = "  CPD (McNew): Getting change points for {}".format(str(year))
             logger.info(msg)
-            #print('    {}'.format(year), end=' ')
             trials_list = []
-            #print('- running trial #', end=' ')
             for trial in range(n_trials):
-                #char = ' ' if trial + 1 < n_trials else '\n'
-                #print(str(trial + 1), end=char)
                 year_df = self.get_season_data(years=[year], resample=resample)
                 cp_df = _fit_season_data(year_df)
                 cp_df['bootstrap_n'] = trial
@@ -212,8 +206,8 @@ class change_point_detect(object):
                 if not stats['valid_n'] > num_cats:
                     raise RuntimeError('Insufficient data for specified '
                                        'quantiles! Exiting...')
-                print('Warning: only {} valid observations available!'
-                      .format(stats['valid_n']))
+                msg = 'Warning: only {} valid observations available!'.format(stats['valid_n'])
+                logger.error(msg)
             plot_ustar_threshold(df.loc[str(year)], num_cats=num_cats,
                                  ustar_threshold=ustar_threshold)
         else:
@@ -305,17 +299,12 @@ def cpd_mcnew_main(cfg):
 
     # Create instance of cpd class and run get_change_points method, setting a path
     # for writing of data to excel output file (optional)
-    # PRI - number of bootstraps & insolation_threshold now read from control file
-    #n_trials = 100
     n_trials = int(pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "Num_bootstraps",
                                                               default=100, mode="quiet"))
     insolation_threshold = float(pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "Fsd_threshold",
                                                               default=10, mode="quiet"))
-    #start = datetime.datetime.now()
     x_0 = change_point_detect(df, insolation_threshold=insolation_threshold)
     results_dict_0 = x_0.get_change_points(n_trials=n_trials, write_to_file=results_path)
-    #end = datetime.datetime.now()
-    #print(end-start)
 
     return
 
