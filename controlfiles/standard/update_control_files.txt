@@ -163,6 +163,7 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         J/m3-K = J/m^3/K
         K = K
         K2 = K^2
+        K.g/m^3 = K.g/m^3
         kg/kg = kg/kg
         kg/m/s2 = kg/m/s^2
         kg/m3 = kg/m^3
@@ -181,6 +182,7 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         mg/m2/s = mg/m^2/s
         mgC/m2/s = mg/m^2/s
         mgCO2/m2/s = mg/m^2/s
+        mg.g/m^6 = mg.g/m^6
         mm = mm
         mmol/m3 = mmol/m^3
         mmol/mol = mmol/mol

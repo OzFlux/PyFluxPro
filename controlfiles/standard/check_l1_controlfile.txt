@@ -472,8 +472,20 @@
             [[[[degrees]]]]
                 long_name = Wind direction
                 standard_name = wind_from_direction
+        [[[standard_deviation]]]
+            [[[[degrees]]]]
+                long_name = Wind direction
+        [[[variance]]]
+            [[[[degrees^2]]]]
+                long_name = Wind direction
     [[Ws]]
         [[[average]]]
             [[[[m/s]]]]
                 long_name = Wind speed
                 standard_name = wind_speed
+        [[[standard_deviation]]]
+            [[[[m/s]]]]
+                long_name = Wind speed
+        [[[variance]]]
+            [[[[m^2/s^2]]]]
+                long_name = Wind direction
