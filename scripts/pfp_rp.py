@@ -1619,6 +1619,7 @@ def L6_summary_write_ncfile(nc_obj, data_dict):
     # write the data to the group
     dt = data_dict["variables"]["DateTime"]["data"]
     nrecs = len(dt)
+    setattr(nc_obj, "nc_nrecs", nrecs)
     # and give it dimensions of time, latitude and longitude
     nc_obj.createDimension("time", nrecs)
     nc_obj.createDimension("latitude", 1)
