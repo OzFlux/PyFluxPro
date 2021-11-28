@@ -382,7 +382,7 @@ class pfp_main_ui(QWidget):
         # close the netCDF file
         self.file.close()
         # read the netCDF file to a data structure
-        self.ds = pfp_io.NetCDFRead(file_uri)
+        self.ds = pfp_io.NetCDFRead(file_uri, checktimestep=False)
         if self.ds.returncodes["value"] != 0:
             return
         # display the netcdf file in the GUI

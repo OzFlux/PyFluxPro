@@ -2239,7 +2239,6 @@ def get_datetime_from_nctime(ds):
     else:
         nRecs = len(ds.series["time"]["Data"])
         ds.globalattributes["nc_nrecs"] = nRecs
-    time_step = int(float(ds.globalattributes["time_step"]))
     nc_time_data = ds.series["time"]["Data"]
     nc_time_units = ds.series["time"]["Attr"]["units"]
     # we only handle time units in days, hours or seconds
@@ -2266,7 +2265,12 @@ def get_datetime_from_nctime(ds):
         msg = " Unhandled option (" + str(units_period) + ") for time units period"
         logger.error(msg)
         raise RuntimeError
-    dt = numpy.array([rounddttots(ldt, time_step) for ldt in dt])
+    time_step = ds.globalattributes["time_step"]
+    if time_step in ["daily", "monthly", "annual"]:
+        dt = numpy.array(dt)
+    else:
+        time_step = int(float(time_step))
+        dt = numpy.array([rounddttots(ldt, time_step) for ldt in dt])
     calendar = "gregorian"
     if "calendar" in ds.series["time"]["Attr"]:
         calendar = ds.series["time"]["Attr"]["calendar"]

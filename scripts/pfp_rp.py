@@ -1188,7 +1188,7 @@ def L6_summary(cf, ds):
     L6_summary_write_ncfile(nc_group, monthly_dict)
     # separate monthly file
     nc_monthly = pfp_io.nc_open_write(out_name.replace(".nc", "_Monthly.nc"))
-    pfp_io.nc_write_globalattributes(nc_monthly, ds, flag_defs=False)
+    pfp_io.nc_write_globalattributes(nc_monthly, monthly_dict, flag_defs=False)
     L6_summary_write_ncfile(nc_monthly, monthly_dict)
     nc_monthly.close()
     # annual averages and totals
@@ -1199,7 +1199,7 @@ def L6_summary(cf, ds):
     L6_summary_write_ncfile(nc_group, annual_dict)
     # separate annual file
     nc_annual = pfp_io.nc_open_write(out_name.replace(".nc", "_Annual.nc"))
-    pfp_io.nc_write_globalattributes(nc_annual, ds, flag_defs=False)
+    pfp_io.nc_write_globalattributes(nc_annual, annual_dict, flag_defs=False)
     L6_summary_write_ncfile(nc_annual, annual_dict)
     nc_annual.close()
     # cumulative totals
@@ -1218,7 +1218,7 @@ def L6_summary(cf, ds):
     nc_summary.close()
     # separate cumulative file
     nc_cumulative = pfp_io.nc_open_write(out_name.replace(".nc", "_Cumulative.nc"))
-    pfp_io.nc_write_globalattributes(nc_cumulative, ds, flag_defs=False)
+    pfp_io.nc_write_globalattributes(nc_cumulative, cumulative_dict["all"], flag_defs=False)
     L6_summary_write_ncfile(nc_cumulative, cumulative_dict["all"])
     nc_cumulative.close()
     # close the Excel workbook
@@ -1288,7 +1288,7 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
             plt.ioff()
         else:
             plt.close(fig)
-            plt.switch_backend(current_backend)        
+            plt.switch_backend(current_backend)
             plt.ion()
     # plot time series of Fn,Fg,Fh,Fe
     if cf["Options"]["call_mode"].lower()=="interactive":
@@ -1323,7 +1323,7 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
         plt.ioff()
     else:
         plt.close(fig)
-        plt.switch_backend(current_backend)        
+        plt.switch_backend(current_backend)
         plt.ion()
 
 def L6_summary_plotcumulative(cf, ds, cumulative_dict):
@@ -1428,7 +1428,7 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
             plt.ioff()
         else:
             plt.close(fig)
-            plt.switch_backend(current_backend)        
+            plt.switch_backend(current_backend)
             plt.ion()
 
 def L6_summary_createseriesdict(cf,ds):
@@ -1543,7 +1543,7 @@ def L6_summary_daily(ds, series_dict):
                                            "Attr":{"units":"Days","format":"dd/mm/yyyy",
                                                    "time_step":"daily"}}
     daily_dict["globalattributes"]["nc_nrecs"] = len(ldt_daily)
-    daily_dict["globalattributes"]["time_step"] = "daily"
+    daily_dict["globalattributes"]["time_step"] = ts
     series_list = list(series_dict["daily"].keys())
     series_list.sort()
     for item in series_list:
@@ -1681,19 +1681,20 @@ def L6_summary_monthly(ds,series_dict):
     ldt = dt[si:]
     monthly_dict = {"globalattributes": copy.deepcopy(ds.globalattributes),
                     "variables":{}}
-    monthly_dict["time_step"] = "calendar month"
-    monthly_dict["variables"]["DateTime"] = {"Data":[],
-                                             "Flag":numpy.array([]),
-                                             "Attr":{"units":"Months", "format":"dd/mm/yyyy",
-                                                     "time_step":"Monthly"}}
+    mdg = monthly_dict["globalattributes"]
+    mdv = monthly_dict["variables"]
+    monthly_dict["time_step"] = ts
+    mdv["DateTime"] = {"Data":numpy.ma.array([]),
+                       "Flag":numpy.array([]),
+                       "Attr":{"units":"Months", "format":"dd/mm/yyyy", "time_step":"Monthly"}}
     # create arrays in monthly_dict
     series_list = list(series_dict["monthly"].keys())
     series_list.sort()
     # create the data arrays
     for item in series_list:
-        monthly_dict["variables"][item] = {"Data":numpy.ma.array([]),
-                                           "Flag":numpy.array([]),
-                                           "Attr":{"units":'',"format":''}}
+        mdv[item] = {"Data":numpy.ma.array([]),
+                     "Flag":numpy.array([]),
+                     "Attr":{"units":'',"format":''}}
     # loop over the months in the data file
     start_date = ldt[0]
     end_date = start_date+dateutil.relativedelta.relativedelta(months=1)
@@ -1703,39 +1704,40 @@ def L6_summary_monthly(ds,series_dict):
         # *** The Elise Pendall bug fix ***
         si = pfp_utils.GetDateIndex(dt, str(start_date), ts=ts, default=0)
         ei = pfp_utils.GetDateIndex(dt, str(end_date), ts=ts, default=len(dt)-1)
-        monthly_dict["variables"]["DateTime"]["Data"].append(dt[si])
+        mdv["DateTime"]["Data"] = numpy.append(mdv["DateTime"]["Data"], dt[si])
         for item in series_list:
             if item not in list(ds.series.keys()): continue
             variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
             if item in series_dict["lists"]["co2"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "gC/m^2")
-                monthly_dict["variables"][item]["Attr"]["units"] = "gC/m^2"
+                mdv[item]["Attr"]["units"] = "gC/m^2"
             elif item in series_dict["lists"]["ET"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "kg/m^2")
-                monthly_dict["variables"][item]["Attr"]["units"] = "kg/m^2"
+                mdv[item]["Attr"]["units"] = "kg/m^2"
             else:
-                monthly_dict["variables"][item]["Attr"]["units"] = variable["Attr"]["units"]
-            if series_dict["monthly"][item]["operator"].lower()=="average":
-                monthly_dict["variables"][item]["Data"] = numpy.append(monthly_dict["variables"][item]["Data"],
-                                                                       numpy.ma.average(variable["Data"]))
+                mdv[item]["Attr"]["units"] = variable["Attr"]["units"]
+            if series_dict["monthly"][item]["operator"].lower() == "average":
+                val = numpy.ma.average(variable["Data"])
+                mdv[item]["Data"] = numpy.append(mdv[item]["Data"], val)
             elif series_dict["monthly"][item]["operator"].lower()=="sum":
-                monthly_dict["variables"][item]["Data"] = numpy.append(monthly_dict["variables"][item]["Data"],
-                                                                       numpy.ma.sum(variable["Data"]))
-                monthly_dict["variables"][item]["Attr"]["units"] = monthly_dict["variables"][item]["Attr"]["units"]+"/month"
+                val = numpy.ma.sum(variable["Data"])
+                mdv[item]["Data"] = numpy.append(mdv[item]["Data"], val)
+                mdv[item]["Attr"]["units"] = mdv[item]["Attr"]["units"] + "/month"
             else:
                 msg = "L6_summary_monthly: unrecognised operator"
                 logger.error(msg)
-            monthly_dict["variables"][item]["Attr"]["format"] = series_dict["monthly"][item]["format"]
+            mdv[item]["Attr"]["format"] = series_dict["monthly"][item]["format"]
             # copy some of the variable attributes
             default_list = ["long_name", "height", "instrument"]
             descr_list = [d for d in list(variable["Attr"].keys()) if "description" in d]
             vattr_list = default_list + descr_list
             for attr in vattr_list:
                 if attr in variable["Attr"]:
-                    monthly_dict["variables"][item]["Attr"][attr] = variable["Attr"][attr]
+                    mdv[item]["Attr"][attr] = variable["Attr"][attr]
         start_date = end_date+dateutil.relativedelta.relativedelta(minutes=ts)
         end_date = start_date+dateutil.relativedelta.relativedelta(months=1)
         end_date = end_date-dateutil.relativedelta.relativedelta(minutes=ts)
+    mdg["nc_nrecs"] = len(mdv["DateTime"]["Data"])
     return monthly_dict
 
 def L6_summary_annual(ds, series_dict):
@@ -1761,60 +1763,63 @@ def L6_summary_annual(ds, series_dict):
     end_year = ldt[-1].year
     year_list = list(range(start_year, end_year+1, 1))
     nYears = len(year_list)
-    annual_dict = {"globalattributes":{}, "variables":{}}
+    annual_dict = {"globalattributes": copy.deepcopy(ds.globalattributes), "variables":{}}
+    adg = annual_dict["globalattributes"]
+    adv = annual_dict["variables"]
+    annual_dict["time_step"] = ts
     # copy the global attributes
-    annual_dict["globalattributes"] = copy.deepcopy(ds.globalattributes)
-    annual_dict["variables"]["DateTime"] = {"Data":[datetime.datetime(yr,1,1) for yr in year_list],
-                                            "Flag":numpy.zeros(nYears, dtype=numpy.int32),
-                                            "Attr":{"units":"Years", "format":"dd/mm/yyyy",
-                                                    "time_step":"Annual"}}
-    annual_dict["variables"]["nDays"] = {"Data":numpy.full(nYears, c.missing_value, dtype=numpy.float64),
-                                         "Flag":numpy.zeros(nYears, dtype=numpy.int32),
-                                         "Attr":{"units":"Number of days","format":"0"}}
+    adv["DateTime"] = {"Data": [datetime.datetime(yr, 1, 1) for yr in year_list],
+                       "Flag": numpy.zeros(nYears, dtype=numpy.int32),
+                       "Attr": {"units": "Years", "format": "dd/mm/yyyy", "time_step": "Annual"}}
+    adv["nDays"] = {"Data": numpy.full(nYears, c.missing_value, dtype=numpy.float64),
+                    "Flag": numpy.zeros(nYears, dtype=numpy.int32),
+                    "Attr": {"units": "Number of days","format": "0"}}
     # create arrays in annual_dict
     series_list = list(series_dict["annual"].keys())
     series_list.sort()
     for item in series_list:
-        annual_dict["variables"][item] = {"Data":numpy.ma.array([float(-9999)]*len(year_list)),
-                                          "Flag":numpy.zeros(nYears, dtype=numpy.int32),
-                                          "Attr":{"units":"Number of days","format":"0"}}
-    for i,year in enumerate(year_list):
-        if ts==30:
-            start_date = str(year)+"-01-01 00:30"
-        elif ts==60:
-            start_date = str(year)+"-01-01 01:00"
-        end_date = str(year+1)+"-01-01 00:00"
-        si = pfp_utils.GetDateIndex(dt,start_date,ts=ts,default=0)
-        ei = pfp_utils.GetDateIndex(dt,end_date,ts=ts,default=len(dt)-1)
+        adv[item] = {"Data": numpy.ma.array([float(-9999)]*len(year_list)),
+                     "Flag": numpy.zeros(nYears, dtype=numpy.int32),
+                     "Attr": {"units": "Number of days","format": "0"}}
+    for i, year in enumerate(year_list):
+        if ts == 30:
+            start_date = str(year) + "-01-01 00:30"
+        elif ts == 60:
+            start_date = str(year) + "-01-01 01:00"
+        end_date = str(year+1) + "-01-01 00:00"
+        si = pfp_utils.GetDateIndex(dt, start_date, ts=ts, default=0)
+        ei = pfp_utils.GetDateIndex(dt, end_date, ts=ts, default=len(dt)-1)
         nDays = int((ei-si+1)/nperDay+0.5)
-        annual_dict["variables"]["nDays"]["Data"][i] = nDays
+        adv["nDays"]["Data"][i] = nDays
         for item in series_list:
-            if item not in list(ds.series.keys()): continue
+            if item not in list(ds.series.keys()):
+                continue
             variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
             if item in series_dict["lists"]["co2"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "gC/m^2")
-                annual_dict["variables"][item]["Attr"]["units"] = "gC/m^2"
+                adv[item]["Attr"]["units"] = "gC/m^2"
             elif item in series_dict["lists"]["ET"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "kg/m^2")
-                annual_dict["variables"][item]["Attr"]["units"] = "kg/m^2"
+                adv[item]["Attr"]["units"] = "kg/m^2"
             else:
-                annual_dict["variables"][item]["Attr"]["units"] = variable["Attr"]["units"]
+                adv[item]["Attr"]["units"] = variable["Attr"]["units"]
             if series_dict["annual"][item]["operator"].lower()=="average":
-                annual_dict["variables"][item]["Data"][i] = numpy.ma.average(variable["Data"])
+                adv[item]["Data"][i] = numpy.ma.average(variable["Data"])
             elif series_dict["annual"][item]["operator"].lower()=="sum":
-                annual_dict["variables"][item]["Data"][i] = numpy.ma.sum(variable["Data"])
-                annual_dict["variables"][item]["Attr"]["units"] = annual_dict["variables"][item]["Attr"]["units"]+"/year"
+                adv[item]["Data"][i] = numpy.ma.sum(variable["Data"])
+                adv[item]["Attr"]["units"] = adv[item]["Attr"]["units"]+"/year"
             else:
                 msg = "L6_summary_annual: unrecognised operator"
                 logger.error(msg)
-            annual_dict["variables"][item]["Attr"]["format"] = series_dict["annual"][item]["format"]
+            adv[item]["Attr"]["format"] = series_dict["annual"][item]["format"]
             # copy some of the variable attributes
             default_list = ["long_name", "height", "instrument"]
             descr_list = [d for d in list(variable["Attr"].keys()) if "description" in d]
             vattr_list = default_list + descr_list
             for attr in vattr_list:
                 if attr in variable["Attr"]:
-                    annual_dict["variables"][item]["Attr"][attr] = variable["Attr"][attr]
+                    adv[item]["Attr"][attr] = variable["Attr"][attr]
+    adg["nc_nrecs"] = len(adv["DateTime"]["Data"])
     return annual_dict
 
 def L6_summary_cumulative(ds, series_dict):
@@ -1899,6 +1904,7 @@ def L6_summary_cumulative(ds, series_dict):
         for attr in vattr_list:
             if attr in variable["Attr"]:
                 cdyr["variables"][item]["Attr"][attr] = variable["Attr"][attr]
+    cdyr["globalattributes"]["nc_nrecs"] = len(cdyr["variables"]["DateTime"]["Data"])
     return cumulative_dict
 
 def ParseL6ControlFile(cf, ds):
