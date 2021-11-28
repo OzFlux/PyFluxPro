@@ -2296,38 +2296,53 @@ def nc_write_globalattributes(nc_file, ds, flag_defs=True):
     Author: PRI
     Date: Back in the day
     """
-    ldt = ds.series["DateTime"]["Data"]
-    ds.globalattributes['pyfluxpro_version'] = str(cfg.version_name)+' '+str(cfg.version_number)
-    ds.globalattributes["time_coverage_start"] = str(ldt[0])
-    ds.globalattributes["time_coverage_end"] = str(ldt[-1])
+    # check to see if we have a DataStructure or a dictionary
+    if isinstance(ds, DataStructure):
+        # get a local dictionary from a DataStructure
+        lds = {"globalattributes": ds.globalattributes,
+               "variables": ds.series}
+    elif isinstance(ds, dict):
+        # check to see if 'globalattributes' and 'variables' in dictionary
+        if (("globalattributes" in ds) and ("variables" in ds)):
+            lds = {"globalattributes": ds["globalattributes"],
+                   "variables": ds["variables"]}
+        else:
+            msg = "Dict doesn't contain expected contents "
+            msg += "'globalattributes' or 'variables'"
+            logger.error(msg)
+            raise RuntimeError(msg)
+    else:
+        msg = "Expected DataStructure or dictionary for 'ds'"
+        msg += ", got " + type(ds)
+        logger.error(msg)
+        raise RuntimeError(msg)
+    ldt = lds["variables"]["DateTime"]["Data"]
+    lds["globalattributes"]["pyfluxpro_version"] = str(cfg.version_name)+' '+str(cfg.version_number)
+    lds["globalattributes"]["time_coverage_start"] = str(ldt[0])
+    lds["globalattributes"]["time_coverage_end"] = str(ldt[-1])
     t = time.localtime()
-    ds.globalattributes["date_created"] = str(datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]))
-    gattr_list = list(ds.globalattributes.keys())
-    gattr_list.sort()
-    flag_list = []
-    attr_list = []
-    for item in gattr_list:
+    lds["globalattributes"]["date_created"] = str(datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]))
+    gattrs = sorted(list(lds["globalattributes"].keys()))
+    flags = []
+    attrs = []
+    for item in gattrs:
         if "Flag" in item:
-            flag_list.append(item)
+            flags.append(item)
         else:
-            attr_list.append(item)
-    for item in attr_list:
-        if isinstance(ds.globalattributes[item],str):
-            attr = ds.globalattributes[item]
-        elif isinstance(ds.globalattributes[item],str):
-            attr = ds.globalattributes[item].encode('ascii','ignore')
+            attrs.append(item)
+    for item in attrs:
+        if isinstance(lds["globalattributes"][item], str):
+            attr = lds["globalattributes"][item].encode('ascii', 'ignore')
         else:
-            attr = str(ds.globalattributes[item])
-        setattr(nc_file,item,attr)
+            attr = str(lds["globalattributes"][item])
+        setattr(nc_file, item, attr)
     if flag_defs:
-        for item in flag_list:
-            if isinstance(ds.globalattributes[item],str):
-                attr = ds.globalattributes[item]
-            elif isinstance(ds.globalattributes[item],str):
-                attr = ds.globalattributes[item].encode('ascii','ignore')
+        for item in flags:
+            if isinstance(lds["globalattributes"][item], str):
+                attr = lds["globalattributes"][item].encode('ascii', 'ignore')
             else:
-                attr = str(ds.globalattributes[item])
-            setattr(nc_file,item,attr)
+                attr = str(lds["globalattributes"][item])
+            setattr(nc_file, item, attr)
     return
 
 def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
@@ -2655,12 +2670,12 @@ def xl_write_data(xl_sheet, data, xlCol=0):
      This routine has 2 arguments,an Excel worksheet instance and
      a dictionary of data to be written out.  The dictionary
      format needs to be:
-      1) data["DateTime"]["data"]   - a list of Python datetimes, these will
+      1) data["DateTime"]["Data"]   - a list of Python datetimes, these will
                                       be written tp the first column of the
                                       worksheet
          data["DateTime"]["units"]  - units of the date time eg "Days", "Years"
          data["DateTime"]["format"] - a format string for xlwt.easyxf eg "dd/mm/yyy"
-      2) data[variable]["data"]     - a numpy array of data values
+      2) data[variable]["Data"]     - a numpy array of data values
          data[variable]["units"]    - units of the data
          data[variable]["format"]   - an xlwt.easyxf format string eg "0.00" for 2 decimal places
          There can be multiple variables but each must follow the above template.
@@ -2678,24 +2693,25 @@ def xl_write_data(xl_sheet, data, xlCol=0):
     #xlCol = 0
     # write the data to the xl file
     series_list = list(data.keys())
-    xl_sheet.write(1,xlCol,data["DateTime"]["attr"]["units"])
-    nrows = len(data["DateTime"]["data"])
-    d_xf = xlwt.easyxf(num_format_str=data["DateTime"]["attr"]["format"])
+    xl_sheet.write(1,xlCol,data["DateTime"]["Attr"]["units"])
+    nrows = len(data["DateTime"]["Data"])
+    d_xf = xlwt.easyxf(num_format_str=data["DateTime"]["Attr"]["format"])
     for j in range(nrows):
-        xl_sheet.write(j+2,xlCol,data["DateTime"]["data"][j],d_xf)
+        xl_sheet.write(j+2,xlCol,data["DateTime"]["Data"][j],d_xf)
     series_list.remove("DateTime")
     series_list.sort()
     for item in series_list:
         xlCol = xlCol + 1
-        xl_sheet.write(0,xlCol,data[item]["attr"]["units"])
+        xl_sheet.write(0,xlCol,data[item]["Attr"]["units"])
         xl_sheet.write(1,xlCol,item)
-        d_xf = xlwt.easyxf(num_format_str=data[item]["attr"]["format"])
-        if numpy.ma.isMA(data[item]["data"]):
-            tmp = numpy.ma.filled(data[item]["data"],fill_value=numpy.NaN)
+        d_xf = xlwt.easyxf(num_format_str=data[item]["Attr"]["format"])
+        if numpy.ma.isMA(data[item]["Data"]):
+            tmp = numpy.ma.filled(data[item]["Data"],fill_value=numpy.NaN)
         else:
-            tmp = data[item]["data"]
+            tmp = data[item]["Data"]
         for j in range(nrows):
             xl_sheet.write(j+2,xlCol,tmp[j],d_xf)
+    return
 
 def xl_write_series(ds, xlfullname, outputlist=None):
     if "nc_nrecs" in list(ds.globalattributes.keys()):
