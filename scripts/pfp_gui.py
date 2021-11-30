@@ -220,6 +220,12 @@ class file_explore(QtWidgets.QWidget):
         self.view.setModel(self.model)
         self.get_model_from_data()
         self.view.setColumnWidth(0, 200)
+        # expand the "Variables" section
+        for row in range(self.model.rowCount()):
+            section = self.model.item(row)
+            if section.text() in ["Variables"]:
+                idx = self.model.index(row, 0)
+                self.view.expand(idx)
 
     def double_click(self):
         """ Save the selected text on double click events."""
@@ -245,31 +251,17 @@ class file_explore(QtWidgets.QWidget):
         self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
         self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selected_text))
         # plot fingerprints
-        self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
-        self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
-        self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
-        self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selected_text))
+        if self.ds.globalattributes["time_step"] not in ["daily", "monthly", "annual"]:
+            self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
+            self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
+            self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
+            self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selected_text))
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
-
-    #def get_data_from_file(self):
-        #file_path = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
-        #if len(file_path) == 0:
-            #self.ds = pfp_io.DataStructure()
-            #self.ds.returncodes["value"] = 1
-            #self.ds.returncodes["message"] = "No netCDF file chosen"
-            #return
-        #self.ds = pfp_io.NetCDFRead(file_path)
-        #if self.ds.returncodes["value"] != 0: return
-        #file_path_parts = os.path.split(file_path)
-        #self.file_path = file_path_parts[0]
-        #self.file_name = file_path_parts[1]
-        #return
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data.  Allows editing of attributes."""
         model = self.model
-        #labels = list(self.ds.series.keys())
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
@@ -279,17 +271,18 @@ class file_explore(QtWidgets.QWidget):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
                     self.ds.globalattributes[key2] = val2
-            #elif key1 in labels:
-            else:
-                # sections with only 1 level
+            elif key1 in ["Variables"]:
                 for j in range(section.rowCount()):
-                    key2 = str(section.child(j, 0).text())
-                    val2 = str(section.child(j, 1).text())
-                    self.ds.series[key1]["Attr"][key2] = val2
-            #else:
-                #msg = " Unrecognised object (" + key1 + ") in netCDF file"
-                #msg += ", skipping ..."
-                #logger.warning(msg)
+                    variable_section = section.child(j)
+                    label = variable_section.text()
+                    for k in range(variable_section.rowCount()):
+                        key2 = str(variable_section.child(k, 0).text())
+                        val2 = str(variable_section.child(k, 1).text())
+                        self.ds.series[label]["Attr"][key2] = val2
+            else:
+                msg = " Unrecognised object (" + key1 + ") in netCDF file"
+                msg += ", skipping ..."
+                logger.warning(msg)
         return self.ds
 
     def get_model_from_data(self):
@@ -306,19 +299,22 @@ class file_explore(QtWidgets.QWidget):
             section.appendRow([child0, child1])
         self.model.appendRow([section, long_name])
         labels = sorted(list(self.ds.series.keys()))
+        variables_section = QtGui.QStandardItem("Variables")
+        variables_section.setEditable(False)
         for label in labels:
             var = pfp_utils.GetVariable(self.ds, label)
             long_name = QtGui.QStandardItem(var["Attr"]["long_name"])
-            section = QtGui.QStandardItem(label)
+            variable_section = QtGui.QStandardItem(label)
             # some variable names are not editable
             if label in ["DateTime", "time"]:
-                section.setEditable(False)
+                variable_section.setEditable(False)
             for attr in var["Attr"]:
                 value = str(var["Attr"][attr])
                 child0 = QtGui.QStandardItem(attr)
                 child1 = QtGui.QStandardItem(value)
-                section.appendRow([child0, child1])
-            self.model.appendRow([section, long_name])
+                variable_section.appendRow([child0, child1])
+            variables_section.appendRow([variable_section, long_name])
+        self.model.appendRow([variables_section, QtGui.QStandardItem("")])
         return
 
     def handleItemChanged(self, item):
