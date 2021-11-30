@@ -1992,19 +1992,13 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
     Date: Back in the day
     """
     logger.info(" Reading netCDF file " + os.path.basename(ncFullName))
-    #netCDF4.default_encoding = 'latin-1'
-    ds = DataStructure()
-    ds.filepath = ncFullName
-    # check to see if the requested file exists, return empty ds if it doesn't
-    if not os.path.isfile(ncFullName):
-        msg = " netCDF file " + ncFullName + " not found"
-        logger.error(msg)
-        ds.returncodes["value"] = 1
-        return ds
     # file probably exists, so let's read it
     ncFile = netCDF4.Dataset(ncFullName, "r")
     # disable automatic masking of data when valid_range specified
     ncFile.set_auto_mask(False)
+    # get an instance of a PFP data structure
+    ds = DataStructure()
+    ds.filepath = ncFullName
     # now deal with the global attributes
     gattrlist = ncFile.ncattrs()
     if len(gattrlist) != 0:
@@ -2023,36 +2017,14 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
         ds.series[ThisOne]["Data"] = data
         ds.series[ThisOne]["Flag"] = flag
         ds.series[ThisOne]["Attr"] = attr
-    if "time" in varlist:
-        # get a series of Python datetime objects
-        pfp_utils.get_datetime_from_nctime(ds)
-    elif "xlDateTime" in varlist:
-        pfp_utils.get_datetime_from_xldatetime(ds)
-    elif (("Year" in varlist) and ("Month" in varlist) and ("Day" in varlist) and
-          ("Hour" in varlist) and ("Minute" in varlist) and ("Second" in varlist)):
-        pfp_utils.get_datetime_from_ymdhms(ds)
-    else:
-        msg = " No datetime variables found in netCDF file, can not process file"
-        logger.error(msg)
-        ds.returncodes["value"] = 1
-        return ds
+    # get a series of Python datetime objects
+    pfp_utils.get_datetime_from_nctime(ds)
     ncFile.close()
     # check to see if we have the "nc_nrecs" global attribute
     if "nc_nrecs" not in list(ds.globalattributes.keys()):
         ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
     # round the Python datetime to the nearest second
     pfp_utils.round_datetime(ds, mode="nearest_second")
-    # check for time step
-    if "time_step" not in list(ds.globalattributes.keys()):
-        ts = numpy.mean(pfp_utils.get_timestep(ds)//60)
-        ts = pfp_utils.roundtobase(ts, base=30)
-        ds.globalattributes["time_step"] = str(int(ts))
-    # trap old files using nc_level and rename to processing_level
-    if "nc_level" in ds.globalattributes:
-        ds.globalattributes["processing_level"] = ds.globalattributes["nc_level"]
-    # check for site name
-    if "site_name" not in list(ds.globalattributes.keys()):
-        ds.globalattributes["site_name"] = os.path.basename(ncFullName)
     # check the time step and fix it required
     if checktimestep:
         if pfp_utils.CheckTimeStep(ds):
@@ -2175,6 +2147,11 @@ def ds_update(ds):
     Date: November 2021
     """
     ds_changed = False
+    # update global attributes
+    # trap old files using nc_level and rename to processing_level
+    if "nc_level" in ds.globalattributes:
+        ds.globalattributes["processing_level"] = ds.globalattributes["nc_level"]
+        ds_changed = True
     # get a list of the variables in the data structure
     labels = list(ds.series.keys())
     # loop over the variables in the data structure

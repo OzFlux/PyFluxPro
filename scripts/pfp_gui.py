@@ -251,10 +251,11 @@ class file_explore(QtWidgets.QWidget):
         self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
         self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selected_text))
         # plot fingerprints
-        self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
-        self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
-        self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
-        self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selected_text))
+        if self.ds.globalattributes["time_step"] not in ["daily", "monthly", "annual"]:
+            self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
+            self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
+            self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
+            self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selected_text))
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 

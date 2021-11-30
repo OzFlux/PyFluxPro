@@ -175,7 +175,7 @@ def CheckQCFlags(ds):
             logger.warning(msg)
     return
 
-def CheckTimeStep(ds):
+def CheckTimeStep(ds, mode="quiet"):
     """
     Purpose:
      Checks the datetime series in the data structure ds to see if there are
@@ -192,7 +192,13 @@ def CheckTimeStep(ds):
     # set the has_gaps logical
     has_gaps = False
     # get the time step
-    ts = int(float(ds.globalattributes["time_step"]))
+    try:
+        ts = int(float(ds.globalattributes["time_step"]))
+    except:
+        if mode != "quiet":
+            msg = " CheckTimeStep: 'time_step' is not a number, skipping check ..."
+            logger.error(msg)
+        return False
     # time step between records in seconds
     dt = get_timestep(ds)
     # indices of elements where time step not equal to default
@@ -200,7 +206,8 @@ def CheckTimeStep(ds):
     # check to see if ww have any time step problems
     if len(index)!=0:
         has_gaps = True
-        logger.warning(" CheckTimeStep: "+str(len(index))+" problems found with the time stamp")
+        msg = " CheckTimeStep: " + str(len(index)) + " problems found with the time stamp"
+        logger.warning(msg)
     return has_gaps
 
 def CheckUnits(ds, label, units, convert_units=False):
@@ -2118,16 +2125,21 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
     Author: PRI
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
-    ts = int(float(ds.globalattributes["time_step"]))
     ldt = ds.series["DateTime"]["Data"]
     # get the start and end indices
     match_options = {"start": {"exact": "exact", "wholehours": "startnexthour",
                                "wholedays": "startnextday", "wholemonths": "startnextmonth"},
                      "end": {"exact": "exact", "wholehours": "endprevioushour",
                              "wholedays": "endpreviousday", "wholemonths": "endpreviousmonth"}}
-    si = GetDateIndex(ldt, start, ts=ts, default=0, match=match_options["start"][match])
-    ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match=match_options["end"][match])
-    dt = ldt[si:ei+1]
+    time_step = ds.globalattributes["time_step"]
+    try:
+        ts = int(float(time_step))
+        si = GetDateIndex(ldt, start, ts=ts, default=0, match=match_options["start"][match])
+        ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match=match_options["end"][match])
+    except:
+        si = 0
+        ei = nrecs - 1
+    dt = ldt[si: ei+1]
     data, flag, attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
     # check to see what kind of output the user wants
     if isinstance(data, numpy.ndarray) and out_type == "ma":
@@ -2137,8 +2149,8 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
         # leave as ndarray, convert c.missing_value to NaN
         data = numpy.where(data == c.missing_value, numpy.nan, data)
     # assemble the variable dictionary
-    variable = {"Label":label, "Data":data, "Flag":flag, "Attr":attr,
-                "DateTime":dt, "time_step":ts}
+    variable = {"Label": label, "Data": data, "Flag": flag, "Attr": attr,
+                "DateTime": dt, "time_step": time_step}
     # make sure there is a value for the long_name attribute
     if "long_name" not in variable["Attr"]:
         variable["Attr"]["long_name"] = label
@@ -3074,7 +3086,7 @@ def rounddttoseconds(dt):
     dt -= datetime.timedelta(seconds=dt.second % 1,microseconds=dt.microsecond)
     return dt
 
-def round_datetime(ds,mode="nearest_timestep"):
+def round_datetime(ds, mode="nearest_timestep"):
     """
     Purpose:
      Round the series of Python datetimes to the nearest time based on mode
@@ -3089,7 +3101,7 @@ def round_datetime(ds,mode="nearest_timestep"):
     # local pointer to the datetime series
     ldt = ds.series["DateTime"]["Data"]
     # check which rounding option has been chosen
-    if mode.lower()=="nearest_timestep":
+    if mode.lower() == "nearest_timestep":
         # get the time step
         if "time_step" in ds.globalattributes:
             ts = int(float(ds.globalattributes["time_step"]))
@@ -3098,13 +3110,14 @@ def round_datetime(ds,mode="nearest_timestep"):
             ts = roundtobase(ts, base=30)
             ds.globalattributes["time_step"] = str(int(float(ts)))
         # round to the nearest time step
-        rldt = [rounddttots(dt,ts=ts) for dt in ldt]
-    elif mode.lower()=="nearest_second":
+        rldt = [rounddttots(dt, ts=ts) for dt in ldt]
+    elif mode.lower() == "nearest_second":
         # round to the nearest second
         rldt = [rounddttoseconds(dt) for dt in ldt]
     else:
         # unrecognised option for mode, return original datetime series
-        logger.error(" round_datetime: unrecognised mode ("+str(mode)+")"+" ,returning original time series")
+        msg = " Unrecognised mode (" + str(mode) + ")" + " ,returning original time series"
+        logger.error(msg)
         rldt = ds.series["DateTime"]["Data"]
     # replace the original datetime series with the rounded one
     ds.series["DateTime"]["Data"] = numpy.array(rldt)

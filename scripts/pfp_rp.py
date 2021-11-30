@@ -1534,56 +1534,55 @@ def L6_summary_daily(ds, series_dict):
     f0 = numpy.zeros(nDays, dtype=numpy.int32)
     ldt_daily = [ldt[0]+datetime.timedelta(days=i) for i in range(0,nDays)]
     # create a dictionary to hold the daily statistics
-    daily_dict = {"globalattributes":{},"variables":{}}
-    # copy the global attributes
-    daily_dict["globalattributes"] = copy.deepcopy(ds.globalattributes)
+    daily_dict = {"globalattributes": copy.deepcopy(ds.globalattributes),
+                  "variables":{}}
+    ddg = daily_dict["globalattributes"]
+    ddv = daily_dict["variables"]
     # create the datetime variable
-    daily_dict["variables"]["DateTime"] = {"Data":ldt_daily,
-                                           "Flag":f0,
-                                           "Attr":{"units":"Days","format":"dd/mm/yyyy",
-                                                   "time_step":"daily"}}
-    daily_dict["globalattributes"]["nc_nrecs"] = len(ldt_daily)
-    daily_dict["globalattributes"]["time_step"] = ts
+    ddv["DateTime"] = {"Data": ldt_daily, "Flag": f0,
+                       "Attr":{"units": "Days", "format": "dd/mm/yyyy", "time_step": "daily"}}
+    ddg["nc_nrecs"] = len(ldt_daily)
+    ddg["time_step"] = "daily"
     series_list = list(series_dict["daily"].keys())
     series_list.sort()
     for item in series_list:
         if item not in list(ds.series.keys()):
             continue
-        daily_dict["variables"][item] = {"Data":[], "Attr":{}}
+        ddv[item] = {"Data": [], "Attr": {}}
         variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
         if item in series_dict["lists"]["co2"]:
             variable = pfp_utils.convert_units_func(ds, variable, "gC/m^2")
-            daily_dict["variables"][item]["Attr"]["units"] = "gC/m^2"
+            ddv[item]["Attr"]["units"] = "gC/m^2"
         elif item in series_dict["lists"]["ET"]:
             variable = pfp_utils.convert_units_func(ds, variable, "kg/m^2")
-            daily_dict["variables"][item]["Attr"]["units"] = "kg/m^2"
+            ddv[item]["Attr"]["units"] = "kg/m^2"
         else:
-            daily_dict["variables"][item]["Attr"]["units"] = variable["Attr"]["units"]
+            ddv[item]["Attr"]["units"] = variable["Attr"]["units"]
         data_2d = variable["Data"].reshape(nDays, ntsInDay)
         if series_dict["daily"][item]["operator"].lower() == "average":
-            daily_dict["variables"][item]["Data"] = numpy.ma.average(data_2d, axis=1)
+            ddv[item]["Data"] = numpy.ma.average(data_2d, axis=1)
         elif series_dict["daily"][item]["operator"].lower() == "sum":
-            daily_dict["variables"][item]["Data"] = numpy.ma.sum(data_2d, axis=1)
-            daily_dict["variables"][item]["Attr"]["units"] = daily_dict["variables"][item]["Attr"]["units"]+"/day"
+            ddv[item]["Data"] = numpy.ma.sum(data_2d, axis=1)
+            ddv[item]["Attr"]["units"] = ddv[item]["Attr"]["units"]+"/day"
         else:
-            msg = "Unrecognised operator ("+series_dict["daily"][item]["operator"]
-            msg = msg+") for series "+item
+            msg = "Unrecognised operator (" + series_dict["daily"][item]["operator"]
+            msg = msg + ") for series " + item
             logger.error(msg)
             continue
         # add the format to be used
-        daily_dict["variables"][item]["Attr"]["format"] = series_dict["daily"][item]["format"]
+        ddv[item]["Attr"]["format"] = series_dict["daily"][item]["format"]
         # copy some of the variable attributes
         default_list = ["long_name", "height", "instrument"]
         descr_list = [d for d in list(variable["Attr"].keys()) if "description" in d]
         vattr_list = default_list + descr_list
         for attr in vattr_list:
             if attr in variable["Attr"]:
-                daily_dict["variables"][item]["Attr"][attr] = variable["Attr"][attr]
+                ddv[item]["Attr"][attr] = variable["Attr"][attr]
         # now do the flag, this is the fraction of data with QC flag = 0 in the day
-        daily_dict["variables"][item]["Flag"] = numpy.zeros(nDays, dtype=numpy.float64)
+        ddv[item]["Flag"] = numpy.zeros(nDays, dtype=numpy.float64)
         flag_2d = variable["Flag"].reshape(nDays, ntsInDay)
         for i in range(nDays):
-            daily_dict["variables"][item]["Flag"][i] = 1-float(numpy.count_nonzero(flag_2d[i,:]))/float(ntsInDay)
+            ddv[item]["Flag"][i] = 1-float(numpy.count_nonzero(flag_2d[i,:]))/float(ntsInDay)
     return daily_dict
 
 def L6_summary_co2andh2o_fluxes(ds, series_dict, daily_dict):
@@ -1677,13 +1676,13 @@ def L6_summary_monthly(ds,series_dict):
     logger.info(" Doing the monthly summaries at L6")
     dt = ds.series["DateTime"]["Data"]
     ts = int(float(ds.globalattributes["time_step"]))
-    si = pfp_utils.GetDateIndex(dt,str(dt[0]),ts=ts,default=0,match="startnextmonth")
+    si = pfp_utils.GetDateIndex(dt, str(dt[0]), ts=ts, default=0, match="startnextmonth")
     ldt = dt[si:]
     monthly_dict = {"globalattributes": copy.deepcopy(ds.globalattributes),
-                    "variables":{}}
+                    "variables": {}}
     mdg = monthly_dict["globalattributes"]
     mdv = monthly_dict["variables"]
-    monthly_dict["time_step"] = ts
+    mdg["time_step"] = "monthly"
     mdv["DateTime"] = {"Data":numpy.ma.array([]),
                        "Flag":numpy.array([]),
                        "Attr":{"units":"Months", "format":"dd/mm/yyyy", "time_step":"Monthly"}}
@@ -1763,10 +1762,10 @@ def L6_summary_annual(ds, series_dict):
     end_year = ldt[-1].year
     year_list = list(range(start_year, end_year+1, 1))
     nYears = len(year_list)
-    annual_dict = {"globalattributes": copy.deepcopy(ds.globalattributes), "variables":{}}
+    annual_dict = {"globalattributes": copy.deepcopy(ds.globalattributes), "variables": {}}
     adg = annual_dict["globalattributes"]
     adv = annual_dict["variables"]
-    annual_dict["time_step"] = ts
+    adg["time_step"] = "annual"
     # copy the global attributes
     adv["DateTime"] = {"Data": [datetime.datetime(yr, 1, 1) for yr in year_list],
                        "Flag": numpy.zeros(nYears, dtype=numpy.int32),
