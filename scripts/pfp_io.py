@@ -2204,7 +2204,7 @@ def ds_update_statistic_type(variable):
         pass
     return variable_changed
 
-def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round"):
+def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", update=True):
     """
     Purpose:
      Wrapper for the pfp_io.nc_read_series() routine so we have a nice name
@@ -2220,7 +2220,8 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round"):
     ds = nc_read_series(nc_file_uri,
                         checktimestep=checktimestep,
                         fixtimestepmethod=fixtimestepmethod)
-    ds = ds_update(ds)
+    if update:
+        ds = ds_update(ds)
     return ds
 
 def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3):

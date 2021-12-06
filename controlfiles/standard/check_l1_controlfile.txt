@@ -30,6 +30,14 @@
         title =
         tower_height =
         vegetation =
+    [[Deprecated]]
+        end_date = time_coverage_end
+        nc_level = processing_level
+        nc_rundatetime = date_created
+        start_date = time_coverage_start
+        xl_datemode =
+        xl_filename =
+        xl_moddatetime =
 [Variables]
     [[AGC]]
         [[[average]]]
@@ -244,6 +252,10 @@
         [[[average]]]
             [[[[kg/kg]]]]
                 long_name = Specific humidity deficit
+    [[SHsat]]
+        [[[average]]]
+            [[[[kg/kg]]]]
+                long_name = Saturation specific humidity
     [[Signal_CO2]]
         [[[average]]]
             [[[[1]]]]
@@ -307,6 +319,12 @@
                 long_name = Virtual temperature
             [[[[K^2]]]]
                 long_name = Virtual temperature
+    [[Tvp]]
+        [[[average]]]
+            [[[[degC]]]]
+                long_name = Virtual potential temperature
+            [[[[K]]]]
+                long_name = Virtual potential temperature
     [[ustar]]
         [[[average]]]
             [[[[m/s]]]]
@@ -457,6 +475,12 @@
             [[[[kPa]]]]
                 long_name = Vapour pressure deficit
                 standard_name = water_vapor_saturation_deficit_in_air
+    [[VPsat]]
+        [[[average]]]
+            [[[[hPa]]]]
+                long_name = Saturation vapour pressure
+            [[[[kPa]]]]
+                long_name = Saturation vapour pressure
     [[W_]]
         [[[average]]]
             [[[[m/s]]]]
