@@ -4,6 +4,7 @@ channels:
 dependencies:
   - python
   - configobj
+  - cfchecker
   - python-dateutil
   - matplotlib
   - netcdf4
