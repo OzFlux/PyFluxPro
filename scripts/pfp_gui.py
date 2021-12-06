@@ -4060,10 +4060,14 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
             section = selected_item.parent().parent()
             if ((str(section.text()) == "Files") and (str(parent.text()) == "In")):
                 if (selected_item.column() == 0):
+                    self.context_menu.actionAddInputFileAbove = QtWidgets.QAction(self)
+                    self.context_menu.actionAddInputFileAbove.setText("Add file")
+                    self.context_menu.addAction(self.context_menu.actionAddInputFileAbove)
+                    self.context_menu.actionAddInputFileAbove.triggered.connect(self.add_input_file_above)
                     self.context_menu.actionRemoveInputFile = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveInputFile.setText("Remove file")
                     self.context_menu.addAction(self.context_menu.actionRemoveInputFile)
-                    self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_item)
+                    self.context_menu.actionRemoveInputFile.triggered.connect(self.remove_input_file)
                 elif (selected_item.column() == 1):
                     self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
                     self.context_menu.actionBrowseInputFile.setText("Browse...")
@@ -4170,6 +4174,25 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         dict_to_add = {str(subsection.rowCount()): "Right click to browse"}
         # add the subsubsection
         self.add_subsection(dict_to_add)
+
+    def add_input_file_above(self):
+        """ Add an input file above the selected entry and renumber the section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        new_file_number = min([0, int(float(selected_item.text()))-1])
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # insert the new file entry
+        new_file_entry = [QtGui.QStandardItem(str(new_file_number)),
+                          QtGui.QStandardItem("Right click to browse")]
+        parent.insertRow(idx.row(), new_file_entry)
+        # renumber the section
+        self.renumber_subsection_keys(parent)
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+        return
 
     def add_numberofdimensions(self):
         """ Add the NumberOfDimensions option to the context menu."""
@@ -4299,17 +4322,18 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
             section.removeRow(i)
             self.update_tab_text()
 
-    def remove_inputfile(self):
+    def remove_input_file(self):
         """ Remove an input file."""
         # loop over selected items in the tree
-        for idx in self.tree.selectedIndexes():
-            # get the "Files" section
-            section, i = self.get_section("Files")
-            subsection, i = self.get_subsection(section, idx)
-            subsubsection, i = self.get_subsection(subsection, idx)
-            subsection.removeRow(i)
-            self.renumber_subsection_keys(subsection)
-            self.update_tab_text()
+        for idx in self.view.selectedIndexes():
+            # get the selected item from the index
+            selected_item = idx.model().itemFromIndex(idx)
+            # get the parent of the selected item
+            parent = selected_item.parent()
+            # remove the row
+            parent.removeRow(selected_item.row())
+            self.renumber_subsection_keys(parent)
+        self.update_tab_text()
 
     def remove_item(self):
         """ Remove an item from the view."""
