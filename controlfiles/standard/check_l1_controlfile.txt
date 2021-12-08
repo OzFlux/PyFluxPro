@@ -151,6 +151,14 @@
         [[[average]]]
             [[[[mmol/m^2/s]]]]
                 long_name = Water vapour flux
+    [[Fh2o_EP]]
+        [[[average]]]
+            [[[[mmol/m^2/s]]]]
+                long_name = Water vapour flux
+    [[Fh2o_EP_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Water vapour flux EddyPro QC flag
     [[Fld]]
         [[[average]]]
             [[[[W/m^2]]]]
