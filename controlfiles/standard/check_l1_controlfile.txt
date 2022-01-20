@@ -85,6 +85,10 @@
                 long_name = CO2 concentration
             [[[[umol^2/mol^2]]]]
                 long_name = CO2 concentration
+    [[CO2_Samples]]
+        [[[sum]]]
+            [[[[1]]]]
+                long_name = CO2 concentration accepted samples
     [[Diag_IRGA]]
         [[[average]]]
             [[[[1]]]]
@@ -108,6 +112,14 @@
             [[[[umol/m^2/s]]]]
                 long_name = CO2 flux
                 standard_name = surface_upward_mole_flux_of_carbon_dioxide
+    [[Fco2_EF_Num]]
+        [[[sum]]]
+            [[[[1]]]]
+                long_name = Carbon dioxide flux EasyFlux accepted samples
+    [[Fco2_EF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Carbon dioxide flux EasyFlux QC flag
     [[Fco2_EPFlag]]
         [[[average]]]
             [[[[1]]]]
@@ -121,6 +133,14 @@
             [[[[W/m^2]]]]
                 long_name = Latent heat flux
                 standard_name = surface_upward_latent_heat_flux
+    [[Fe_EF_Num]]
+        [[[sum]]]
+            [[[[1]]]]
+                long_name = Latent heat flux EasyFlux accepted samples
+    [[Fe_EF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Latent heat flux EasyFlux QC flag
     [[Fe_EPFlag]]
         [[[average]]]
             [[[[1]]]]
@@ -139,6 +159,14 @@
             [[[[W/m^2]]]]
                 long_name = Sensible heat flux
                 standard_name = surface_upward_sensible_heat_flux
+    [[Fh_EF_Num]]
+        [[[sum]]]
+            [[[[1]]]]
+                long_name = Sensible heat flux EasyFlux accepted samples
+    [[Fh_EF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Sensible heat flux EasyFlux QC flag
     [[Fh_EPFlag]]
         [[[average]]]
             [[[[1]]]]
@@ -174,6 +202,14 @@
             [[[[kg/m/s^2]]]]
                 long_name = Momentum flux
                 standard_name = magnitude_of_surface_downward_stress
+    [[Fm_EF_Num]]
+        [[[sum]]]
+            [[[[1]]]]
+                long_name = Momentum flux EasyFlux accepted samples
+    [[Fm_EF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Momentum flux EasyFlux QC flag
     [[Fm_EPFlag]]
         [[[average]]]
             [[[[1]]]]
@@ -212,6 +248,10 @@
                 long_name = H2O concentration
             [[[[mmol^2/mol^2]]]]
                 long_name = H2O concentration
+    [[H2O_Samples]]
+        [[[sum]]]
+            [[[[1]]]]
+                long_name = H2O concentration accepted samples
     [[L]]
         [[[average]]]
             [[[[m]]]]

@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.3.1"
+version_number = "V3.3.2"
+# V3.3.2 - January 2022
+#        - implement EasyFlux-DL variables in check_l1_controlfile.txt
 # V3.3.1 - November 2021, post workshop bug fixes
 #        - mainy cleaning up L1 checks before running
 #        - trap frac ==> m^3/m^3 for RH

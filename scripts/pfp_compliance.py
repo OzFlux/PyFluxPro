@@ -1020,61 +1020,64 @@ def l1_check_variables_statistic_type(cfg, std, cfg_label, std_label, messages):
     statistic_types = sorted(list(std_var.keys()))
     cfg_stat_type = cfg_attr["statistic_type"]
     if cfg_stat_type not in statistic_types:
-        msg = cfg_label + ": unrecognised statistic_type (" + cfg_stat_type + "), variable removed"
+        msg = cfg_label + ": unrecognised statistic_type (" + cfg_stat_type + ")"
         messages["ERROR"].append(msg)
     return
 def l1_check_variables_units(cfg, std, cfg_label, std_label, messages):
     cfg_attr = cfg["Variables"][cfg_label]["Attr"]
     cfg_stat_type = cfg_attr["statistic_type"]
-    std_stat_type = std["Variables"][std_label][cfg_stat_type]
-    std_units = sorted(list(std_stat_type.keys()))
-    cfg_units = cfg_attr["units"]
-    if cfg_units not in std_units:
-        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
-        messages["ERROR"].append(msg)
+    if cfg_stat_type in std["Variables"][std_label]:
+        std_stat_type = std["Variables"][std_label][cfg_stat_type]
+        std_units = sorted(list(std_stat_type.keys()))
+        cfg_units = cfg_attr["units"]
+        if cfg_units not in std_units:
+            msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+            messages["ERROR"].append(msg)
     return
 def l1_check_variables_standard_name(cfg, std, cfg_label, std_label, messages):
     cfg_attr = cfg["Variables"][cfg_label]["Attr"]
     cfg_units = cfg_attr["units"]
     cfg_stat_type = cfg_attr["statistic_type"]
-    std_stat_type = std["Variables"][std_label][cfg_stat_type]
-    if cfg_units in std_stat_type:
-        if (("standard_name" in cfg_attr) and
-            ("standard_name" not in std_stat_type[cfg_units])):
-            msg = cfg_label + ": standard_name not allowed, removing..."
-            messages["WARNING"].append(msg)
-            cfg["Variables"][cfg_label]["Attr"].pop("standard_name")
+    if cfg_stat_type in std["Variables"][std_label]:
+        std_stat_type = std["Variables"][std_label][cfg_stat_type]
+        if cfg_units in std_stat_type:
+            if (("standard_name" in cfg_attr) and
+                ("standard_name" not in std_stat_type[cfg_units])):
+                msg = cfg_label + ": standard_name not allowed, removing..."
+                messages["WARNING"].append(msg)
+                cfg["Variables"][cfg_label]["Attr"].pop("standard_name")
+            else:
+                pass
         else:
-            pass
-    else:
-        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
-        if msg not in messages["ERROR"]:
-            messages["ERROR"].append(msg)
+            msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+            if msg not in messages["ERROR"]:
+                messages["ERROR"].append(msg)
     return
 def l1_make_variables_attributes_consistent(cfg, std, cfg_label, std_label, messages):
     cfg_attr = cfg["Variables"][cfg_label]["Attr"]
     cfg_units = cfg_attr["units"]
     cfg_stat_type = cfg_attr["statistic_type"]
-    std_stat_type = std["Variables"][std_label][cfg_stat_type]
-    if cfg_units in std_stat_type:
-        for item in std_stat_type[cfg_units]:
-            if (item not in cfg_attr):
-                # attribute not found so add it
-                msg = cfg_label + ": attribute (" + item + ") not found, adding..."
-                messages["WARNING"].append(msg)
-                cfg_attr[item] = std_stat_type[cfg_units][item]
-            elif (cfg_attr[item] != std_stat_type[cfg_units][item]):
-                # cfg attribute not the same as the std attribute, replace it
-                msg = cfg_label + ": invalid " + item + " (" + cfg_attr[item] + ")"
-                msg += ", replacing..."
-                messages["WARNING"].append(msg)
-                cfg_attr[item] = std_stat_type[cfg_units][item]
-            else:
-                pass
-    else:
-        msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
-        if msg not in messages["ERROR"]:
-            messages["ERROR"].append(msg)
+    if cfg_stat_type in std["Variables"][std_label]:
+        std_stat_type = std["Variables"][std_label][cfg_stat_type]
+        if cfg_units in std_stat_type:
+            for item in std_stat_type[cfg_units]:
+                if (item not in cfg_attr):
+                    # attribute not found so add it
+                    msg = cfg_label + ": attribute (" + item + ") not found, adding..."
+                    messages["WARNING"].append(msg)
+                    cfg_attr[item] = std_stat_type[cfg_units][item]
+                elif (cfg_attr[item] != std_stat_type[cfg_units][item]):
+                    # cfg attribute not the same as the std attribute, replace it
+                    msg = cfg_label + ": invalid " + item + " (" + cfg_attr[item] + ")"
+                    msg += ", replacing..."
+                    messages["WARNING"].append(msg)
+                    cfg_attr[item] = std_stat_type[cfg_units][item]
+                else:
+                    pass
+        else:
+            msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+            if msg not in messages["ERROR"]:
+                messages["ERROR"].append(msg)
     return
 def l1_update_controlfile(cfg):
     """
@@ -1407,6 +1410,10 @@ def l1_update_cfg_coerce_variable_attributes(cfg, chk, cfg_label, chk_label):
     cfg_units = cfg_attrs["units"]
     # get the statistic type
     statistic_type = cfg_attrs["statistic_type"]
+    if statistic_type not in chk["Variables"][chk_label]:
+        msg = cfg_label + " unrecognised statistic_type (" + statistic_type + ")"
+        logger.warning(msg)
+        return
     # get a list of units for this variable and statistic type
     chk_units = list(chk["Variables"][chk_label][statistic_type].keys())
     # check variable units are in this list
