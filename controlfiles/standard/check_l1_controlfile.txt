@@ -63,6 +63,10 @@
                 long_name = Absolute humidity
             [[[[mmol^2/m^6]]]]
                 long_name = Absolute humidity
+    [[AH_Samples]]
+        [[[sum]]]
+            [[[[1]]]]
+                long_name = CO2 concentration accepted samples
     [[CO2]]
         [[[average]]]
             [[[[mg/m^3]]]]
