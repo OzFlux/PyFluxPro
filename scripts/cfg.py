@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.3.2"
+version_number = "V3.3.3"
+# V3.3.3 - February 2022
+#        - fix standard_name for Fg_Av in pfp_ts.CorrectFgForStorage()
 # V3.3.2 - January 2022
 #        - implement EasyFlux-DL variables in check_l1_controlfile.txt
 # V3.3.1 - November 2021, post workshop bug fixes
