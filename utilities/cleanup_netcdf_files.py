@@ -189,9 +189,10 @@ def change_variable_attributes(std, ds):
                                 logger.warning(msg)
                                 continue
                             if old_units in new_units:
-                                idx = new_units.index(old_units)
-                                standard_names = pfp_utils.string_to_list(stdva[item]["standard_name"])
-                                variable["Attr"]["standard_name"] = standard_names[idx]
+                                if "standard_name" in stdva[item]:
+                                    idx = new_units.index(old_units)
+                                    standard_names = pfp_utils.string_to_list(stdva[item]["standard_name"])
+                                    variable["Attr"]["standard_name"] = standard_names[idx]
                     elif key == "standard_name":
                         if "_Sd" in label or "_Vr" in label:
                             variable["Attr"]["standard_name"] = "not defined"
@@ -568,7 +569,7 @@ else:
 
 rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "WD2TB", "OzFlux", "Sites")
-sites = ["GreatWesternWoodlands"]
+sites = ["Calperum"]
 #sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
          #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
          #"FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",

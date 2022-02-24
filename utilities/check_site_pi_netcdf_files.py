@@ -1,5 +1,6 @@
 # standard modules
 import datetime
+import logging
 import os
 import subprocess
 import sys
@@ -90,9 +91,14 @@ def check_global_forced(ds, chk, messages):
     ds_global = ds.globalattributes
     # force global attributes that have defined values
     for item in forced:
-        if ds_global[item] != forced[item]:
-            msg = "Global: " + item + " (" + ds_global[item] + "), should be " + forced[item]
+        if item not in ds_global:
+            msg = "Global: " + item + " not found in global attributes"
             messages["ERROR"].append(msg)
+            continue
+        else:
+            if ds_global[item] != forced[item]:
+                msg = "Global: " + item + " (" + ds_global[item] + "), should be " + forced[item]
+                messages["ERROR"].append(msg)
     # and do the time zone
     lon = float(ds_global["longitude"])
     lat = float(ds_global["latitude"])
@@ -298,64 +304,79 @@ def CheckCFCompliance(nc_file_uri, messages):
                     continue
     except Exception:
         msg = "Error during CF compliance check of " + os.path.split(nc_file_uri)[1]
-        print(msg)
+        logger.error(msg)
     return
 
-nc_file_uri = "/home/peter/WD2TB/OzFlux/Sites/AliceSpringsMulga/Data/Flux/Processed/L3/site_pi/AliceSpringsMulga_L3.nc"
-# read the netCDF file, don't correct the time step or update the file
-ds = pfp_io.NetCDFRead(nc_file_uri, checktimestep=False, update=False)
-ldt = pfp_utils.GetVariable(ds, "DateTime")
-ts = int(float(ds.globalattributes["time_step"]))
-dt = pfp_utils.get_timestep(ds)
-index = numpy.where(dt != ts*60)[0]
-if len(index) != 0:
-    msg = str(len(index)) + " problems found with the time stamp"
-    print(msg)
-    msg = "The first 10 are:"
-    print(msg)
-    for i in range(min([10, len(index)])):
-        print("  ", ldt["Data"][i-1], ldt["Data"][i], ldt["Data"][i+1])
-
-gattrs = sorted(list(ds.globalattributes.keys()))
-for gattr in gattrs:
-    print(gattr, ds.globalattributes[gattr])
-
-# read the netCDF file again, this time correct the time step but don't update the file
-ds = pfp_io.NetCDFRead(nc_file_uri, update=False)
-ds_labels = sorted(list(ds.series.keys()))
-
-chk_name = "/home/peter/PyFluxPro/controlfiles/standard/check_l1_controlfile.txt"
-chk = ConfigObj(chk_name, indent_type="    ", list_values=False, write_empty_values=True)
-chk_labels = sorted(list(chk["Variables"].keys()))
-
-# initialise the messages dictionary
-messages = {"ERROR":[], "WARNING": [], "INFO": []}
-# check the global attributes section
-check_global_attributes(ds, chk, messages)
-# check variables whose name exactly matches an entry in the settings/l1.txt control file
-done = []
-label_matches = [l for l in ds_labels if l in chk_labels]
-for ds_label in label_matches:
-    chk_label = ds_label
-    # check variable 'Attr' section
-    check_variables_sections(ds, chk, ds_label, chk_label, messages)
-    # append this variable name to the done list
-    done.append(ds_label)
-# check variables where the first characters of the name match an entry in settings/l1.txt
-ds_labels = sorted(list(ds.series.keys()))
-for chk_label in chk_labels:
-    lcl = len(chk_label)
-    label_matches = [l for l in ds_labels if l.split("_")[0] == chk_label and l not in done]
-    for ds_label in label_matches:
-        # check variable 'Attr' section
-        check_variables_sections(ds, chk, ds_label, chk_label, messages)
-        # append this variable name to the done list
-        done.append(ds_label)
-
-CheckCFCompliance(nc_file_uri, messages)
-
-print(os.path.basename(nc_file_uri))
-for e in messages:
-    print("  ", e)
-    for m in messages[e]:
-        print("    ", m)
+logger = logging.getLogger("pfp_log")
+base_path = "/mnt/OzFlux/Sites"
+site_names = ["Calperum"]
+#site_names = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
+              #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
+              #"FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
+              #"Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
+              #"SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
+              #"WombatStateForest", "Yanco"]
+for site_name in site_names:
+    site_portal_path = os.path.join(base_path, site_name, "Data", "Portal")
+    file_names = sorted([f.name for f in os.scandir(site_portal_path) if f.is_file()])
+    file_names = [f for f in file_names if (("L3" in f) and (".nc" in f))]
+    for file_name in file_names:
+        nc_file_uri = os.path.join(site_portal_path, file_name)
+        # read the netCDF file, don't correct the time step or update the file
+        ds = pfp_io.NetCDFRead(nc_file_uri, checktimestep=False, update=False)
+        ldt = pfp_utils.GetVariable(ds, "DateTime")
+        ts = int(float(ds.globalattributes["time_step"]))
+        dt = pfp_utils.get_timestep(ds)
+        index = numpy.where(dt != ts*60)[0]
+        if len(index) != 0:
+            msg = str(len(index)) + " problems found with the time stamp"
+            logger.warning(msg)
+            msg = "The first 10 are:"
+            logger.warning(msg)
+            for i in range(min([10, len(index)])):
+                msg = "  " + str(ldt["Data"][i-1]) + str(ldt["Data"][i]) + str(ldt["Data"][i+1])
+                logger.warning(msg)
+        # read the netCDF file again, this time correct the time step but don't update the file
+        ds = pfp_io.NetCDFRead(nc_file_uri, update=False)
+        ds_labels = sorted(list(ds.series.keys()))
+        
+        chk_name = "/home/pisaac/PyFluxPro/controlfiles/standard/check_l1_controlfile.txt"
+        chk = ConfigObj(chk_name, indent_type="    ", list_values=False, write_empty_values=True)
+        chk_labels = sorted(list(chk["Variables"].keys()))
+        
+        # initialise the messages dictionary
+        messages = {"ERROR":[], "WARNING": [], "INFO": []}
+        # check the global attributes section
+        check_global_attributes(ds, chk, messages)
+        # check variables whose name exactly matches an entry in the settings/l1.txt control file
+        done = []
+        label_matches = [l for l in ds_labels if l in chk_labels]
+        for ds_label in label_matches:
+            chk_label = ds_label
+            # check variable 'Attr' section
+            check_variables_sections(ds, chk, ds_label, chk_label, messages)
+            # append this variable name to the done list
+            done.append(ds_label)
+        # check variables where the first characters of the name match an entry in settings/l1.txt
+        ds_labels = sorted(list(ds.series.keys()))
+        for chk_label in chk_labels:
+            lcl = len(chk_label)
+            label_matches = [l for l in ds_labels if l.split("_")[0] == chk_label and l not in done]
+            for ds_label in label_matches:
+                # check variable 'Attr' section
+                check_variables_sections(ds, chk, ds_label, chk_label, messages)
+                # append this variable name to the done list
+                done.append(ds_label)
+        
+        CheckCFCompliance(nc_file_uri, messages)
+        
+        #print(os.path.basename(nc_file_uri))
+        for e in messages:
+            #print("  ", e)
+            for m in messages[e]:
+                if "ERROR" in e:
+                    logger.error("    " + m)
+                elif "WARNING" in e:
+                    logger.warning("    " + m)
+                elif "INFO" in e:
+                    logger.info("    " + m)
