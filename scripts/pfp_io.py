@@ -2018,7 +2018,18 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
         ds.series[ThisOne]["Flag"] = flag
         ds.series[ThisOne]["Attr"] = attr
     # get a series of Python datetime objects
-    pfp_utils.get_datetime_from_nctime(ds)
+    labels = list(ds.series.keys())
+    if "time" in labels:
+        pfp_utils.get_datetime_from_nctime(ds)
+    elif (("Year" in labels) and ("Month" in labels) and ("Day" in labels) and
+          ("Hour" in labels) and ("Minute" in labels) and ("Second" in labels)):
+        pfp_utils.get_datetime_from_ymdhms(ds)
+    elif "xlDateTime" in labels:
+        pfp_utils.get_datetime_from_xldatetime(ds)
+    else:
+        msg = "Unable to find any datetime data in netCDF file"
+        logger.error(msg)
+        raise RuntimeError(msg)
     ncFile.close()
     # check to see if we have the "nc_nrecs" global attribute
     if "nc_nrecs" not in list(ds.globalattributes.keys()):
