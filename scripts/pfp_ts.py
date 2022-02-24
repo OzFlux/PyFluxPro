@@ -1352,7 +1352,7 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts', Sws_i
     attr = {"long_name": "Ground heat flux",
             descr_level: "Ground heat flux uncorrected for storage",
             "units": "W/m^2", "statistic_type": "average",
-            "standard_name": "downward_heat_flux_in_soil"}
+            "standard_name": "downward_heat_flux_at_ground_level_in_soil"}
     pfp_utils.CreateSeries(ds, "Fg_Av", Fg, Fg_flag, attr)
     flag = numpy.where(numpy.ma.getmaskarray(S) == True, ones, zeros)
     attr = {"long_name": "Ground heat flux storage", "units": "W/m^2",
