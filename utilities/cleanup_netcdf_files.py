@@ -109,6 +109,17 @@ def change_global_attributes(std, ds):
         if " " in gattr:
             new_gattr = gattr.replace(" ", "_")
             ds.globalattributes[new_gattr] = ds.globalattributes.pop(gattr)
+    # add acknowledgement if not present
+    gattrs = sorted(list(ds.globalattributes.keys()))
+    if "acknowledgement" not in gattrs:
+        if "acknowledgement" in std["Global_attributes"]:
+            msg = std["Global_attributes"]["acknowledgement"]
+        else:
+            msg = "This work used eddy covariance data collected by the TERN Ecosystem "
+            msg += "Processes facility. Ecosystem Processes would like to acknowledge the financial support of the "
+            msg += "Australian Federal Government via the National Collaborative Research Infrastructure Scheme "
+            msg += "and the Education Investment Fund."
+        ds.globalattributes["acknowledgement"] = msg
     return
 
 def change_variable_attributes(std, ds):
@@ -178,7 +189,7 @@ def change_variable_attributes(std, ds):
         # existing long_name to description
         variable["Attr"][descr] = variable["Attr"]["long_name"]
         for item in vattr_list:
-            if label.split("_")[0] == item:
+            if label == item:
                 for key in list(stdva[item].keys()):
                     if key == "units":
                         if "_Sd" not in label and "_Vr" not in label:
@@ -195,9 +206,39 @@ def change_variable_attributes(std, ds):
                                     variable["Attr"]["standard_name"] = standard_names[idx]
                     elif key == "standard_name":
                         if "_Sd" in label or "_Vr" in label:
-                            variable["Attr"]["standard_name"] = "not defined"
+                            # remove standard_name for standard deviations and variances
+                            if "standard_name" in variable["Attr"]:
+                                variable["Attr"].pop("standard_name")
                     else:
                         variable["Attr"][key] = stdva[item][key]
+                # remove standard_name attribute if not defined for this variable
+                if (("standard_name" in variable["Attr"]) and ("standard_name" not in stdva[item])):
+                    variable["Attr"].pop("standard_name")                
+            elif label.split("_")[0] == item:
+                for key in list(stdva[item].keys()):
+                    if key == "units":
+                        if "_Sd" not in label and "_Vr" not in label:
+                            old_units = variable["Attr"]["units"]
+                            new_units = pfp_utils.string_to_list(stdva[item]["units"])
+                            if old_units not in new_units and old_units != "1":
+                                msg = "Units '" + old_units + "' not found for variable " + label
+                                logger.warning(msg)
+                                continue
+                            if old_units in new_units:
+                                if "standard_name" in stdva[item]:
+                                    idx = new_units.index(old_units)
+                                    standard_names = pfp_utils.string_to_list(stdva[item]["standard_name"])
+                                    variable["Attr"]["standard_name"] = standard_names[idx]
+                    elif key == "standard_name":
+                        if "_Sd" in label or "_Vr" in label:
+                            # remove standard_name for standard deviations and variances
+                            if "standard_name" in variable["Attr"]:
+                                variable["Attr"].pop("standard_name")
+                    else:
+                        variable["Attr"][key] = stdva[item][key]
+                # remove standard_name attribute if not defined for this variable
+                if (("standard_name" in variable["Attr"]) and ("standard_name" not in stdva[item])):
+                    variable["Attr"].pop("standard_name")
         pfp_utils.CreateVariable(ds, variable)
 
     # parse variable attributes to new format, remove deprecated variable attributes
@@ -261,23 +302,27 @@ def change_variable_attributes(std, ds):
                     co2["Attr"].pop("standard_name")
                 pfp_utils.CreateVariable(ds, co2)
             else:
-                if co2["Attr"]["units"] not in ["umol/mol", "mmol/m^3", "mmol^2/m^6"]:
+                if co2["Attr"]["units"] not in ["umol/mol", "mmol/m^3", "mmol^2/m^6", "1"]:
                     msg = " Unrecognised units for " + label
                     msg += " (" + co2["Attr"]["units"] + ")"
                     logger.warning(msg)
 
     # set the statistic_type variable attribute for standard deviations and
-    # variances
+    # variances and remove standard_name if present
     msg = " Setting statistic_type"
     logger.info(msg)
     labels = list(ds.series.keys())
     for label in labels:
         variable = pfp_utils.GetVariable(ds, label)
         if label[-3:] == "_Sd":
-            variable["Attr"]["statistic_type"] = "standard deviation"
+            variable["Attr"]["statistic_type"] = "standard_deviation"
+            if "standard_name" in variable["Attr"]:
+                variable["Attr"].pop("standard_name")
             pfp_utils.CreateVariable(ds, variable)
         elif label[-3:] == "_Vr":
             variable["Attr"]["statistic_type"] = "variance"
+            if "standard_name" in variable["Attr"]:
+                variable["Attr"].pop("standard_name")
             pfp_utils.CreateVariable(ds, variable)
         else:
             pass
@@ -569,13 +614,13 @@ else:
 
 rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "WD2TB", "OzFlux", "Sites")
-sites = ["Calperum"]
-#sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
-         #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
-         #"FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
-         #"Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
-         #"SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
-         #"WombatStateForest", "Yanco"]
+#sites = ["Ridgefield"]
+sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
+         "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
+         "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
+         "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
+         "SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
+         "WombatStateForest", "Yanco"]
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
     op = os.path.join(rp, site, "Data", "Processed")
@@ -594,7 +639,7 @@ for site in sites:
         logger.info(msg)
         std["Files"]["in_filename"] = ifp
         # read the input file
-        ds1 = pfp_io.nc_read_series(ifp)
+        ds1 = pfp_io.NetCDFRead(ifp, update=False)
         # update the variable names
         change_variable_names(std, ds1)
         # make sure there are Ws and Wd series
@@ -615,7 +660,7 @@ for site in sites:
         pfp_io.NetCDFWrite(ofp, ds2)
         # run cfchecker on the netCDF file
         cmd = ["cfchecks", "-v 1.8", ofp]
-        subprocess.run(cmd, stdout=cfchecker_file)
+        #subprocess.run(cmd, stdout=cfchecker_file)
 cfchecker_file.close()
 # parse the cfchecker output file and write separate files for errors and warnings
 error_file = open(error_file_name, "w")

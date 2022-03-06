@@ -119,11 +119,11 @@
     [[Fco2_EF_Num]]
         [[[sum]]]
             [[[[1]]]]
-                long_name = Carbon dioxide flux EasyFlux accepted samples
+                long_name = CO2 flux EasyFlux accepted samples
     [[Fco2_EF_QC]]
         [[[average]]]
             [[[[1]]]]
-                long_name = Carbon dioxide flux EasyFlux QC flag
+                long_name = CO2 flux EasyFlux QC flag
     [[Fco2_EPFlag]]
         [[[average]]]
             [[[[1]]]]
