@@ -1111,7 +1111,7 @@ def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
         Fco2_single["Attr"]["units"] = "umol/m^2/s"
         Fco2_single["Attr"]["standard_name"] = "surface_upward_mole_flux_of_carbon_dioxide"
         Fco2_single["Attr"]["long_name"] = "CO2 flux"
-        Fco2_single["Attr"]["group_name"] = "flux"
+        Fco2_single["Attr"]["statistic_type"] = "average"
         tmp = "Fco2 storage component calcuated using single point CO2 measurement"
         Fco2_single["Attr"][descr_level] = tmp
         # put the storage flux in the data structure

@@ -309,17 +309,26 @@ def CheckCFCompliance(nc_file_uri, messages):
 
 logger = logging.getLogger("pfp_log")
 base_path = "/mnt/OzFlux/Sites"
-site_names = ["Calperum"]
-#site_names = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
-              #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
-              #"FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
-              #"Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
-              #"SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
-              #"WombatStateForest", "Yanco"]
+#site_names = ["Ridgefield"]
+site_names = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
+              "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
+              "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
+              "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
+              "SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
+              "WombatStateForest", "Yanco"]
+
+chk_name = "/home/pisaac/PyFluxPro/controlfiles/standard/check_l1_controlfile.txt"
+chk = ConfigObj(chk_name, indent_type="    ", list_values=False, write_empty_values=True)
+chk_labels = sorted(list(chk["Variables"].keys()))
+
 for site_name in site_names:
-    site_portal_path = os.path.join(base_path, site_name, "Data", "Portal")
+    msg = " Processing site " + site_name
+    logger.info(msg)
+    site_portal_path = os.path.join(base_path, site_name, "Data", "Processed")
     file_names = sorted([f.name for f in os.scandir(site_portal_path) if f.is_file()])
     file_names = [f for f in file_names if (("L3" in f) and (".nc" in f))]
+    msg = "  Files: " + ",".join(file_names)
+    logger.info(msg)
     for file_name in file_names:
         nc_file_uri = os.path.join(site_portal_path, file_name)
         # read the netCDF file, don't correct the time step or update the file
@@ -338,12 +347,18 @@ for site_name in site_names:
                 logger.warning(msg)
         # read the netCDF file again, this time correct the time step but don't update the file
         ds = pfp_io.NetCDFRead(nc_file_uri, update=False)
+        pyfluxpro_version = ""
+        for item in ["QC_version", "pyfluxpro_version"]:
+            if item in ds.globalattributes:
+                pyfluxpro_version = ds.globalattributes[item]
+                break
+        for item in ["nc_rundatetime", "date_created"]:
+            if item in ds.globalattributes:
+                date_created = ds.globalattributes[item]
+                break
+        msg = " Processed using " + pyfluxpro_version + " on " + date_created
+        logger.info(msg)
         ds_labels = sorted(list(ds.series.keys()))
-        
-        chk_name = "/home/pisaac/PyFluxPro/controlfiles/standard/check_l1_controlfile.txt"
-        chk = ConfigObj(chk_name, indent_type="    ", list_values=False, write_empty_values=True)
-        chk_labels = sorted(list(chk["Variables"].keys()))
-        
         # initialise the messages dictionary
         messages = {"ERROR":[], "WARNING": [], "INFO": []}
         # check the global attributes section
@@ -380,3 +395,4 @@ for site_name in site_names:
                     logger.warning("    " + m)
                 elif "INFO" in e:
                     logger.info("    " + m)
+    logger.info("")

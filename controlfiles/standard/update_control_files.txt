@@ -4,10 +4,18 @@
 [Global_attributes]
     [[force]]
         Conventions = CF-1.8
+        data_link = http://data.ozflux.org.au/
+        featureType = timeSeries
         license_name = CC BY 4.0
         license = https://creativecommons.org/licenses/by/4.0/
         history = June 2021 processing
         publisher_name = TERN Ecosystem Processes,OzFlux
+        ozflux_link = http://ozflux.org.au/
+        acknowledgement = """This work used eddy covariance data collected by the TERN Ecosystem 
+Processes facility. Ecosystem Processes would like to acknowledge the financial support of the 
+Australian Federal Government via the National Collaborative Research Infrastructure Scheme 
+and the Education Investment Fund."""
+
     [[deprecated]]
         global = """end_datetime,start_datetime,Functions,doi,license_url,
 license_type,conventions,conventions_names,BulkDensity,FgDepth,OrganicContent,
@@ -283,15 +291,15 @@ Friction velocity"""
             statistic_type = average
             units = mg/m^2/s,umol/m^2/s
         [[[Fco2_EP_QC]]]
-            long_name = Carbon dioxide flux EddyPro QC flag
+            long_name = CO2 flux EddyPro QC flag
             statistic_type = average
             units = 1
         [[[Fco2_EF_QC]]]
-            long_name = Carbon dioxide flux EasyFlux QC flag
+            long_name = CO2 flux EasyFlux QC flag
             statistic_type = average
             units = 1
         [[[Fco2_EF_Num]]]
-            long_name = Carbon dioxide flux EasyFlux accepted samples
+            long_name = CO2 flux EasyFlux accepted samples
             statistic_type = sum
             units = 1
         [[[Fe]]]
