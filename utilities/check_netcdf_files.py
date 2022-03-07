@@ -205,8 +205,6 @@ def check_variable_attributes_consistent(ds, chk, ds_label, chk_label, messages)
                     messages["ERROR"].append(msg)
                 elif (ds_attr[item] != chk_stat_type[ds_units][item]):
                     # attribute not the same as the chk attribute
-                    if ds_label == "SHsat_200cm":
-                        print("ooops")
                     msg = "Variables: " + ds_label + "; invalid " + item + " (" + ds_attr[item] + ")"
                     messages["ERROR"].append(msg)
                 else:
@@ -309,13 +307,13 @@ def CheckCFCompliance(nc_file_uri, messages):
 
 logger = logging.getLogger("pfp_log")
 base_path = "/mnt/OzFlux/Sites"
-#site_names = ["Ridgefield"]
-site_names = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
-              "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
-              "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
-              "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
-              "SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
-              "WombatStateForest", "Yanco"]
+site_names = ["RedDirtMelonFarm"]
+#site_names = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
+              #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
+              #"FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
+              #"Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
+              #"SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
+              #"WombatStateForest", "Yanco"]
 
 chk_name = "/home/pisaac/PyFluxPro/controlfiles/standard/check_l1_controlfile.txt"
 chk = ConfigObj(chk_name, indent_type="    ", list_values=False, write_empty_values=True)

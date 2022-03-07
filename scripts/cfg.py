@@ -3,6 +3,7 @@ version_number = "V3.3.3"
 # V3.3.3 - February 2022
 #        - fix standard_name for Fg_Av in pfp_ts.CorrectFgForStorage()
 #        - add statistic_type to Fco2_single in pfp_ts.CalculateFco2StorageSinglePoint()
+#        - fixed data_link and fluxnet_id in utilities/cleanup_netcdf_files.py
 # V3.3.2 - January 2022
 #        - implement EasyFlux-DL variables in check_l1_controlfile.txt
 # V3.3.1 - November 2021, post workshop bug fixes

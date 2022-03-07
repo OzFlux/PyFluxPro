@@ -15,7 +15,6 @@
 Processes facility. Ecosystem Processes would like to acknowledge the financial support of the 
 Australian Federal Government via the National Collaborative Research Infrastructure Scheme 
 and the Education Investment Fund."""
-
     [[deprecated]]
         global = """end_datetime,start_datetime,Functions,doi,license_url,
 license_type,conventions,conventions_names,BulkDensity,FgDepth,OrganicContent,
@@ -34,6 +33,42 @@ xl_filename,xl_moddatetime"""
         PythonVersion = python_version
         QC_version = pyfluxpro_version
         site_id = fluxnet_id
+    [[fluxnet_id]]
+        AdelaideRiver = AU-Adr
+        AliceSpringsMulga = AU-ASM
+        Boyagin = AU-Boy
+        Calperum = AU-Cpr
+        CapeTribulation = AU-Ctr
+        Collie = AU-Col
+        CowBay = AU-Cow
+        CumberlandPlain = AU-Cum
+        DalyPasture = AU-DaP
+        DalyUncleared = AU-DaS
+        DryRiver = AU-Dry
+        Emerald = AU-Emr
+        Fletcherview = AU-Fle
+        FoggDam = AU-Fog
+        Gingin = AU-Gin
+        GreatWesternWoodlands = AU-GWW
+        HowardSprings = AU-How
+        Litchfield = AU-Lit
+        Longreach = AU-Lon
+        Loxton = AU-Lox
+        Otway = AU-Otw
+        RedDirtMelonFarm = AU-RDF
+        Ridgefield = AU-Rgf
+        RiggsCreek = AU-Rig
+        RobsonCreek = AU-Rob
+        Samford = AU-Sam
+        SilverPlains = AU-SiP
+        SturtPlains = AU-Stp
+        TiTreeEast = AU-TTE
+        Tumbarumba = AU-Tum
+        WallabyCreek = AU-Wac
+        Warra = AU-War
+        Whroo = AU-Whr
+        WombatStateForest = AU-Wom
+        Yanco = AU-Ync
 
 [Options]
     L2 = irga_type,SONIC_Check,IRGA_Check

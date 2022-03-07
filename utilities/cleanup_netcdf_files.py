@@ -86,11 +86,6 @@ def change_global_attributes(std, ds):
                     msg = "Global attributes: unable to define time zone"
                     logger.warning(msg)
                     ds.globalattributes["time_zone"] = ""
-
-    # add or change global attributes as required
-    gattr_list = sorted(list(std["Global_attributes"]["force"].keys()))
-    for gattr in gattr_list:
-        ds.globalattributes[gattr] = std["Global_attributes"]["force"][gattr]
     # remove deprecated global attributes
     flag_list = [g for g in list(ds.globalattributes.keys()) if "Flag" in g]
     others_list = pfp_utils.string_to_list(std["Global_attributes"]["deprecated"]["global"])
@@ -109,6 +104,10 @@ def change_global_attributes(std, ds):
         if " " in gattr:
             new_gattr = gattr.replace(" ", "_")
             ds.globalattributes[new_gattr] = ds.globalattributes.pop(gattr)
+    # add or change global attributes as required
+    gattr_list = sorted(list(std["Global_attributes"]["force"].keys()))
+    for gattr in gattr_list:
+        ds.globalattributes[gattr] = std["Global_attributes"]["force"][gattr]
     # add acknowledgement if not present
     gattrs = sorted(list(ds.globalattributes.keys()))
     if "acknowledgement" not in gattrs:
@@ -120,6 +119,10 @@ def change_global_attributes(std, ds):
             msg += "Australian Federal Government via the National Collaborative Research Infrastructure Scheme "
             msg += "and the Education Investment Fund."
         ds.globalattributes["acknowledgement"] = msg
+    # force the fluxnet_id
+    site_name = ds.globalattributes["site_name"].replace(" ","")
+    if site_name in std["Global_attributes"]["fluxnet_id"]:
+        ds.globalattributes["fluxnet_id"] = std["Global_attributes"]["fluxnet_id"][site_name]
     return
 
 def change_variable_attributes(std, ds):
@@ -614,13 +617,13 @@ else:
 
 rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "WD2TB", "OzFlux", "Sites")
-#sites = ["Ridgefield"]
-sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
-         "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
-         "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
-         "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
-         "SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
-         "WombatStateForest", "Yanco"]
+sites = ["RedDirtMelonFarm"]
+#sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
+         #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
+         #"FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
+         #"Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
+         #"SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
+         #"WombatStateForest", "Yanco"]
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
     op = os.path.join(rp, site, "Data", "Processed")
