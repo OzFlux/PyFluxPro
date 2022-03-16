@@ -4,6 +4,7 @@ import copy
 import inspect
 import logging
 import os
+import traceback
 # 3rd party modules
 from configobj import ConfigObj
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -372,9 +373,15 @@ class file_explore(QtWidgets.QWidget):
             logger.warning(msg)
             return
         # go ahead and plot
-        pfp_plot.plot_explore_fingerprints(self.ds, labels)
-        # increment the figure number
-        self.figure_number += 1
+        try:
+            pfp_plot.plot_explore_fingerprints(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting fingerprints, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
         return
 
     def plot_percentiles(self, labels):
@@ -389,9 +396,15 @@ class file_explore(QtWidgets.QWidget):
             logger.warning(msg)
             return
         # go ahead and plot
-        pfp_plot.plot_explore_percentiles(self.ds, labels)
-        # increment the figure number
-        self.figure_number += 1
+        try:
+            pfp_plot.plot_explore_percentiles(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting percentile time series, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
         return
 
     def plot_timeseries(self, labels):
@@ -406,9 +419,15 @@ class file_explore(QtWidgets.QWidget):
             logger.warning(msg)
             return
         # go ahead and plot
-        pfp_plot.plot_explore_timeseries(self.ds, labels)
-        # increment the figure number
-        self.figure_number += 1
+        try:
+            pfp_plot.plot_explore_timeseries(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting time series, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
         return
 
     def update_tab_text(self):
@@ -3286,6 +3305,12 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
                 self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_daterange)
+            if (str(idx.parent().data()) in ["AverageSeries", "MergeSeries"] and
+                str(idx.data()) != "source"):
+                self.context_menu.actionRemoveMergeSeriesItem = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveMergeSeriesItem.setText("Remove item")
+                self.context_menu.addAction(self.context_menu.actionRemoveMergeSeriesItem)
+                self.context_menu.actionRemoveMergeSeriesItem.triggered.connect(self.remove_item)
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
