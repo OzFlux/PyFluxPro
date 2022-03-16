@@ -510,6 +510,10 @@ def plot_explore_fingerprints(ds, labels):
     for n, label in enumerate(labels):
         # get the data
         var = pfp_utils.GetVariable(ds, label, start=si, end=ei)
+        if numpy.ma.count(var["Data"]) == 0:
+            msg = label + ": no data found, skipping..."
+            logger.warning(msg)
+            continue
         # reshape into a 2D array
         data_daily = var["Data"].reshape(nDays, nPerDay)
         # clip data to the 0.25 and 99.75 percentiles to suppress outliers

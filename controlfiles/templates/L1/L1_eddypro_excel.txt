@@ -74,7 +74,7 @@ and the Education Investment Fund.'''
         [[[Attr]]]
             height = <height>m
             instrument = <sonic_type>,<irga_type>
-            long_name = Carbon dioxide flux EddyPro QC flag
+            long_name = CO2 flux EddyPro QC flag
             statistic_type = average
             units = 1
         [[[xl]]]

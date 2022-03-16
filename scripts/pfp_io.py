@@ -1683,8 +1683,16 @@ def netcdf_concatenate_create_ds_out(data, info):
                 # copy input data to output variable
                 # NOTE: using direct read from and write to the data structures here,
                 #       not recommended but 10x faster than pfp_utils.GetVariable().
-                dout["Data"][indsa] = din["Data"][indsb]
-                dout["Flag"][indsa] = din["Flag"][indsb]
+                #dout["Data"][indsa] = din["Data"][indsb]
+                #dout["Flag"][indsa] = din["Flag"][indsb]
+                # 13/3/2022 PRI only copy input data to output data when input data
+                #               is not missing
+                dout["Data"][indsa] = numpy.where(din["Data"][indsb] != c.missing_value,
+                                                  din["Data"][indsb],
+                                                  dout["Data"][indsa])
+                dout["Flag"][indsa] = numpy.where(din["Data"][indsb] != c.missing_value,
+                                                  din["Flag"][indsb],
+                                                  dout["Flag"][indsa])
                 attr_out[label].append(din["Attr"])
     # copy the variable attributes but only if they don't already exist
     netcdf_concatenate_variable_attributes(ds_out, attr_out, info)
