@@ -307,7 +307,7 @@ def CheckCFCompliance(nc_file_uri, messages):
 
 logger = logging.getLogger("pfp_log")
 base_path = "/mnt/OzFlux/Sites"
-site_names = ["RedDirtMelonFarm"]
+site_names = ["Whroo"]
 #site_names = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
               #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
               #"FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
