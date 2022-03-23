@@ -5896,7 +5896,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
         var_name = str(idx.parent().data()) + "_<alt>"
         dict_to_add = {var_name: {"source": "<alt>"}}
         # add the subsubsection (RangeCheck)
-        self.add_subsubsection(dict_to_add)
+        self.add_subsubsection(dict_to_add, editable=True)
 
     def add_new_variable(self):
         """ Add a new variable."""
@@ -5930,7 +5930,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
             section.appendRow([child0, child1])
         self.update_tab_text()
 
-    def add_subsubsection(self, dict_to_add):
+    def add_subsubsection(self, dict_to_add, editable=False):
         """ Add a subsubsection to the model."""
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
@@ -5938,11 +5938,13 @@ class edit_cfg_L4(QtWidgets.QWidget):
         subsection = idx.model().itemFromIndex(idx)
         for key1 in dict_to_add:
             subsubsection = QtGui.QStandardItem(key1)
-            subsubsection.setEditable(False)
+            if not editable:
+                subsubsection.setEditable(False)
             for key2 in dict_to_add[key1]:
                 val = str(dict_to_add[key1][key2])
                 child0 = QtGui.QStandardItem(key2)
-                child0.setEditable(False)
+                if not editable:
+                    child0.setEditable(False)
                 child1 = QtGui.QStandardItem(val)
                 subsubsection.appendRow([child0, child1])
             subsection.appendRow(subsubsection)

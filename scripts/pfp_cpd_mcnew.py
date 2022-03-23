@@ -133,7 +133,10 @@ class change_point_detect(object):
         if not len(year_stats): return
         df_list = []
         for this_year in year_stats.index:
-            this_df = self.get_valid_df().loc[this_year]
+            #this_df = self.get_valid_df().loc[this_year]
+            # PRI 23/3/2022
+            valid_df = self.get_valid_df()
+            this_df = valid_df[valid_df.index.year == this_year]
             if resample: this_df = get_resampled_data(this_df)
             season_df = _get_season_data(df=this_df,
                                          stats_df=year_stats.loc[this_year])
@@ -172,6 +175,8 @@ class change_point_detect(object):
         else:
             years_list = data_years
         valid_df = self.get_valid_df()
+        # PRI 22/3/2022
+        years_list = valid_df.index.year.unique()
         stats_df = pd.DataFrame(
             {year: _get_season_stats(valid_df.loc[str(year)],
                                      self.interval,

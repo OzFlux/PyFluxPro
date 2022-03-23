@@ -1296,6 +1296,8 @@ def CopyVariable(var_in):
             var_out[item] = var_in[item]
         elif isinstance(var_in[item], int):
             var_out[item] = var_in[item]
+        elif isinstance(var_in[item], float):
+            var_out[item] = var_in[item]
         elif isinstance(var_in[item], dict):
             var_out[item] = copy.deepcopy(var_in[item])
         elif isinstance(var_in[item], numpy.ma.core.MaskedArray):
