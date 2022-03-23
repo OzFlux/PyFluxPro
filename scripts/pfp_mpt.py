@@ -219,18 +219,15 @@ def xl_write_mpt(mpt_full_path, ustar_results):
         by_years["Temperature classes"] = {}
         temperature_classes = sorted(list(ustar_results["Years"][year]["temperature_classes"].keys()))
         for t in temperature_classes:
-            by_years["Temperature classes"][t] = {0: ustar_results["Years"][year]["temperature_classes"][t]["values"][0],
-                                                  1: ustar_results["Years"][year]["temperature_classes"][t]["values"][1],
-                                                  2: ustar_results["Years"][year]["temperature_classes"][t]["values"][2],
-                                                  3: ustar_results["Years"][year]["temperature_classes"][t]["values"][3]}
-        by_years["Bootstraps"] = {"0 Values": ustar_results["Years"][year]["bootstraps"][0]["values"],
-                                  "0 Counts": ustar_results["Years"][year]["bootstraps"][0]["counts"],
-                                  "1 Values": ustar_results["Years"][year]["bootstraps"][1]["values"],
-                                  "1 Counts": ustar_results["Years"][year]["bootstraps"][1]["counts"],
-                                  "2 Values": ustar_results["Years"][year]["bootstraps"][2]["values"],
-                                  "2 Counts": ustar_results["Years"][year]["bootstraps"][2]["counts"],
-                                  "3 Values": ustar_results["Years"][year]["bootstraps"][3]["values"],
-                                  "3 Counts": ustar_results["Years"][year]["bootstraps"][3]["counts"]}
+            d = {}
+            for i in range(len(ustar_results["Years"][year]["temperature_classes"][t]["values"])):
+                d[i] = ustar_results["Years"][year]["temperature_classes"][t]["values"][i]
+            by_years["Temperature classes"][t] = d
+        d = {}
+        for i in range(len(ustar_results["Years"][year]["bootstraps"])):
+            d[str(i)+" Values"] = ustar_results["Years"][year]["bootstraps"][i]["values"]
+            d[str(i)+" Counts"] = ustar_results["Years"][year]["bootstraps"][i]["counts"]
+        by_years["Bootstraps"] = d
         df_seasonal = pandas.DataFrame.from_dict(by_years["Seasonal"])
         df_seasonal.index.names = ["Seasonal"]
         df_seasonal.to_excel(xlwriter, sheet_name=str(year), startrow=0)

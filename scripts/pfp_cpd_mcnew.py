@@ -160,8 +160,9 @@ class change_point_detect(object):
                * python dict (key: value pair of year and statistics for that
                  year)
         """
-
-        data_years = [str(x) for x in self.df.index.year.unique()]
+        # PRI 23/3/2022
+        valid_df = self.get_valid_df()
+        data_years = [str(x) for x in valid_df.index.year.unique()]
         if years:
             if not isinstance(years, list):
                 raise TypeError("'years' parameter must be of type list")
@@ -171,7 +172,6 @@ class change_point_detect(object):
                                "supplied data")
         else:
             years_list = data_years
-        valid_df = self.get_valid_df()
         stats_df = pd.DataFrame(
             {year: _get_season_stats(valid_df.loc[str(year)],
                                      self.interval,
