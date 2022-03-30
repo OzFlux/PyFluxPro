@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.3.3"
+version_number = "V3.3.4"
+# V3.3.4 - March 2022
+#        - rewrite pfp_cpd_mchugh.fit() to use ndarray rather than pandas df
 # V3.3.3 - February 2022
 #        - fix standard_name for Fg_Av in pfp_ts.CorrectFgForStorage()
 #        - add statistic_type to Fco2_single in pfp_ts.CalculateFco2StorageSinglePoint()
