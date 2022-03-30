@@ -12,7 +12,8 @@ import pandas as pd
 #from pandas.plotting import register_matplotlib_converters
 #register_matplotlib_converters()
 from scipy import stats
-import statsmodels.formula.api as sm
+import statsmodels.api as sm
+#import statsmodels.formula.api as sm
 # PFP modules
 from scripts import constants as c
 from scripts import pfp_io
@@ -33,88 +34,75 @@ def bootstrap(df):
 
 #------------------------------------------------------------------------------
 def fit(temp_df):
-
-    # Only works if the index is reset here (bug?)!
-    temp_df=temp_df.reset_index(drop=True)
-
-    # Processing 30x faster if dtype-float64...
-    temp_df = temp_df.astype(np.float64)
-
-    ### Calculate null model SSE for operational (b) and diagnostic (a) model
-    SSE_null_b=((temp_df['Fco2']-temp_df['Fco2'].mean())**2).sum() # b model SSE
-    alpha0,alpha1=stats.linregress(temp_df['ustar'],temp_df['Fco2'])[:2] # a model regression
-    SSE_null_a=((temp_df['Fco2']-(temp_df['ustar']*alpha0+alpha1))**2).sum() # a model SSE
-
-    ### Create empty array to hold f statistics
+    """
+    Purpose:
+     Fits a piece-wise linear regression to the Fco2 vs ustar data for a single
+     season and temperature class and returns the fit statistics and the ustar
+     threshold for both the 2 parameter (b) model and the 3 parameter (a) model.
+    Author: Ian McHugh
+    Date: Back in the day
+    Mods:
+     30/3/2022 PRI - rewrote using ndarrays instead of pandas data frames
+    """
+    Fco2 = temp_df["Fco2"].values
+    ustar = temp_df["ustar"].values
+    SSE_null_b = ((Fco2 - Fco2.mean())**2).sum()
+    alpha0, alpha1 = stats.linregress(ustar, Fco2)[:2]
+    SSE_null_a = ((Fco2 - (ustar*alpha0 + alpha1))**2).sum()
     f_a_array=np.empty(50)
     f_b_array=np.empty(50)
-
-    # Add series to df for numpy linalg
-    temp_df['int']=np.ones(50)
-
-    ### Iterate through all possible change points (1-49) as below
-    #for i in xrange(1,49):
-    for i in range(1,49):
-
+    idx = np.ones(50)
+    for i in range(1, 49):
         # Operational (b) model
-        temp_df['ustar_alt']=temp_df['ustar'] # Add dummy variable to df
-        temp_df['ustar_alt'].iloc[i+1:]=temp_df['ustar_alt'].iloc[i]
-        reg_params=np.linalg.lstsq(temp_df[['int','ustar_alt']],temp_df['Fco2'],rcond=None)[0] # Do linear regression
-        yHat=reg_params[0]+reg_params[1]*temp_df['ustar_alt'] # Calculate the predicted values for y
-        SSE_full=((temp_df['Fco2']-yHat)**2).sum() # Calculate SSE
-        f_b_array[i]=(SSE_null_b-SSE_full)/(SSE_full/(50-2)) # Calculate and store F-score
-
+        ustar_alt = ustar.copy()
+        ustar_alt[i+1:] = ustar_alt[i]
+        x = np.column_stack((idx, ustar_alt))
+        reg_params = np.linalg.lstsq(x, Fco2, rcond=None)[0]
+        yHat = reg_params[0] + reg_params[1]*ustar_alt
+        SSE_full = ((Fco2 - yHat)**2).sum()
+        f_b_array[i] = (SSE_null_b-SSE_full)/(SSE_full/(50-2))
         # Diagnostic (a) model
-        temp_df['ustar_alt1']=temp_df['ustar']
-        temp_df['ustar_alt1'].iloc[i+1:]=temp_df['ustar_alt1'].iloc[i]
-        temp_df['ustar_alt2']=(temp_df['ustar']-temp_df['ustar'].iloc[i])*np.concatenate([np.zeros(i+1),np.ones(50-(i+1))])
-        reg_params=np.linalg.lstsq(temp_df[['int','ustar_alt1','ustar_alt2']],temp_df['Fco2'],rcond=None)[0] # Do piecewise linear regression (multiple regression with dummy)
-        yHat=reg_params[0]+reg_params[1]*temp_df['ustar_alt1']+reg_params[2]*temp_df['ustar_alt2'] # Calculate the predicted values for y
-        SSE_full=((temp_df['Fco2']-yHat)**2).sum() # Calculate SSE
-        f_a_array[i]=(SSE_null_a-SSE_full)/(SSE_full/(50-2)) # Calculate and store F-score
-
-    # Get max f-score, associated change point and ustar value
-
-    # b model
-    f_b_array[0],f_b_array[-1]=f_b_array.min(),f_b_array.min()
-    f_b_max=f_b_array.max()
-    change_point_b=f_b_array.argmax()
-    ustar_threshold_b=temp_df['ustar'].iloc[change_point_b]
-
-    # a model
-    f_a_array[0],f_a_array[-1]=f_a_array.min(),f_a_array.min()
-    f_a_max=f_a_array.max()
-    change_point_a=f_a_array.argmax()
-    ustar_threshold_a=temp_df['ustar'].iloc[change_point_a]
-
+        ustar_alt1 = ustar.copy()
+        ustar_alt1[i+1:] = ustar_alt1[i]
+        ustar_alt2 = (ustar - ustar[i])*np.concatenate([np.zeros(i+1),np.ones(50-(i+1))])
+        x = np.column_stack((idx, ustar_alt1, ustar_alt2))
+        reg_params = np.linalg.lstsq(x, Fco2, rcond=None)[0]
+        yHat = reg_params[0] + reg_params[1]*ustar_alt1 + reg_params[2]*ustar_alt2
+        SSE_full = ((Fco2 - yHat)**2).sum()
+        f_a_array[i] = (SSE_null_a-SSE_full)/(SSE_full/(50-2))
+    f_b_array[0], f_b_array[-1] = f_b_array.min(), f_b_array.min()
+    f_b_max = f_b_array.max()
+    change_point_b = f_b_array.argmax()
+    ustar_threshold_b = ustar[change_point_b]
+    f_a_array[0], f_a_array[-1] = f_a_array.min(), f_a_array.min()
+    f_a_max = f_a_array.max()
+    change_point_a = f_a_array.argmax()
+    ustar_threshold_a = ustar[change_point_a]
     # Get regression parameters
-
     # b model
-    temp_df['ustar_alt']=temp_df['ustar']
-    temp_df['ustar_alt'].iloc[change_point_b+1:]=ustar_threshold_b
-    reg_params=np.linalg.lstsq(temp_df[['int','ustar_alt']],temp_df['Fco2'],rcond=None)[0]
-    b0=reg_params[0]
-    b1=reg_params[1]
-
+    ustar_alt = ustar.copy()
+    ustar_alt[change_point_b+1:] = ustar_threshold_b
+    x = np.column_stack((idx, ustar_alt))
+    reg_params = np.linalg.lstsq(x, Fco2, rcond=None)[0]
+    b0 = reg_params[0]
+    b1 = reg_params[1]
     # a model
-    temp_df['ustar_alt1']=temp_df['ustar']
-    temp_df['ustar_alt1'].iloc[change_point_a+1:]=temp_df['ustar_alt1'].iloc[change_point_a]
-    temp_df['ustar_alt2']=(temp_df['ustar']-temp_df['ustar'].iloc[change_point_a])*np.concatenate([np.zeros(change_point_a+1),np.ones(50-(change_point_a+1))])
-    #use statsmodels
-    resols=sm.ols(formula="Fco2 ~ ustar_alt1 + ustar_alt2", data=temp_df).fit()
-    a0=resols.params[0]
-    a1=resols.params[1]
-    a2=resols.params[2]
-    a1p=resols.pvalues["ustar_alt1"]
-    a2p=resols.pvalues["ustar_alt2"]
-
-    norm_a1=a1*(ustar_threshold_a/(a0+a1*ustar_threshold_a))
-    norm_a2=a2*(ustar_threshold_a/(a0+a1*ustar_threshold_a))
-
+    ustar_alt1 = ustar.copy()
+    ustar_alt1[change_point_a+1:] = ustar_alt1[change_point_a]
+    ustar_alt2 = (ustar - ustar[change_point_a])*np.concatenate([np.zeros(change_point_a+1),np.ones(50-(change_point_a+1))])
+    X = np.column_stack((ustar_alt1, ustar_alt2))
+    X = sm.add_constant(X)
+    resols = sm.OLS(Fco2, X).fit()
+    a0 = resols.params[0]
+    a1 = resols.params[1]
+    a2 = resols.params[2]
+    a1p = resols.pvalues[1]
+    a2p = resols.pvalues[2]
+    norm_a1 = a1*(ustar_threshold_a/(a0+a1*ustar_threshold_a))
+    norm_a2 = a2*(ustar_threshold_a/(a0+a1*ustar_threshold_a))
     # Return results
     return [ustar_threshold_b,f_b_max,b0,b1,change_point_b,
             ustar_threshold_a,f_a_max,a0,a1,a2,norm_a1,norm_a2,change_point_a,a1p,a2p]
-
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
