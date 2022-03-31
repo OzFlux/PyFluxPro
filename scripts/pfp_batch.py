@@ -2,6 +2,7 @@
 import copy
 import datetime
 import logging
+from multiprocessing import Pool
 import os
 import sys
 import traceback
@@ -16,9 +17,14 @@ from scripts import pfp_io
 from scripts import pfp_levels
 from scripts import pfp_mpt
 from scripts import pfp_plot
+from scripts import pfp_top_level
 from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
+
+class Bunch:
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
 
 #def do_batch_cfcheck(cfg):
     #"""
@@ -611,3 +617,60 @@ def do_levels_batch(main_ui):
     msg = " Finished batch processing at " + end.strftime("%Y%m%d%H%M")
     logger.info(msg)
     return
+def do_sites_batch(main_ui):
+    cfs = []
+    for site in list(main_ui.cfg["Sites"].keys()):
+        obj = Bunch(stop_flag=False, cfg=main_ui.cfg, mode="batch", site=site)
+        cfs.append(obj)
+    #for item in cfs:
+        #do_sites_batch_dispatcher(item)
+    with Pool(5) as pool:
+        pool.map(do_sites_batch_dispatcher, cfs)
+    return
+def do_sites_batch_dispatcher(item):
+    # local pointers
+    cfg_site = item.cfg["Sites"][item.site]
+    for n in sorted(list(cfg_site.keys()), key=int):
+        cfg_name = cfg_site[n]
+        cfg = pfp_io.get_controlfilecontents(cfg_name)
+        level = str(cfg["level"])
+        cf_level = {n: item.cfg["Sites"][item.site][n]}
+        if level.lower() == "l1":
+            # L1 processing
+            do_L1_batch(item, cf_level)
+        elif level.lower() == "l2":
+            # L2 processing
+            do_L2_batch(item, cf_level)
+        elif level.lower() == "l3":
+            # L3 processing
+            do_L3_batch(item, cf_level)
+        elif level.lower() == "concatenate":
+            # concatenate netCDF files
+            do_concatenate_batch(item, cf_level)
+        elif level.lower() == "climatology":
+            # climatology
+            do_climatology_batch(item, cf_level)
+        elif level.lower() == "cpd_barr":
+            # ustar threshold from change point detection
+            do_cpd_barr_batch(item, cf_level)
+        elif level.lower() == "cpd_mchugh":
+            # ustar threshold from change point detection
+            do_cpd_mchugh_batch(item, cf_level)
+        elif level.lower() == "cpd_mcnew":
+            # ustar threshold from change point detection
+            do_cpd_mcnew_batch(item, cf_level)
+        elif level.lower() == "mpt":
+            # ustar threshold from change point detection
+            do_mpt_batch(item, cf_level)
+        elif level.lower() == "l4":
+            # L4 processing
+            do_L4_batch(item, cf_level)
+        elif level.lower() == "l5":
+            # L5 processing
+            do_L5_batch(item, cf_level)
+        elif level.lower() == "l6":
+            # L6 processing
+            do_L6_batch(item, cf_level)
+        else:
+            msg = " Unrecognised batch processing level " + str(level)
+            logger.error(msg)
