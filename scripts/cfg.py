@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.3.4"
+version_number = "V3.3.5"
+# V3.3.5 - March 2022
+#        - added Linear to L1, works the same as Linear at L2
 # V3.3.4 - March 2022
 #        - rewrite pfp_cpd_mchugh.fit() to use ndarray rather than pandas df
 # V3.3.3 - February 2022

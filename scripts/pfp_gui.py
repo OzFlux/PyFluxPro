@@ -952,6 +952,43 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # update the tab text with an asterix if required
         self.update_tab_text()
 
+    def add_linear(self):
+        """ Add a linear correction to a variable."""
+        new_qc = {"Linear": {"0": "YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 1.0, 0.0"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_linearrange(self):
+        """ Add another date range to the Linear QC check."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 1.0, 0.0")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_qc_check(self, selected_item, new_qc):
+        for key1 in new_qc:
+            parent = QtGui.QStandardItem(key1)
+            parent.setEditable(False)
+            for key in new_qc[key1]:
+                val = str(new_qc[key1][key])
+                child0 = QtGui.QStandardItem(key)
+                child0.setEditable(False)
+                child1 = QtGui.QStandardItem(val)
+                parent.appendRow([child0, child1])
+            selected_item.appendRow(parent)
+        self.update_tab_text()
+
     def add_subsection(self, section, dict_to_add):
         for key in dict_to_add:
             val = str(dict_to_add[key])
@@ -1347,6 +1384,11 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddFunction)
                     self.context_menu.actionAddFunction.triggered.connect(self.add_function)
                     add_separator = True
+                if "Linear" not in existing_entries:
+                    self.context_menu.actionAddLinear = QtWidgets.QAction(self)
+                    self.context_menu.actionAddLinear.setText("Add Linear")
+                    self.context_menu.addAction(self.context_menu.actionAddLinear)
+                    self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
                 if add_separator:
                     self.context_menu.addSeparator()
                 if src == "xl":
@@ -1365,18 +1407,23 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.context_menu.actionRemoveVariable.triggered.connect(self.remove_item)
         elif level == 2:
             section_text = str(idx.parent().parent().data())
-            subsubsection_text = str(idx.data())
             if section_text == "Variables":
-                if subsubsection_text == "Attr":
+                if str(idx.data()) == "Attr":
                     self.context_menu.actionAddAttribute = QtWidgets.QAction(self)
                     self.context_menu.actionAddAttribute.setText("Add attribute")
                     self.context_menu.addAction(self.context_menu.actionAddAttribute)
                     self.context_menu.actionAddAttribute.triggered.connect(self.add_attribute)
-                elif subsubsection_text in ["Function", "xl", "csv"]:
+                elif str(idx.data()) in ["Function", "Linear", "xl", "csv"]:
                     self.context_menu.actionRemoveSubSubSection = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveSubSubSection.setText("Remove item")
                     self.context_menu.addAction(self.context_menu.actionRemoveSubSubSection)
                     self.context_menu.actionRemoveSubSubSection.triggered.connect(self.remove_item)
+                    if str(idx.data()) in ["Linear"]:
+                        self.context_menu.actionAddLinearRange = QtWidgets.QAction(self)
+                        self.context_menu.actionAddLinearRange.setText("Add date range")
+                        self.context_menu.addAction(self.context_menu.actionAddLinearRange)
+                        self.context_menu.actionAddLinearRange.triggered.connect(self.add_linearrange)
+                        add_separator = True
         elif level == 3:
             if ((str(idx.parent().data()) == "Attr") and (selected_item.column() == 0) and
                 (selected_item.text() not in ["long_name", "statistic_type", "units"])):
@@ -1406,8 +1453,27 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     menuStats.addAction(actionAddStatsFunction[item])
                 self.context_menu.addMenu(menuUnits)
                 self.context_menu.addMenu(menuStats)
+            elif (str(idx.parent().data()) in ["Linear"] and str(idx.data()) != "0"):
+                self.context_menu.actionRemoveExcludeDateRange = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
+                self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
+                self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_daterange)
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
+
+    def remove_daterange(self):
+        """ Remove a date range from the ustar_threshold section."""
+        # remove the date range
+        self.remove_item()
+        # index of selected item
+        idx = self.view.selectedIndexes()[0]
+        # item from index
+        selected_item = idx.model().itemFromIndex(idx)
+        # parent of selected item
+        parent = selected_item.parent()
+        # renumber the subsections
+        for i in range(parent.rowCount()):
+            parent.child(i, 0).setText(str(i))
 
     def remove_item(self):
         """ Remove an item from the view."""

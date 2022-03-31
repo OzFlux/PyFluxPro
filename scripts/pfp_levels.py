@@ -46,6 +46,8 @@ def l1qc(cfg):
     ds = pfp_io.DataFrameToDataStructure(df, l1_info)
     # write the processing level to a global attribute
     ds.globalattributes["processing_level"] = "L1"
+    # apply linear corrections to the data
+    pfp_ck.do_linear(cfg, ds)
     # create new variables using user defined functions
     pfp_ts.DoFunctions(ds, l1_info["read_excel"])
     # calculate variances from standard deviations and vice versa
