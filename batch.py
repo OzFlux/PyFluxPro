@@ -1,6 +1,8 @@
 # standard modules
 import datetime
 import logging
+import datetime
+import logging
 import os
 import sys
 import warnings
@@ -39,4 +41,8 @@ if (__name__ == '__main__'):
 
     main_ui = Bunch(stop_flag=False, cfg=cfg_batch, mode="batch")
 
-    pfp_batch.do_levels_batch(main_ui)
+    if cfg_batch["level"] in ["batch", "batch_levels"]:
+        pfp_batch.do_levels_batch(main_ui)
+    else:
+        msg = " Unrecognised batch type: " + str(cfg_batch["level"])
+        logger.error(msg)

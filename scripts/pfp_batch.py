@@ -1,5 +1,4 @@
 # standard modules
-import copy
 import datetime
 import logging
 import os
