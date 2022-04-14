@@ -649,7 +649,7 @@ def do_run_l6(main_gui):
             logger.info("Finished L6: "+sitename)
             outfilename = pfp_io.get_outfilenamefromcf(cfg)
             pfp_io.NetCDFWrite(outfilename, ds6)
-            logger.info("Finished saving L6 gap filled data")
+            logger.info("Finished saving L6 partitioned data")
         logger.info("")
     except Exception:
         msg = " Error running L6, see below for details ..."

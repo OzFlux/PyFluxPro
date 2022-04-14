@@ -365,6 +365,11 @@ def rpLT_createdict_info(cf, ds, erlt, called_by):
     nperhr = int(float(60)/time_step + 0.5)
     erlt["info"]["nperday"] = int(float(24)*nperhr + 0.5)
     erlt["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
+    # get the data path
+    path_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path")
+    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename")
+    file_name = file_name.replace(".nc", "_L&T.xls")
+    erlt['info']['data_file_path'] = os.path.join(path_name, file_name)
     # get the plot path
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     plot_path = os.path.join(plot_path, level, "")
@@ -392,6 +397,8 @@ def rpLT_createdict_outputs(cf, erlt, target, called_by, flag_code):
         # list of drivers
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Ta")
         eo[output]["drivers"] = pfp_utils.string_to_list(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "weights_air_soil", default="1")
+        eo[output]["weights_air_soil"] = pfp_utils.string_to_list(opt)
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_temperature_spread", default=5)
         eo[output]["minimum_temperature_spread"] = int(opt)
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "step_size_days", default=5)
@@ -559,7 +566,7 @@ def rpLT_plot(pd, ds, output, drivers, target, iel, si=0, ei=-1):
         plt.ioff()
     else:
         plt.close(fig)
-        plt.switch_backend(current_backend)        
+        plt.switch_backend(current_backend)
         plt.ion()
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     return
@@ -615,20 +622,20 @@ def ER_LloydTaylor(T,E0,rb):
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     return ER
 
-def estimate_Re_GPP(sub_d, params_d, GPP = False):
-    pfp_log.debug_function_enter(inspect.currentframe().f_code.co_name)
-    return_dict = {}
-    if GPP:
-        GPP, Re = light.LRF_part(sub_d, params_d['Eo'], params_d['rb'],
-                                 params_d['alpha'], params_d['beta'],
-                                 params_d['k'])
-        return_dict['Re'] = Re
-        return_dict['GPP'] = GPP
-    else:
-        Re = TRF(sub_d['TempC'], params_d['Eo'], params_d['rb'])
-        return_dict['Re'] = Re
-    pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
-    return return_dict
+#def estimate_Re_GPP(sub_d, params_d, GPP = False):
+    #pfp_log.debug_function_enter(inspect.currentframe().f_code.co_name)
+    #return_dict = {}
+    #if GPP:
+        #GPP, Re = light.LRF_part(sub_d, params_d['Eo'], params_d['rb'],
+                                 #params_d['alpha'], params_d['beta'],
+                                 #params_d['k'])
+        #return_dict['Re'] = Re
+        #return_dict['GPP'] = GPP
+    #else:
+        #Re = TRF(sub_d['TempC'], params_d['Eo'], params_d['rb'])
+        #return_dict['Re'] = Re
+    #pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
+    #return return_dict
 
 def plot_windows(data_dict, configs_dict, date, noct_flag):
     pfp_log.debug_function_enter(inspect.currentframe().f_code.co_name)

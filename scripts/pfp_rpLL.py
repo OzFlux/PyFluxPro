@@ -411,6 +411,11 @@ def rpLL_createdict_info(cf, ds, erll, called_by):
     nperhr = int(float(60)/time_step + 0.5)
     erll["info"]["nperday"] = int(float(24)*nperhr + 0.5)
     erll["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
+    # get the data path
+    path_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path")
+    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename")
+    file_name = file_name.replace(".nc", "_LL.xls")
+    erll['info']['data_file_path'] = os.path.join(path_name, file_name)
     # get the plot path
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     plot_path = os.path.join(plot_path, level, "")
@@ -451,6 +456,10 @@ def rpLL_createdict_outputs(cf, erll, target, called_by, flag_code):
         # list of drivers
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Ta")
         eo[output]["drivers"] = pfp_utils.string_to_list(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "weights_air_soil", default="1")
+        eo[output]["weights_air_soil"] = pfp_utils.string_to_list(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "minimum_temperature_spread", default=5)
+        eo[output]["minimum_temperature_spread"] = int(opt)
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "step_size_days", default=5)
         eo[output]["step_size_days"] = int(opt)
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "window_size_days", default=15)

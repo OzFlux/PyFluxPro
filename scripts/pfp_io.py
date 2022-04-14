@@ -2278,7 +2278,7 @@ def nc_open_write(ncFullName, nctype='NETCDF4', mode="verbose"):
     """
     file_name = os.path.split(ncFullName)
     if mode != "quiet":
-        logger.info("Opening netCDF file " + file_name[1])
+        logger.info(" Opening netCDF file " + file_name[1])
     try:
         ncFile = netCDF4.Dataset(ncFullName, "w", format=nctype)
     except:
@@ -2501,12 +2501,14 @@ def nc_write_var(ncFile, ds, ThisOne, dim):
 
 def xl_open_write(xl_name):
     xl_filename = os.path.basename(xl_name)
-    logger.info(' Opening '+xl_filename+' for writing')
+    msg = " Opening " + xl_filename + " for writing"
+    logger.info(msg)
     try:
         xl_file = xlwt.Workbook()
     except:
-        logger.error(' Unable to open Excel file '+xl_name+' for writing')
-        xl_file = ''
+        msg = " Unable to open Excel file " + xl_name + " for writing"
+        logger.error(msg)
+        xl_file = ""
     return xl_file
 
 def xl_check_cf_section(cf, label):

@@ -6,6 +6,7 @@ dependencies:
   - configobj
   - cfchecker
   - python-dateutil
+  - lmfit
   - matplotlib
   - netcdf4
   - numpy
