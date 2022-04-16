@@ -413,7 +413,7 @@ def rpLL_createdict_info(cf, ds, erll, called_by):
     erll["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
     # get the data path
     path_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path")
-    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename")
+    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "out_filename")
     file_name = file_name.replace(".nc", "_LL.xls")
     erll['info']['data_file_path'] = os.path.join(path_name, file_name)
     # get the plot path
