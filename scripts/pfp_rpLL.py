@@ -7,6 +7,7 @@ import warnings
 # 3rd party modules
 import matplotlib.pyplot as plt
 import numpy
+import pandas as pd
 from scipy.optimize import curve_fit, OptimizeWarning
 # PFP modules
 from scripts import constants as c
@@ -216,6 +217,14 @@ def get_LL_params(ldt, Fsd, D, T, NEE, ER, LT_results, l6_info, output):
         start_date = start_date+datetime.timedelta(days=window_size_days)
         end_date = start_date+datetime.timedelta(days=step_size_days)
     LL_results["D0"] = D0
+    # save the Lasslop parameters to an Excel file
+    d = {"mid_date": LL_results["mid_date"], "alpha": LL_results["alpha"],
+         "beta": LL_results["beta"], "k": LL_results["k"], "rb": LL_results["rb"],
+         "E0": LL_results["E0"]}
+    df = pd.DataFrame(d)
+    xlwriter = pd.ExcelWriter(ieli["results_name"])
+    df.to_excel(xlwriter, sheet_name="LL")
+    xlwriter.save()
     return LL_results
 
 def get_LT_params(ldt, ER, T, l6_info, output, mode="verbose"):
@@ -411,6 +420,11 @@ def rpLL_createdict_info(cf, ds, erll, called_by):
     nperhr = int(float(60)/time_step + 0.5)
     erll["info"]["nperday"] = int(float(24)*nperhr + 0.5)
     erll["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
+    # get the results output file name
+    file_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path", default=".")
+    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "out_filename", default="")
+    results_name = file_name.replace(".nc", "_LL.xlsx")
+    erll["info"]["results_name"] = os.path.join(file_path, results_name)
     # get the plot path
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     plot_path = os.path.join(plot_path, level, "")
