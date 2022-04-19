@@ -171,7 +171,8 @@ def ERUsingLasslop(ds, l6_info):
     """
     if "ERUsingLasslop" not in l6_info:
         return
-    logger.info("Estimating ER using Lasslop")
+    msg = " Estimating ER using Lasslop"
+    logger.info(msg)
     EcoResp(ds, l6_info, 'ERUsingLasslop')
 
     #descr_level = "description_" + ds.globalattributes["processing_level"]
@@ -1323,11 +1324,11 @@ def L6_summary(cf, ds):
     for year in years:
         nrecs = len(cumulative_dict[year]["variables"]["DateTime"]["Data"])
         if nrecs < 65530:
-            L6_summary_write_xlfile(xl_file, "Cummulative("+str(year)+")", cumulative_dict[str(year)])
+            L6_summary_write_xlfile(xl_file, "Cumulative("+str(year)+")", cumulative_dict[str(year)])
         else:
             msg = "L6 cumulative: too many rows for .xls workbook, skipping "+year
             logger.warning(msg)
-        nc_group = nc_summary.createGroup("Cummulative_"+str(year))
+        nc_group = nc_summary.createGroup("Cumulative_"+str(year))
         L6_summary_write_ncfile(nc_group, cumulative_dict[str(year)])
     # close the summary netCDF file
     nc_summary.close()
@@ -1726,7 +1727,7 @@ def L6_summary_co2andh2o_fluxes(ds, series_dict, daily_dict):
 def L6_summary_write_ncfile(nc_obj, data_dict):
     """
     Purpose:
-     Write the L6 summary statistics (daily, monthly, annual and cummulative)
+     Write the L6 summary statistics (daily, monthly, annual and cumulative)
      to a single netCDF file with different groups for each time period.
     Usage:
     Author: PRI
