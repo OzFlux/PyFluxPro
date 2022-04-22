@@ -600,9 +600,21 @@ def EcoResp(ds, l6_info, called_by):
         var_list = ["Fco2", "Ta", "Ts", "Fsd", "ustar", "VPD"]
         df = pandas.DataFrame({var: ds.series[var]["Data"] for var in var_list},
                               index = ds.series["DateTime"]["Data"])
+        # IM original code causes Fco2 to be masked if any driver is gap filled
+        #is_valid = numpy.tile(True, int(ds.globalattributes["nc_nrecs"]))
+        #for this_var in df.columns: is_valid *= ds.series[this_var]["Flag"] == 0
+        #df.loc[~is_valid, "Fco2"] = numpy.nan
+        # 2022/4/22 PRI
+        # set Fco2 to NaN if
+        #  - any driver has a QC flag not ending in 0
+        #  - Fco2 is gap filled (only use observations)
         is_valid = numpy.tile(True, int(ds.globalattributes["nc_nrecs"]))
-        for this_var in df.columns: is_valid *= ds.series[this_var]["Flag"] == 0
+        for this_var in ["Ta", "Ts", "Fsd", "ustar", "VPD"]:
+            is_valid *= numpy.mod(ds.series[this_var]["Flag"], 10) == 0
+        for this_var in ["Fco2"]:
+            is_valid *= ds.series[this_var]["Flag"] == 0
         df.loc[~is_valid, "Fco2"] = numpy.nan
+
         for year in ustars_dict:
             df.loc[(df.index.year == int(year)) &
                    (df.ustar < ustars_dict[year]) &
