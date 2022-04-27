@@ -1,5 +1,12 @@
 version_name = "PyFluxPro"
-version_number = "V3.3.5"
+version_number = "V3.4.0"
+# V3.4.0 - April 2022
+#        - replaced Ian McHugh's original partitioning code with his "new"
+#          (2019) partitioning code
+#        - tested with Calperum, Cumberland Plain and Loxton
+#          - little difference for Lloyd-Taylor
+#          - Lasslop et al now much closer to Lloyd-Taylor
+#        - changes to editing of L6 control file
 # V3.3.5 - March 2022
 #        - added Linear to L1, works the same as Linear at L2
 # V3.3.4 - March 2022
