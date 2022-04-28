@@ -10,7 +10,6 @@ import dateutil
 import numpy
 import matplotlib.dates as mdt
 import matplotlib.pyplot as plt
-import pylab
 # PFP modules
 from scripts import constants as c
 from scripts import pfp_ck
@@ -483,7 +482,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
         plt.ioff()
     else:
         plt.close()
-        plt.switch_backend(current_backend)        
+        plt.switch_backend(current_backend)
         plt.ion()
 
 def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
@@ -551,7 +550,7 @@ def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
         pfp_utils.mypause(0.5)
         plt.ioff()
     else:
-        plt.switch_backend(current_backend)        
+        plt.switch_backend(current_backend)
         plt.ion()
 
 def gfSOLO_plotsummary(ds, solo):
@@ -640,7 +639,7 @@ def gfSOLO_plotsummary(ds, solo):
         plt.ioff()
     else:
         plt.close()
-        plt.switch_backend(current_backend)        
+        plt.switch_backend(current_backend)
         plt.ion()
 
 def gfSOLO_plotsummary_getdata(dt_start, dt_end, result):

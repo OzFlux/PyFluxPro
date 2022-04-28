@@ -7,18 +7,16 @@ import os
 # 3rd party modules
 import dateutil
 import matplotlib.pyplot as plt
-import netCDF4
 import numpy
 import pandas
 import pylab
-import xlrd
 # PFP modules
 from scripts import constants as c
 from scripts import pfp_gf
 from scripts import pfp_gfSOLO
+from scripts import pfp_gui
 from scripts import pfp_io
-from scripts import pfp_rpLL
-from scripts import pfp_rpLT
+from scripts import pfp_part
 from scripts import pfp_ts
 from scripts import pfp_utils
 
@@ -117,50 +115,6 @@ def CalculateNEP(cf, ds):
         pfp_utils.append_to_attribute(attr, {descr_level: "calculated as -1*" + nee_name})
         pfp_utils.CreateSeries(ds, nep_name, nep, flag, attr)
 
-def cleanup_ustar_dict(ds, ustar_in):
-    """
-    Purpose:
-     Clean up the ustar dictionary;
-      - make sure all years are included
-      - fill missing year values with the mean
-    Usage:
-    Author: PRI
-    Date: September 2015
-    """
-    dt = pfp_utils.GetVariable(ds, "DateTime")
-    ts = int(float(ds.globalattributes["time_step"]))
-    cdt = dt["Data"] - datetime.timedelta(minutes=ts)
-    data_years = sorted(list(set([ldt.year for ldt in cdt])))
-    # get the years for which we have u* thresholds in ustar_in
-    years = []
-    for item in ustar_in:
-        for year in ustar_in[item]:
-            years.append(int(year))
-    ustar_out = {}
-    for year in data_years:
-        ustar_out[str(year)] = {"ustar_mean": numpy.nan}
-        for item in ["cf", "cpd", "mpt"]:
-            if item in ustar_in:
-                if str(year) in ustar_in[item]:
-                    if ((not numpy.isnan(ustar_in[item][str(year)]["ustar_mean"])) and
-                        (numpy.isnan(ustar_out[str(year)]["ustar_mean"]))):
-                        ustar_out[str(year)]["ustar_mean"] = ustar_in[item][str(year)]["ustar_mean"]
-    # get the average of good ustar threshold values
-    good_values = []
-    for year in sorted(list(ustar_out.keys())):
-        if not numpy.isnan(ustar_out[year]["ustar_mean"]):
-            good_values.append(ustar_out[year]["ustar_mean"])
-    if len(good_values) == 0:
-        msg = " No u* thresholds found, using default of 0.25 m/s"
-        logger.error(msg)
-        good_values = [0.25]
-    ustar_threshold_mean = numpy.sum(numpy.array(good_values))/len(good_values)
-    # replace missing vaues with mean
-    for year in sorted(list(ustar_out.keys())):
-        if numpy.isnan(ustar_out[year]["ustar_mean"]):
-            ustar_out[year]["ustar_mean"] = ustar_threshold_mean
-    return ustar_out
-
 def ERUsingLasslop(ds, l6_info):
     """
     Purpose:
@@ -171,375 +125,135 @@ def ERUsingLasslop(ds, l6_info):
     """
     if "ERUsingLasslop" not in l6_info:
         return
-    logger.info("Estimating ER using Lasslop")
-    descr_level = "description_" + ds.globalattributes["processing_level"]
-    iel = l6_info["ERUsingLasslop"]
-    ielo = iel["outputs"]
-    # get a list of the required outputs
-    outputs = list(iel["outputs"].keys())
-    # need to loop over more than 1 output
-    output = outputs[0]
-    drivers = ielo[output]["drivers"]
-    target = ielo[output]["target"]
-    flag_code = ielo[output]["flag_code"]
-    # get some useful things
-    ldt = ds.series["DateTime"]["Data"]
-    startdate = ldt[0]
-    enddate = ldt[-1]
-    ts = int(float(ds.globalattributes["time_step"]))
-    site_name = ds.globalattributes["site_name"]
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    # get the data and synchronise the gaps
-    # *** PUT INTO SEPARATE FUNCTION
-    indicator = numpy.ones(nrecs, dtype=numpy.int)
-    Fsd, f, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
-    idx = numpy.where(f != 0)[0]
-    indicator[idx] = numpy.int(0)
-    D, f, _ = pfp_utils.GetSeriesasMA(ds, "VPD")
-    idx = numpy.where(f != 0)[0]
-    indicator[idx] = numpy.int(0)
-    T, f, _ = pfp_utils.GetSeriesasMA(ds, "Ta")
-    idx = numpy.where(f != 0)[0]
-    indicator[idx] = numpy.int(0)
-    _, f, _ = pfp_utils.GetSeriesasMA(ds, "ustar")
-    idx = numpy.where(f != 0)[0]
-    indicator[idx] = numpy.int(0)
-    Fc, f, Fc_attr = pfp_utils.GetSeriesasMA(ds, "Fco2")
-    idx = numpy.where(f != 0)[0]
-    indicator[idx] = numpy.int(0)
-    indicator_night = numpy.copy(indicator)
-    # ***
-    # apply a day/night filter
-    idx = numpy.where(Fsd >= 10)[0]
-    indicator_night[idx] = numpy.int(0)
-    # synchronise the gaps and apply the ustar filter
-    T_night = numpy.ma.masked_where(indicator_night == 0, T)
-    ER = numpy.ma.masked_where(indicator_night == 0, Fc)
-    # loop over the windows and get E0
-    logger.info(" Estimating the rb and E0 parameters")
-    LT_results = pfp_rpLL.get_LT_params(ldt, ER, T_night, l6_info, output)
-    # interpolate parameters
-    # this should have a check to make sure we are not interpolating with a small
-    # number of points
-    LT_results["rb_int"] = pfp_rpLL.interp_params(LT_results["rb"])
-    LT_results["E0_int"] = pfp_rpLL.interp_params(LT_results["E0"])
-    # get series of rb and E0 from LT at the tower stime step
-    # *** PUT INTO SEPARATE FUNCTION
-    ntsperday = float(24)*float(60)/float(ts)
-    days_at_beginning = float(ielo[output]["window_size_days"])/2 - float(ielo[output]["step_size_days"])/2
-    rb_beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LT_results["rb_int"][0]
-    rb_middle = numpy.repeat(LT_results["rb_int"],ielo[output]["step_size_days"]*ntsperday)
-    nend = len(ldt) - (len(rb_beginning)+len(rb_middle))
-    E0_beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LT_results["E0_int"][0]
-    E0_middle = numpy.repeat(LT_results["E0_int"],ielo[output]["step_size_days"]*ntsperday)
-    nend = len(ldt) - (len(E0_beginning)+len(E0_middle))
-    # ***
-    # and get the ecosystem respiration at the tower time step
-    logger.info(" Calculating ER using Lloyd-Taylor")
-    # get a day time indicator
-    indicator_day = numpy.copy(indicator)
-    # apply a day/night filter
-    idx = numpy.where(Fsd <= ielo[output]["fsd_threshold"])[0]
-    indicator_day[idx] = numpy.int(0)
-    # synchronise the gaps and apply the day/night filter
-    Fsd_day = numpy.ma.masked_where(indicator_day==0,Fsd)
-    D_day = numpy.ma.masked_where(indicator_day==0,D)
-    T_day = numpy.ma.masked_where(indicator_day==0,T)
-    NEE_day = numpy.ma.masked_where(indicator_day==0,Fc)
-    # get the Lasslop parameters
-    logger.info(" Estimating the Lasslop parameters")
-    LL_results = pfp_rpLL.get_LL_params(ldt, Fsd_day, D_day, T_day, NEE_day, ER, LT_results, l6_info, output)
-    # interpolate parameters
-    LL_results["alpha_int"] = pfp_rpLL.interp_params(LL_results["alpha"])
-    LL_results["beta_int"] = pfp_rpLL.interp_params(LL_results["beta"])
-    LL_results["k_int"] = pfp_rpLL.interp_params(LL_results["k"])
-    LL_results["rb_int"] = pfp_rpLL.interp_params(LL_results["rb"])
-    LL_results["E0_int"] = pfp_rpLL.interp_params(LL_results["E0"])
-    # get the Lasslop parameters at the tower time step
-    # *** PUT INTO SEPARATE FUNCTION
-    ntsperday = float(24)*float(60)/float(ts)
-    days_at_beginning = float(ielo[output]["window_size_days"])/2 - float(ielo[output]["step_size_days"])/2
-    int_list = ["alpha_int","beta_int","k_int","rb_int","E0_int"]
-    tts_list = ["alpha_tts","beta_tts","k_tts","rb_tts","E0_tts"]
-    for tts_item,int_item in zip(tts_list,int_list):
-        beginning = numpy.ones(int(days_at_beginning*ntsperday+0.5))*LL_results[int_item][0]
-        middle = numpy.repeat(LL_results[int_item],ielo[output]["step_size_days"]*ntsperday)
-        nend = len(ldt) - (len(beginning)+len(middle))
-        end = numpy.ones(nend)*LL_results[int_item][-1]
-        LL_results[tts_item] = numpy.concatenate((beginning,middle,end))
-    # ***
-    # get ER, GPP and NEE using Lasslop
-    D0 = LL_results["D0"]
-    rb = LL_results["rb_tts"]
-    attr = {"units": "umol/m^2/s", "statistic_type": "average",
-            "long_name": "Base respiration at Tref from Lloyd-Taylor method used in Lasslop et al (2010)"}
-    attr = pfp_utils.make_attribute_dictionary(attr=attr)
-    flag = numpy.zeros(nrecs, dtype=numpy.int32)
-    pfp_utils.CreateSeries(ds, "rb_LL", rb, flag, attr)
-    E0 = LL_results["E0_tts"]
-    attr = {"units": "degC", "statistic_type": "average",
-            "long_name": "Activation energy from Lloyd-Taylor method used in Lasslop et al (2010)"}
-    attr = pfp_utils.make_attribute_dictionary(attr=attr)
-    flag = numpy.zeros(nrecs, dtype=numpy.int32)
-    pfp_utils.CreateSeries(ds, "E0_LL", E0, flag, attr)
-    logger.info(" Calculating ER using Lloyd-Taylor with Lasslop parameters")
-    ER_LL = pfp_rpLL.ER_LloydTaylor(T, rb, E0)
-    # write ecosystem respiration modelled by Lasslop et al (2010)
-    attr = {"units": Fc_attr["units"], "long_name": "Ecosystem respiration",
-            descr_level: "ER modelled by Lasslop et al (2010)",
-            "statistic_type": "average"}
-    attr = pfp_utils.make_attribute_dictionary(attr=attr)
-    flag = numpy.full(nrecs, flag_code, dtype=numpy.int32)
-    pfp_utils.CreateSeries(ds, output, ER_LL, flag, attr)
-    # parameters associated with GPP and GPP itself
-    alpha = LL_results["alpha_tts"]
-    attr = {"units": "umol/J", "long_name": "Canopy light use efficiency",
-            "statistic_type": "average"}
-    attr = pfp_utils.make_attribute_dictionary(attr=attr)
-    flag = numpy.zeros(nrecs, dtype=numpy.int32)
-    pfp_utils.CreateSeries(ds,"alpha_LL",alpha,flag,attr)
-    beta = LL_results["beta_tts"]
-    attr = {"units": "umol/m^2/s", "long_name": "Maximum CO2 uptake at light saturation",
-            "statistic_type": "average"}
-    attr = pfp_utils.make_attribute_dictionary(attr=attr)
-    flag = numpy.zeros(nrecs, dtype=numpy.int32)
-    pfp_utils.CreateSeries(ds,"beta_LL",beta,flag,attr)
-    k = LL_results["k_tts"]
-    attr = {"units": "none", "long_name": "Sensitivity of response to VPD",
-            "statistic_type": "average"}
-    attr = pfp_utils.make_attribute_dictionary(attr=attr)
-    flag = numpy.zeros(nrecs, dtype=numpy.int32)
-    pfp_utils.CreateSeries(ds,"k_LL",k,flag,attr)
-    GPP_LL = pfp_rpLL.GPP_RHLRC_D(Fsd,D,alpha,beta,k,D0)
-    attr = {"units": "umol/m^2/s", "long_name": "Gross primary productivity",
-            descr_level: "GPP modelled by Lasslop et al (2010)",
-            "statistic_type": "average"}
-    attr = pfp_utils.make_attribute_dictionary(attr=attr)
-    flag = numpy.zeros(nrecs, dtype=numpy.int32)
-    pfp_utils.CreateSeries(ds, "GPP_LL_all", GPP_LL, flag, attr)
-    # NEE
-    data = {"Fsd":Fsd, "T":T, "D":D}
-    NEE_LL = pfp_rpLL.NEE_RHLRC_D([Fsd, D, T], alpha, beta, k, D0, rb, E0)
-    attr = {"units": "umol/m^2/s", "long_name": "Net ecosystem exchange",
-            descr_level: "NEE modelled by Lasslop et al (2010)",
-            "statistic_type": "average"}
-    attr = pfp_utils.make_attribute_dictionary(attr=attr)
-    flag = numpy.zeros(nrecs, dtype=numpy.int32)
-    pfp_utils.CreateSeries(ds, "NEE_LL_all", NEE_LL, flag, attr)
-    # plot the respiration estimated using Lasslop et al
-    # set the figure number
-    if len(plt.get_fignums())==0:
-        fig_num = 0
-    else:
-        fig_num = plt.get_fignums()[-1] + 1
-    title = site_name+" : ER estimated using Lasslop et al"
-    pd = pfp_rpLL.rpLL_initplot(site_name=site_name,label="ER",fig_num=fig_num,title=title,
-                         nDrivers=len(list(data.keys())),startdate=str(startdate),enddate=str(enddate))
-    pfp_rpLL.rpLL_plot(pd, ds, output, drivers, target, l6_info)
+    msg = " Estimating ER using Lasslop"
+    logger.info(msg)
+    EcoResp(ds, l6_info, 'ERUsingLasslop')
 
 def ERUsingLloydTaylor(cf, ds, l6_info):
     """
     Purpose:
-     Estimate ecosystem respiration using Lloyd-Taylor.
-     Ian McHugh wrote the LT code, PRI wrote the wrapper to integrate
-     this with OzFluxQC.
     Usage:
-    Author: IMcH, PRI
-    Date: October 2015
+    Author: IMcH
+    Date: April 2022
     """
     if "ERUsingLloydTaylor" not in l6_info:
         return
-    logger.info("Estimating ER using Lloyd-Taylor")
+    msg = " Estimating ER using Lloyd-Taylor"
+    logger.info(msg)
+    EcoResp(ds, l6_info, "ERUsingLloydTaylor")
+
+def EcoResp(ds, l6_info, called_by):
+    """
+    Purpose:
+    Estimate ecosystem respiration
+    Args:
+        * ds: PyFluxPro data structure (class)
+        * l6_info: information derived from L6 control file (dict)
+        * called_by: the routine that called the function (str)
+    Kwargs:
+        * mode: choice of whether to to use Lloyd Taylor os Lasslop methods to
+          estimate respiration (str; options "LT" [Lloyd Taylor - default]
+          and "LL" [Lasslop])
+    Author: IMcH, PRI
+    Date: August 2019
+    """
+    # Get required configs dict
+    iel = l6_info[called_by]
+    outputs = iel["outputs"].keys()
+    # Set dict to select day or night fitting of rb depending on mode
+    partition_dict = {'ERUsingLasslop': {'day_night_mode':
+                                         'day', 'day_rb_bool': True},
+                      'ERUsingLloydTaylor': {'day_night_mode': 'night',
+                                             'day_rb_bool': False}}
+    er_mode = partition_dict[called_by]['day_night_mode']
+    rb_mode = partition_dict[called_by]['day_rb_bool']
+    # Set attributes for ER and plotting
+    descr = {"ERUsingLasslop": "Ecosystem respiration modelled by Lasslop",
+             "ERUsingLloydTaylor": "Ecosystem respiration modelled by Lloyd-Taylor"}
     descr_level = "description_" + ds.globalattributes["processing_level"]
     ER_attr = {"units": "umol/m^2/s", "long_name": "Ecosystem respiration",
-               descr_level: "Ecosystem respiration modelled by Lloyd-Taylor",
-               "statistic_type": "average"}
+               descr_level: descr[called_by], "statistic_type": "average"}
     ER_attr = pfp_utils.make_attribute_dictionary(attr=ER_attr)
-    ts = int(float(ds.globalattributes["time_step"]))
     site_name = ds.globalattributes["site_name"]
-    ldt = ds.series["DateTime"]["Data"]
-    startdate = ldt[0]
-    enddate = ldt[-1]
-    nperhr = int(float(60)/ts+0.5)
-    nperday = int(float(24)*nperhr+0.5)
-    iel = l6_info["ERUsingLloydTaylor"]
-    iel["time_step"] = ts
-    iel["nperday"] = nperday
     # set the figure number
     if len(plt.get_fignums()) == 0:
         fig_num = 0
     else:
         fig_num = plt.get_fignums()[-1]
-    # open the Excel file
-    nc_name = pfp_io.get_outfilenamefromcf(cf)
-    xl_name = nc_name.replace(".nc", "_L&T.xls")
-    xl_file = pfp_io.xl_open_write(xl_name)
-    if xl_file == '':
-        msg = "ERUsingLloydTaylor: error opening Excel file " + xl_name
-        logger.error(msg)
-        return
-    # loop over the series
-    outputs = list(iel["outputs"].keys())
+    # open the Excel file for writing all outputs
+    xl_name = iel["info"]["data_file_path"]
+    xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
+    # loop over the series of outputs (usually one only)
     for output in outputs:
-        # create dictionaries for the results
-        E0_results = {"variables":{}}
-        E0_raw_results = {"variables":{}}
-        rb_results = {"variables":{}}
-        # add a sheet for this series
-        xl_sheet = xl_file.add_sheet(output)
-        # get a local copy of the config dictionary
+        # Make the filtered dataframe (fix this to allow gap-filled drivers)
+        ustars_dict = {x.split("_")[-1]: float(ds.series["Fco2"]["Attr"][x])
+                       for x in ds.series["Fco2"]["Attr"] if "ustar" in x}
+        var_list = ["Fco2", "Ta", "Ts", "Fsd", "ustar", "VPD"]
+        df = pandas.DataFrame({var: ds.series[var]["Data"] for var in var_list},
+                              index = ds.series["DateTime"]["Data"])
+        # IM original code causes Fco2 to be masked if any driver is gap filled
+        #is_valid = numpy.tile(True, int(ds.globalattributes["nc_nrecs"]))
+        #for this_var in df.columns: is_valid *= ds.series[this_var]["Flag"] == 0
+        #df.loc[~is_valid, "Fco2"] = numpy.nan
+        # 2022/4/22 PRI
+        # set Fco2 to NaN if
+        #  - any driver has a QC flag not ending in 0
+        #  - Fco2 is gap filled (only use observations)
+        is_valid = numpy.tile(True, int(ds.globalattributes["nc_nrecs"]))
+        for this_var in ["Ta", "Ts", "Fsd", "ustar", "VPD"]:
+            is_valid *= numpy.mod(ds.series[this_var]["Flag"], 10) == 0
+        for this_var in ["Fco2"]:
+            is_valid *= ds.series[this_var]["Flag"] == 0
+        df.loc[~is_valid, "Fco2"] = numpy.nan
+
+        for year in ustars_dict:
+            df.loc[(df.index.year == int(year)) &
+                   (df.ustar < ustars_dict[year]) &
+                   (df.Fsd < 10), "Fco2"] = numpy.nan
+        # Set the weighting of air and soil temperatures
         configs_dict = iel["outputs"][output]
-        configs_dict["measurement_interval"] = float(ts)/60.0
-        data_dict = pfp_rpLT.get_data_dict(ds, configs_dict)
-        # *** start of code taken from Ian McHugh's Partition_NEE.main ***
-        # If user wants individual window plots, check whether output directories
-        # are present, and create if not
-        if configs_dict['output_plots']:
-            output_path = configs_dict['output_path']
-            configs_dict['window_plot_output_path'] = output_path
-            if not os.path.isdir(output_path): os.makedirs(output_path)
-        # Get arrays of all datetimes, all dates and stepped dates original code
-        datetime_array = data_dict.pop('date_time')
-        (step_date_index_dict,
-         all_date_index_dict,
-         year_index_dict) = pfp_rpLT.get_dates(datetime_array, configs_dict)
-        date_array = numpy.array(list(all_date_index_dict.keys()))
-        date_array.sort()
-        step_date_array = numpy.array(list(step_date_index_dict.keys()))
-        step_date_array.sort()
-        # Create variable name lists for results output
-        series_rslt_list = ['Nocturnally derived Re', 'GPP from nocturnal derived Re',
-                            'Daytime derived Re', 'GPP from daytime derived Re']
-        new_param_list = ['Eo', 'rb_noct', 'rb_day', 'alpha_fixed_rb',
-                          'alpha_free_rb', 'beta_fixed_rb', 'beta_free_rb',
-                          'k_fixed_rb', 'k_free_rb', 'Eo error code',
-                          'Nocturnal rb error code',
-                          'Light response parameters + fixed rb error code',
-                          'Light response parameters + free rb error code']
-        # Create dictionaries for results
-        # First the parameter estimates and error codes...
-        empty_array = numpy.empty([len(date_array)])
-        empty_array[:] = numpy.nan
-        opt_params_dict = {var: empty_array.copy() for var in new_param_list}
-        opt_params_dict['date'] = date_array
-        # Then the time series estimation
-        empty_array = numpy.empty([len(datetime_array)])
-        empty_array[:] = numpy.nan
-        series_est_dict = {var: empty_array.copy() for var in series_rslt_list}
-        series_est_dict['date_time'] = datetime_array
-        # Create a dictionary containing initial guesses for each parameter
-        params_dict = pfp_rpLT.make_initial_guess_dict(data_dict)
-        # *** start of annual estimates of E0 code ***
-        # this section could be a separate routine
-        # Get the annual estimates of Eo
-        logger.info(" Optimising fit for Eo for each year")
-        Eo_dict, EoQC_dict, Eo_raw_dict, EoQC_raw_dict, status = pfp_rpLT.optimise_annual_Eo(data_dict,params_dict,configs_dict,year_index_dict)
-        if status["code"] != 0:
-            msg = " Estimation of ER using Lloyd-Taylor failed with message"
-            logger.error(msg)
-            logger.error(status["message"])
-            return
-        # Write to result arrays
-        year_array = numpy.array([i.year for i in date_array])
-        for yr in year_array:
-            index = numpy.where(year_array == yr)
-            opt_params_dict['Eo'][index] = Eo_dict[yr]
-            opt_params_dict['Eo error code'][index] = EoQC_dict[yr]
-        E0_results["variables"]["DateTime"] = {"Data":[datetime.datetime(int(yr),1,1) for yr in list(Eo_dict.keys())],
-                                               "Attr":{"units":"Year","format":"yyyy"}}
-        E0_results["variables"]["E0"] = {"Data":[float(Eo_dict[yr]) for yr in list(Eo_dict.keys())],
-                                         "Attr":{"units":"none","format":"0"}}
-        E0_raw_results["variables"]["DateTime"] = {"Data":[datetime.datetime(int(yr),1,1) for yr in list(Eo_raw_dict.keys())],
-                                                   "Attr":{"units":"Year","format":"yyyy"}}
-        E0_raw_results["variables"]["E0"] = {"Data":[float(Eo_raw_dict[yr]) for yr in list(Eo_raw_dict.keys())],
-                                             "Attr":{"units":"none","format":"0"}}
-        # write the E0 values to the Excel file
-
-        pfp_io.xl_write_data(xl_sheet,E0_raw_results["variables"],xlCol=0)
-        pfp_io.xl_write_data(xl_sheet,E0_results["variables"],xlCol=2)
-
-        # *** end of annual estimates of E0 code ***
-        # *** start of estimating rb code for each window ***
-        # this section could be a separate routine
-        # Rewrite the parameters dictionary so that there will be one set of
-        # defaults for the free and one set of defaults for the fixed parameters
-        params_dict = {'fixed_rb': pfp_rpLT.make_initial_guess_dict(data_dict),
-                       'free_rb': pfp_rpLT.make_initial_guess_dict(data_dict)}
-        # Do nocturnal optimisation for each window
-        logger.info(" Optimising fit for rb using nocturnal data")
-        for date in step_date_array:
-            # Get Eo for the relevant year and write to the parameters dictionary
-            param_index = numpy.where(date_array == date)
-            params_dict['fixed_rb']['Eo_default'] = opt_params_dict['Eo'][param_index]
-            # Subset the data and check length
-            sub_dict = pfp_rpLT.subset_window(data_dict, step_date_index_dict[date])
-            noct_dict = pfp_rpLT.subset_window(data_dict, step_date_index_dict[date])
-            # Subset again to remove daytime and then nan
-            #noct_dict = pfp_rpLT.subset_daynight(sub_dict, noct_flag = True)
-            len_all_noct = len(noct_dict['NEE'])
-            noct_dict = pfp_rpLT.subset_nan(noct_dict)
-            len_valid_noct = len(noct_dict['NEE'])
-            # Do optimisation only if data passes minimum threshold
-            if round(float(len_valid_noct) / len_all_noct * 100) > \
-            configs_dict['minimum_pct_noct_window']:
-                params, error_state = pfp_rpLT.optimise_rb(noct_dict,params_dict['fixed_rb'])
+        drivers = configs_dict["drivers"]
+        weighting = configs_dict["weights_air_soil"]
+        re_drivers = [x for x in drivers if x in ["Ta", "Ts"]]
+        if len(re_drivers) == 1:
+            if re_drivers[0] == "Ta": weighting = "air"
+            if re_drivers[0] == "Ts": weighting = "soil"
+        elif len(re_drivers) == 2:
+            if len(weighting) == 1:
+                weighting = "air"
+            elif len(weighting) == 2:
+                try:
+                    weighting = [float(x) for x in weighting]
+                except TypeError:
+                    weighting = "air"
             else:
-                params, error_state = [numpy.nan], 10
-            # Send data to the results dict
-            opt_params_dict['rb_noct'][param_index] = params
-            opt_params_dict['Nocturnal rb error code'][param_index] = error_state
-            # Estimate time series and plot if requested
-            if error_state == 0 and configs_dict['output_plots']:
-                this_params_dict = {'Eo': opt_params_dict['Eo'][param_index],
-                                    'rb': opt_params_dict['rb_noct'][param_index]}
-                est_series_dict = pfp_rpLT.estimate_Re_GPP(sub_dict, this_params_dict)
-                combine_dict = dict(sub_dict, **est_series_dict)
-                pfp_rpLT.plot_windows(combine_dict, configs_dict, date, noct_flag = True)
-        # get a copy of the rb data before interpolation so we can write it to file
-        rb_date = opt_params_dict["date"]
-        rb_data = opt_params_dict["rb_noct"]
-        # get the indices of non-NaN elements
-        idx = numpy.where(numpy.isnan(rb_data)!=True)[0]
-        # get the datetime dictionary
-        rb_results["variables"]["DateTime"] = {"Data":rb_date[idx],
-                                  "Attr":{"units":"Date","format":"dd/mm/yyyy"}}
-        # get the rb values
-        rb_results["variables"]["rb_noct"] = {"Data":rb_data[idx],
-                            "Attr":{"units":"none","format":"0.00"}}
-        # write to the Excel file
-        pfp_io.xl_write_data(xl_sheet,rb_results["variables"],xlCol=4)
-        # Interpolate
-        opt_params_dict['rb_noct'] = pfp_rpLT.interp_params(opt_params_dict['rb_noct'])
-        # *** end of estimating rb code for each window ***
-        # *** start of code to calculate ER from fit parameters
-        # this section could be a separate routine
-        E0 = numpy.zeros(len(ldt))
-        rb = numpy.zeros(len(ldt))
-        ldt_year = numpy.array([dt.year for dt in ldt])
-        ldt_month = numpy.array([dt.month for dt in ldt])
-        ldt_day = numpy.array([dt.day for dt in ldt])
-        for date,E0_val,rb_val in zip(opt_params_dict["date"],opt_params_dict["Eo"],opt_params_dict["rb_noct"]):
-            param_year = date.year
-            param_month = date.month
-            param_day = date.day
-            idx = numpy.where((ldt_year==param_year)&(ldt_month==param_month)&(ldt_day==param_day))[0]
-            E0[idx] = E0_val
-            rb[idx] = rb_val
-        ER_LT = pfp_rpLT.TRF(data_dict['TempC'], E0, rb)
-        ER_LT_flag = numpy.empty(len(ER_LT),dtype=numpy.int32)
-        ER_LT_flag.fill(iel["outputs"][output]["flag_code"])
-        target = iel["outputs"][output]["target"]
+                weighting = "air"
+        # Pass the dataframe to the respiration class and get the results
+        ptc = pfp_part.partition(df, weights_air_soil = weighting, fit_daytime_rb = rb_mode)
+        params_df = ptc.estimate_parameters(mode = er_mode)
+        ER = ptc.estimate_er_time_series(params_df)
+        ER_flag = numpy.tile(30, len(ER))
+        # Write to series
         drivers = iel["outputs"][output]["drivers"]
-        ER_attr["comment1"] = "Drivers were "+str(drivers)
-        pfp_utils.CreateSeries(ds, output, ER_LT, ER_LT_flag, ER_attr)
-        # plot the respiration estimated using Lloyd-Taylor
+        ER_attr["comment1"] = "Drivers were {}".format(str(drivers))
+        pfp_utils.CreateSeries(ds, output, ER, ER_flag, ER_attr)
+        # Write to excel
+        params_df.to_excel(xl_writer, output)
+        xl_writer.save()
+        # Do plotting
+        startdate = str(ds.series["DateTime"]["Data"][0])
+        enddate = str(ds.series["DateTime"]["Data"][-1])
+        target = iel["outputs"][output]["target"]
         fig_num = fig_num + 1
-        title = site_name+" : "+output+" estimated using Lloyd-Taylor"
-        pd = pfp_rpLT.rpLT_initplot(site_name=site_name, label=target, fig_num=fig_num, title=title,
-                             nDrivers=len(drivers), startdate=str(startdate), enddate=str(enddate))
-        pfp_rpLT.rpLT_plot(pd, ds, output, drivers, target, iel)
-    # close the Excel workbook
-    xl_file.save(xl_name)
+        #title_snippet = (" ").join(descr[called_by].split(" ")[2:])
+        #title = site_name+" : " + output + title_snippet
+        title = site_name + ": " + descr[called_by]
+        pd = rp_initplot(site_name=site_name, label=target,
+                         fig_num=fig_num, title=title,
+                         nDrivers=len(drivers),
+                         startdate=str(startdate),
+                         enddate=str(enddate))
+        rp_plot(pd, ds, output, drivers, target, iel, called_by)
 
 def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     """
@@ -638,510 +352,6 @@ def GetERFromFco2(cf, ds):
     logger.info(msg)
     return
 
-def check_for_missing_data(series_list, label_list):
-    for item, label in zip(series_list, label_list):
-        index = numpy.where(numpy.ma.getmaskarray(item) == True)[0]
-        if len(index) != 0:
-            msg = " GetERFromFc: missing data in series " + label
-            logger.error(msg)
-            return 0
-    return 1
-
-def get_ustar_thresholds(cf, ds):
-    """
-    Purpose
-     Get the annual ustar thresholds from a results workbook or from the
-     ustar_threshold section in the control file.
-    """
-    # try...except used in desparation ahead of the October 2021 workshop
-    # let's see how long it stays here ...
-    ustar_dict = {}
-    ustar_out = {}
-    try:
-        if "cpd_filename" in cf["Files"]:
-            results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["cpd_filename"])
-            if os.path.isfile(results_name):
-                ustar_dict["cpd"] = get_ustarthreshold_from_results(results_name)
-            else:
-                msg = " CPD results file not found (" + results_name + ")"
-                logger.warning(msg)
-        if "mpt_filename" in cf["Files"]:
-            results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["mpt_filename"])
-            if os.path.isfile(results_name):
-                ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
-            else:
-                msg = " MPT results file not found (" + results_name + ")"
-                logger.warning(msg)
-        if "ustar_threshold" in cf:
-            ts = int(float(ds.globalattributes["time_step"]))
-            ustar_dict["cf"] = get_ustarthreshold_from_cf(cf, ts)
-        else:
-            msg = " No source for ustar threshold found in " + os.path.basename(cf.filename)
-        ustar_out = cleanup_ustar_dict(ds, ustar_dict)
-    except Exception:
-        msg = " An error occured getting the ustar threshold"
-        logger.error(msg)
-        ds.returncodes["value"] = 1
-        ds.returncodes["message"] = msg
-    return ustar_out
-
-def get_daynight_indicator(cf, ds):
-    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
-    # get the day/night indicator
-    daynight_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
-    inds = daynight_indicator["values"]
-    attr = daynight_indicator["attr"]
-    # get the filter type
-    filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
-    attr["daynight_filter"] = filter_type
-    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseFsdsyn_threshold", default="No")
-    attr["use_fsdsyn"] = use_fsdsyn
-    # get the indicator series
-    if filter_type.lower() == "fsd":
-        # get the Fsd threshold
-        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
-        attr["Fsd_threshold"] = str(Fsd_threshold)
-        # we are using Fsd only to define day/night
-        idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
-        inds[idx] = numpy.int32(1)
-    elif filter_type.lower() == "sa":
-        # get the solar altitude threshold
-        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
-        attr["sa_threshold"] = str(sa_threshold)
-        # we are using solar altitude to define day/night
-        if "solar_altitude" not in list(ds.series.keys()):
-            pfp_ts.get_synthetic_fsd(ds)
-        sa, _, _ = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
-        idx = numpy.ma.where(sa < sa_threshold)[0]
-        inds[idx] = numpy.int32(1)
-    else:
-        msg = "Unrecognised DayNightFilter option in L6 control file"
-        raise Exception(msg)
-    return daynight_indicator
-
-def get_day_indicator(cf, ds):
-    """
-    Purpose:
-     Returns a dictionary containing an indicator series and some attributes.
-     The indicator series is 1 during day time and 0 at night time.  The threshold
-     between night and day is the Fsd threshold specified in the control file.
-    Usage:
-     indicators["day"] = get_day_indicator(cf, ds)
-     where;
-      cf is a control file object
-      ds is a data structure
-    and;
-      indicators["day"] is a dictionary containing
-      indicators["day"]["Data"] is the indicator series
-      indicators["day"]["Attr"] are the attributes
-    Author: PRI
-    Date: March 2016
-    Mods:
-     PRI 6/12/2018 - removed calculation of Fsd_syn by default
-    """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    Fsd = pfp_utils.GetVariable(ds, "Fsd")
-    # indicator = 1 ==> day, indicator = 0 ==> night
-    long_name = "Day time indicator, 1 ==> day, 0 ==> night"
-    indicator_day = {"Label" : "indicator_day",
-                     "Data": numpy.ones(nrecs, dtype=numpy.int32),
-                     "Flag": numpy.zeros(nrecs, dtype=numpy.int32),
-                     "Attr": {"long_name": long_name, "units": "none"}}
-    inds = indicator_day["Data"]
-    attr = indicator_day["Attr"]
-    # get the filter type
-    filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
-    attr["daynight_filter_type"] = filter_type
-    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseFsdsyn_threshold", default="No")
-    attr["use_fsdsyn"] = use_fsdsyn
-    # get the indicator series
-    if filter_type.lower() == "fsd":
-        # get the Fsd threshold
-        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
-        attr["Fsd_threshold"] = str(Fsd_threshold)
-        # we are using Fsd only to define day/night
-        idx = numpy.ma.where(Fsd["Data"] <= Fsd_threshold)[0]
-        inds[idx] = numpy.int32(0)
-    elif filter_type.lower() == "sa":
-        # get the solar altitude threshold
-        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
-        attr["sa_threshold"] = str(sa_threshold)
-        # we are using solar altitude to define day/night
-        if "solar_altitude" not in ds.series.keys():
-            pfp_ts.get_synthetic_fsd(ds)
-        sa = pfp_utils.GetVariable(ds, "solar_altitude")
-        index = numpy.ma.where(sa["Data"] < sa_threshold)[0]
-        inds[index] = numpy.int32(0)
-    else:
-        msg = "Unrecognised DayNightFilter option in control file"
-        raise Exception(msg)
-    return indicator_day
-
-def get_evening_indicator(cf, ds):
-    """
-    Purpose:
-     Returns a dictionary containing an indicator series and some attributes.
-     The indicator series is 1 during the evening and 0 at all other times.
-     Evening is defined as the period between sunset and the number of hours
-     specified in the control file [Options] section as the EveningFilterLength
-     key.
-    Usage:
-     indicators["evening"] = get_evening_indicator(cf, ds)
-     where;
-      cf is a control file object
-      ds is a data structure
-    and;
-      indicators["evening"] is a dictionary containing
-      indicators["evening"]["Data"] is the indicator series
-      indicators["evening"]["Attr"] are the attributes
-    Author: PRI
-    Date: March 2016
-    """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    ts = int(float(ds.globalattributes["time_step"]))
-    # indicator series, 1 ==> evening
-    long_name = "Evening indicator, 1 ==> evening hours (after sunset)"
-    indicator_evening = {"Label": "indicator_evening",
-                         "Data": numpy.zeros(nrecs, dtype=numpy.int32),
-                         "Flag": numpy.zeros(nrecs, dtype=numpy.int32),
-                         "Attr": {"long_name": long_name, "units": "none"}}
-    attr = indicator_evening["Attr"]
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "EveningFilterLength", default="3")
-    num_hours = int(opt)
-    if num_hours <= 0 or num_hours >= 12:
-        indicator_evening["Data"] = numpy.zeros(nrecs)
-        indicator_evening["Attr"]["evening_filter_length"] = str(num_hours)
-        msg = " Evening filter period outside 0 to 12 hours, skipping ..."
-        logger.warning(msg)
-        return indicator_evening
-    night_indicator = get_night_indicator(cf, ds)
-    day_indicator = get_day_indicator(cf, ds)
-    ntsperhour = int(0.5 + float(60)/float(ts))
-    shift = num_hours*ntsperhour
-    day_indicator_shifted = numpy.roll(day_indicator["Data"], shift)
-    indicator_evening["Data"] = night_indicator["Data"]*day_indicator_shifted
-    attr["evening_filter_length"] = str(num_hours)
-    return indicator_evening
-
-def get_night_indicator(cf, ds):
-    """
-    Purpose:
-     Returns a dictionary containing an indicator series and some attributes.
-     The indicator series is 1 during night time and 0 during the day.  The
-     threshold for determining night and day is the Fsd threshold
-     given in the control file [Options] section.
-    Usage:
-     indicators["night"] = get_night_indicator(cf, ds)
-     where;
-      cf is a control file object
-      ds is a data structure
-    and;
-      indicators["night"] is a dictionary containing
-      indicators["night"]["Data"] is the indicator series
-      indicators["night"]["Attr"] are the attributes
-    Author: PRI
-    Date: March 2016
-    """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    Fsd = pfp_utils.GetVariable(ds, "Fsd")
-    # indicator = 1 ==> night, indicator = 0 ==> day
-    long_name = "Night time indicator, 1 ==> night, 0 ==> day"
-    indicator_night = {"Label" : "indicator_night",
-                       "Data": numpy.ones(nrecs, dtype=numpy.int32),
-                       "Flag": numpy.zeros(nrecs, dtype=numpy.int32),
-                       "Attr": {"long_name": long_name, "units": "none"}}
-    inds = indicator_night["Data"]
-    attr = indicator_night["Attr"]
-    # get the filter type
-    filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
-    attr["daynight_filter_type"] = filter_type
-    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseFsdsyn_threshold", default="No")
-    attr["use_fsdsyn"] = use_fsdsyn
-    # get the indicator series
-    if filter_type.lower() == "fsd":
-        # get the Fsd threshold
-        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
-        attr["Fsd_threshold"] = str(Fsd_threshold)
-        # we are using Fsd only to define day/night
-        idx = numpy.ma.where(Fsd["Data"] <= Fsd_threshold)[0]
-        inds[idx] = numpy.int32(1)
-    elif filter_type.lower() == "sa":
-        # get the solar altitude threshold
-        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
-        attr["sa_threshold"] = str(sa_threshold)
-        # we are using solar altitude to define day/night
-        if "solar_altitude" not in ds.series.keys():
-            pfp_ts.get_synthetic_fsd(ds)
-        sa = pfp_utils.GetVariable(ds, "solar_altitude")
-        index = numpy.ma.where(sa["Data"] < sa_threshold)[0]
-        inds[index] = numpy.int32(1)
-    else:
-        msg = "Unrecognised DayNightFilter option in control file"
-        raise Exception(msg)
-    return indicator_night
-
-def get_turbulence_indicator_ustar_basic(ldt, ustar, ustar_dict):
-    """
-    Purpose:
-     Returns a dictionary containing an indicator series and some attributes.
-     The indicator series is 1 when ustar is above the threshold and 0 when
-     ustar is below the threshold.
-     By default, all day time observations are accepted regardless of ustar value.
-    Usage:
-     indicators["turbulence"] = get_turbulence_indicator_ustar_basic(ldt,ustar,ustar_dict)
-     where;
-      ldt is a list of datetimes
-      ustar is a series of ustar values (ndarray)
-      ustar_dict is a dictionary of ustar thresholds returned by pfp_rp.get_ustar_thresholds
-      ts is the time step for ustar
-    and;
-     indicators["turbulence"] is a dictionary containing
-      indicators["turbulence"]["Data"] is the indicator series
-      indicators["turbulence"]["Attr"] are the attributes
-    Author: PRI
-    Date: March 2016
-    """
-    nrecs = len(ldt["Data"])
-    ts = int(ustar["time_step"])
-    years = sorted(list(ustar_dict.keys()))
-    # now loop over the years in the data to apply the ustar threshold
-    long_name = "Indicator for basic ustar filter, 1 ==> turbulent"
-    indicator_turbulence = {"basic": {"Label": "indicator_turbulence_basic",
-                                      "Data": numpy.zeros(nrecs),
-                                      "Flag": numpy.zeros(nrecs),
-                                      "Attr": {"long_name": long_name,
-                                               "units": "none"}}}
-    ustar_basic = indicator_turbulence["basic"]["Data"]
-    attr = indicator_turbulence["basic"]["Attr"]
-    attr["turbulence_filter"] = "ustar_basic"
-    for year in years:
-        start_date = datetime.datetime(int(year), 1, 1, 0, 0) + datetime.timedelta(minutes=ts)
-        end_date = datetime.datetime(int(year)+1, 1, 1, 0, 0)
-        # get the ustar threshold
-        ustar_threshold = float(ustar_dict[year]["ustar_mean"])
-        attr["ustar_threshold_" + str(year)] = str(ustar_threshold)
-        # get the start and end datetime indices
-        si = pfp_utils.GetDateIndex(ldt["Data"], start_date, ts=ts, default=0, match="exact")
-        ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts, default=nrecs-1, match="exact")
-        # set the QC flag
-        idx = numpy.ma.where(ustar["Data"][si:ei] >= ustar_threshold)[0]
-        ustar_basic[si:ei][idx] = numpy.int32(1)
-    indicator_turbulence["basic"]["Data"] = ustar_basic
-    return indicator_turbulence
-
-def get_turbulence_indicator_ustar_evgb(ldt, ustar, ustar_dict, indicator_day):
-    """
-    Purpose:
-     Returns a dictionary containing an indicator series and some attributes.
-     The indicator series is 1 when ustar is above the threshold after sunset
-     and remains 1 until ustar falls below the threshold after which it remains
-     0 until the following evening.
-     By default, all day time observations are accepted regardless of ustar value.
-     Based on a ustar filter scheme designed by Eva van Gorsel for use at the
-     Tumbarumba site.
-    Usage:
-     indicators["turbulence"] = get_turbulence_indicator_ustar_evgb(ldt, ustar, ustar_dict, ind_day)
-     where;
-      ldt is a list of datetimes
-      ind_day is a day/night indicator
-      ustar is a series of ustar values (ndarray)
-      ustar_dict is a dictionary of ustar thresholds returned by pfp_rp.get_ustar_thresholds
-      ind_day is a day/night indicator
-    and;
-     indicators["turbulence"] is a dictionary containing
-      indicators["turbulence"]["Data"] is the indicator series
-      indicators["turbulence"]["Attr"] are the attributes
-    Author: PRI, EVG, WW
-    Date: December 2016
-    """
-    nrecs = len(ldt["Data"])
-    years = sorted(list(ustar_dict.keys()))
-    # initialise the return dictionary
-    long_name_basic = "Indicator for basic ustar filter, 1 ==> turbulent"
-    long_name_evgb = "Indicator for EvGB ustar filter, 1 ==> turbulent"
-    indicator_turbulence = {"basic": {"Label": "indicator_turbulence_basic",
-                                      "Data": numpy.zeros(nrecs),
-                                      "Flag": numpy.zeros(nrecs),
-                                      "Attr": {"long_name": long_name_basic,
-                                               "units": "none"}},
-                            "evgb": {"Label": "indicator_turbulence_evgb",
-                                      "Data": numpy.zeros(nrecs),
-                                      "Flag": numpy.zeros(nrecs),
-                                      "Attr": {"long_name": long_name_evgb,
-                                               "units": "none"}}}
-    attr = indicator_turbulence["evgb"]["Attr"]
-    attr["turbulence_filter"] = "ustar_evgb"
-    # get the basic ustar filter indicator series
-    # ustar >= threshold ==> ind_ustar = 1, ustar < threshold == ind_ustar = 0
-    ustar_basic = get_turbulence_indicator_ustar_basic(ldt, ustar, ustar_dict)
-    indicator_turbulence["basic"] = copy.deepcopy(ustar_basic["basic"])
-    # there may be a better way to do this than looping over all elements
-    # keep_going is a logical that is True as long as ustar is above the threshold
-    # after sunset and is False once ustar drops below the threshold
-    # keep_going controls rejection of the rest of the nocturnal data once ustar
-    # falls below the threshold
-    keep_going = False
-    ustar_evgb = numpy.zeros(nrecs, dtype=int)
-    # loop over all records
-    for i in range(nrecs):
-        if indicator_day[i] == 1:
-            # day time ==> reset logical, turbulence indicator = basic
-            keep_going = True
-            ustar_evgb[i] = indicator_turbulence["basic"]["Data"][i]
-        else:
-            # night time
-            if indicator_turbulence["basic"]["Data"][i] == 1 and keep_going:
-                # ustar still above threshold, turbulence indicator = basic
-                ustar_evgb[i] = indicator_turbulence["basic"]["Data"][i]
-            else:
-                # ustar dropped below threshold, turbulence indicator = 0
-                ustar_evgb[i] = 0
-                # reject the rest of this night
-                keep_going = False
-    # put the ustar thrtesholds into the variable attributes
-    for year in years:
-        attr["ustar_threshold_" + str(year)] = str(ustar_dict[year]["ustar_mean"])
-    # apply the EvGB filter to the basic ustar filter
-    indicator_turbulence["evgb"]["Data"] = ustar_basic["basic"]["Data"]*ustar_evgb
-    return indicator_turbulence
-
-def get_turbulence_indicator_ustar_fluxnet(ldt, ustar, ustar_dict):
-    """
-    Purpose:
-     Returns a dictionary containing an indicator series and some attributes.
-     The indicator series is:
-      - 1 when ustar is above the threshold
-      - 0 when ustar is below the threshold
-      - 0 when ustar is above the threshold for the first time following a period
-          when ustar has been below the threshold.
-     This is the FluxNet ustar filter from Pastorello et al 2020 (https://doi.org/10.1038/s41597-020-0534-3).
-    Usage:
-     indicators["turbulence"] = get_turbulence_indicator_ustar_fluxnet(ldt,ustar,ustar_dict)
-     where;
-      ldt is a datetime val
-      ustar is a ustar variable
-      ustar_dict is a dictionary of ustar thresholds returned by pfp_rp.get_ustar_thresholds
-    and;
-     indicators["turbulence"] is a dictionary containing
-      indicators["turbulence"]["values"] is the indicator series
-      indicators["turbulence"]["attr"] are the attributes
-    Author: PRI
-    Date: October 2020
-    """
-    nrecs = len(ldt["Data"])
-    ts = int(ustar["time_step"])
-    years = sorted(list(ustar_dict.keys()))
-    # initialise the return dictionary
-    long_name_basic = "Indicator for basic ustar filter, 1 ==> turbulent"
-    long_name_fluxnet = "Indicator for FluxNet ustar filter, 1 ==> turbulent"
-    indicator_turbulence = {"basic": {"Label": "indicator_turbulence_basic",
-                                      "Data": numpy.zeros(nrecs, dtype=int),
-                                      "Flag": numpy.zeros(nrecs, dtype=int),
-                                      "Attr": {"long_name": long_name_basic,
-                                               "units": "none"}},
-                            "fluxnet": {"Label": "indicator_turbulence_fluxnet",
-                                        "Data": numpy.zeros(nrecs, dtype=int),
-                                        "Flag": numpy.zeros(nrecs, dtype=int),
-                                        "Attr": {"long_name": long_name_fluxnet,
-                                                 "units": "none"}}}
-    ustar_basic = indicator_turbulence["basic"]["Data"]
-    ustar_fluxnet = indicator_turbulence["fluxnet"]["Data"]
-    attr = indicator_turbulence["fluxnet"]["Attr"]
-    attr["turbulence_filter"] = "ustar_fluxnet"
-    # get the list of years
-    for year in years:
-        start_date = datetime.datetime(int(year), 1, 1, 0, 0) + datetime.timedelta(minutes=ts)
-        end_date = datetime.datetime(int(year)+1, 1, 1, 0, 0)
-        # get the ustar threshold
-        ustar_threshold = float(ustar_dict[year]["ustar_mean"])
-        attr["ustar_threshold_" + str(year)] = str(ustar_threshold)
-        # get the start and end datetime indices
-        si = pfp_utils.GetDateIndex(ldt["Data"], start_date, ts=ts, default=0, match="exact")
-        ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts, default=nrecs-1, match="exact")
-        # basic ustar filter
-        # ustar >= threshold ==> ustar_basic = 1
-        idx = numpy.ma.where(ustar["Data"][si:ei] >= ustar_threshold)[0]
-        ustar_basic[si:ei][idx] = int(1)
-        # FluxNet ustar filter
-        # first period with ustar >= threshold ==> ustar_fluxnet = 0
-        ustar_fluxnet[si:ei] = ustar_basic[si:ei] * numpy.roll(ustar_basic[si:ei], 1)
-        if ustar_basic[si] < ustar_threshold:
-            ustar_fluxnet[si:si+2] = int(0)
-    indicator_turbulence["basic"]["Data"] = ustar_basic
-    indicator_turbulence["fluxnet"]["Data"] = ustar_fluxnet
-    return indicator_turbulence
-
-def get_ustarthreshold_from_cf(cf, ts):
-    """
-    Purpose:
-     Returns a dictionary containing ustar thresholds for each year read from
-     the control file.  If no [ustar_threshold] section is found then a
-     default value of 0.25 is used.
-    Usage:
-     ustar_dict = pfp_rp.get_ustarthreshold_from_cf(cf)
-     where cf is the control file object
-    Author: PRI
-    Date: July 2015
-    """
-    td = dateutil.relativedelta.relativedelta(years=1)
-    ustar_dict = collections.OrderedDict()
-    ustar_threshold_list = []
-    msg = " Using values from control file ustar_threshold section"
-    logger.info(msg)
-    for n in list(cf["ustar_threshold"].keys()):
-        ustar_string = cf["ustar_threshold"][str(n)]
-        ustar_list = ustar_string.split(",")
-        ustar_threshold_list.append(ustar_list)
-    for item in ustar_threshold_list:
-        start_date = dateutil.parser.parse(item[0]) - datetime.timedelta(minutes=ts)
-        end_date = dateutil.parser.parse(item[1]) - datetime.timedelta(minutes=ts)
-        years = [dt.year for dt in pfp_utils.perdelta(start_date, end_date, td)]
-        for year in years:
-            ustar_dict[str(year)] = {}
-            ustar_dict[str(year)]["ustar_mean"] = float(item[2])
-    return ustar_dict
-
-def get_ustarthreshold_from_results(results_name):
-    """
-    Purpose:
-     Returns a dictionary containing ustar thresholds for each year read from
-     the CPD or MPT results file.  If there is no results file name found in the
-     control file then return an empty dictionary.
-    Usage:
-     ustar_dict = pfp_rp.get_ustarthreshold_from_results(results_name)
-     where results_name is the CPD or MPT results file name
-           ustar_dict is a dictionary of ustar thresholds, 1 entry per year
-    Author: PRI
-    Date: July 2015
-          October 2021 - rewrite to use pandas, add trap for failed open
-    """
-    df = pandas.read_excel(results_name, sheet_name="Annual", index_col=0)
-    df.index = df.index.map(str)
-    ustar_dict = df.to_dict('index')
-    return ustar_dict
-
-def get_ustar_thresholds_annual(ldt,ustar_threshold):
-    """
-    Purpose:
-     Returns a dictionary containing ustar thresholds for all years using
-     a single value enetred as the ustar_threshold argument.
-    Usage:
-     ustar_dict = pfp_rp.get_ustar_thresholds_annual(ldt,ustar_threshold)
-     where ldt is a list of datetime objects
-           ustar_threshold is the value to be used
-    Author: PRI
-    Date: July 2015
-    """
-    ustar_dict = collections.OrderedDict()
-    if not isinstance(ustar_threshold,float):
-        ustar_threshold = float(ustar_threshold)
-    start_year = ldt[0].year
-    end_year = ldt[-1].year
-    for year in range(start_year,end_year+1):
-        ustar_dict[year] = {}
-        ustar_dict[year]["ustar_mean"] = ustar_threshold
-    return ustar_dict
-
 def L6_summary(cf, ds):
     """
     Purpose:
@@ -1150,7 +360,7 @@ def L6_summary(cf, ds):
     Author: PRI
     Date: June 2015
     """
-    logger.info("Doing the L6 summary")
+    logger.info(" Doing the L6 summary")
     # set up a dictionary of lists
     series_dict = L6_summary_createseriesdict(cf, ds)
     # open the Excel workbook
@@ -1925,9 +1135,9 @@ def ParseL6ControlFile(cf, ds):
             if "ERUsingSOLO" in list(cf["EcosystemRespiration"][output].keys()):
                 rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO", 610)
             if "ERUsingLloydTaylor" in list(cf["EcosystemRespiration"][output].keys()):
-                pfp_rpLT.rpLT_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor", 620)
+                rp_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor", 620)
             if "ERUsingLasslop" in list(cf["EcosystemRespiration"][output].keys()):
-                pfp_rpLL.rpLL_createdict(cf, ds, l6_info, output, "ERUsingLasslop", 630)
+                rp_createdict(cf, ds, l6_info, output, "ERUsingLasslop", 630)
             if "MergeSeries" in list(cf["EcosystemRespiration"][output].keys()):
                 rpMergeSeries_createdict(cf, ds, l6_info, output, "MergeSeries")
     if "NetEcosystemExchange" in list(cf.keys()):
@@ -1982,6 +1192,554 @@ def PartitionNEE(ds, l6_info):
         attr[descr_level] = "Calculated as -1*" + NEE_label + " + " + ER_label
         ds.series[output_label]["Attr"] = attr
 
+def cleanup_ustar_dict(ds, ustar_in):
+    """
+    Purpose:
+     Clean up the ustar dictionary;
+      - make sure all years are included
+      - fill missing year values with the mean
+    Usage:
+    Author: PRI
+    Date: September 2015
+    """
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    ts = int(float(ds.globalattributes["time_step"]))
+    cdt = dt["Data"] - datetime.timedelta(minutes=ts)
+    data_years = sorted(list(set([ldt.year for ldt in cdt])))
+    # get the years for which we have u* thresholds in ustar_in
+    years = []
+    for item in ustar_in:
+        for year in ustar_in[item]:
+            years.append(int(year))
+    ustar_out = {}
+    for year in data_years:
+        ustar_out[str(year)] = {"ustar_mean": numpy.nan}
+        for item in ["cf", "cpd", "mpt"]:
+            if item in ustar_in:
+                if str(year) in ustar_in[item]:
+                    if ((not numpy.isnan(ustar_in[item][str(year)]["ustar_mean"])) and
+                        (numpy.isnan(ustar_out[str(year)]["ustar_mean"]))):
+                        ustar_out[str(year)]["ustar_mean"] = ustar_in[item][str(year)]["ustar_mean"]
+    # get the average of good ustar threshold values
+    good_values = []
+    for year in sorted(list(ustar_out.keys())):
+        if not numpy.isnan(ustar_out[year]["ustar_mean"]):
+            good_values.append(ustar_out[year]["ustar_mean"])
+    if len(good_values) == 0:
+        msg = " No u* thresholds found, using default of 0.25 m/s"
+        logger.error(msg)
+        good_values = [0.25]
+    ustar_threshold_mean = numpy.sum(numpy.array(good_values))/len(good_values)
+    # replace missing vaues with mean
+    for year in sorted(list(ustar_out.keys())):
+        if numpy.isnan(ustar_out[year]["ustar_mean"]):
+            ustar_out[year]["ustar_mean"] = ustar_threshold_mean
+    return ustar_out
+
+def check_for_missing_data(series_list, label_list):
+    for item, label in zip(series_list, label_list):
+        index = numpy.where(numpy.ma.getmaskarray(item) == True)[0]
+        if len(index) != 0:
+            msg = " GetERFromFc: missing data in series " + label
+            logger.error(msg)
+            return 0
+    return 1
+
+def get_ustar_thresholds(cf, ds):
+    """
+    Purpose
+     Get the annual ustar thresholds from a results workbook or from the
+     ustar_threshold section in the control file.
+    """
+    # try...except used in desparation ahead of the October 2021 workshop
+    # let's see how long it stays here ...
+    ustar_dict = {}
+    ustar_out = {}
+    try:
+        if "cpd_filename" in cf["Files"]:
+            results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["cpd_filename"])
+            if os.path.isfile(results_name):
+                ustar_dict["cpd"] = get_ustarthreshold_from_results(results_name)
+            else:
+                msg = " CPD results file not found (" + results_name + ")"
+                logger.warning(msg)
+        if "mpt_filename" in cf["Files"]:
+            results_name = os.path.join(cf["Files"]["file_path"], cf["Files"]["mpt_filename"])
+            if os.path.isfile(results_name):
+                ustar_dict["mpt"] = get_ustarthreshold_from_results(results_name)
+            else:
+                msg = " MPT results file not found (" + results_name + ")"
+                logger.warning(msg)
+        if "ustar_threshold" in cf:
+            ts = int(float(ds.globalattributes["time_step"]))
+            ustar_dict["cf"] = get_ustarthreshold_from_cf(cf, ts)
+        else:
+            msg = " No source for ustar threshold found in " + os.path.basename(cf.filename)
+        ustar_out = cleanup_ustar_dict(ds, ustar_dict)
+    except Exception:
+        msg = " An error occured getting the ustar threshold"
+        logger.error(msg)
+        ds.returncodes["value"] = 1
+        ds.returncodes["message"] = msg
+    return ustar_out
+
+def get_daynight_indicator(cf, ds):
+    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    # get the day/night indicator
+    daynight_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
+    inds = daynight_indicator["values"]
+    attr = daynight_indicator["attr"]
+    # get the filter type
+    filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
+    attr["daynight_filter"] = filter_type
+    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseFsdsyn_threshold", default="No")
+    attr["use_fsdsyn"] = use_fsdsyn
+    # get the indicator series
+    if filter_type.lower() == "fsd":
+        # get the Fsd threshold
+        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
+        attr["Fsd_threshold"] = str(Fsd_threshold)
+        # we are using Fsd only to define day/night
+        idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
+        inds[idx] = numpy.int32(1)
+    elif filter_type.lower() == "sa":
+        # get the solar altitude threshold
+        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
+        attr["sa_threshold"] = str(sa_threshold)
+        # we are using solar altitude to define day/night
+        if "solar_altitude" not in list(ds.series.keys()):
+            pfp_ts.get_synthetic_fsd(ds)
+        sa, _, _ = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
+        idx = numpy.ma.where(sa < sa_threshold)[0]
+        inds[idx] = numpy.int32(1)
+    else:
+        msg = "Unrecognised DayNightFilter option in L6 control file"
+        raise Exception(msg)
+    return daynight_indicator
+
+def get_day_indicator(cf, ds):
+    """
+    Purpose:
+     Returns a dictionary containing an indicator series and some attributes.
+     The indicator series is 1 during day time and 0 at night time.  The threshold
+     between night and day is the Fsd threshold specified in the control file.
+    Usage:
+     indicators["day"] = get_day_indicator(cf, ds)
+     where;
+      cf is a control file object
+      ds is a data structure
+    and;
+      indicators["day"] is a dictionary containing
+      indicators["day"]["Data"] is the indicator series
+      indicators["day"]["Attr"] are the attributes
+    Author: PRI
+    Date: March 2016
+    Mods:
+     PRI 6/12/2018 - removed calculation of Fsd_syn by default
+    """
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    Fsd = pfp_utils.GetVariable(ds, "Fsd")
+    # indicator = 1 ==> day, indicator = 0 ==> night
+    long_name = "Day time indicator, 1 ==> day, 0 ==> night"
+    indicator_day = {"Label" : "indicator_day",
+                     "Data": numpy.ones(nrecs, dtype=numpy.int32),
+                     "Flag": numpy.zeros(nrecs, dtype=numpy.int32),
+                     "Attr": {"long_name": long_name, "units": "none"}}
+    inds = indicator_day["Data"]
+    attr = indicator_day["Attr"]
+    # get the filter type
+    filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
+    attr["daynight_filter_type"] = filter_type
+    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseFsdsyn_threshold", default="No")
+    attr["use_fsdsyn"] = use_fsdsyn
+    # get the indicator series
+    if filter_type.lower() == "fsd":
+        # get the Fsd threshold
+        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
+        attr["Fsd_threshold"] = str(Fsd_threshold)
+        # we are using Fsd only to define day/night
+        idx = numpy.ma.where(Fsd["Data"] <= Fsd_threshold)[0]
+        inds[idx] = numpy.int32(0)
+    elif filter_type.lower() == "sa":
+        # get the solar altitude threshold
+        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
+        attr["sa_threshold"] = str(sa_threshold)
+        # we are using solar altitude to define day/night
+        if "solar_altitude" not in ds.series.keys():
+            pfp_ts.get_synthetic_fsd(ds)
+        sa = pfp_utils.GetVariable(ds, "solar_altitude")
+        index = numpy.ma.where(sa["Data"] < sa_threshold)[0]
+        inds[index] = numpy.int32(0)
+    else:
+        msg = "Unrecognised DayNightFilter option in control file"
+        raise Exception(msg)
+    return indicator_day
+
+def get_evening_indicator(cf, ds):
+    """
+    Purpose:
+     Returns a dictionary containing an indicator series and some attributes.
+     The indicator series is 1 during the evening and 0 at all other times.
+     Evening is defined as the period between sunset and the number of hours
+     specified in the control file [Options] section as the EveningFilterLength
+     key.
+    Usage:
+     indicators["evening"] = get_evening_indicator(cf, ds)
+     where;
+      cf is a control file object
+      ds is a data structure
+    and;
+      indicators["evening"] is a dictionary containing
+      indicators["evening"]["Data"] is the indicator series
+      indicators["evening"]["Attr"] are the attributes
+    Author: PRI
+    Date: March 2016
+    """
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    ts = int(float(ds.globalattributes["time_step"]))
+    # indicator series, 1 ==> evening
+    long_name = "Evening indicator, 1 ==> evening hours (after sunset)"
+    indicator_evening = {"Label": "indicator_evening",
+                         "Data": numpy.zeros(nrecs, dtype=numpy.int32),
+                         "Flag": numpy.zeros(nrecs, dtype=numpy.int32),
+                         "Attr": {"long_name": long_name, "units": "none"}}
+    attr = indicator_evening["Attr"]
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "EveningFilterLength", default="3")
+    num_hours = int(opt)
+    if num_hours <= 0 or num_hours >= 12:
+        indicator_evening["Data"] = numpy.zeros(nrecs)
+        indicator_evening["Attr"]["evening_filter_length"] = str(num_hours)
+        msg = " Evening filter period outside 0 to 12 hours, skipping ..."
+        logger.warning(msg)
+        return indicator_evening
+    night_indicator = get_night_indicator(cf, ds)
+    day_indicator = get_day_indicator(cf, ds)
+    ntsperhour = int(0.5 + float(60)/float(ts))
+    shift = num_hours*ntsperhour
+    day_indicator_shifted = numpy.roll(day_indicator["Data"], shift)
+    indicator_evening["Data"] = night_indicator["Data"]*day_indicator_shifted
+    attr["evening_filter_length"] = str(num_hours)
+    return indicator_evening
+
+def get_night_indicator(cf, ds):
+    """
+    Purpose:
+     Returns a dictionary containing an indicator series and some attributes.
+     The indicator series is 1 during night time and 0 during the day.  The
+     threshold for determining night and day is the Fsd threshold
+     given in the control file [Options] section.
+    Usage:
+     indicators["night"] = get_night_indicator(cf, ds)
+     where;
+      cf is a control file object
+      ds is a data structure
+    and;
+      indicators["night"] is a dictionary containing
+      indicators["night"]["Data"] is the indicator series
+      indicators["night"]["Attr"] are the attributes
+    Author: PRI
+    Date: March 2016
+    """
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    Fsd = pfp_utils.GetVariable(ds, "Fsd")
+    # indicator = 1 ==> night, indicator = 0 ==> day
+    long_name = "Night time indicator, 1 ==> night, 0 ==> day"
+    indicator_night = {"Label" : "indicator_night",
+                       "Data": numpy.ones(nrecs, dtype=numpy.int32),
+                       "Flag": numpy.zeros(nrecs, dtype=numpy.int32),
+                       "Attr": {"long_name": long_name, "units": "none"}}
+    inds = indicator_night["Data"]
+    attr = indicator_night["Attr"]
+    # get the filter type
+    filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
+    attr["daynight_filter_type"] = filter_type
+    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseFsdsyn_threshold", default="No")
+    attr["use_fsdsyn"] = use_fsdsyn
+    # get the indicator series
+    if filter_type.lower() == "fsd":
+        # get the Fsd threshold
+        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
+        attr["Fsd_threshold"] = str(Fsd_threshold)
+        # we are using Fsd only to define day/night
+        idx = numpy.ma.where(Fsd["Data"] <= Fsd_threshold)[0]
+        inds[idx] = numpy.int32(1)
+    elif filter_type.lower() == "sa":
+        # get the solar altitude threshold
+        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
+        attr["sa_threshold"] = str(sa_threshold)
+        # we are using solar altitude to define day/night
+        if "solar_altitude" not in ds.series.keys():
+            pfp_ts.get_synthetic_fsd(ds)
+        sa = pfp_utils.GetVariable(ds, "solar_altitude")
+        index = numpy.ma.where(sa["Data"] < sa_threshold)[0]
+        inds[index] = numpy.int32(1)
+    else:
+        msg = "Unrecognised DayNightFilter option in control file"
+        raise Exception(msg)
+    return indicator_night
+
+def get_turbulence_indicator_ustar_basic(ldt, ustar, ustar_dict):
+    """
+    Purpose:
+     Returns a dictionary containing an indicator series and some attributes.
+     The indicator series is 1 when ustar is above the threshold and 0 when
+     ustar is below the threshold.
+     By default, all day time observations are accepted regardless of ustar value.
+    Usage:
+     indicators["turbulence"] = get_turbulence_indicator_ustar_basic(ldt,ustar,ustar_dict)
+     where;
+      ldt is a list of datetimes
+      ustar is a series of ustar values (ndarray)
+      ustar_dict is a dictionary of ustar thresholds returned by pfp_rp.get_ustar_thresholds
+      ts is the time step for ustar
+    and;
+     indicators["turbulence"] is a dictionary containing
+      indicators["turbulence"]["Data"] is the indicator series
+      indicators["turbulence"]["Attr"] are the attributes
+    Author: PRI
+    Date: March 2016
+    """
+    nrecs = len(ldt["Data"])
+    ts = int(ustar["time_step"])
+    years = sorted(list(ustar_dict.keys()))
+    # now loop over the years in the data to apply the ustar threshold
+    long_name = "Indicator for basic ustar filter, 1 ==> turbulent"
+    indicator_turbulence = {"basic": {"Label": "indicator_turbulence_basic",
+                                      "Data": numpy.zeros(nrecs),
+                                      "Flag": numpy.zeros(nrecs),
+                                      "Attr": {"long_name": long_name,
+                                               "units": "none"}}}
+    ustar_basic = indicator_turbulence["basic"]["Data"]
+    attr = indicator_turbulence["basic"]["Attr"]
+    attr["turbulence_filter"] = "ustar_basic"
+    for year in years:
+        start_date = datetime.datetime(int(year), 1, 1, 0, 0) + datetime.timedelta(minutes=ts)
+        end_date = datetime.datetime(int(year)+1, 1, 1, 0, 0)
+        # get the ustar threshold
+        ustar_threshold = float(ustar_dict[year]["ustar_mean"])
+        attr["ustar_threshold_" + str(year)] = str(ustar_threshold)
+        # get the start and end datetime indices
+        si = pfp_utils.GetDateIndex(ldt["Data"], start_date, ts=ts, default=0, match="exact")
+        ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts, default=nrecs-1, match="exact")
+        # set the QC flag
+        idx = numpy.ma.where(ustar["Data"][si:ei] >= ustar_threshold)[0]
+        ustar_basic[si:ei][idx] = numpy.int32(1)
+    indicator_turbulence["basic"]["Data"] = ustar_basic
+    return indicator_turbulence
+
+def get_turbulence_indicator_ustar_evgb(ldt, ustar, ustar_dict, indicator_day):
+    """
+    Purpose:
+     Returns a dictionary containing an indicator series and some attributes.
+     The indicator series is 1 when ustar is above the threshold after sunset
+     and remains 1 until ustar falls below the threshold after which it remains
+     0 until the following evening.
+     By default, all day time observations are accepted regardless of ustar value.
+     Based on a ustar filter scheme designed by Eva van Gorsel for use at the
+     Tumbarumba site.
+    Usage:
+     indicators["turbulence"] = get_turbulence_indicator_ustar_evgb(ldt, ustar, ustar_dict, ind_day)
+     where;
+      ldt is a list of datetimes
+      ind_day is a day/night indicator
+      ustar is a series of ustar values (ndarray)
+      ustar_dict is a dictionary of ustar thresholds returned by pfp_rp.get_ustar_thresholds
+      ind_day is a day/night indicator
+    and;
+     indicators["turbulence"] is a dictionary containing
+      indicators["turbulence"]["Data"] is the indicator series
+      indicators["turbulence"]["Attr"] are the attributes
+    Author: PRI, EVG, WW
+    Date: December 2016
+    """
+    nrecs = len(ldt["Data"])
+    years = sorted(list(ustar_dict.keys()))
+    # initialise the return dictionary
+    long_name_basic = "Indicator for basic ustar filter, 1 ==> turbulent"
+    long_name_evgb = "Indicator for EvGB ustar filter, 1 ==> turbulent"
+    indicator_turbulence = {"basic": {"Label": "indicator_turbulence_basic",
+                                      "Data": numpy.zeros(nrecs),
+                                      "Flag": numpy.zeros(nrecs),
+                                      "Attr": {"long_name": long_name_basic,
+                                               "units": "none"}},
+                            "evgb": {"Label": "indicator_turbulence_evgb",
+                                      "Data": numpy.zeros(nrecs),
+                                      "Flag": numpy.zeros(nrecs),
+                                      "Attr": {"long_name": long_name_evgb,
+                                               "units": "none"}}}
+    attr = indicator_turbulence["evgb"]["Attr"]
+    attr["turbulence_filter"] = "ustar_evgb"
+    # get the basic ustar filter indicator series
+    # ustar >= threshold ==> ind_ustar = 1, ustar < threshold == ind_ustar = 0
+    ustar_basic = get_turbulence_indicator_ustar_basic(ldt, ustar, ustar_dict)
+    indicator_turbulence["basic"] = copy.deepcopy(ustar_basic["basic"])
+    # there may be a better way to do this than looping over all elements
+    # keep_going is a logical that is True as long as ustar is above the threshold
+    # after sunset and is False once ustar drops below the threshold
+    # keep_going controls rejection of the rest of the nocturnal data once ustar
+    # falls below the threshold
+    keep_going = False
+    ustar_evgb = numpy.zeros(nrecs, dtype=int)
+    # loop over all records
+    for i in range(nrecs):
+        if indicator_day[i] == 1:
+            # day time ==> reset logical, turbulence indicator = basic
+            keep_going = True
+            ustar_evgb[i] = indicator_turbulence["basic"]["Data"][i]
+        else:
+            # night time
+            if indicator_turbulence["basic"]["Data"][i] == 1 and keep_going:
+                # ustar still above threshold, turbulence indicator = basic
+                ustar_evgb[i] = indicator_turbulence["basic"]["Data"][i]
+            else:
+                # ustar dropped below threshold, turbulence indicator = 0
+                ustar_evgb[i] = 0
+                # reject the rest of this night
+                keep_going = False
+    # put the ustar thrtesholds into the variable attributes
+    for year in years:
+        attr["ustar_threshold_" + str(year)] = str(ustar_dict[year]["ustar_mean"])
+    # apply the EvGB filter to the basic ustar filter
+    indicator_turbulence["evgb"]["Data"] = ustar_basic["basic"]["Data"]*ustar_evgb
+    return indicator_turbulence
+
+def get_turbulence_indicator_ustar_fluxnet(ldt, ustar, ustar_dict):
+    """
+    Purpose:
+     Returns a dictionary containing an indicator series and some attributes.
+     The indicator series is:
+      - 1 when ustar is above the threshold
+      - 0 when ustar is below the threshold
+      - 0 when ustar is above the threshold for the first time following a period
+          when ustar has been below the threshold.
+     This is the FluxNet ustar filter from Pastorello et al 2020 (https://doi.org/10.1038/s41597-020-0534-3).
+    Usage:
+     indicators["turbulence"] = get_turbulence_indicator_ustar_fluxnet(ldt,ustar,ustar_dict)
+     where;
+      ldt is a datetime val
+      ustar is a ustar variable
+      ustar_dict is a dictionary of ustar thresholds returned by pfp_rp.get_ustar_thresholds
+    and;
+     indicators["turbulence"] is a dictionary containing
+      indicators["turbulence"]["values"] is the indicator series
+      indicators["turbulence"]["attr"] are the attributes
+    Author: PRI
+    Date: October 2020
+    """
+    nrecs = len(ldt["Data"])
+    ts = int(ustar["time_step"])
+    years = sorted(list(ustar_dict.keys()))
+    # initialise the return dictionary
+    long_name_basic = "Indicator for basic ustar filter, 1 ==> turbulent"
+    long_name_fluxnet = "Indicator for FluxNet ustar filter, 1 ==> turbulent"
+    indicator_turbulence = {"basic": {"Label": "indicator_turbulence_basic",
+                                      "Data": numpy.zeros(nrecs, dtype=int),
+                                      "Flag": numpy.zeros(nrecs, dtype=int),
+                                      "Attr": {"long_name": long_name_basic,
+                                               "units": "none"}},
+                            "fluxnet": {"Label": "indicator_turbulence_fluxnet",
+                                        "Data": numpy.zeros(nrecs, dtype=int),
+                                        "Flag": numpy.zeros(nrecs, dtype=int),
+                                        "Attr": {"long_name": long_name_fluxnet,
+                                                 "units": "none"}}}
+    ustar_basic = indicator_turbulence["basic"]["Data"]
+    ustar_fluxnet = indicator_turbulence["fluxnet"]["Data"]
+    attr = indicator_turbulence["fluxnet"]["Attr"]
+    attr["turbulence_filter"] = "ustar_fluxnet"
+    # get the list of years
+    for year in years:
+        start_date = datetime.datetime(int(year), 1, 1, 0, 0) + datetime.timedelta(minutes=ts)
+        end_date = datetime.datetime(int(year)+1, 1, 1, 0, 0)
+        # get the ustar threshold
+        ustar_threshold = float(ustar_dict[year]["ustar_mean"])
+        attr["ustar_threshold_" + str(year)] = str(ustar_threshold)
+        # get the start and end datetime indices
+        si = pfp_utils.GetDateIndex(ldt["Data"], start_date, ts=ts, default=0, match="exact")
+        ei = pfp_utils.GetDateIndex(ldt["Data"], end_date, ts=ts, default=nrecs-1, match="exact")
+        # basic ustar filter
+        # ustar >= threshold ==> ustar_basic = 1
+        idx = numpy.ma.where(ustar["Data"][si:ei] >= ustar_threshold)[0]
+        ustar_basic[si:ei][idx] = int(1)
+        # FluxNet ustar filter
+        # first period with ustar >= threshold ==> ustar_fluxnet = 0
+        ustar_fluxnet[si:ei] = ustar_basic[si:ei] * numpy.roll(ustar_basic[si:ei], 1)
+        if ustar_basic[si] < ustar_threshold:
+            ustar_fluxnet[si:si+2] = int(0)
+    indicator_turbulence["basic"]["Data"] = ustar_basic
+    indicator_turbulence["fluxnet"]["Data"] = ustar_fluxnet
+    return indicator_turbulence
+
+def get_ustarthreshold_from_cf(cf, ts):
+    """
+    Purpose:
+     Returns a dictionary containing ustar thresholds for each year read from
+     the control file.  If no [ustar_threshold] section is found then a
+     default value of 0.25 is used.
+    Usage:
+     ustar_dict = pfp_rp.get_ustarthreshold_from_cf(cf)
+     where cf is the control file object
+    Author: PRI
+    Date: July 2015
+    """
+    td = dateutil.relativedelta.relativedelta(years=1)
+    ustar_dict = collections.OrderedDict()
+    ustar_threshold_list = []
+    msg = " Using values from control file ustar_threshold section"
+    logger.info(msg)
+    for n in list(cf["ustar_threshold"].keys()):
+        ustar_string = cf["ustar_threshold"][str(n)]
+        ustar_list = ustar_string.split(",")
+        ustar_threshold_list.append(ustar_list)
+    for item in ustar_threshold_list:
+        start_date = dateutil.parser.parse(item[0]) - datetime.timedelta(minutes=ts)
+        end_date = dateutil.parser.parse(item[1]) - datetime.timedelta(minutes=ts)
+        years = [dt.year for dt in pfp_utils.perdelta(start_date, end_date, td)]
+        for year in years:
+            ustar_dict[str(year)] = {}
+            ustar_dict[str(year)]["ustar_mean"] = float(item[2])
+    return ustar_dict
+
+def get_ustarthreshold_from_results(results_name):
+    """
+    Purpose:
+     Returns a dictionary containing ustar thresholds for each year read from
+     the CPD or MPT results file.  If there is no results file name found in the
+     control file then return an empty dictionary.
+    Usage:
+     ustar_dict = pfp_rp.get_ustarthreshold_from_results(results_name)
+     where results_name is the CPD or MPT results file name
+           ustar_dict is a dictionary of ustar thresholds, 1 entry per year
+    Author: PRI
+    Date: July 2015
+          October 2021 - rewrite to use pandas, add trap for failed open
+    """
+    df = pandas.read_excel(results_name, sheet_name="Annual", index_col=0)
+    df.index = df.index.map(str)
+    ustar_dict = df.to_dict('index')
+    return ustar_dict
+
+def get_ustar_thresholds_annual(ldt,ustar_threshold):
+    """
+    Purpose:
+     Returns a dictionary containing ustar thresholds for all years using
+     a single value enetred as the ustar_threshold argument.
+    Usage:
+     ustar_dict = pfp_rp.get_ustar_thresholds_annual(ldt,ustar_threshold)
+     where ldt is a list of datetime objects
+           ustar_threshold is the value to be used
+    Author: PRI
+    Date: July 2015
+    """
+    ustar_dict = collections.OrderedDict()
+    if not isinstance(ustar_threshold,float):
+        ustar_threshold = float(ustar_threshold)
+    start_year = ldt[0].year
+    end_year = ldt[-1].year
+    for year in range(start_year,end_year+1):
+        ustar_dict[year] = {}
+        ustar_dict[year]["ustar_mean"] = ustar_threshold
+    return ustar_dict
+
 def rpGPP_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about calculating GPP."""
     # create the dictionary keys for this series
@@ -1995,26 +1753,6 @@ def rpGPP_createdict(cf, ds, info, label):
     # ecosystem respiration
     default = label.replace("GPP", "ER")
     opt = pfp_utils.get_keyvaluefromcf(cf, ["GrossPrimaryProductivity", label], "ER", default=default)
-    info[label]["ER"] = opt
-    # create an empty series in ds if the output series doesn't exist yet
-    if info[label]["output"] not in list(ds.series.keys()):
-        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
-        pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
-    return
-
-def rpNEE_createdict(cf, ds, info, label):
-    """ Creates a dictionary in ds to hold information about calculating NEE."""
-    # create the dictionary keys for this series
-    info[label] = {}
-    # output series name
-    info[label]["output"] = label
-    # CO2 flux
-    sl = ["NetEcosystemExchange", label]
-    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "Fco2", default="Fco2")
-    info[label]["Fco2"] = opt
-    # ecosystem respiration
-    default = label.replace("NEE", "ER")
-    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "ER", default=default)
     info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
     if info[label]["output"] not in list(ds.series.keys()):
@@ -2042,6 +1780,26 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
     if l6_info[called_by]["standard"][label]["output"] not in list(ds.series.keys()):
         variable = pfp_utils.CreateEmptyVariable(label, nrecs)
         pfp_utils.CreateVariable(ds, variable)
+    return
+
+def rpNEE_createdict(cf, ds, info, label):
+    """ Creates a dictionary in ds to hold information about calculating NEE."""
+    # create the dictionary keys for this series
+    info[label] = {}
+    # output series name
+    info[label]["output"] = label
+    # CO2 flux
+    sl = ["NetEcosystemExchange", label]
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "Fco2", default="Fco2")
+    info[label]["Fco2"] = opt
+    # ecosystem respiration
+    default = label.replace("NEE", "ER")
+    opt = pfp_utils.get_keyvaluefromcf(cf, sl, "ER", default=default)
+    info[label]["ER"] = opt
+    # create an empty series in ds if the output series doesn't exist yet
+    if info[label]["output"] not in list(ds.series.keys()):
+        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
+        pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
     return
 
 def rpSOLO_createdict(cf, ds, l6_info, output, called_by, flag_code):
@@ -2084,3 +1842,295 @@ def rpSOLO_createdict(cf, ds, l6_info, output, called_by, flag_code):
             pfp_utils.CreateVariable(ds, variable)
     return
 
+def rp_createdict(cf, ds, l6_info, output, called_by, flag_code):
+    """
+    Purpose:
+     Creates a dictionary in ds to hold information about estimating ecosystem
+     respiration
+    Usage:
+    Side effects:
+    Author: PRI, IM updated to prevent code duplication of LT and LL methods
+    Date August 2019
+    """
+
+    # Create a dict to set the description_l6 attribute
+    description_dict = {'ERUsingLasslop': "Modeled by Lasslop et al. (2010)",
+                        'ERUsingLloydTaylor': "Modeled by Lloyd-Taylor (1994)"}
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    # create the settings directory
+    if called_by not in l6_info.keys():
+        l6_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
+    # get the info section
+    rp_createdict_info(cf, ds, l6_info[called_by], called_by)
+    if ds.returncodes["value"] != 0:
+        return
+    # get the outputs section
+    rp_createdict_outputs(cf, l6_info[called_by], output, called_by, flag_code)
+    # create an empty series in ds if the output series doesn't exist yet
+    Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
+    model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
+    for model_output in model_outputs:
+        if model_output not in ds.series.keys():
+            # create an empty variable
+            variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
+            variable["Attr"]["long_name"] = "Ecosystem respiration"
+            variable["Attr"]["drivers"] = l6_info[called_by]["outputs"][model_output]["drivers"]
+            variable["Attr"]["description_l6"] = description_dict[called_by]
+            variable["Attr"]["target"] = l6_info[called_by]["info"]["target"]
+            variable["Attr"]["source"] = l6_info[called_by]["info"]["source"]
+            variable["Attr"]["units"] = Fc["Attr"]["units"]
+            pfp_utils.CreateVariable(ds, variable)
+    return
+
+def rp_createdict_info(cf, ds, erl, called_by):
+    """
+    Purpose:
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+          June 2019 - modified for new l5_info structure
+    """
+    # Create a dict to set the file_suffix and extension
+    suffix_dict = {'ERUsingLasslop': "_Lasslop.xlsx",
+                   'ERUsingLloydTaylor': "_LloydTaylor.xlsx"}
+    # reset the return message and code
+    ds.returncodes["message"] = "OK"
+    ds.returncodes["value"] = 0
+    # time step
+    time_step = int(ds.globalattributes["time_step"])
+    # get the level of processing
+    level = ds.globalattributes["processing_level"]
+    # local pointer to the datetime series
+    ldt = ds.series["DateTime"]["Data"]
+    # add an info section to the info["solo"] dictionary
+    erl["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    erl["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    erl["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    erl["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    erl["info"]["called_by"] = called_by
+    erl["info"]["time_step"] = time_step
+    erl["info"]["source"] = "Fco2"
+    erl["info"]["target"] = "ER"
+    # check to see if this is a batch or an interactive run
+    call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
+    erl["info"]["call_mode"] = call_mode
+    erl["gui"]["show_plots"] = False
+    if call_mode.lower() == "interactive":
+        erl["gui"]["show_plots"] = True
+    # truncate to last date in Imports?
+    truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
+    erl["info"]["truncate_to_imports"] = truncate
+    # number of records per day and maximum lags
+    nperhr = int(float(60)/time_step + 0.5)
+    erl["info"]["nperday"] = int(float(24)*nperhr + 0.5)
+    erl["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
+    # Get the data path
+    path_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path")
+    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename")
+    file_name = file_name.replace(".nc", suffix_dict[called_by])
+    erl['info']['data_file_path'] = os.path.join(path_name, file_name)
+    # get the plot path
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, level, "")
+    if not os.path.exists(plot_path):
+        try:
+            os.makedirs(plot_path)
+        except OSError:
+            msg = "Unable to create the plot path " + plot_path + "\n"
+            msg = msg + "Press 'Quit' to edit the control file.\n"
+            msg = msg + "Press 'Continue' to use the default path.\n"
+            result = pfp_gui.MsgBox_ContinueOrQuit(msg, title="Warning: L6 plot path")
+            if result.clickedButton().text() == "Quit":
+                # user wants to edit the control file
+                msg = " Quitting L6 to edit control file"
+                logger.warning(msg)
+                ds.returncodes["message"] = msg
+                ds.returncodes["value"] = 1
+            else:
+                plot_path = "./plots/"
+                cf["Files"]["plot_path"] = "./plots/"
+    erl["info"]["plot_path"] = plot_path
+    return
+
+def rp_createdict_outputs(cf, erl, target, called_by, flag_code):
+    """Where's the docstring ya bastard?!"""
+    var_dict = {'ERUsingLasslop': "LL",
+                'ERUsingLloydTaylor': "LT"}
+    eo = erl["outputs"]
+    # loop over the outputs listed in the control file
+    section = "EcosystemRespiration"
+    outputs = cf[section][target][called_by].keys()
+    for output in outputs:
+        # create the dictionary keys for this series
+        eo[output] = {}
+        # get the target
+        sl = [section, target, called_by, output]
+        eo[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
+        eo[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="Fco2")
+        # add the flag_code
+        eo[output]["flag_code"] = flag_code
+        # list of drivers
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Ta")
+        eo[output]["drivers"] = pfp_utils.string_to_list(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "weights_air_soil", default="1")
+        eo[output]["weights_air_soil"] = pfp_utils.string_to_list(opt)
+        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "output_plots", default="False")
+        eo[output]["output_plots"] = (opt == "True")
+        # fit statistics for plotting later on
+        eo[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
+                                 "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
+                                 "Avg (obs)":[],"Avg (" + var_dict[called_by] + ")":[],
+                                 "Var (obs)":[],"Var (" + var_dict[called_by] + ")":[],"Var ratio":[],
+                                 "m_ols":[],"b_ols":[]}
+    return
+
+def rp_initplot(**kwargs):
+    # set the margins, heights, widths etc
+    pd = {"margin_bottom":0.075,"margin_top":0.075,"margin_left":0.05,"margin_right":0.05,
+          "xy_height":0.20,"xy_width":0.20,"xyts_space":0.05,"xyts_space":0.05,
+          "ts_width":0.9}
+    # set the keyword arguments
+    for key, value in kwargs.items():
+        pd[key] = value
+    # calculate bottom of the first time series and the height of the time series plots
+    pd["ts_bottom"] = pd["margin_bottom"]+pd["xy_height"]+pd["xyts_space"]
+    pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/float(pd["nDrivers"]+1)
+    return pd
+
+def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
+    """ Plot the results of the respiration run """
+    mode_dict = {'ERUsingLasslop': 'LL', 'ERUsingLloydTaylor': 'LT'}
+    mode = mode_dict[called_by]
+
+    if called_by == 'ERUsingLasslop': mode = 'LL'
+    if called_by == 'ERUsingLloydTaylor': mode = 'LT'
+
+    ieli = iel["info"]
+    ielo = iel["outputs"]
+    # get a local copy of the datetime series
+    if ei == -1:
+        dt = ds.series['DateTime']['Data'][si:]
+    else:
+        dt = ds.series['DateTime']['Data'][si:ei+1]
+    xdt = numpy.array(dt)
+    # get the observed and modelled values
+    obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
+    mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
+    # make the figure
+    if iel["gui"]["show_plots"]:
+        plt.ion()
+    else:
+        plt.ioff()
+    fig = plt.figure(pd["fig_num"], figsize=(13, 8))
+    fig.clf()
+    fig.canvas.set_window_title(target + " (" + mode + "): " + pd["startdate"]
+                                + " to " + pd["enddate"])
+    plt.figtext(0.5, 0.95, pd["title"], ha='center', size=16)
+    # XY plot of the diurnal variation
+    rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
+    ax1 = plt.axes(rect1)
+    # get the diurnal stats of the observations
+    mask = numpy.ma.mask_or(obs.mask, mod.mask)
+    obs_mor = numpy.ma.array(obs, mask=mask)
+    dstats = pfp_utils.get_diurnalstats(dt, obs_mor, ieli)
+    ax1.plot(dstats["Hr"], dstats["Av"], 'b-', label="Obs")
+    # get the diurnal stats of all predictions
+    dstats = pfp_utils.get_diurnalstats(dt, mod, ieli)
+    ax1.plot(dstats["Hr"], dstats["Av"], 'r-', label=mode + "(all)")
+    mod_mor = numpy.ma.masked_where(numpy.ma.getmaskarray(obs) == True, mod, copy=True)
+    dstats = pfp_utils.get_diurnalstats(dt, mod_mor, ieli)
+    ax1.plot(dstats["Hr"], dstats["Av"], 'g-', label=mode + "(obs)")
+    plt.xlim(0, 24)
+    plt.xticks([0, 6, 12, 18, 24])
+    ax1.set_ylabel(target)
+    ax1.set_xlabel('Hour')
+    ax1.legend(loc='upper right', frameon=False, prop={'size':8})
+    # XY plot of the 30 minute data
+    rect2 = [0.40, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
+    ax2 = plt.axes(rect2)
+    ax2.plot(mod, obs, 'b.')
+    ax2.set_ylabel(target + '_obs')
+    ax2.set_xlabel(target + '_' + mode)
+    # plot the best fit line
+    coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
+    xfit = numpy.ma.array([numpy.ma.minimum.reduce(mod), numpy.ma.maximum.reduce(mod)])
+    yfit = numpy.polyval(coefs, xfit)
+    r = numpy.ma.corrcoef(mod, obs)
+    ax2.plot(xfit, yfit, 'r--', linewidth=3)
+    eqnstr = 'y = %.3fx + %.3f, r = %.3f'%(coefs[0], coefs[1], r[0][1])
+    ax2.text(0.5, 0.875, eqnstr, fontsize=8, horizontalalignment='center', transform=ax2.transAxes)
+    # write the fit statistics to the plot
+    numpoints = numpy.ma.count(obs)
+    numfilled = numpy.ma.count(mod)-numpy.ma.count(obs)
+    diff = mod - obs
+    bias = numpy.ma.average(diff)
+    ielo[output]["results"]["Bias"].append(bias)
+    rmse = numpy.ma.sqrt(numpy.ma.mean((obs-mod)*(obs-mod)))
+    plt.figtext(0.725, 0.225, 'No. points')
+    plt.figtext(0.825, 0.225, str(numpoints))
+    ielo[output]["results"]["No. points"].append(numpoints)
+    plt.figtext(0.725, 0.200, 'No. filled')
+    plt.figtext(0.825, 0.200, str(numfilled))
+    plt.figtext(0.725, 0.175, 'Slope')
+    plt.figtext(0.825, 0.175, str(pfp_utils.round2significant(coefs[0], 4)))
+    ielo[output]["results"]["m_ols"].append(coefs[0])
+    plt.figtext(0.725, 0.150, 'Offset')
+    plt.figtext(0.825, 0.150, str(pfp_utils.round2significant(coefs[1], 4)))
+    ielo[output]["results"]["b_ols"].append(coefs[1])
+    plt.figtext(0.725, 0.125, 'r')
+    plt.figtext(0.825, 0.125, str(pfp_utils.round2significant(r[0][1], 4)))
+    ielo[output]["results"]["r"].append(r[0][1])
+    plt.figtext(0.725, 0.100, 'RMSE')
+    plt.figtext(0.825, 0.100, str(pfp_utils.round2significant(rmse, 4)))
+    ielo[output]["results"]["RMSE"].append(rmse)
+    var_obs = numpy.ma.var(obs)
+    ielo[output]["results"]["Var (obs)"].append(var_obs)
+    var_mod = numpy.ma.var(mod)
+    ielo[output]["results"]["Var (" + mode + ")"].append(var_mod)
+    ielo[output]["results"]["Var ratio"].append(var_obs/var_mod)
+    ielo[output]["results"]["Avg (obs)"].append(numpy.ma.average(obs))
+    ielo[output]["results"]["Avg (" + mode + ")"].append(numpy.ma.average(mod))
+    # time series of drivers and target
+    ts_axes = []
+    rect = [pd["margin_left"], pd["ts_bottom"], pd["ts_width"], pd["ts_height"]]
+    ts_axes.append(plt.axes(rect))
+    ts_axes[0].plot(xdt, obs, 'b.')
+    ts_axes[0].scatter(xdt, obs)
+    ts_axes[0].plot(xdt, mod, 'r-')
+    plt.axhline(0)
+    ts_axes[0].set_xlim(xdt[0], xdt[-1])
+    TextStr = target + '_obs (' + ds.series[target]['Attr']['units'] + ')'
+    ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
+    TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
+    ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
+    for ThisOne, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
+        this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
+        rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
+        ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
+        data, flag, attr = pfp_utils.GetSeriesasMA(ds, ThisOne, si=si, ei=ei)
+        data_notgf = numpy.ma.masked_where(flag != 0, data)
+        data_gf = numpy.ma.masked_where(flag == 0, data)
+        ts_axes[i].plot(xdt, data_notgf, 'b-')
+        ts_axes[i].plot(xdt, data_gf, 'r-')
+        plt.setp(ts_axes[i].get_xticklabels(), visible=False)
+        TextStr = ThisOne + '(' + ds.series[ThisOne]['Attr']['units'] + ')'
+        ts_axes[i].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[i].transAxes)
+    # save a hard copy of the plot
+    sdt = xdt[0].strftime("%Y%m%d")
+    edt = xdt[-1].strftime("%Y%m%d")
+    if not os.path.exists(ieli["plot_path"]):
+        os.makedirs(ieli["plot_path"])
+    figname = (ieli["plot_path"] + pd["site_name"].replace(" ","") +
+               "_" + mode + "_" + pd["label"])
+    figname = figname + "_" + sdt + "_" + edt + '.png'
+    fig.savefig(figname, format='png')
+    # draw the plot on the screen
+    if iel["gui"]["show_plots"]:
+        plt.draw()
+        pfp_utils.mypause(1)
+        plt.ioff()
+    else:
+        plt.close(fig)
+        plt.ion()
+    return

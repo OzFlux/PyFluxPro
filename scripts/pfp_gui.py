@@ -8085,20 +8085,6 @@ class edit_cfg_L6(QtWidgets.QWidget):
         self.tabs = main_gui.tabs
         self.edit_l6_gui()
 
-    def add_er_variable(self):
-        """ Add a variable to the [ER] section."""
-        dict_to_add = {"ERUsingSOLO":{"ER_SOLO_all": {"drivers": "Ta,Ts,Sws",
-                                                      "target": "ER",
-                                                      "output": "ER_SOLO_all"}}}
-        subsection = QtGui.QStandardItem("ER_SOLO")
-        subsection.setEditable(False)
-        self.add_subsubsubsection(subsection, dict_to_add)
-        dict_to_add = {"MergeSeries": {"source": "ER,ER_SOLO_all"}}
-        self.add_subsubsection(subsection, dict_to_add)
-        self.tree.sections["EcosystemRespiration"].appendRow(subsection)
-        # update the tab text with an asterix if required
-        self.update_tab_text()
-
     def add_fileentry(self, item):
         """ Add a new entry to the [Files] section."""
         dict_to_add = {item: "Right click to browse"}
@@ -8162,6 +8148,106 @@ class edit_cfg_L6(QtWidgets.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
+    def add_er_variable(self, method):
+        """ Add a variable to the EcosystemRespiration section."""
+        if method == "SOLO":
+            solo_options = {"drivers": "Ta,Ts,Sws",
+                            "target": "ER"}
+            er_to_add = {"ER_SOLO": {"ERUsingSOLO": {"ER_SOLO_all": solo_options},
+                                     "MergeSeries": {"source": "ER,ER_SOLO_all"}}}
+            nee_to_add = {"NEE_SOLO": {"Fco2": "Fco2", "ER": "ER_SOLO"}}
+            gpp_to_add = {"GPP_SOLO": {"NEE": "NEE_SOLO", "ER": "ER_SOLO"}}
+        elif method == "LT":
+            lt_options = {"drivers": "Ta",
+                          "target": "ER",
+                          "minimum_temperature_spread": 5,
+                          "step_size_days": 5,
+                          "window_size_days": 15,
+                          "minimum_percent_annual": 5,
+                          "minimum_percent_noct_window": 5,
+                          "output_plots": False}
+            er_to_add = {"ER_LT": {"ERUsingLloydTaylor": {"ER_LT_all": lt_options},
+                                     "MergeSeries": {"source": "ER,ER_LT_all"}}}
+            nee_to_add = {"NEE_LT": {"Fco2": "Fco2", "ER": "ER_LT"}}
+            gpp_to_add = {"GPP_LT": {"NEE": "NEE_LT", "ER": "ER_LT"}}
+        elif method == "LL":
+            ll_options = {"drivers": "Fsd,VPD,Ta",
+                          "target": "ER",
+                          "step_size_days": 5,
+                          "window_size_days": 15,
+                          "output_plots": False}
+            er_to_add = {"ER_LL": {"ERUsingLasslop": {"ER_LL_all": ll_options},
+                                     "MergeSeries": {"source": "ER,ER_LL_all"}}}
+            nee_to_add = {"NEE_LL": {"Fco2": "Fco2", "ER": "ER_LL"}}
+            gpp_to_add = {"GPP_LL": {"NEE": "NEE_LL", "ER": "ER_LL"}}
+        else:
+            return
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        section = idx.model().itemFromIndex(idx)
+        for key2 in er_to_add:
+            parent2 = QtGui.QStandardItem(key2)
+            parent2.setEditable(False)
+            for key3 in er_to_add[key2]:
+                parent3 = QtGui.QStandardItem(key3)
+                parent3.setEditable(False)
+                if key3 in ["ERUsingSOLO", "ERUsingLloydTaylor", "ERUsingLasslop"]:
+                    for key4 in er_to_add[key2][key3]:
+                        parent4 = QtGui.QStandardItem(key4)
+                        parent4.setEditable(False)
+                        for key5 in er_to_add[key2][key3][key4]:
+                            val = er_to_add[key2][key3][key4][key5]
+                            child0 = QtGui.QStandardItem(key5)
+                            child0.setEditable(False)
+                            child1 = QtGui.QStandardItem(str(val))
+                            parent4.appendRow([child0, child1])
+                        parent3.appendRow(parent4)
+                elif key3 in ["MergeSeries"]:
+                    for key4 in er_to_add[key2][key3]:
+                        val = er_to_add[key2][key3][key4]
+                        child0 = QtGui.QStandardItem(key4)
+                        child0.setEditable(False)
+                        child1 = QtGui.QStandardItem(val)
+                        parent3.appendRow([child0, child1])
+                parent2.appendRow(parent3)
+            section.appendRow(parent2)
+        # update the NetEcosystemExchange section
+        # iterate over sections to find the NetEcosystemExchange section
+        for i in range(self.model.rowCount()):
+            section = self.model.item(i)
+            if section.text() == "NetEcosystemExchange":
+                break
+        # add the NEE variable
+        for key2 in nee_to_add:
+            parent2 = QtGui.QStandardItem(key2)
+            parent2.setEditable(False)
+            for key3 in nee_to_add[key2]:
+                val = nee_to_add[key2][key3]
+                child0 = QtGui.QStandardItem(key3)
+                child0.setEditable(False)
+                child1 = QtGui.QStandardItem(val)
+                parent2.appendRow([child0, child1])
+            section.appendRow(parent2)
+        # update the GrossPrimaryProduction section
+        # iterate over sections to find the GrossPrimaryProduction section
+        for i in range(self.model.rowCount()):
+            section = self.model.item(i)
+            if section.text() == "GrossPrimaryProductivity":
+                break
+        # add the GPP variable
+        for key2 in gpp_to_add:
+            parent2 = QtGui.QStandardItem(key2)
+            parent2.setEditable(False)
+            for key3 in gpp_to_add[key2]:
+                val = gpp_to_add[key2][key3]
+                child0 = QtGui.QStandardItem(key3)
+                child0.setEditable(False)
+                child1 = QtGui.QStandardItem(val)
+                parent2.appendRow([child0, child1])
+            section.appendRow(parent2)
+        self.update_tab_text()
+
     def add_subsection(self, dict_to_add):
         """ Add a subsection to the model."""
         # get the index of the selected item
@@ -8174,6 +8260,46 @@ class edit_cfg_L6(QtWidgets.QWidget):
             child0.setEditable(False)
             child1 = QtGui.QStandardItem(val)
             section.appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_subsubsection(self, dict_to_add):
+        """ Add a subsubsection to the model."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        subsection = idx.model().itemFromIndex(idx)
+        for key1 in dict_to_add:
+            subsubsection = QtGui.QStandardItem(key1)
+            subsubsection.setEditable(False)
+            for key2 in dict_to_add[key1]:
+                val = str(dict_to_add[key1][key2])
+                child0 = QtGui.QStandardItem(key2)
+                child0.setEditable(False)
+                child1 = QtGui.QStandardItem(val)
+                subsubsection.appendRow([child0, child1])
+            subsection.appendRow(subsubsection)
+        self.update_tab_text()
+
+    def add_subsubsubsection(self, dict_to_add):
+        """ Add a subsubsubsection to the model."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        subsection = idx.model().itemFromIndex(idx)
+        for key3 in dict_to_add:
+            subsubsection = QtGui.QStandardItem(key3)
+            subsubsection.setEditable(False)
+            for key4 in dict_to_add[key3]:
+                subsubsubsection = QtGui.QStandardItem(key4)
+                subsubsubsection.setEditable(False)
+                for val in dict_to_add[key3][key4]:
+                    value = dict_to_add[key3][key4][val]
+                    child0 = QtGui.QStandardItem(val)
+                    child0.setEditable(False)
+                    child1 = QtGui.QStandardItem(str(value))
+                    subsubsubsection.appendRow([child0, child1])
+                subsubsection.appendRow(subsubsubsection)
+            subsection.appendRow(subsubsection)
         self.update_tab_text()
 
     def browse_file_path(self):
@@ -8257,12 +8383,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
             root = self.model.invisibleRootItem()
             for i in range(root.rowCount()):
                 self.section_headings.append(str(root.child(i).text()))
-            if "Imports" not in self.section_headings and selected_text == "Files":
-                self.context_menu.actionAddImportsSection = QtWidgets.QAction(self)
-                self.context_menu.actionAddImportsSection.setText("Add Imports section")
-                self.context_menu.addAction(self.context_menu.actionAddImportsSection)
-                self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
-                add_separator = True
+            #if "Imports" not in self.section_headings and selected_text == "Files":
+                #self.context_menu.actionAddImportsSection = QtWidgets.QAction(self)
+                #self.context_menu.actionAddImportsSection.setText("Add Imports section")
+                #self.context_menu.addAction(self.context_menu.actionAddImportsSection)
+                #self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
+                #add_separator = True
             if selected_text == "Files":
                 # get a list of existing entries in this section
                 existing_entries = self.get_existing_entries()
@@ -8318,11 +8444,22 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionAddGlobalAttribute)
                 self.context_menu.actionAddGlobalAttribute.triggered.connect(self.add_global_attribute)
             elif selected_text in ["EcosystemRespiration"]:
-                pass
-                #self.context_menu.actionAddVariable = QtWidgets.QAction(self)
-                #self.context_menu.actionAddVariable.setText("Add variable")
-                #self.context_menu.addAction(self.context_menu.actionAddVariable)
-                #self.context_menu.actionAddVariable.triggered.connect(self.add_er_variable)
+                existing_entries = self.get_existing_entries2()
+                if "ERUsingSOLO" not in existing_entries:
+                    self.context_menu.actionAddSOLOVariable = QtWidgets.QAction(self)
+                    self.context_menu.actionAddSOLOVariable.setText("Add SOLO variable")
+                    self.context_menu.addAction(self.context_menu.actionAddSOLOVariable)
+                    self.context_menu.actionAddSOLOVariable.triggered.connect(lambda: self.add_er_variable("SOLO"))
+                if "ERUsingLloydTaylor" not in existing_entries:
+                    self.context_menu.actionAddLTVariable = QtWidgets.QAction(self)
+                    self.context_menu.actionAddLTVariable.setText("Add Lloyd-Taylor variable")
+                    self.context_menu.addAction(self.context_menu.actionAddLTVariable)
+                    self.context_menu.actionAddLTVariable.triggered.connect(lambda: self.add_er_variable("LT"))
+                if "ERUsingLasslop" not in existing_entries:
+                    self.context_menu.actionAddLLVariable = QtWidgets.QAction(self)
+                    self.context_menu.actionAddLLVariable.setText("Add Lasslop variable")
+                    self.context_menu.addAction(self.context_menu.actionAddLLVariable)
+                    self.context_menu.actionAddLLVariable.triggered.connect(lambda: self.add_er_variable("LL"))
             elif selected_text in ["NetEcosystemExchange"]:
                 pass
             elif selected_text in ["GrossPrimaryProductivity"]:
@@ -8353,21 +8490,21 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.context_menu.actionRemoveGlobalAttribute.setText("Remove attribute")
                 self.context_menu.addAction(self.context_menu.actionRemoveGlobalAttribute)
                 self.context_menu.actionRemoveGlobalAttribute.triggered.connect(self.remove_item)
-            elif (str(parent.text()) == "NetEcosystemExchange") and (selected_item.column() == 0):
-                self.context_menu.actionRemoveNEEVariable = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveNEEVariable.setText("Remove variable")
-                self.context_menu.addAction(self.context_menu.actionRemoveNEEVariable)
-                self.context_menu.actionRemoveNEEVariable.triggered.connect(self.remove_item)
-            elif (str(parent.text()) == "GrossPrimaryProductivity") and (selected_item.column() == 0):
-                self.context_menu.actionRemoveGPPVariable = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveGPPVariable.setText("Remove variable")
-                self.context_menu.addAction(self.context_menu.actionRemoveGPPVariable)
-                self.context_menu.actionRemoveGPPVariable.triggered.connect(self.remove_item)
+            #elif (str(parent.text()) == "NetEcosystemExchange") and (selected_item.column() == 0):
+                #self.context_menu.actionRemoveNEEVariable = QtWidgets.QAction(self)
+                #self.context_menu.actionRemoveNEEVariable.setText("Remove variable")
+                #self.context_menu.addAction(self.context_menu.actionRemoveNEEVariable)
+                #self.context_menu.actionRemoveNEEVariable.triggered.connect(self.remove_item)
+            #elif (str(parent.text()) == "GrossPrimaryProductivity") and (selected_item.column() == 0):
+                #self.context_menu.actionRemoveGPPVariable = QtWidgets.QAction(self)
+                #self.context_menu.actionRemoveGPPVariable.setText("Remove variable")
+                #self.context_menu.addAction(self.context_menu.actionRemoveGPPVariable)
+                #self.context_menu.actionRemoveGPPVariable.triggered.connect(self.remove_item)
             elif (str(parent.text()) == "EcosystemRespiration") and (selected_item.column() == 0):
                 self.context_menu.actionRemoveERVariable = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveERVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveERVariable)
-                self.context_menu.actionRemoveERVariable.triggered.connect(self.remove_item)
+                self.context_menu.actionRemoveERVariable.triggered.connect(self.remove_er_variable)
         elif level == 2:
             pass
 
@@ -8473,6 +8610,22 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 existing_entries.append(str(selected_item.child(i, 0).text()))
         return existing_entries
 
+    def get_existing_entries2(self):
+        """ Get a list of existing entries in the current section."""
+        # index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from its index
+        selected_item = idx.model().itemFromIndex(idx)
+        # build a list of existing entries
+        existing_entries = []
+        if selected_item.hasChildren():
+            for i in range(selected_item.rowCount()):
+                if selected_item.child(i).hasChildren():
+                    for j in range(selected_item.child(i).rowCount()):
+                        if selected_item.child(i).child(j).text() not in ["MergeSeries"]:
+                            existing_entries.append(str(selected_item.child(i).child(j).text()))
+        return existing_entries
+
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
         found = False
@@ -8539,13 +8692,14 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.sections[key1].setEditable(False)
                 for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
-                    parent2 = QtGui.QStandardItem(key2)
+                    parent2.setEditable(False)
                     for key3 in self.cfg[key1][key2]:
                         parent3 = QtGui.QStandardItem(key3)
                         parent3.setEditable(False)
-                        if key3 in ["ERUsingSOLO", "ERUsingFFNET", "ERUsingLloydTaylor", "ERUsingLasslop"]:
+                        if key3 in ["ERUsingSOLO", "ERUsingLloydTaylor", "ERUsingLasslop"]:
                             for key4 in self.cfg[key1][key2][key3]:
                                 parent4 = QtGui.QStandardItem(key4)
+                                parent4.setEditable(False)
                                 for key5 in self.cfg[key1][key2][key3][key4]:
                                     val = self.cfg[key1][key2][key3][key4][key5]
                                     child0 = QtGui.QStandardItem(key5)
@@ -8605,6 +8759,50 @@ class edit_cfg_L6(QtWidgets.QWidget):
         # update the control file contents
         self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def remove_er_variable(self):
+        """ Remove a variable from the EcosystemRespiration section."""
+        # loop over selected items in the tree
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_text = selected_item.text()
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # don't allow the last ER variable to be deleted
+        if parent.rowCount() == 1:
+            return
+        # remove the row in the EcosystemRespiration section
+        parent.removeRow(selected_item.row())
+        # get the NetEcosystemExchange section
+        for i in range(self.model.rowCount()):
+            section = self.model.item(i)
+            if section.text() == "NetEcosystemExchange":
+                break
+        done_it = False
+        for i in range(section.rowCount()):
+            for j in range(section.child(i).rowCount()):
+                if section.child(i).child(j, 1).text() == selected_text:
+                    section.removeRow(i)
+                    done_it = True
+                    break
+            if done_it:
+                break
+        # get the GrossPrimaryProductivity section
+        for i in range(self.model.rowCount()):
+            section = self.model.item(i)
+            if section.text() == "GrossPrimaryProductivity":
+                break
+        done_it = False
+        for i in range(section.rowCount()):
+            for j in range(section.child(i).rowCount()):
+                if section.child(i).child(j, 1).text() == selected_text:
+                    section.removeRow(i)
+                    done_it = True
+                    break
+            if done_it:
+                break
         self.update_tab_text()
 
     def remove_item(self):
