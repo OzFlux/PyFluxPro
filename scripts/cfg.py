@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.0"
+version_number = "V3.4.1"
+# V3.4.1 - May 2022
+#        - fixed missing data after 2D interpolation in pfp_clim.climatology()
 # V3.4.0 - April 2022
 #        - replaced Ian McHugh's original partitioning code with his "new"
 #          (2019) partitioning code
