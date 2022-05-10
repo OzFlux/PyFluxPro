@@ -15,7 +15,7 @@ from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def do_2dinterpolation(array_2d, tile="no", method="linear"):
+def do_2dinterpolation(array_2d, clim_av, tile="no", method="linear"):
     """
     Takes a 2d array as input and;
      1) tiles this into a 3 x 3 space (9 repeats of the original 2d array in 3 columns and 3 rows)
@@ -57,8 +57,8 @@ def do_2dinterpolation(array_2d, tile="no", method="linear"):
         array_2d_filled = grid_z
     # Check something...
     if WasMA:
-        array_2d_filled = numpy.ma.masked_where(abs(array_2d_filled - numpy.float64(c.missing_value)) < c.eps,
-                                                array_2d_filled)
+        array_2d_filled = numpy.ma.masked_values(array_2d_filled, c.missing_value)
+        array_2d_filled = numpy.ma.masked_invalid(array_2d_filled)
     # Return the filled array
     return array_2d_filled
 
@@ -262,12 +262,24 @@ def climatology(cf):
             # get the data and use the "pad" option to add missing data if required to
             # complete the extra days
             data,f,a = pfp_utils.GetSeriesasMA(ds,ThisOne,si=si_daily,ei=ei_daily,mode="pad")
-            data_daily = data.reshape(nDays_daily,ntsInDay)
+            ldt2,f,a = pfp_utils.GetSeriesasMA(ds,"DateTime",si=si_daily,ei=ei_daily,mode="pad")
+            data_daily = data.reshape(nDays_daily, ntsInDay)
+            ldt2_daily = ldt2.reshape(nDays_daily, ntsInDay)
             xlSheet = xlFile.add_sheet(ThisOne+'(day)')
             write_data_1columnpertimestep(xlSheet, data_daily, ts, startdate=sdate, format_string=fmt_str)
-            data_daily_i = do_2dinterpolation(data_daily)
+            data_daily_i = do_2dinterpolation(data_daily, Av_all)
+
+            idx = numpy.where(numpy.ma.getmaskarray(data_daily_i) == True)
+            month = numpy.array([dt.month-1 for dt in ldt2])
+            month_daily = month.reshape(nDays_daily, ntsInDay)
+            hour = numpy.array([int(2*(dt.hour+float(dt.minute)/float(60))) for dt in ldt2])
+            #hour = numpy.where(hour == 0, 48, hour) - 1
+            hour_daily = hour.reshape(nDays_daily,ntsInDay)
+            data_daily_i2 = data_daily_i.copy()
+            data_daily_i2[idx] = Av_all[hour_daily[idx], month_daily[idx]]
+
             xlSheet = xlFile.add_sheet(ThisOne+'i(day)')
-            write_data_1columnpertimestep(xlSheet, data_daily_i, ts, startdate=sdate, format_string=fmt_str)
+            write_data_1columnpertimestep(xlSheet, data_daily_i2, ts, startdate=sdate, format_string=fmt_str)
         else:
             logger.warning(" Requested variable "+ThisOne+" not in data structure")
             continue

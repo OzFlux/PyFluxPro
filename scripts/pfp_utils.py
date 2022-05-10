@@ -2002,22 +2002,42 @@ def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
         Series = Series[si:ei+1]        # truncate the data
         Flag = Flag[si:ei+1]            # truncate the QC flag
     elif mode=="pad":
+        # we treat the DateTime series differently and pad with real datetimes
+        if ThisOne == "DateTime":
+            ts = int(ds.globalattributes["time_step"])
+            dts = datetime.timedelta(minutes=ts)
+            start_date = datetime.datetime(Series[0].year, Series[0].month, Series[0].day, 0, 0, 0)
+            start_date = start_date + dts
+            end_date = datetime.datetime(Series[-1].year, Series[-1].month, Series[-1].day, 0, 0, 0)
+            if not ((Series[-1].hour == 0) and
+                    (Series[-1].minute == 0) and
+                    (Series[-1].second == 0)):
+                end_date = end_date + datetime.timedelta(days=1)
+            data_start = numpy.array([dt for dt in perdelta(start_date, Series[0]-dts, dts)])
+            flag_start = numpy.zeros(abs(si),dtype=numpy.int32)
+            data_end = numpy.array([dt for dt in perdelta(Series[-1]+dts, end_date, dts)])
+            flag_end = numpy.zeros((ei-(nRecs-1)),dtype=numpy.int32)
+        else:
+            data_start = float(c.missing_value)*numpy.ones(abs(si),dtype=numpy.float64)
+            flag_start = numpy.ones(abs(si),dtype=numpy.int32)
+            data_end = float(c.missing_value)*numpy.ones((ei-(nRecs-1)),dtype=numpy.float64)
+            flag_end = numpy.ones((ei-(nRecs-1)),dtype=numpy.int32)
         # pad with missing data at the start and/or the end of the series
         if si<0 and ei>nRecs-1:
             # pad at the start
-            Series = numpy.append(float(c.missing_value)*numpy.ones(abs(si),dtype=numpy.float64),Series)
-            Flag = numpy.append(numpy.ones(abs(si),dtype=numpy.int32),Flag)
+            Series = numpy.append(data_start, Series)
+            Flag = numpy.append(flag_start, Flag)
             # pad at the end
-            Series = numpy.append(Series,float(c.missing_value)*numpy.ones((ei-(nRecs-1)),dtype=numpy.float64))
-            Flag = numpy.append(Flag,numpy.ones((ei-(nRecs-1)),dtype=numpy.int32))
+            Series = numpy.append(Series, data_end)
+            Flag = numpy.append(Flag, flag_end)
         elif si<0 and ei<=nRecs-1:
             # pad at the start, truncate the end
-            Series = numpy.append(float(c.missing_value)*numpy.ones(abs(si),dtype=numpy.float64),Series[:ei+1])
-            Flag = numpy.append(numpy.ones(abs(si),dtype=numpy.int32),Flag[:ei+1])
+            Series = numpy.append(data_start, Series[:ei+1])
+            Flag = numpy.append(flag_start, Flag[:ei+1])
         elif si>=0 and ei>nRecs-1:
             # truncate at the start, pad at the end
-            Series = numpy.append(Series[si:],float(c.missing_value)*numpy.ones((ei-(nRecs-1)),numpy.float64))
-            Flag = numpy.append(Flag[si:],numpy.ones((ei-(nRecs-1)),dtype=numpy.int32))
+            Series = numpy.append(Series[si:], data_end)
+            Flag = numpy.append(Flag[si:], flag_end)
         elif si>=0 and ei<=nRecs-1:
             # truncate at the start and end
             Series = Series[si:ei+1]
