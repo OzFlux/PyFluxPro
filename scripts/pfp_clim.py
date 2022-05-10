@@ -57,8 +57,8 @@ def do_2dinterpolation(array_2d, tile="no", method="linear"):
         array_2d_filled = grid_z
     # Check something...
     if WasMA:
-        array_2d_filled = numpy.ma.masked_where(abs(array_2d_filled - numpy.float64(c.missing_value)) < c.eps,
-                                                array_2d_filled)
+        array_2d_filled = numpy.ma.masked_values(array_2d_filled, c.missing_value)
+        array_2d_filled = numpy.ma.masked_invalid(array_2d_filled)
     # Return the filled array
     return array_2d_filled
 
@@ -197,17 +197,13 @@ def climatology(cf):
     ds = pfp_io.NetCDFRead(nc_filename)
     if ds.returncodes["value"] != 0: return
     # calculate Fa if it is not in the data structure
-    got_Fa = True
     if "Fa" not in list(ds.series.keys()):
         if "Fn" in list(ds.series.keys()) and "Fg" in list(ds.series.keys()):
             pfp_ts.CalculateAvailableEnergy(ds,Fa_out='Fa',Fn_in='Fn',Fg_in='Fg')
         else:
-            got_Fa = False
             logger.warning(" Fn or Fg not in data struicture")
     # get the time step
     ts = int(ds.globalattributes['time_step'])
-    # get the site name
-    SiteName = ds.globalattributes['site_name']
     # get the datetime series
     dt = ds.series['DateTime']['Data']
     Hdh = numpy.array([(d.hour + d.minute/float(60)) for d in dt])
@@ -226,9 +222,12 @@ def climatology(cf):
     # get the number of time steps in a day and the number of days in the data
     ntsInDay = int(24.0*60.0/float(ts))
     nDays = int(len(ldt))//ntsInDay
-
+    # loop over the variables listed in the control file
     for ThisOne in list(cf['Variables'].keys()):
-        if "AltVarName" in list(cf['Variables'][ThisOne].keys()): ThisOne = cf['Variables'][ThisOne]["AltVarName"]
+        # check to see if an alternative variable name is given
+        if "AltVarName" in list(cf['Variables'][ThisOne].keys()):
+            # and get it if it was
+            ThisOne = cf['Variables'][ThisOne]["AltVarName"]
         if ThisOne in list(ds.series.keys()):
             logger.info(" Doing climatology for "+ThisOne)
             data,f,a = pfp_utils.GetSeriesasMA(ds,ThisOne,si=si,ei=ei)
@@ -246,13 +245,11 @@ def climatology(cf):
             ei_daily = ei
             si_daily = si
             sdate = ldt[0]
-            edate = ldt[-1]
             # is there data after the current end date?
             if dt[-1]>ldt[-1]:
                 # if so, push the end index back by 1 day so it is included
                 ei_daily = ei + ntsInDay
                 nDays_daily = nDays_daily + 1
-                edate = ldt[-1]+datetime.timedelta(days=1)
             # is there data before the current start date?
             if dt[0]<ldt[0]:
                 # if so, push the start index back by 1 day so it is included
@@ -262,10 +259,22 @@ def climatology(cf):
             # get the data and use the "pad" option to add missing data if required to
             # complete the extra days
             data,f,a = pfp_utils.GetSeriesasMA(ds,ThisOne,si=si_daily,ei=ei_daily,mode="pad")
-            data_daily = data.reshape(nDays_daily,ntsInDay)
+            ldt2,f,a = pfp_utils.GetSeriesasMA(ds,"DateTime",si=si_daily,ei=ei_daily,mode="pad")
+            data_daily = data.reshape(nDays_daily, ntsInDay)
             xlSheet = xlFile.add_sheet(ThisOne+'(day)')
             write_data_1columnpertimestep(xlSheet, data_daily, ts, startdate=sdate, format_string=fmt_str)
             data_daily_i = do_2dinterpolation(data_daily)
+            # check to see if the interpolation has left some data unfilled
+            # this can happen if there is missing data at the boundaries of the date x hour
+            # 2D array
+            idx = numpy.where(numpy.ma.getmaskarray(data_daily_i) == True)
+            # fill any missing data in the interpolated array with the monthly climatology
+            month = numpy.array([dt.month-1 for dt in ldt2])
+            month_daily = month.reshape(nDays_daily, ntsInDay)
+            hour = numpy.array([int(2*(dt.hour+float(dt.minute)/float(60))) for dt in ldt2])
+            hour_daily = hour.reshape(nDays_daily,ntsInDay)
+            data_daily_i[idx] = Av_all[hour_daily[idx], month_daily[idx]]
+            # write the interpolated data to the Excel workbook
             xlSheet = xlFile.add_sheet(ThisOne+'i(day)')
             write_data_1columnpertimestep(xlSheet, data_daily_i, ts, startdate=sdate, format_string=fmt_str)
         else:
