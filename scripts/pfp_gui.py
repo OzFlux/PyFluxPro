@@ -241,11 +241,18 @@ class file_explore(QtWidgets.QWidget):
             return
         idx = self.view.selectedIndexes()
         selected_text = sorted([i.data() for i in idx])
-        # plot time series
-        self.context_menu.actionPlotTimeSeries = QtWidgets.QAction(self)
-        self.context_menu.actionPlotTimeSeries.setText("Plot time series")
-        self.context_menu.addAction(self.context_menu.actionPlotTimeSeries)
-        self.context_menu.actionPlotTimeSeries.triggered.connect(lambda: self.plot_timeseries(selected_text))
+        # plot time series, separate axes or grouped
+        menuPlotTimeSeries = QtWidgets.QMenu(self)
+        menuPlotTimeSeries.setTitle("Plot time series")
+        actionPlotTimeSeriesSeparate = QtWidgets.QAction(self)
+        actionPlotTimeSeriesSeparate.setText("Separate")
+        actionPlotTimeSeriesSeparate.triggered.connect(lambda: self.plot_timeseries(selected_text))
+        actionPlotTimeSeriesGrouped = QtWidgets.QAction(self)
+        actionPlotTimeSeriesGrouped.setText("Grouped")
+        actionPlotTimeSeriesGrouped.triggered.connect(lambda: self.plot_timeseries_grouped(selected_text))
+        menuPlotTimeSeries.addAction(actionPlotTimeSeriesSeparate)
+        menuPlotTimeSeries.addAction(actionPlotTimeSeriesGrouped)
+        self.context_menu.addMenu(menuPlotTimeSeries)
         # plot time series of percentiles
         self.context_menu.actionPlotPercentiles = QtWidgets.QAction(self)
         self.context_menu.actionPlotPercentiles.setText("Plot percentiles")
@@ -421,6 +428,29 @@ class file_explore(QtWidgets.QWidget):
         # go ahead and plot
         try:
             pfp_plot.plot_explore_timeseries(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting time series, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+        return
+
+    def plot_timeseries_grouped(self, labels):
+        """ Wrapper for plot time series function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.ds.series.keys()):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        try:
+            pfp_plot.plot_explore_timeseries_grouped(self.ds, labels)
             # increment the figure number
             self.figure_number += 1
         except Exception:
@@ -5966,6 +5996,12 @@ class edit_cfg_L4(QtWidgets.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
+    def add_keepintermediateseries(self):
+        """ Add KeepIntermediateSeries to the [Options] section."""
+        dict_to_add = {"KeepIntermediateSeries": "No"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
     def add_maxgapinterpolate(self):
         """ Add MaxGapInterpolate to the [Options] section."""
         dict_to_add = {"MaxGapInterpolate": "3"}
@@ -6154,6 +6190,27 @@ class edit_cfg_L4(QtWidgets.QWidget):
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
 
+    def browse_imports_file(self):
+        """ Browse for the imports file path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # set the file filter
+        file_filter = "*.nc"
+        # get the file path from the selected item
+        file_path = os.path.split(str(idx.data()))[0]
+        file_path = os.path.join(file_path,"")
+        # dialog for open file
+        new_file = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an Imports file ...",
+                                                     directory=file_path, filter=file_filter)[0]
+        # update the model
+        if len(str(new_file)) > 0:
+            new_file = QtCore.QDir.toNativeSeparators(str(new_file))
+            parent.child(selected_item.row(), 1).setText(new_file)
+
     def browse_input_file(self):
         """ Browse for the input data file path."""
         # get the index of the selected item
@@ -6271,6 +6328,11 @@ class edit_cfg_L4(QtWidgets.QWidget):
                     self.context_menu.actionAddInterpolateType.setText("InterpolateType")
                     self.context_menu.addAction(self.context_menu.actionAddInterpolateType)
                     self.context_menu.actionAddInterpolateType.triggered.connect(self.add_interpolatetype)
+                if "KeepIntermediateSeries" not in existing_entries:
+                    self.context_menu.actionKeepIntermediateSeries = QtWidgets.QAction(self)
+                    self.context_menu.actionKeepIntermediateSeries.setText("KeepIntermediateSeries")
+                    self.context_menu.addAction(self.context_menu.actionKeepIntermediateSeries)
+                    self.context_menu.actionKeepIntermediateSeries.triggered.connect(self.add_keepintermediateseries)
             elif selected_text == "GUI":
                 self.context_menu.actionRemoveGUISection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveGUISection.setText("Remove section")
@@ -6343,6 +6405,17 @@ class edit_cfg_L4(QtWidgets.QWidget):
                         self.context_menu.actionChangeInterpolateType.setText("Akima")
                         self.context_menu.addAction(self.context_menu.actionChangeInterpolateType)
                         self.context_menu.actionChangeInterpolateType.triggered.connect(lambda:self.change_selected_text("Akima"))
+                elif (selected_item.column() == 1) and (key in ["KeepIntermediateSeries"]):
+                    if selected_text != "Yes":
+                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeOption.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionChangeOption)
+                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("Yes"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeOption.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeOption)
+                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("No"))
             elif (str(parent.text()) in ["Drivers"]):
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -6582,7 +6655,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
                     cfg[key1][key2] = val2
-            elif key1 in ["GUI"]:
+            elif key1 in ["GUI", "Imports"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
@@ -6690,7 +6763,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
-            elif key1 in ["GUI"]:
+            elif key1 in ["GUI", "Imports"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 self.sections[key1].setEditable(False)
