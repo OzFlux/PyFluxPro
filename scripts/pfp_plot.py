@@ -681,6 +681,40 @@ def plot_explore_timeseries(ds, labels):
     plt.ioff()
     return
 
+def plot_explore_timeseries_grouped(ds, labels):
+    """ Plot time series of grouped variables."""
+    groups = sorted(list(set([l.split("_")[0] for l in labels])))
+    site_name = ds.globalattributes["site_name"]
+    nrows = len(groups)
+    colors = ["blue","red","green","yellow","magenta","black","cyan","brown"]
+    plt.ion()
+    fig, axs = plt.subplots(nrows=nrows, sharex=True, figsize=(10.9, 7.5))
+    fig.subplots_adjust(wspace=0.0, hspace=0.05, left=0.1, right=0.95, top=0.95, bottom=0.1)
+    if nrows == 1: axs = [axs]
+    fig.canvas.manager.set_window_title(site_name)
+    for n, group in enumerate(groups):
+        group_labels = sorted([l for l in labels if group in l])
+        for m, label in enumerate(group_labels):
+            var = pfp_utils.GetVariable(ds, label)
+            sdt = var["DateTime"][0]
+            edt = var["DateTime"][-1]
+            axs[n].plot(var["DateTime"], var["Data"], label=label,
+                        marker=".", color=colors[numpy.mod(m, 8)])
+            if m == 0:
+                axs[n].set_ylabel("(" + var["Attr"]["units"] + ")")
+        axs[n].legend()
+        axs[n].set_xlim([sdt, edt])
+        if n == 0:
+            title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+            title_str += edt.strftime("%Y-%m-%d")
+            axs[n].set_title(title_str)
+        if n == nrows-1:
+            axs[n].set_xlabel("Date")
+    plt.draw()
+    pfp_utils.mypause(0.5)
+    plt.ioff()
+    return
+
 def plottimeseries(cf, nFig, dsa, dsb):
     SiteName = dsa.globalattributes['site_name']
     Level = dsb.globalattributes['processing_level']
