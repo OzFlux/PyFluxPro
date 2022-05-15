@@ -8,6 +8,7 @@ import traceback
 # 3rd party modules
 from configobj import ConfigObj
 from PyQt5 import QtCore, QtGui, QtWidgets
+#from siphon.catalog import TDSCatalog
 # PFP modules
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
@@ -18,455 +19,219 @@ from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-class myMessageBox(QtWidgets.QMessageBox):
-    def __init__(self, msg, title="Information", parent=None):
-        super(myMessageBox, self).__init__(parent)
-        if title == "Critical":
-            self.setIcon(QtWidgets.QMessageBox.Critical)
-        elif title == "Warning":
-            self.setIcon(QtWidgets.QMessageBox.Warning)
-        else:
-            self.setIcon(QtWidgets.QMessageBox.Information)
-        self.setText(msg)
-        self.setWindowTitle(title)
-        self.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        self.exec_()
+class display_thredds_tree(QtWidgets.QWidget):
+    def __init__(self, main_gui, catalogs, thredds, info):
+        super(display_thredds_tree, self).__init__()
 
-class MsgBox_ContinueOrQuit(QtWidgets.QMessageBox):
-    def __init__(self, msg, title="Information", parent=None):
-        super(MsgBox_ContinueOrQuit, self).__init__(parent)
-        if title == "Critical":
-            self.setIcon(QtWidgets.QMessageBox.Critical)
-        elif title == "Warning":
-            self.setIcon(QtWidgets.QMessageBox.Warning)
-        else:
-            self.setIcon(QtWidgets.QMessageBox.Information)
-        self.setText(msg)
-        self.setWindowTitle(title)
-        self.setStandardButtons(QtWidgets.QMessageBox.Yes |
-                                QtWidgets.QMessageBox.No)
-        self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
-        self.button(QtWidgets.QMessageBox.No).setText("Quit")
-        self.setModal(False)
-        self.show()
-        self.exec_()
+        self.main_gui = main_gui
+        self.catalogs = catalogs
+        self.thredds = thredds
+        self.info = info
 
-class MsgBox_Quit(QtWidgets.QMessageBox):
-    def __init__(self, msg, title="Information", parent=None):
-        super(MsgBox_Quit, self).__init__(parent)
-        if title in ["Critical", "Error"]:
-            self.setIcon(QtWidgets.QMessageBox.Critical)
-        elif title == "Warning":
-            self.setIcon(QtWidgets.QMessageBox.Warning)
-        else:
-            self.setIcon(QtWidgets.QMessageBox.Information)
-        self.setText(msg)
-        self.setWindowTitle(title)
-        self.setStandardButtons(QtWidgets.QMessageBox.No)
-        self.button(QtWidgets.QMessageBox.No).setText("Quit")
-        self.setModal(False)
-        self.show()
-        self.exec_()
-
-class MsgBox_Continue(QtWidgets.QMessageBox):
-    def __init__(self, msg, title="Information", parent=None):
-        super(MsgBox_Continue, self).__init__(parent)
-        if title in ["Critical", "Error"]:
-            self.setIcon(QtWidgets.QMessageBox.Critical)
-        elif title == "Warning":
-            self.setIcon(QtWidgets.QMessageBox.Warning)
-        else:
-            self.setIcon(QtWidgets.QMessageBox.Information)
-        self.setText(msg)
-        self.setWindowTitle(title)
-        self.setStandardButtons(QtWidgets.QMessageBox.Yes)
-        self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
-        self.setModal(False)
-        self.show()
-        self.exec_()
-
-class myTreeView(QtWidgets.QTreeView):
-    """
-    Purpose:
-     Subclass of QTreeView with the dragEnterEvent() and dropEvent() methods overloaded
-     to constrain drag and drop moves within the control file. The following drag
-     and drop rules are implemented:
-     1) items can only be dropped within the section from which they originate.
-     2) items can't be dropped on top of other items.
-    Usage:
-     view = myTreeView()
-    Author: PRI
-    Date: August 2020
-    """
-    def __init__(self):
-        QtWidgets.QTreeView.__init__(self)
-        # disable multiple selections
-        self.setSelectionMode(self.SingleSelection)
-        # enable selction of single cells
-        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
-        # enable drag and drop as internal move only
-        self.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
-        # enable drag and drop
-        self.setDragEnabled(True)
-        self.setAcceptDrops(True)
-        self.setDropIndicatorShown(True)
-        # rows have alternating colours and headers
-        self.setAlternatingRowColors(True)
-        self.setHeaderHidden(False)
-        # create info dictionary
-        self.info = {"one_line_sections": ["Files", "Global", "Options", "Soil", "Massman",
-                                           "ustar_threshold", "concatenate", "In"]}
-
-    def dragEnterEvent(self, event):
-        """
-        Purpose:
-         Re-implement the standard dragEnterEvent to get the behaviour we want.
-        Usage:
-        Author: PRI
-        Date: August 2020
-        """
-        # wrap in a try ... except to trap unforseen events (quick but dirty)
-        try:
-            self.setDropIndicatorShown(True)
-            # index of selected item
-            idxs = self.selectedIndexes()[0]
-            # only enable event if user has clicked in first column
-            if idxs.column() == 0:
-                # save some stuff needed for the drop event
-                self.info["source_index"] = idxs
-                self.info["source_item"] = idxs.model().itemFromIndex(idxs)
-                self.info["source_parent"] = self.info["source_item"].parent()
-                source_parent = self.info["source_parent"]
-                self.info["source_key"] = QtGui.QStandardItem(source_parent.child(idxs.row(),0).text())
-                # second column only available if section in "one_line_sections"
-                if self.info["source_parent"].text() in self.info["one_line_sections"]:
-                    self.info["source_value"] = QtGui.QStandardItem(source_parent.child(idxs.row(),1).text())
-                else:
-                    self.info["source_value"] = QtGui.QStandardItem("")
-                # accept this event
-                event.accept()
-            else:
-                # ignore everything else
-                event.ignore()
-        except:
-            event.ignore()
-
-    def dropEvent(self, event):
-        """
-        Purpose:
-         Re-implement the standard dropEvent to get the behaviour we want.
-        Usage:
-        Author: PRI
-        Date: August 2020
-        """
-        # wrap in a try ... except to trap unforseen events (dirty coding)
-        try:
-            # index of the item under the drop
-            idxd = self.indexAt(event.pos())
-            # save so useful stuff
-            self.info["destination_index"] = idxd
-            self.info["destination_item"] = idxd.model().itemFromIndex(idxd)
-            self.info["destination_parent"] = self.info["destination_item"].parent()
-            destination_parent_text = self.info["destination_parent"].text()
-            source_parent_text = self.info["source_parent"].text()
-            # only allow drag and drop within the same section
-            if (destination_parent_text == source_parent_text):
-                # don't allow drop on another item
-                if (self.dropIndicatorPosition() != QtWidgets.QAbstractItemView.OnItem):
-                    # use special drop event code for one line sections
-                    if self.info["source_parent"].text() in self.info["one_line_sections"]:
-                        idxs = self.info["source_index"]
-                        key = self.info["source_key"]
-                        value = self.info["source_value"]
-                        self.info["source_parent"].removeRow(idxs.row())
-                        self.info["source_parent"].insertRow(idxd.row(), [key, value])
-                        event.accept()
-                    else:
-                        # use standard drop event code for everything else
-                        QtWidgets.QTreeView.dropEvent(self, event)
-                else:
-                    # ignore everything else
-                    event.ignore()
-            else:
-                event.ignore()
-        except:
-            event.ignore()
-        # refresh the GUI
-        self.model().layoutChanged.emit()
-
-class myTxtBox(QtWidgets.QInputDialog):
-    def __init__(self, title="", prompt="", parent=None):
-        super(myTxtBox, self).__init__(parent)
-        self.getText(None, title, prompt, QtWidgets.QLineEdit.Normal,"")
-
-class file_explore(QtWidgets.QWidget):
-    def __init__(self, main_gui):
-        super(file_explore, self).__init__()
-        self.ds = main_gui.ds
-        self.tabs = main_gui.tabs
-        self.figure_number = 0
+        self.view = QtWidgets.QTreeView()
         self.view = QtWidgets.QTreeView()
         self.model = QtGui.QStandardItemModel()
+        self.view.setModel(self.model)
+
         self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.view.customContextMenuRequested.connect(self.context_menu)
+        self.view.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        self.view.setAlternatingRowColors(True)
         self.view.doubleClicked.connect(self.double_click)
+        self.view.setHeaderHidden(False)
+        self.view.expanded.connect(self.expanded)
         vbox = QtWidgets.QVBoxLayout()
         vbox.addWidget(self.view)
         self.setLayout(vbox)
         self.setGeometry(300, 300, 600, 400)
-        self.view.setAlternatingRowColors(True)
-        self.view.setHeaderHidden(False)
-        self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
-        self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.view.setModel(self.model)
         self.get_model_from_data()
         self.view.setColumnWidth(0, 200)
-        # expand the "Variables" section
-        for row in range(self.model.rowCount()):
-            section = self.model.item(row)
-            if section.text() in ["Variables"]:
-                idx = self.model.index(row, 0)
-                self.view.expand(idx)
-
-    def double_click(self):
-        """ Save the selected text on double click events."""
-        idx = self.view.selectedIndexes()
-        self.double_click_selected_text = idx[0].data()
-        return
 
     def context_menu(self, position):
+        """ Right click context menu."""
+        # get a menu
         self.context_menu = QtWidgets.QMenu()
+        # get the index of the selected item
         if len(self.view.selectedIndexes()) == 0:
             # trap right click when nothing is selected
             return
-        idx = self.view.selectedIndexes()
-        selected_text = sorted([i.data() for i in idx])
-        # plot time series, separate axes or grouped
-        menuPlotTimeSeries = QtWidgets.QMenu(self)
-        menuPlotTimeSeries.setTitle("Plot time series")
-        actionPlotTimeSeriesSeparate = QtWidgets.QAction(self)
-        actionPlotTimeSeriesSeparate.setText("Separate")
-        actionPlotTimeSeriesSeparate.triggered.connect(lambda: self.plot_timeseries(selected_text))
-        actionPlotTimeSeriesGrouped = QtWidgets.QAction(self)
-        actionPlotTimeSeriesGrouped.setText("Grouped")
-        actionPlotTimeSeriesGrouped.triggered.connect(lambda: self.plot_timeseries_grouped(selected_text))
-        menuPlotTimeSeries.addAction(actionPlotTimeSeriesSeparate)
-        menuPlotTimeSeries.addAction(actionPlotTimeSeriesGrouped)
-        self.context_menu.addMenu(menuPlotTimeSeries)
-        # plot time series of percentiles
-        self.context_menu.actionPlotPercentiles = QtWidgets.QAction(self)
-        self.context_menu.actionPlotPercentiles.setText("Plot percentiles")
-        self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
-        self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selected_text))
-        # plot fingerprints
-        if self.ds.globalattributes["time_step"] not in ["daily", "monthly", "annual"]:
-            self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
-            self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
-            self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
-            self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selected_text))
-
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the level of the selected item
+        level = self.get_level_selected_item()
+        if level == 1:
+            pass
+        elif level == 2:
+            pass
+        elif level == 3 and selected_item.column() == 1:
+            self.context_menu.actionOpenTHREDDSFile = QtWidgets.QAction(self)
+            self.context_menu.actionOpenTHREDDSFile.setText("Open")
+            self.context_menu.addAction(self.context_menu.actionOpenTHREDDSFile)
+            file_url = self.get_dodsC_file_url()
+            #print(file_url)
+            arg = lambda: self.main_gui.file_open_thredds_file(file_url)
+            self.context_menu.actionOpenTHREDDSFile.triggered.connect(arg)
+        else:
+            pass
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
+        return
 
-    def get_data_from_model(self):
-        """ Iterate over the model and get the data.  Allows editing of attributes."""
-        model = self.model
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            key1 = str(section.text())
-            if key1 in ["Global attributes"]:
-                # sections with only 1 level
-                for j in range(section.rowCount()):
-                    key2 = str(section.child(j, 0).text())
-                    val2 = str(section.child(j, 1).text())
-                    self.ds.globalattributes[key2] = val2
-            elif key1 in ["Variables"]:
-                for j in range(section.rowCount()):
-                    variable_section = section.child(j)
-                    label = variable_section.text()
-                    for k in range(variable_section.rowCount()):
-                        key2 = str(variable_section.child(k, 0).text())
-                        val2 = str(variable_section.child(k, 1).text())
-                        self.ds.series[label]["Attr"][key2] = val2
-            else:
-                msg = " Unrecognised object (" + key1 + ") in netCDF file"
-                msg += ", skipping ..."
-                logger.warning(msg)
-        return self.ds
+    def double_click(self):
+        pass
+
+    def expanded(self, idx):
+        self.sites = sorted(list(self.thredds["files"].keys()))
+        if idx.data() in self.sites:
+            self.get_versions_for_site(idx)
+        elif idx.data() in self.versions:
+            self.get_levels_for_version(idx)
+        elif idx.data() in self.levels:
+            self.get_proc_type_for_level(idx)
+
+    def get_level_selected_item(self):
+        """ Get the level of the selected item."""
+        level = 0
+        idx = self.view.selectedIndexes()[0]
+        while idx.parent().isValid():
+            idx = idx.parent()
+            level += 1
+        return level
+
+    def get_dodsC_file_url(self):
+        """ Get the level of the selected item."""
+        level = 0
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        local_path = [selected_item.parent().child(selected_item.row(), 0).text()]
+        while idx.parent().isValid():
+            idx = idx.parent()
+            local_path.append(idx.data())
+            level += 1
+        local_path.reverse()
+        file_url = self.info["dodsC_url"] + "/".join(local_path) + "/" + selected_item.text()
+        return file_url
 
     def get_model_from_data(self):
-        self.model.setHorizontalHeaderLabels(['Variable', 'long_name'])
-        self.model.itemChanged.connect(self.handleItemChanged)
-        gattrs = sorted(list(self.ds.globalattributes.keys()))
-        long_name = QtGui.QStandardItem("")
-        section = QtGui.QStandardItem("Global attributes")
-        section.setEditable(False)
-        for gattr in gattrs:
-            value = str(self.ds.globalattributes[gattr])
-            child0 = QtGui.QStandardItem(gattr)
-            child1 = QtGui.QStandardItem(value)
-            section.appendRow([child0, child1])
-        self.model.appendRow([section, long_name])
-        labels = sorted(list(self.ds.series.keys()))
-        variables_section = QtGui.QStandardItem("Variables")
-        variables_section.setEditable(False)
-        for label in labels:
-            var = pfp_utils.GetVariable(self.ds, label)
-            long_name = QtGui.QStandardItem(var["Attr"]["long_name"])
-            variable_section = QtGui.QStandardItem(label)
-            # some variable names are not editable
-            if label in ["DateTime", "time"]:
-                variable_section.setEditable(False)
-            for attr in var["Attr"]:
-                value = str(var["Attr"][attr])
-                child0 = QtGui.QStandardItem(attr)
-                child1 = QtGui.QStandardItem(value)
-                variable_section.appendRow([child0, child1])
-            variables_section.appendRow([variable_section, long_name])
-        self.model.appendRow([variables_section, QtGui.QStandardItem("")])
+        self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
+        sites = sorted(list(self.thredds["files"].keys()))
+        for site in sites:
+            self.site_section = QtGui.QStandardItem(site)
+            self.site_section.setEditable(False)
+            versions = sorted(list(self.thredds["files"][site].keys()))
+            for version in versions:
+                self.version_section = QtGui.QStandardItem(version)
+                self.version_section.setEditable(False)
+                levels = sorted(list(self.thredds["files"][site][version].keys()))
+                for level in levels:
+                    self.level_section = QtGui.QStandardItem(level)
+                    self.level_section.setEditable(False)
+                    processings = sorted(list(self.thredds["files"][site][version][level].keys()))
+                    for processing in processings:
+                        file_name = self.thredds["files"][site][version][level][processing]
+                        if isinstance(file_name, list):
+                            file_name = file_name[0]
+                        if len(file_name) == 0:
+                            continue
+                        child0 = QtGui.QStandardItem(processing)
+                        child0.setEditable(False)
+                        child1 = QtGui.QStandardItem(file_name)
+                        child1.setEditable(False)
+                        self.level_section.appendRow([child0, child1])
+                    self.version_section.appendRow(self.level_section)
+                self.site_section.appendRow(self.version_section)
+            self.model.appendRow(self.site_section)
+
+    def get_versions_for_site(self, idx):
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_item.removeRows(0, selected_item.rowCount())
+        site = selected_item.text()
+        self.thredds["files"][site] = {}
+        self.thredds["urls"][site] = {}
+        self.catalogs[site] = {"catalog": self.catalogs["sites"].catalog_refs[site], "versions": {}}
+        self.versions = self.catalogs[site]["catalog"].follow().catalog_refs
+        for version in self.versions:
+            self.thredds["files"][site][version] = {"level": {"default": "dummy.nc"}}
+            self.thredds["urls"][site][version] = {"level": {"default": "https://"}}
+            self.version_section = QtGui.QStandardItem(version)
+            self.version_section.setEditable(False)
+            levels = sorted(list(self.thredds["files"][site][version].keys()))
+            for level in levels:
+                self.level_section = QtGui.QStandardItem(level)
+                self.level_section.setEditable(False)
+                processings = sorted(list(self.thredds["files"][site][version][level].keys()))
+                for processing in processings:
+                    file_name = self.thredds["files"][site][version][level][processing]
+                    if isinstance(file_name, list):
+                        file_name = file_name[0]
+                    if len(file_name) == 0:
+                        continue
+                    child0 = QtGui.QStandardItem(processing)
+                    child0.setEditable(False)
+                    child1 = QtGui.QStandardItem(file_name)
+                    child1.setEditable(False)
+                    self.level_section.appendRow([child0, child1])
+                self.version_section.appendRow(self.level_section)
+            selected_item.appendRow(self.version_section)
         return
 
-    def handleItemChanged(self, item):
-        """
-        Purpose:
-         Handler for when view items are edited.
-         Supported editing functions are:
-          Rename a variable
-          Rename a global or a variable attribute
-          Change the value of a global or variable attribute
-        """
-        # get a list of variables in the data structure
-        labels = list(self.ds.series.keys())
-        # check to see if the selected text before the change was a variable name
-        if self.double_click_selected_text in labels:
-            # if it was, rename the variable in the data structure
-            idx = self.view.selectedIndexes()
-            new_label = idx[0].data()
-            old_label = self.double_click_selected_text
-            self.ds.series[new_label] = self.ds.series.pop(old_label)
-        else:
-            # renaming attributes or changing their value is handled when the data is
-            # read back from the model by self.get_data_from_model()
-            pass
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        self.update_tab_text()
+    def get_levels_for_version(self, idx):
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_item.removeRows(0, selected_item.rowCount())
+        version = selected_item.text()
+        site = selected_item.parent().text()
+        catalog = self.catalogs[site]["catalog"].follow().catalog_refs[version]
+        self.catalogs[site]["versions"][version] = {"catalog": catalog, "levels": {}}
+        self.levels = self.catalogs[site]["versions"][version]["catalog"].follow().catalog_refs
+        for level in self.levels:
+            self.thredds["files"][site][version] = {level: {"default": "dummy.nc"}}
+            self.thredds["urls"][site][version] = {level: {"default": "https://"}}
+            self.level_section = QtGui.QStandardItem(level)
+            self.level_section.setEditable(False)
+            processings = sorted(list(self.thredds["files"][site][version][level].keys()))
+            for processing in processings:
+                file_name = self.thredds["files"][site][version][level][processing]
+                if isinstance(file_name, list):
+                    file_name = file_name[0]
+                if len(file_name) == 0:
+                    continue
+                child0 = QtGui.QStandardItem(processing)
+                child0.setEditable(False)
+                child1 = QtGui.QStandardItem(file_name)
+                child1.setEditable(False)
+                self.level_section.appendRow([child0, child1])
+            selected_item.appendRow(self.level_section)
         return
 
-    def plot_histograms(self, labels):
-        """ Wrapper for plot histograms function."""
-        # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.ds.series.keys()):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
-            logger.warning(msg)
-            return
-        # go ahead and plot
-        pfp_plot.plot_explore_histograms(self.ds, labels)
-        # increment the figure number
-        self.figure_number += 1
-        return
-
-    def plot_fingerprints(self, labels):
-        """ Wrapper for plot fingerprints function."""
-        # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.ds.series.keys()):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
-            logger.warning(msg)
-            return
-        # go ahead and plot
-        try:
-            pfp_plot.plot_explore_fingerprints(self.ds, labels)
-            # increment the figure number
-            self.figure_number += 1
-        except Exception:
-            error_message = " An error occured while plotting fingerprints, see below for details ..."
-            logger.error(error_message)
-            error_message = traceback.format_exc()
-            logger.error(error_message)
-        return
-
-    def plot_percentiles(self, labels):
-        """ Wrapper for plot percentiles function."""
-        # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.ds.series.keys()):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
-            logger.warning(msg)
-            return
-        # go ahead and plot
-        try:
-            pfp_plot.plot_explore_percentiles(self.ds, labels)
-            # increment the figure number
-            self.figure_number += 1
-        except Exception:
-            error_message = " An error occured while plotting percentile time series, see below for details ..."
-            logger.error(error_message)
-            error_message = traceback.format_exc()
-            logger.error(error_message)
-        return
-
-    def plot_timeseries(self, labels):
-        """ Wrapper for plot time series function."""
-        # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.ds.series.keys()):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
-            logger.warning(msg)
-            return
-        # go ahead and plot
-        try:
-            pfp_plot.plot_explore_timeseries(self.ds, labels)
-            # increment the figure number
-            self.figure_number += 1
-        except Exception:
-            error_message = " An error occured while plotting time series, see below for details ..."
-            logger.error(error_message)
-            error_message = traceback.format_exc()
-            logger.error(error_message)
-        return
-
-    def plot_timeseries_grouped(self, labels):
-        """ Wrapper for plot time series function."""
-        # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.ds.series.keys()):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
-            logger.warning(msg)
-            return
-        # go ahead and plot
-        try:
-            pfp_plot.plot_explore_timeseries_grouped(self.ds, labels)
-            # increment the figure number
-            self.figure_number += 1
-        except Exception:
-            error_message = " An error occured while plotting time series, see below for details ..."
-            logger.error(error_message)
-            error_message = traceback.format_exc()
-            logger.error(error_message)
-        return
-
-    def update_tab_text(self):
-        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-        return
+    def get_proc_type_for_level(self, idx):
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_item.removeRows(0, selected_item.rowCount())
+        level = selected_item.text()
+        version = selected_item.parent().text()
+        site = selected_item.parent().parent().text()
+        self.thredds["files"][site][version][level] = {}
+        self.thredds["urls"][site][version][level] = {}
+        cat_versions = self.catalogs[site]["versions"]
+        cat_levels = self.catalogs[site]["versions"][version]["levels"]
+        catalog = cat_versions[version]["catalog"].follow().catalog_refs[level]
+        cat_levels[level] = {"catalog": catalog, "proc": {}}
+        procs = self.catalogs[site]["versions"][version]["levels"][level]
+        processings = procs["catalog"].follow().catalog_refs
+        for processing in processings:
+            file_names = procs["catalog"].follow().catalog_refs[processing].follow().datasets
+            if len(file_names) == 0:
+                continue
+            url = self.info["base_url"] + site + "/" + version + "/" + level + "/" + processing + "/"
+            procs["proc"][processing] = {"file_names": list(file_names)}
+            if len(procs["proc"][processing]["file_names"]) > 0:
+                self.thredds["files"][site][version][level][processing] = procs["proc"][processing]["file_names"][0]
+                self.thredds["urls"][site][version][level][processing] = url
+            child0 = QtGui.QStandardItem(processing)
+            child0.setEditable(False)
+            child1 = QtGui.QStandardItem(self.thredds["files"][site][version][level][processing])
+            child1.setEditable(False)
+            selected_item.appendRow([child0, child1])
 
 class edit_cfg_batch(QtWidgets.QWidget):
     def __init__(self, main_gui):
@@ -10088,6 +9853,456 @@ class edit_cfg_nc2csv_reddyproc(QtWidgets.QWidget):
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+
+class file_explore(QtWidgets.QWidget):
+    def __init__(self, main_gui):
+        super(file_explore, self).__init__()
+        self.ds = main_gui.ds
+        self.tabs = main_gui.tabs
+        self.figure_number = 0
+        self.view = QtWidgets.QTreeView()
+        self.model = QtGui.QStandardItemModel()
+        self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.view.customContextMenuRequested.connect(self.context_menu)
+        self.view.doubleClicked.connect(self.double_click)
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addWidget(self.view)
+        self.setLayout(vbox)
+        self.setGeometry(300, 300, 600, 400)
+        self.view.setAlternatingRowColors(True)
+        self.view.setHeaderHidden(False)
+        self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.view.setModel(self.model)
+        self.get_model_from_data()
+        self.view.setColumnWidth(0, 200)
+        # expand the "Variables" section
+        for row in range(self.model.rowCount()):
+            section = self.model.item(row)
+            if section.text() in ["Variables"]:
+                idx = self.model.index(row, 0)
+                self.view.expand(idx)
+
+    def double_click(self):
+        """ Save the selected text on double click events."""
+        idx = self.view.selectedIndexes()
+        self.double_click_selected_text = idx[0].data()
+        return
+
+    def context_menu(self, position):
+        self.context_menu = QtWidgets.QMenu()
+        if len(self.view.selectedIndexes()) == 0:
+            # trap right click when nothing is selected
+            return
+        idx = self.view.selectedIndexes()
+        selected_text = sorted([i.data() for i in idx])
+        # plot time series, separate axes or grouped
+        menuPlotTimeSeries = QtWidgets.QMenu(self)
+        menuPlotTimeSeries.setTitle("Plot time series")
+        actionPlotTimeSeriesSeparate = QtWidgets.QAction(self)
+        actionPlotTimeSeriesSeparate.setText("Separate")
+        actionPlotTimeSeriesSeparate.triggered.connect(lambda: self.plot_timeseries(selected_text))
+        actionPlotTimeSeriesGrouped = QtWidgets.QAction(self)
+        actionPlotTimeSeriesGrouped.setText("Grouped")
+        actionPlotTimeSeriesGrouped.triggered.connect(lambda: self.plot_timeseries_grouped(selected_text))
+        menuPlotTimeSeries.addAction(actionPlotTimeSeriesSeparate)
+        menuPlotTimeSeries.addAction(actionPlotTimeSeriesGrouped)
+        self.context_menu.addMenu(menuPlotTimeSeries)
+        # plot time series of percentiles
+        self.context_menu.actionPlotPercentiles = QtWidgets.QAction(self)
+        self.context_menu.actionPlotPercentiles.setText("Plot percentiles")
+        self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
+        self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selected_text))
+        # plot fingerprints
+        if self.ds.globalattributes["time_step"] not in ["daily", "monthly", "annual"]:
+            self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
+            self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
+            self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
+            self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selected_text))
+
+        self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
+
+    def get_data_from_model(self):
+        """ Iterate over the model and get the data.  Allows editing of attributes."""
+        model = self.model
+        for i in range(model.rowCount()):
+            section = model.item(i)
+            key1 = str(section.text())
+            if key1 in ["Global attributes"]:
+                # sections with only 1 level
+                for j in range(section.rowCount()):
+                    key2 = str(section.child(j, 0).text())
+                    val2 = str(section.child(j, 1).text())
+                    self.ds.globalattributes[key2] = val2
+            elif key1 in ["Variables"]:
+                for j in range(section.rowCount()):
+                    variable_section = section.child(j)
+                    label = variable_section.text()
+                    for k in range(variable_section.rowCount()):
+                        key2 = str(variable_section.child(k, 0).text())
+                        val2 = str(variable_section.child(k, 1).text())
+                        self.ds.series[label]["Attr"][key2] = val2
+            else:
+                msg = " Unrecognised object (" + key1 + ") in netCDF file"
+                msg += ", skipping ..."
+                logger.warning(msg)
+        return self.ds
+
+    def get_model_from_data(self):
+        self.model.setHorizontalHeaderLabels(['Variable', 'long_name'])
+        self.model.itemChanged.connect(self.handleItemChanged)
+        gattrs = sorted(list(self.ds.globalattributes.keys()))
+        long_name = QtGui.QStandardItem("")
+        section = QtGui.QStandardItem("Global attributes")
+        section.setEditable(False)
+        for gattr in gattrs:
+            value = str(self.ds.globalattributes[gattr])
+            child0 = QtGui.QStandardItem(gattr)
+            child1 = QtGui.QStandardItem(value)
+            section.appendRow([child0, child1])
+        self.model.appendRow([section, long_name])
+        labels = sorted(list(self.ds.series.keys()))
+        variables_section = QtGui.QStandardItem("Variables")
+        variables_section.setEditable(False)
+        for label in labels:
+            var = pfp_utils.GetVariable(self.ds, label)
+            long_name = QtGui.QStandardItem(var["Attr"]["long_name"])
+            variable_section = QtGui.QStandardItem(label)
+            # some variable names are not editable
+            if label in ["DateTime", "time"]:
+                variable_section.setEditable(False)
+            for attr in var["Attr"]:
+                value = str(var["Attr"][attr])
+                child0 = QtGui.QStandardItem(attr)
+                child1 = QtGui.QStandardItem(value)
+                variable_section.appendRow([child0, child1])
+            variables_section.appendRow([variable_section, long_name])
+        self.model.appendRow([variables_section, QtGui.QStandardItem("")])
+        return
+
+    def handleItemChanged(self, item):
+        """
+        Purpose:
+         Handler for when view items are edited.
+         Supported editing functions are:
+          Rename a variable
+          Rename a global or a variable attribute
+          Change the value of a global or variable attribute
+        """
+        # get a list of variables in the data structure
+        labels = list(self.ds.series.keys())
+        # check to see if the selected text before the change was a variable name
+        if self.double_click_selected_text in labels:
+            # if it was, rename the variable in the data structure
+            idx = self.view.selectedIndexes()
+            new_label = idx[0].data()
+            old_label = self.double_click_selected_text
+            self.ds.series[new_label] = self.ds.series.pop(old_label)
+        else:
+            # renaming attributes or changing their value is handled when the data is
+            # read back from the model by self.get_data_from_model()
+            pass
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+        return
+
+    def plot_histograms(self, labels):
+        """ Wrapper for plot histograms function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.ds.series.keys()):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        pfp_plot.plot_explore_histograms(self.ds, labels)
+        # increment the figure number
+        self.figure_number += 1
+        return
+
+    def plot_fingerprints(self, labels):
+        """ Wrapper for plot fingerprints function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.ds.series.keys()):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        try:
+            pfp_plot.plot_explore_fingerprints(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting fingerprints, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+        return
+
+    def plot_percentiles(self, labels):
+        """ Wrapper for plot percentiles function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.ds.series.keys()):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        try:
+            pfp_plot.plot_explore_percentiles(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting percentile time series, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+        return
+
+    def plot_timeseries(self, labels):
+        """ Wrapper for plot time series function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.ds.series.keys()):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        try:
+            pfp_plot.plot_explore_timeseries(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting time series, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+        return
+
+    def plot_timeseries_grouped(self, labels):
+        """ Wrapper for plot time series function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.ds.series.keys()):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        try:
+            pfp_plot.plot_explore_timeseries_grouped(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting time series, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+        return
+
+    def update_tab_text(self):
+        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        if "*" not in tab_text:
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+        return
+
+class MsgBox_Continue(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_Continue, self).__init__(parent)
+        if title in ["Critical", "Error"]:
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.Yes)
+        self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
+        self.setModal(False)
+        self.show()
+        self.exec_()
+
+class MsgBox_ContinueOrQuit(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_ContinueOrQuit, self).__init__(parent)
+        if title == "Critical":
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.Yes |
+                                QtWidgets.QMessageBox.No)
+        self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
+        self.button(QtWidgets.QMessageBox.No).setText("Quit")
+        self.setModal(False)
+        self.show()
+        self.exec_()
+
+class MsgBox_Quit(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_Quit, self).__init__(parent)
+        if title in ["Critical", "Error"]:
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.No)
+        self.button(QtWidgets.QMessageBox.No).setText("Quit")
+        self.setModal(False)
+        self.show()
+        self.exec_()
+
+class myMessageBox(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(myMessageBox, self).__init__(parent)
+        if title == "Critical":
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        self.exec_()
+
+class myTreeView(QtWidgets.QTreeView):
+    """
+    Purpose:
+     Subclass of QTreeView with the dragEnterEvent() and dropEvent() methods overloaded
+     to constrain drag and drop moves within the control file. The following drag
+     and drop rules are implemented:
+     1) items can only be dropped within the section from which they originate.
+     2) items can't be dropped on top of other items.
+    Usage:
+     view = myTreeView()
+    Author: PRI
+    Date: August 2020
+    """
+    def __init__(self):
+        QtWidgets.QTreeView.__init__(self)
+        # disable multiple selections
+        self.setSelectionMode(self.SingleSelection)
+        # enable selction of single cells
+        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        # enable drag and drop as internal move only
+        self.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+        # enable drag and drop
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        # rows have alternating colours and headers
+        self.setAlternatingRowColors(True)
+        self.setHeaderHidden(False)
+        # create info dictionary
+        self.info = {"one_line_sections": ["Files", "Global", "Options", "Soil", "Massman",
+                                           "ustar_threshold", "concatenate", "In"]}
+
+    def dragEnterEvent(self, event):
+        """
+        Purpose:
+         Re-implement the standard dragEnterEvent to get the behaviour we want.
+        Usage:
+        Author: PRI
+        Date: August 2020
+        """
+        # wrap in a try ... except to trap unforseen events (quick but dirty)
+        try:
+            self.setDropIndicatorShown(True)
+            # index of selected item
+            idxs = self.selectedIndexes()[0]
+            # only enable event if user has clicked in first column
+            if idxs.column() == 0:
+                # save some stuff needed for the drop event
+                self.info["source_index"] = idxs
+                self.info["source_item"] = idxs.model().itemFromIndex(idxs)
+                self.info["source_parent"] = self.info["source_item"].parent()
+                source_parent = self.info["source_parent"]
+                self.info["source_key"] = QtGui.QStandardItem(source_parent.child(idxs.row(),0).text())
+                # second column only available if section in "one_line_sections"
+                if self.info["source_parent"].text() in self.info["one_line_sections"]:
+                    self.info["source_value"] = QtGui.QStandardItem(source_parent.child(idxs.row(),1).text())
+                else:
+                    self.info["source_value"] = QtGui.QStandardItem("")
+                # accept this event
+                event.accept()
+            else:
+                # ignore everything else
+                event.ignore()
+        except:
+            event.ignore()
+
+    def dropEvent(self, event):
+        """
+        Purpose:
+         Re-implement the standard dropEvent to get the behaviour we want.
+        Usage:
+        Author: PRI
+        Date: August 2020
+        """
+        # wrap in a try ... except to trap unforseen events (dirty coding)
+        try:
+            # index of the item under the drop
+            idxd = self.indexAt(event.pos())
+            # save so useful stuff
+            self.info["destination_index"] = idxd
+            self.info["destination_item"] = idxd.model().itemFromIndex(idxd)
+            self.info["destination_parent"] = self.info["destination_item"].parent()
+            destination_parent_text = self.info["destination_parent"].text()
+            source_parent_text = self.info["source_parent"].text()
+            # only allow drag and drop within the same section
+            if (destination_parent_text == source_parent_text):
+                # don't allow drop on another item
+                if (self.dropIndicatorPosition() != QtWidgets.QAbstractItemView.OnItem):
+                    # use special drop event code for one line sections
+                    if self.info["source_parent"].text() in self.info["one_line_sections"]:
+                        idxs = self.info["source_index"]
+                        key = self.info["source_key"]
+                        value = self.info["source_value"]
+                        self.info["source_parent"].removeRow(idxs.row())
+                        self.info["source_parent"].insertRow(idxd.row(), [key, value])
+                        event.accept()
+                    else:
+                        # use standard drop event code for everything else
+                        QtWidgets.QTreeView.dropEvent(self, event)
+                else:
+                    # ignore everything else
+                    event.ignore()
+            else:
+                event.ignore()
+        except:
+            event.ignore()
+        # refresh the GUI
+        self.model().layoutChanged.emit()
+
+class myTxtBox(QtWidgets.QInputDialog):
+    def __init__(self, title="", prompt="", parent=None):
+        super(myTxtBox, self).__init__(parent)
+        self.getText(None, title, prompt, QtWidgets.QLineEdit.Normal,"")
 
 class pfp_l4_ui(QtWidgets.QDialog):
     def __init__(self, parent=None):

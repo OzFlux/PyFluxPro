@@ -15,6 +15,7 @@ dependencies:
   - pyqt
   - pytz
   - scipy
+  - siphon
   - statsmodels
   - timezonefinder
   - xarray

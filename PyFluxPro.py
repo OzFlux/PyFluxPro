@@ -14,6 +14,7 @@ import netCDF4
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from siphon.catalog import TDSCatalog
 # PFP modules
 sys.path.insert(0, 'scripts')
 from scripts import cfg
@@ -78,6 +79,9 @@ class pfp_main_ui(QWidget):
         self.actionFileOpen = QAction(self)
         self.actionFileOpen.setText("Open")
         self.actionFileOpen.setShortcut('Ctrl+O')
+        self.actionFileOpenTHREDDS = QAction(self)
+        self.actionFileOpenTHREDDS.setText("Open THREDDS")
+        self.actionFileOpenTHREDDS.setShortcut('Ctrl+T')
         self.actionFileSave = QAction(self)
         self.actionFileSave.setText("Save")
         self.actionFileSave.setShortcut('Ctrl+S')
@@ -142,6 +146,7 @@ class pfp_main_ui(QWidget):
         self.menuFileConvert.addAction(self.actionFileConvertnc2reddyproc)
         # File menu
         self.menuFile.addAction(self.actionFileOpen)
+        self.menuFile.addAction(self.actionFileOpenTHREDDS)
         self.menuFile.addAction(self.actionFileSave)
         self.menuFile.addAction(self.actionFileSaveAs)
         self.menuFile.addSeparator()
@@ -211,6 +216,7 @@ class pfp_main_ui(QWidget):
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
         self.actionFileConvertnc2reddyproc.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard"))
         self.actionFileOpen.triggered.connect(self.file_open)
+        self.actionFileOpenTHREDDS.triggered.connect(self.file_open_thredds_catalog)
         self.actionFileSave.triggered.connect(self.file_save)
         self.actionFileSaveAs.triggered.connect(self.file_save_as)
         self.actionFileSplit.triggered.connect(pfp_top_level.do_file_split)
@@ -308,6 +314,49 @@ class pfp_main_ui(QWidget):
             logger.error(msg)
             error_message = traceback.format_exc()
             logger.error(error_message)
+        return
+
+    def file_open_thredds_catalog(self):
+        text, ok = QInputDialog.getText(self, 'Open THREDDS server', 'Enter THREDDS URL:')
+        if not ok:
+            return
+        info = {"base_url": text.replace("catalog.html", ""),
+                "catalog_name": "catalog.xml"}
+        info["dodsC_url"] = info["base_url"].replace("catalog", "dodsC")
+        url_sites = os.path.join(info["base_url"], info["catalog_name"])
+        catalogs = {"sites": TDSCatalog(url_sites)}
+        thredds = {"files": {}, "urls": {}}
+        sites = list(catalogs["sites"].catalog_refs)
+        for site in sites:
+            thredds["files"][site] = {"version": {"level": {"default": "dummy.nc"}}}
+            thredds["urls"][site] = {"version": {"level": {"default": "https://"}}}
+        # display the THREDDS catalog in the GUI
+        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.display_thredds_tree(self, catalogs, thredds, info)
+        ## return if something went wrong
+        #if self.tabs.tab_dict[self.tabs.tab_index_all].ds.returncodes["value"] != 0:
+            #return
+        # add a tab for the netCDF file contents
+        #tab_title = os.path.basename(self.ds.filepath)
+        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], "THREDDS server")
+        self.tabs.setCurrentIndex(self.tabs.tab_index_all)
+        self.tabs.tab_index_all = self.tabs.tab_index_all + 1
+        return
+
+    def file_open_thredds_file(self, file_url):
+        # read the netCDF file to a data structure
+        self.ds = pfp_io.NetCDFRead(file_url, checktimestep=False, update=False)
+        if self.ds.returncodes["value"] != 0:
+            return
+        # display the netcdf file in the GUI
+        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
+        # return if something went wrong
+        if self.tabs.tab_dict[self.tabs.tab_index_all].ds.returncodes["value"] != 0:
+            return
+        # add a tab for the netCDF file contents
+        tab_title = os.path.basename(self.ds.filepath)
+        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
+        self.tabs.setCurrentIndex(self.tabs.tab_index_all)
+        self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         return
 
     def open_control_file(self):
