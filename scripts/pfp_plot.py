@@ -1492,8 +1492,8 @@ def plot_windrose_all(ds, wrinfo):
     for item in [Ws, Wd, Fsd]:
         item["DayNight"] = numpy.ma.masked_where(mask == True, item["Data"])
         item["DayNight"] = numpy.ma.compressed(item["DayNight"])
-    ones = numpy.ones(len(Fsd["Data"]))
-    zeros = numpy.zeros(len(Fsd["Data"]))
+    ones = numpy.ones(len(Fsd["DayNight"]))
+    zeros = numpy.zeros(len(Fsd["DayNight"]))
     idx = numpy.where(Fsd["DayNight"] <= wrinfo["Fsd_threshold"], ones, zeros)
     plt.ion()
     fig = plt.figure(figsize=(8, 8))
