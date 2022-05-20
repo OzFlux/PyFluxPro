@@ -17,6 +17,7 @@ dependencies:
   - scipy
   - statsmodels
   - timezonefinder
+  - windrose
   - xarray
   - xlwt
   - xlrd

@@ -11,6 +11,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy
 from scipy import stats
 import statsmodels.api as sm
+#from windrose import WindroseAxes
+#from windrose_subplot import WindroseAxes
+import windrose
 # PFP modules
 from scripts import constants as c
 from scripts import pfp_ck
@@ -1408,6 +1411,175 @@ def plot_onetimeseries_right(fig,n,ThisOne,xarray,yarray,p):
     txtYLoc = p['YAxOrg']+p['ts_YAxLen']-0.025
     plt.figtext(txtXLoc,txtYLoc,TextStr,color='r',horizontalalignment='right')
     if n > 0: plt.setp(ts_ax_right.get_xticklabels(),visible=False)
+
+def plot_windrose(cf):
+    """
+    Purpose:
+    Usage:
+    Side effects:
+    Author: PRI/CE
+    Date: May 2022
+    """
+    wrinfo = plot_windrose_parse_controlfile(cf)
+    # read the netCDF file to a data structure
+    ds = pfp_io.NetCDFRead(wrinfo["in_filename"], update=False)
+    # update the info dictionary
+    wrinfo["start"] = ds.globalattributes["time_coverage_start"]
+    wrinfo["end"] = ds.globalattributes["time_coverage_end"]
+    wrinfo["site_name"] = ds.globalattributes["site_name"]
+    # plot all the data
+    plot_windrose_all(ds, wrinfo)
+    # plot the seasonal windrose
+    plot_windrose_seasonal(ds, wrinfo)
+    return
+
+def plot_windrose_parse_controlfile(cf):
+    """
+    Purpose:
+     Parse the windrose control file and return the required information in a
+     dictionary.
+    Author: PRI/CE
+    Date: May 2022
+    """
+    wrinfo = {}
+    # get the input file name from the control file
+    wrinfo["in_filename"] = pfp_io.get_infilenamefromcf(cf)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "number_speed_bins", default="8")
+    wrinfo["nbins"] = int(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "speed_bin_width", default="1")
+    wrinfo["wbins"] = int(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "number_sectors", default="16")
+    wrinfo["nsectors"] = int(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default="10")
+    wrinfo["Fsd_threshold"] = int(opt)
+    # get the wind direction and wind speed variable names
+    wrinfo["Wd"] = pfp_utils.get_keyvaluefromcf(cf, ["Variables", "Wd"], "name", default="Wd")
+    wrinfo["Ws"] = pfp_utils.get_keyvaluefromcf(cf, ["Variables", "Ws"], "name", default="Ws")
+    wrinfo["Fsd"] = pfp_utils.get_keyvaluefromcf(cf, ["Variables", "Fsd"], "name", default="Fsd")
+    # plot path
+    wrinfo["plot_path"] = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
+    if not os.path.exists(wrinfo["plot_path"]):
+        os.makedirs(wrinfo["plot_path"])
+    return wrinfo
+
+def plot_windrose_all(ds, wrinfo):
+    """
+    Purpose:
+    Usage:
+    Side effects:
+    Author: PRI/CE
+    Date: May 2022
+    """
+    nbins = wrinfo["nbins"]
+    wbins = wrinfo["wbins"]
+    nsectors = wrinfo["nsectors"]
+    site_name = ds.globalattributes["site_name"]
+    level = ds.globalattributes["processing_level"]
+    title = site_name + ": " + wrinfo["start"] + " to " + wrinfo["end"]
+    title += "; all data"
+    # read the variables
+    Ws = pfp_utils.GetVariable(ds, wrinfo["Ws"])
+    Wd = pfp_utils.GetVariable(ds, wrinfo["Wd"])
+    Fsd = pfp_utils.GetVariable(ds, wrinfo["Fsd"])
+    mask = numpy.ma.getmaskarray(Ws["Data"])
+    mask = numpy.ma.mask_or(mask, numpy.ma.getmaskarray(Wd["Data"]))
+    Ws["All"] = numpy.ma.masked_where(mask == True, Ws["Data"])
+    Wd["All"] = numpy.ma.masked_where(mask == True, Wd["Data"])
+    Ws["All"] = numpy.ma.compressed(Ws["All"])
+    Wd["All"] = numpy.ma.compressed(Wd["All"])
+    # prepare day/night data
+    mask = numpy.ma.mask_or(mask, numpy.ma.getmaskarray(Fsd["Data"]))
+    for item in [Ws, Wd, Fsd]:
+        item["DayNight"] = numpy.ma.masked_where(mask == True, item["Data"])
+        item["DayNight"] = numpy.ma.compressed(item["DayNight"])
+    ones = numpy.ones(len(Fsd["Data"]))
+    zeros = numpy.zeros(len(Fsd["Data"]))
+    idx = numpy.where(Fsd["DayNight"] <= wrinfo["Fsd_threshold"], ones, zeros)
+    plt.ion()
+    fig = plt.figure(figsize=(8, 8))
+    fig.canvas.manager.set_window_title("Windrose for "+wrinfo["site_name"]+", all data")
+    gs = gridspec.GridSpec(2, 2) # 2 rows, 2 columns
+    ax1=fig.add_subplot(gs[0, :], projection="windrose") # First row, first column
+    ax2=fig.add_subplot(gs[1, 0], projection="windrose") # Second row, first column
+    ax3=fig.add_subplot(gs[1, 1], projection="windrose") # Second row, second column
+    ax1.box(Wd["All"], Ws["All"], bins=numpy.arange(0, nbins, wbins), nsector=nsectors)
+    ax1.legend(loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.25), fontsize=6)
+    ax1.set_title("All")
+    ax2.box(Wd["DayNight"][idx==0], Ws["DayNight"][idx==0],
+            bins=numpy.arange(0, nbins, wbins),
+            nsector=nsectors)
+    ax2.set_title("Day")
+    ax2.legend(loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.25), fontsize=6)
+    ax3.box(Wd["DayNight"][idx==1], Ws["DayNight"][idx==1],
+            bins=numpy.arange(0, nbins, wbins),
+            nsector=nsectors)
+    ax3.set_title("Night")
+    ax3.legend(loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.25), fontsize=6)
+    fig.suptitle(title)
+    fig.tight_layout()
+    plt.draw()
+    file_name = site_name.replace(" ","") + "_" + level + "_" + "windrose_all" + ".png"
+    file_name = os.path.join(wrinfo["plot_path"], file_name)
+    fig.savefig(file_name, format="png")
+    pfp_utils.mypause(0.5)
+    plt.ioff()
+    return
+
+def plot_windrose_seasonal(ds, wrinfo):
+    """
+    Purpose:
+     Plot windroses for all day time and all night time data.
+    Usage:
+    Side effects:
+    Author: PRI/CE
+    Date: May 2022
+    """
+    nbins = wrinfo["nbins"]
+    nsectors = wrinfo["nsectors"]
+    wbins = wrinfo["wbins"]
+    site_name = ds.globalattributes["site_name"]
+    level = ds.globalattributes["processing_level"]
+    title = site_name + ": " + wrinfo["start"] + " to " + wrinfo["end"]
+    title += "; Seasonal"
+    # read the variables
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    ldt["Month"] = numpy.array([dt.month for dt in ldt["Data"]])
+    Ws = pfp_utils.GetVariable(ds, wrinfo["Ws"])
+    Wd = pfp_utils.GetVariable(ds, wrinfo["Wd"])
+    seasons = {"Summer": [12, 1, 2], "Autumn": [3, 4, 5],
+               "Winter": [6, 7, 8], "Spring": [9, 10, 11]}
+    axs = {}
+    plt.ion()
+    fig = plt.figure(figsize=(8, 8))
+    fig.canvas.manager.set_window_title("Windrose for "+wrinfo["site_name"]+", seasons")
+    for s, season in enumerate(seasons):
+        cind = numpy.zeros(len(Ws["Data"]))
+        for month in seasons[season]:
+            idx = numpy.where(ldt["Month"] == month)[0]
+            cind[idx] = 1
+        wd = Wd["Data"][cind == 1]
+        ws = Ws["Data"][cind == 1]
+        mask = numpy.ma.getmaskarray(wd)
+        mask = numpy.ma.mask_or(mask, numpy.ma.getmaskarray(ws))
+        wd = numpy.ma.masked_where(mask == True, wd)
+        wd = numpy.ma.compressed(wd)
+        ws = numpy.ma.masked_where(mask == True, ws)
+        ws = numpy.ma.compressed(ws)
+        axs[season] = fig.add_subplot(2, 2, s+1, projection="windrose")
+        axs[season].box(wd, ws,
+                        bins=numpy.arange(0, nbins, wbins),
+                        nsector=nsectors)
+        axs[season].set_title(season)
+        axs[season].legend(loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.25), fontsize=6)
+    fig.suptitle(title)
+    fig.tight_layout()
+    plt.draw()
+    file_name = site_name.replace(" ","") + "_" + level + "_" + "windrose_seasonal" + ".png"
+    file_name = os.path.join(wrinfo["plot_path"], file_name)
+    fig.savefig(file_name, format="png")
+    pfp_utils.mypause(0.5)
+    plt.ioff()
+    return
 
 def plotxy(cf, title, plt_cf, dsa, dsb):
     SiteName = dsa.globalattributes['site_name']

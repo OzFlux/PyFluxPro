@@ -828,6 +828,53 @@ def do_plot_timeseries():
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
+def do_plot_windrose():
+    """
+    Purpose:
+     Plot windroses.
+    Usage:
+     pfp_top_level.do_plot_windrose()
+    Side effects:
+     Plots windroses to the screen and creates .PNG hardcopies of
+     the plots.
+    Author: PRI/CE
+    Date: May 2022
+    Mods:
+    """
+    try:
+        logger.info("Starting windroses plot")
+        # get the base path of script or Pyinstaller application
+        base_path = pfp_utils.get_base_path()
+        stdname = os.path.join(base_path, "controlfiles", "standard", "windrose.txt")
+        if os.path.exists(stdname):
+            cf = pfp_io.get_controlfilecontents(stdname)
+            filename = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
+            if len(filename) == 0:
+                return
+            if "Files" not in dir(cf):
+                cf["Files"] = {}
+            cf["Files"]["plot_path"] = "plots/"
+            cf["Files"]["file_path"] = os.path.split(filename)[0]+"/"
+            cf["Files"]["in_filename"] = os.path.split(filename)[1]
+        else:
+            cf = pfp_io.load_controlfile(path="controlfiles")
+            if len(cf) == 0:
+                return
+        logger.info("Loaded control file ...")
+        if "Options" not in cf:
+            cf["Options"]={}
+        cf["Options"]["call_mode"] = "interactive"
+        cf["Options"]["show_plots"] = "Yes"
+        logger.info("Plotting windroses ...")
+        pfp_plot.plot_windrose(cf)
+        logger.info(" Finished plotting windroses")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while plotting windroses, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
 def do_plot_closeplots():
     """
     Close plot windows.
