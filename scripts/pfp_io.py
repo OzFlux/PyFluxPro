@@ -1905,8 +1905,10 @@ def MergeDataFrames(dfs, l1_info):
         dt = pandas.date_range(start, end, freq=ts)
         df = pandas.DataFrame({'DateTime': dt})
         df = df.set_index("DateTime")
-        for df_name in df_names:
-            df = df.merge(dfs[df_name], left_index=True, right_index=True, how='inner')
+        frames = [dfs[s] for s in sorted(list(dfs.keys()))]
+        df = pandas.concat(frames)
+        #for df_name in df_names:
+            #df = df.merge(dfs[df_name], left_index=True, right_index=True, how='inner')
     else:
         df = dfs[df_names[0]]
     return df
