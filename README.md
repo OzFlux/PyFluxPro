@@ -84,4 +84,4 @@ To run PyFluxPro, follow these steps:
 * 3. After a short time, the PyFluxPro GUI will appear.  This can take a couple of minutes when the program is run for the first time.
 
 # Using PyFluxPro
-Coming to the Wiki soon ...
+The PyFluxPro wiki, see https://github.com/OzFlux/PyFluxPro/wiki, contains a great deal of information on what PyFluxPro does and how to run PyFluxPro.
