@@ -1891,22 +1891,46 @@ def netcdf_concatenate_truncate(ds_in, info):
 
 def MergeDataFrames(dfs, l1_info):
     """
+    Purpose:
+     Merge several data frames into a single data frame.
+     pfp_io.ReadExcelWorkbook() returns one pandas data frame per worksheet in the
+     workbook.  This routine combines these data frames into a single data frame
+     that spans all of the times on the worksheets.
+    Usage:
+     df = pfp_io.MergeDataFrames(dfs, l1_info)
+     where dfs is a dictionary of pandas data frames
+           l1_info is the information dictionary created from the L1 control file
+           df is a single pandas data frame containing all data from the data frames
+              in dfs.
+    Side effects:
+     Returns a pandas data frame.
+    Author: PRI
+    Date: Back in the day
     """
+    # get a list of data frame names
     df_names = list(dfs)
+    # merge data frames
     if len(df_names) > 1:
         msg = " Merging " + ','.join(df_names) + " to a single data frame"
         logger.info(msg)
+        # get the earliest start and latest end time
         start = min(dfs[df_names[0]].index.values)
         end = max(dfs[df_names[0]].index.values)
         for df_name in df_names[1:]:
             start = min([min(dfs[df_name].index.values), start])
             end = max([max(dfs[df_name].index.values), end])
+        # get the timestep as a string pandas will recognise
         ts = str(int(l1_info["read_excel"]["Global"]["time_step"])) + "T"
+        # create a pandas datetime range
         dt = pandas.date_range(start, end, freq=ts)
+        # create an empty data frame
         df = pandas.DataFrame({'DateTime': dt})
+        # set the datetinne as the index
         df = df.set_index("DateTime")
-        for df_name in df_names:
-            df = df.merge(dfs[df_name], left_index=True, right_index=True, how='inner')
+        # list of data frames
+        frames = [dfs[s] for s in sorted(list(dfs.keys()))]
+        # merge the data frames
+        df = pandas.concat(frames)
     else:
         df = dfs[df_names[0]]
     return df
