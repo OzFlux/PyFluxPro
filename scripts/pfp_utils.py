@@ -1475,48 +1475,6 @@ def find_nearest_value(array, value):
             i = i + 1
     return i
 
-def FindIndicesOfBInA(a,b):
-    """
-    Purpose:
-     Find the indices of elements in b that also occur in a.
-     The routine is intended for use only with lists of Python datetime
-     values.  This ensures the input series are monotonically increasing
-     (though this is not a requirement) and contain no duplicates (which
-     is required, or at least not handled).
-    Limitations:
-     Argument a is converted to a set to greatly speed the comparison
-     of b elements with a.  This means that duplicates in a will be
-     dropped and hence only 1 index will be returned for each value
-     in b.
-    Usage:
-     indices = pfp_utils.FindIndicesOfBInA(a,b)
-     where a is a list of Python datetime objects
-           b is a list of Python datetime objects
-           indices is a list of indices in b where the elements of b
-                also occur in a
-    Author: PRI
-    Date: July 2015
-    Comments: Replaces find_indices used up to V2.9.3.
-    March 2018 - rewritten to handle numpy.ndarray and lists
-    """
-    if len(set(a)) != len(a):
-        msg = " FindIndicesOfBInA: first argument contains duplicate values"
-        logger.error(msg)
-        indices = []
-        return
-    if isinstance(a, numpy.ndarray) and isinstance(b, numpy.ndarray):
-        asorted = numpy.argsort(a)
-        bpos = numpy.searchsorted(a[asorted], b)
-        indices = asorted[bpos]
-    elif isinstance(a, list) and isinstance(b, list):
-        tmpset = set(a)
-        indices = [i for i,item in enumerate(b) if item in tmpset]
-    else:
-        msg = " FindIndicesOfBInA: inputs must be both list or both numpy arrays"
-        logger.error(msg)
-        indices = []
-    return indices
-
 def FindMatchingIndices(a, b):
     """
     Purpose:
