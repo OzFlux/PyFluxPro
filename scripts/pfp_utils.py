@@ -2144,7 +2144,7 @@ def get_base_path():
     """
     Purpose:
      Return the base path dependng on whether we are running as a script
-     or a Pyinstaller app;ication.
+     or a Pyinstaller application.
     Author: https://stackoverflow.com/questions/7674790/bundling-data-files-with-pyinstaller-onefile
     """
     # check if we running as a PyInstaller application

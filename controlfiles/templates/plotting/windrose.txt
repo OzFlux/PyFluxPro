@@ -1,0 +1,14 @@
+level = windrose
+[Files]
+    plot_path = Right click to browse
+    file_path = Right click to browse
+    in_filename = Right click to browse
+[Options]
+    number_sectors = 16
+    number_speed_bins = 8
+    windrose_types = all, day/night, seasonal, seasonal day/night
+[Variables]
+    [[Wd]]
+        name = Wd
+    [[Ws]]
+        name = Ws
