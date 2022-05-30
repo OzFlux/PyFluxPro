@@ -540,11 +540,6 @@ def gfalternate_matchstartendtimes(ds,ds_alternate):
     # do the alternate and tower data overlap?
     if overlap:
         # index of alternate datetimes that are also in tower datetimes
-        #alternate_index = pfp_utils.FindIndicesOfBInA(ldt_tower,ldt_alternate)
-        #alternate_index = [pfp_utils.find_nearest_value(ldt_tower, dt) for dt in ldt_alternate]
-        # index of tower datetimes that are also in alternate datetimes
-        #tower_index = pfp_utils.FindIndicesOfBInA(ldt_alternate,ldt_tower)
-        #tower_index = [pfp_utils.find_nearest_value(ldt_alternate, dt) for dt in ldt_tower]
         tower_index, alternate_index = pfp_utils.FindMatchingIndices(ldt_tower, ldt_alternate)
         # check that the indices point to the same times
         ldta = [ldt_alternate[i] for i in alternate_index]
@@ -1279,7 +1274,6 @@ def ImportSeries(cf,ds):
         attr_import["time_coverage_start"] = ldt_import[0].strftime("%Y-%m-%d %H:%M")
         attr_import["time_coverage_end"] = ldt_import[-1].strftime("%Y-%m-%d %H:%M")
         ldt_import = ldt_import[si:ei+1]
-        #index = pfp_utils.FindIndicesOfBInA(ldt_import,ldt)
         indainb, indbina = pfp_utils.FindMatchingIndices(ldt_import, ldt)
         data[indbina] = data_import[indainb]
         flag[indbina] = flag_import[indainb]

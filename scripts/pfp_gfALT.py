@@ -979,8 +979,9 @@ def gfalternate_plotcomposite(data_dict, stat_dict, diel_avg, l4a, pd):
         plt.ioff()
     else:
         plt.close()
-        plt.switch_backend(current_backend)        
+        plt.switch_backend(current_backend)
         plt.ion()
+    return
 
 def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     """
@@ -1046,7 +1047,7 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
         pfp_utils.mypause(1)
         plt.ioff()
     else:
-        plt.switch_backend(current_backend)        
+        plt.switch_backend(current_backend)
         plt.ion()
 
 def gfalternate_quit(alt_gui):
