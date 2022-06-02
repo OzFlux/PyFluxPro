@@ -30,6 +30,60 @@ from scripts import pfp_utils
 logger = logging.getLogger("pfp_log")
 
 class DataStructure(object):
+    """
+    This is the main data structure used throughout PyFluxPro.
+
+    A data structure is used to hold all of the data and metadata used by
+    PyFluxPro during data procssing.  It is basically a representation in
+    Python of a netCDF file.
+
+    Creating a data structure:
+     A data structure can be created directly using;
+      ds = pfp_io.Datastructure()
+
+    Attributes of a data structure:
+     ds.globalattributes - a dictionary containing the global attributes read from
+                           or written to a netCDF file.
+     ds.series - a dictionary containing the variables read from or written to a
+                 netCDF file.
+
+    Variables in a data structure:
+     Each variable in the ds.series dictionary is another dictionary that
+     contains the data, the quality control flag and the attributes.
+     For example, the air temperature variable (Ta) is stored in the data
+     structure as follows;
+      ds.series["Ta"]["Data"] - a 1D numpy array containing the data values
+      ds.series["Ta"]["Flag"] - a 1D numpy array containing the quality
+                                control flag values
+      ds.series["Ta"]["Attr"] - a dictionary containing the variable attributes
+
+    Reading a data structure from file:
+     A data structure is returned when a netCDF file is read e.g.;
+      ds = pfp_io.NetCDFRead(file_name)
+      where file_name is the name of the netCDF file.
+
+    Writing a data structure to file:
+     A data structure can be written to a netCDF file using;
+      pfp_io.NetCDFWrite(file_name, ds)
+      where file_name is the name of the netCDF file to be created
+            ds is the data structure to be written to the file
+
+    Accessing variables in a data structure:
+     Variables in a data structure can be accessed using the GetVariable
+     helper function as follows;
+      Ta = pfp_utils.GetVariable(ds, "Ta")
+     where "Ta" is the label of the variable.
+           ds is the data structure containing the variable.
+           Ta is a dictionary containing the data, quality control flag
+              and attributes for the air temperature.
+
+    Useful functions:
+     pfp_utils.GetVariable(ds, label)
+     pfp_utils.CreateVariable(ds, variable)
+
+    Date: Way back in the day
+    Author: PRI
+    """
     def __init__(self):
         self.series = {}
         self.globalattributes = {}
@@ -2431,6 +2485,16 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", updat
 
 def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3):
     """
+    Purpose:
+     Wrapper for the pfp_io.nc_write_series() routine so we have a nice name
+     to use.  Over time, pfp_io.nc_write_series() will be rewritten and
+     eventualy deprecated.
+    Usage:
+     pfp_io.NetCDFWrite(nc_file_uri, ds)
+     where nc_file_uri is a netCDF file name or URL pointing to a netCDF file
+           ds is a PFP data structure
+    Author: PRI
+    Date: June 2021
     """
     file_name = os.path.split(nc_file_path)
     msg = " Writing netCDF file " + file_name[1]

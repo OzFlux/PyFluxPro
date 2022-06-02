@@ -1375,7 +1375,7 @@ def CreateVariable(ds, var_in, over_write=True):
      pfp_utils.CreateVariable(ds,Fsd)
     Author: PRI
     Date: September 2016
-          June 2021 - copy the variablle before adding to the data structure otherwise
+          June 2021 - copy the variable before adding to the data structure otherwise
                       the contents of the input variable will be changed
     """
     variable = CopyVariable(var_in)
@@ -2075,10 +2075,11 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
     Purpose:
      Returns a data variable from the data structure as a dictionary.
     Usage:
-     data,flag,attr = pfp_utils.GetSeriesasMA(ds,label,si=0,ei=-1)
-    where the arguments are;
-      ds    - the data structure (dict)
+     variable = pfp_utils.GetSeriesasMA(ds, label)
+    Required arguments are;
+      ds    - the data structure (class)
       label - label of the data variable in ds (string)
+    Optional arguments are;
       start - start date or index (integer), default 0
       end   - end date or index (integer), default -1
       mode  - truncate or pad the data
@@ -2091,11 +2092,11 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
                                the last whole day
                 "wholemonths" - finds the start of the first whole month and end of
                                the last whole month
-     The data are returned as a dictionary;
-      variable["label"] - variable label in data structure
-      variable["data"] - numpy float64 masked array containing data
-      variable["flag"] - numpy int32 array containing QC flags
-      variable["attr"] - dictionary of variable attributes
+     This function returns a variable as a dictionary;
+      variable["Label"] - variable label in data structure
+      variable["Data"] - numpy float64 masked array containing data
+      variable["Flag"] - numpy int32 array containing QC flags
+      variable["Attr"] - dictionary of variable attributes
       variable["DateTime] - datetimes of the data
     Example:
      The code snippet below will return the incoming shortwave data values
