@@ -7,6 +7,7 @@ import platform
 import traceback
 # 3rd party modules
 from configobj import ConfigObj
+import numpy
 import timezonefinder
 # PFP modules
 from scripts import pfp_func_units
@@ -753,6 +754,103 @@ def check_l5_controlfile(cfg):
     if len(messages["ERROR"]) > 0:
         ok = False
     return ok
+def check_windrose_controlfile(cfg):
+    """
+    Purpose:
+     Check the windrose plotting control file to make sure it contains all
+     information needed to plot the windroses and that all information is correct.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: June 2022
+    """
+    ok = True
+    # initialise the messages dictionary
+    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    check_windrose_files_section(cfg, messages)
+    check_windrose_options_section(cfg, messages)
+    check_windrose_variables_section(cfg, messages)
+    display_messages(messages)
+    if len(messages["ERROR"]) > 0:
+        ok = False
+    return ok
+def check_windrose_files_section(cfg, messages):
+    """ Check the Files section in the windrose control file."""
+    # check the Files section is present
+    if "Files" not in cfg:
+        msg = "No Files section in control file"
+        messages["ERROR"].append(msg)
+        return
+    # check the required entries are in the Files section
+    for item in ["plot_path", "file_path", "in_filename"]:
+        if item not in cfg["Files"]:
+            msg = item + " not in Files section"
+            messages["ERROR"].append(msg)
+            return
+    # check the directories and the input file exist
+    if not os.path.isdir(cfg["Files"]["plot_path"]):
+        msg = "Directory " + cfg["Files"]["plot_path"] + " does not exist"
+        messages["ERROR"].append(msg)
+        return
+    if not os.path.isdir(cfg["Files"]["file_path"]):
+        msg = "Directory " + cfg["Files"]["file_path"] + " does not exist"
+        messages["ERROR"].append(msg)
+    else:
+        if not os.path.isfile(os.path.join(cfg["Files"]["file_path"],
+                                           cfg["Files"]["in_filename"])):
+            msg = cfg["Files"]["in_filename"] + " not found in " + cfg["Files"]["file_path"]
+            messages["ERRORS"].append(msg)
+    return
+def check_windrose_options_section(cfg, messages):
+    """ Check the Options section in the windrose control file."""
+    # check the Options section is present
+    if "Options" not in cfg:
+        msg = "No Options section in control file"
+        messages["ERROR"].append(msg)
+        return
+    # check the required entries are in the Options section
+    for item in ["number_sectors", "number_speed_bins", "speed_bin_width", "Fsd_threshold"]:
+        if item not in cfg["Options"]:
+            msg = item + " not in Options section"
+            messages["ERROR"].append(msg)
+            return
+    # check the Options entries make sense
+    number_sectors = int(cfg["Options"]["number_sectors"])
+    if ((number_sectors < 2) or (number_sectors > 20)):
+        msg = "number_sectors must between 2 and 20"
+        messages["ERROR"].append(msg)
+    number_speed_bins = int(cfg["Options"]["number_speed_bins"])
+    if ((number_speed_bins < 2) or (number_speed_bins > 10)):
+        msg = "Number of speed bins must be between 2 and 10"
+        messages["ERROR"].append(msg)
+    speed_bin_width = int(cfg["Options"]["speed_bin_width"])
+    if ((speed_bin_width < 1) or (speed_bin_width > 5)):
+        msg = "Speed bin width must be between 1 and 5 m/s"
+        messages["ERROR"].append(msg)
+    Fsd_threshold = int(cfg["Options"]["Fsd_threshold"])
+    if ((Fsd_threshold < -10) or (Fsd_threshold > 10)):
+        msg = "Fsd threshold must be between -10 and 10 W/m^2"
+        messages["ERROR"].append(msg)
+    return
+def check_windrose_variables_section(cfg, messages):
+    """ Check the Variables section of the windrose control file."""
+    # check the Variables section is present
+    if "Variables" not in cfg:
+        msg = "No Variables section in control file"
+        messages["ERROR"].append(msg)
+        return
+    # check the required entries are in the Variables section
+    for item in ["Fsd", "Wd", "Ws"]:
+        if item not in cfg["Variables"]:
+            msg = item + " not in Variables section"
+            messages["ERROR"].append(msg)
+            return
+    # check each entry in the Variables section
+    for item in ["Fsd", "Wd", "Ws"]:
+        if "name" not in cfg["Variables"][item]:
+            msg = item + " does not have required key 'name'"
+            messages["ERROR"].append(msg)
+    return
 def display_messages(messages):
     # gather variable error messages into a single list
     error_messages = []
