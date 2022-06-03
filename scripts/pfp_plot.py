@@ -1423,6 +1423,9 @@ def plot_windrose(cf):
     wrinfo = plot_windrose_parse_controlfile(cf)
     # read the netCDF file to a data structure
     ds = pfp_io.NetCDFRead(wrinfo["in_filename"], update=False)
+    # check the required variables are in the data structure
+    if not plot_windrose_check_variables(ds, wrinfo):
+        return
     # update the info dictionary
     wrinfo["start"] = ds.globalattributes["time_coverage_start"]
     wrinfo["end"] = ds.globalattributes["time_coverage_end"]
@@ -1432,6 +1435,18 @@ def plot_windrose(cf):
     # plot the seasonal windrose
     plot_windrose_seasonal(ds, wrinfo)
     return
+
+def plot_windrose_check_variables(ds, wrinfo):
+    """ Check the variables named in the control file exist in the data structure."""
+    ok = True
+    labels = list(ds.series.keys())
+    for item in ["Fsd", "Wd", "Ws"]:
+        name = wrinfo[item]
+        if name not in labels:
+            msg = name + "(" + item + ") not found in " + wrinfo["in_filename"]
+            logger.error(msg)
+            ok = False
+    return ok
 
 def plot_windrose_parse_controlfile(cf):
     """

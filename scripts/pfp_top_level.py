@@ -828,7 +828,7 @@ def do_plot_timeseries():
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
-def do_plot_windrose():
+def do_plot_windrose_standard():
     """
     Purpose:
      Plot windroses.
@@ -867,6 +867,33 @@ def do_plot_windrose():
         cf["Options"]["show_plots"] = "Yes"
         logger.info("Plotting windroses ...")
         pfp_plot.plot_windrose(cf)
+        logger.info(" Finished plotting windroses")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while plotting windroses, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
+def do_plot_windrose_custom(main_ui):
+    """
+    Purpose:
+     Plot windroses.
+    Usage:
+     pfp_top_level.do_plot_windrose()
+    Side effects:
+     Plots windroses to the screen and creates .PNG hardcopies of
+     the plots.
+    Author: PRI/CE
+    Date: May 2022
+    Mods:
+    """
+    try:
+        cfg = main_ui.tabs.tab_dict[main_ui.tabs.tab_index_running].get_data_from_model()
+        cfg["Options"]["call_mode"] = "interactive"
+        cfg["Options"]["show_plots"] = "Yes"
+        logger.info("Plotting windroses ...")
+        pfp_plot.plot_windrose(cfg)
         logger.info(" Finished plotting windroses")
         logger.info("")
     except Exception:
