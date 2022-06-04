@@ -11,11 +11,14 @@ import time
 # third party modules
 import dateutil
 import numpy
+import pandas
 import pytz
+import xarray
 import xlrd
 # PFP modules
 from scripts import constants as c
 from scripts import meteorologicalfunctions as pfp_mf
+from scripts import pfp_io
 
 logger = logging.getLogger("pfp_log")
 
@@ -1896,14 +1899,27 @@ def GetDateIndex(ldt, date, ts=30, default=0, match='exact'):
         logger.error("GetDateIndex: Unrecognised match option")
     return i
 
-def GetGlobalAttributeValue(cf,ds,ThisOne):
-    if ThisOne not in list(ds.globalattributes.keys()):
-        if ThisOne in list(cf['General'].keys()):
-            ds.globalattributes[ThisOne] = cf['General'][ThisOne]
-        else:
-            logger.error('  GetGlobalAttributeValue: global attribute '+ThisOne+' was not found in the netCDF file or in the control file')
-            ds.globalattributes[ThisOne] = None
-    return ds.globalattributes[ThisOne]
+def GetGlobalAttribute(ds, gattr):
+    """
+    Purpose:
+     Get a global attribute from either a PFP data structure or an xarray
+     data set.
+     @Ian - this might be the start of replacing pfp_io.DataStructure()
+            with xarray.Dataset()!
+    Usage:
+     gattr_value = pfp_utils.GetGlobalAttribute(ds, gattr)
+    Author: PRI
+    Date: June 2022
+    """
+    if isinstance(ds, pfp_io.DataStructure):
+        gattr_value = ds.globalattributes[gattr]
+    elif isinstance(ds, xarray.Dataset):
+        gattr_value = ds.attrs[gattr]
+    else:
+        msg = "GetGlobalAttribute: unrecognised object"
+        logger.error(msg)
+        raise RuntimeError(msg)
+    return gattr_value
 
 def GetMergeSeriesKeys(cf, ThisOne, section="Variables"):
     """
@@ -2146,6 +2162,15 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
       Fsd = pfp_utils.GetVariable(ds, "Fsd")
     Author: PRI
     """
+    if isinstance(ds, pfp_io.DataStructure):
+        variable = get_variable_pfp(ds, label, start=start, end=end,
+                                    mode=mode, out_type=out_type, match=match)
+    elif isinstance(ds, xarray.Dataset):
+        variable = get_variable_xarray(ds, label, start=start, end=end,
+                                       mode=mode, out_type=out_type, match=match)
+    return variable
+
+def get_variable_pfp(ds, label, start=0, end=-1, mode="truncate", out_type="ma", match="exact"):
     nrecs = int(ds.globalattributes["nc_nrecs"])
     ldt = ds.series["DateTime"]["Data"]
     # get the start and end indices
@@ -2176,6 +2201,47 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
     # make sure there is a value for the long_name attribute
     if "long_name" not in variable["Attr"]:
         variable["Attr"]["long_name"] = label
+    return variable
+
+def get_variable_xarray(ds, label, start=0, end=-1, mode="truncate", out_type="ma", match="exact"):
+    # get the start and end indices
+    match_options = {"start": {"exact": "exact", "wholehours": "startnexthour",
+                               "wholedays": "startnextday", "wholemonths": "startnextmonth"},
+                     "end": {"exact": "exact", "wholehours": "endprevioushour",
+                             "wholedays": "endpreviousday", "wholemonths": "endpreviousmonth"}}
+    nrecs = int(GetGlobalAttribute(ds, "nc_nrecs"))
+    ldt = pandas.to_datetime(ds.time)
+    # this is a particularly horrid way to deal with non-numeric time steps
+    time_step = GetGlobalAttribute(ds, "time_step")
+    try:
+        ts = int(float(time_step))
+        si = GetDateIndex(ldt, start, ts=ts, default=0, match=match_options["start"][match])
+        ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match=match_options["end"][match])
+    except:
+        si = 0
+        ei = nrecs - 1
+    lds = list(ds.keys())
+    labels = [l for l in lds if "_QCFlag" not in l and "time" in ds[l].dims]
+    if label in labels:
+        data = ds[label].values[si:ei+1, 0, 0]
+        data = numpy.ma.masked_values(data, c.missing_value)
+        if label+"_QCFlag" in lds:
+            flag = ds[label+"_QCFlag"].values[si:ei+1, 0, 0]
+        else:
+            flag = numpy.zeros(len(data))
+        attr = ds[label].attrs
+    elif label == "DateTime":
+        #data = pandas.to_datetime(ds.time)
+        data = ldt[si:ei+1]
+        flag = numpy.zeros(len(data))
+        attr = {"long_name": "Datetime in local timezone", "units": ""}
+    else:
+        pass
+    variable = {"Label": label,
+                "Data": data,
+                "Flag": flag,
+                "Attr": attr,
+                "DateTime": ldt[si:ei+1]}
     return variable
 
 def GetUnitsFromds(ds, ThisOne):

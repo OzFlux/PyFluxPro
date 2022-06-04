@@ -479,16 +479,18 @@ def plot_explore_fingerprints(ds, labels):
     """
     msg = " Plotting fingerprint for " + ", ".join(labels)
     logger.info(msg)
-    site_name = ds.globalattributes["site_name"]
+    #site_name = ds.globalattributes["site_name"]
+    site_name = pfp_utils.GetGlobalAttribute(ds, "site_name")
     # number of columns, each column will be 1 fingerprint
     ncols = len(labels)
     # get the time step
-    ts = int(float(ds.globalattributes["time_step"]))
+    #ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(pfp_utils.GetGlobalAttribute(ds, "time_step"))
     # get the start and end dates for whole days
     dt = pfp_utils.GetVariable(ds, "DateTime")
     si = pfp_utils.GetDateIndex(dt["Data"], dt["Data"][0], ts=ts, default=0, match='startnextday')
     ei = pfp_utils.GetDateIndex(dt["Data"], dt["Data"][-1], ts=ts, default=-1, match='endpreviousday')
-    # subset the datetime to who;e days
+    # subset the datetime to whole days
     ldt = dt["Data"][si:ei + 1]
     # get the number of records per day and the number of whole days
     nPerHr = int(float(60)/ts + 0.5)
@@ -651,7 +653,8 @@ def plot_explore_percentiles(ds, labels):
 
 def plot_explore_timeseries(ds, labels):
     """ Plot time series of selected variables."""
-    site_name = ds.globalattributes["site_name"]
+    #site_name = ds.globalattributes["site_name"]
+    site_name = pfp_utils.GetGlobalAttribute(ds, "site_name")
     nrows = len(labels)
     plt.ion()
     fig, axs = plt.subplots(nrows=nrows, sharex=True, figsize=(10.9, 7.5))
@@ -684,7 +687,8 @@ def plot_explore_timeseries(ds, labels):
 def plot_explore_timeseries_grouped(ds, labels):
     """ Plot time series of grouped variables."""
     groups = sorted(list(set([l.split("_")[0] for l in labels])))
-    site_name = ds.globalattributes["site_name"]
+    #site_name = ds.globalattributes["site_name"]
+    site_name = pfp_utils.GetGlobalAttribute(ds, "site_name")
     nrows = len(groups)
     colors = ["blue","red","green","yellow","magenta","black","cyan","brown"]
     plt.ion()

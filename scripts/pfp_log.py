@@ -67,11 +67,11 @@ class CreateLogger(logging.getLoggerClass()):
             fh3.setLevel(logging.WARNING)
             fh3.setFormatter(formatter)
             self.logger.addHandler(fh3)
-        if to_screen:
-            console = logging.StreamHandler()
-            console.setFormatter(formatter)
-            console.setLevel(logger_level)
-            self.logger.addHandler(console)
+        #if to_screen:
+            #console = logging.StreamHandler()
+            #console.setFormatter(formatter)
+            #console.setLevel(logger_level)
+            #self.logger.addHandler(console)
 def init_logger(logger_name, log_file_name, to_file=True, to_screen=False):
     """
     Purpose:

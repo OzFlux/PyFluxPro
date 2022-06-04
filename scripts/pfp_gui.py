@@ -104,7 +104,8 @@ class display_thredds_tree(QtWidgets.QWidget):
         level = 0
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
-        local_path = [selected_item.parent().child(selected_item.row(), 0).text()]
+        #local_path = [selected_item.parent().child(selected_item.row(), 0).text()]
+        local_path = [selected_item.parent().child(0, 0).text()]
         while idx.parent().isValid():
             idx = idx.parent()
             local_path.append(idx.data())
@@ -224,14 +225,25 @@ class display_thredds_tree(QtWidgets.QWidget):
                 continue
             url = self.info["base_url"] + site + "/" + version + "/" + level + "/" + processing + "/"
             procs["proc"][processing] = {"file_names": list(file_names)}
-            if len(procs["proc"][processing]["file_names"]) > 0:
-                self.thredds["files"][site][version][level][processing] = procs["proc"][processing]["file_names"][0]
-                self.thredds["urls"][site][version][level][processing] = url
-            child0 = QtGui.QStandardItem(processing)
-            child0.setEditable(False)
-            child1 = QtGui.QStandardItem(self.thredds["files"][site][version][level][processing])
-            child1.setEditable(False)
-            selected_item.appendRow([child0, child1])
+            #if len(procs["proc"][processing]["file_names"]) > 0:
+                #self.thredds["files"][site][version][level][processing] = procs["proc"][processing]["file_names"][0]
+                #self.thredds["urls"][site][version][level][processing] = url
+            #child0 = QtGui.QStandardItem(processing)
+            #child0.setEditable(False)
+            #child1 = QtGui.QStandardItem(self.thredds["files"][site][version][level][processing])
+            #child1.setEditable(False)
+            #selected_item.appendRow([child0, child1])
+            self.thredds["files"][site][version][level][processing] = procs["proc"][processing]["file_names"]
+            self.thredds["urls"][site][version][level][processing] = url
+            for n, file_name in enumerate(procs["proc"][processing]["file_names"]):
+                if n == 0:
+                    child0 = QtGui.QStandardItem(processing)
+                else:
+                    child0 = QtGui.QStandardItem("")
+                child0.setEditable(False)
+                child1 = QtGui.QStandardItem(file_name)
+                child1.setEditable(False)
+                selected_item.appendRow([child0, child1])
 
 class edit_cfg_batch(QtWidgets.QWidget):
     def __init__(self, main_gui):
@@ -10121,6 +10133,168 @@ class file_explore(QtWidgets.QWidget):
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+        return
+
+class file_explore_thredds(QtWidgets.QWidget):
+    def __init__(self, main_gui):
+        super(file_explore_thredds, self).__init__()
+        self.ds = main_gui.ds
+        self.labels = sorted([l for l in list(self.ds.keys())
+                              if "_QCFlag" not in l and "time" in self.ds[l].dims])
+        self.tabs = main_gui.tabs
+        self.figure_number = 0
+        self.view = QtWidgets.QTreeView()
+        self.model = QtGui.QStandardItemModel()
+        self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.view.customContextMenuRequested.connect(self.context_menu)
+        #self.view.doubleClicked.connect(self.double_click)
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addWidget(self.view)
+        self.setLayout(vbox)
+        self.setGeometry(300, 300, 600, 400)
+        self.view.setAlternatingRowColors(True)
+        self.view.setHeaderHidden(False)
+        self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.view.setModel(self.model)
+        self.get_model_from_data()
+        self.view.setColumnWidth(0, 200)
+        # expand the "Variables" section
+        for row in range(self.model.rowCount()):
+            section = self.model.item(row)
+            if section.text() in ["Variables"]:
+                idx = self.model.index(row, 0)
+                self.view.expand(idx)
+
+    def context_menu(self, position):
+        self.context_menu = QtWidgets.QMenu()
+        if len(self.view.selectedIndexes()) == 0:
+            # trap right click when nothing is selected
+            return
+        idx = self.view.selectedIndexes()
+        selected_text = sorted([i.data() for i in idx])
+        # plot time series, separate axes or grouped
+        menuPlotTimeSeries = QtWidgets.QMenu(self)
+        menuPlotTimeSeries.setTitle("Plot time series")
+        actionPlotTimeSeriesSeparate = QtWidgets.QAction(self)
+        actionPlotTimeSeriesSeparate.setText("Separate")
+        actionPlotTimeSeriesSeparate.triggered.connect(lambda: self.plot_timeseries(selected_text))
+        actionPlotTimeSeriesGrouped = QtWidgets.QAction(self)
+        actionPlotTimeSeriesGrouped.setText("Grouped")
+        actionPlotTimeSeriesGrouped.triggered.connect(lambda: self.plot_timeseries_grouped(selected_text))
+        menuPlotTimeSeries.addAction(actionPlotTimeSeriesSeparate)
+        menuPlotTimeSeries.addAction(actionPlotTimeSeriesGrouped)
+        self.context_menu.addMenu(menuPlotTimeSeries)
+        ## plot time series of percentiles
+        #self.context_menu.actionPlotPercentiles = QtWidgets.QAction(self)
+        #self.context_menu.actionPlotPercentiles.setText("Plot percentiles")
+        #self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
+        #self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selected_text))
+        # plot fingerprints
+        if self.ds.attrs["time_step"] not in ["daily", "monthly", "annual"]:
+            self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
+            self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
+            self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
+            self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selected_text))
+        self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
+        return
+    def get_model_from_data(self):
+        #print("this is where we display the variables")
+        self.model.setHorizontalHeaderLabels(['Variable', 'long_name'])
+
+        gattrs = sorted(list(self.ds.attrs.keys()))
+        long_name = QtGui.QStandardItem("")
+        section = QtGui.QStandardItem("Global attributes")
+        section.setEditable(False)
+        for gattr in gattrs:
+            value = str(self.ds.attrs[gattr])
+            child0 = QtGui.QStandardItem(gattr)
+            child1 = QtGui.QStandardItem(value)
+            section.appendRow([child0, child1])
+        self.model.appendRow([section, long_name])
+
+        variables_section = QtGui.QStandardItem("Variables")
+        variables_section.setEditable(False)
+        for label in self.labels:
+            #var = pfp_utils.GetVariable(self.ds, label)
+            long_name = QtGui.QStandardItem(self.ds[label].attrs["long_name"])
+            variable_section = QtGui.QStandardItem(label)
+            # some variable names are not editable
+            if label in ["DateTime", "time"]:
+                variable_section.setEditable(False)
+            for attr in self.ds[label].attrs:
+                value = str(self.ds[label].attrs[attr])
+                child0 = QtGui.QStandardItem(attr)
+                child1 = QtGui.QStandardItem(value)
+                variable_section.appendRow([child0, child1])
+            variables_section.appendRow([variable_section, long_name])
+        self.model.appendRow([variables_section, QtGui.QStandardItem("")])
+        return
+    def plot_fingerprints(self, labels):
+        """ Wrapper for plot fingerprints function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.labels):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        try:
+            pfp_plot.plot_explore_fingerprints(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting fingerprints, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+        return
+    def plot_timeseries(self, labels):
+        """ Wrapper for plot time series function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.labels):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        try:
+            pfp_plot.plot_explore_timeseries(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting time series, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+        return
+    def plot_timeseries_grouped(self, labels):
+        """ Wrapper for plot time series function."""
+        # remove anything that is not the label of a variable in self.ds
+        for label in list(labels):
+            if label not in list(self.labels):
+                labels.remove(label)
+        # check to make sure there is something left to plot
+        if len(labels) == 0:
+            msg = " No variables to plot"
+            logger.warning(msg)
+            return
+        # go ahead and plot
+        try:
+            pfp_plot.plot_explore_timeseries_grouped(self.ds, labels)
+            # increment the figure number
+            self.figure_number += 1
+        except Exception:
+            error_message = " An error occured while plotting time series, see below for details ..."
+            logger.error(error_message)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
         return
 
 class MsgBox_Continue(QtWidgets.QMessageBox):

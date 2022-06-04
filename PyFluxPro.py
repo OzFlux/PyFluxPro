@@ -80,7 +80,7 @@ class pfp_main_ui(QWidget):
         self.actionFileOpen.setText("Open")
         self.actionFileOpen.setShortcut('Ctrl+O')
         self.actionFileOpenTHREDDS = QAction(self)
-        self.actionFileOpenTHREDDS.setText("Open THREDDS")
+        self.actionFileOpenTHREDDS.setText("THREDDS")
         self.actionFileOpenTHREDDS.setShortcut('Ctrl+T')
         self.actionFileSave = QAction(self)
         self.actionFileSave.setText("Save")
@@ -317,7 +317,9 @@ class pfp_main_ui(QWidget):
         return
 
     def file_open_thredds_catalog(self):
-        text, ok = QInputDialog.getText(self, 'Open THREDDS server', 'Enter THREDDS URL:')
+        #text, ok = QInputDialog.getText(self, 'Open THREDDS server', 'Enter THREDDS URL:')
+        text = "https://dap.tern.org.au/thredds/catalog/ecosystem_process/ozflux/catalog.html"
+        ok = True
         if not ok:
             return
         info = {"base_url": text.replace("catalog.html", ""),
@@ -342,18 +344,31 @@ class pfp_main_ui(QWidget):
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         return
 
+    #def file_open_thredds_file(self, file_url):
+        ## read the netCDF file to a data structure
+        #self.ds = pfp_io.NetCDFRead(file_url, checktimestep=False, update=False)
+        #if self.ds.returncodes["value"] != 0:
+            #return
+        ## display the netcdf file in the GUI
+        #self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
+        ## return if something went wrong
+        #if self.tabs.tab_dict[self.tabs.tab_index_all].ds.returncodes["value"] != 0:
+            #return
+        ## add a tab for the netCDF file contents
+        #tab_title = os.path.basename(self.ds.filepath)
+        #self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
+        #self.tabs.setCurrentIndex(self.tabs.tab_index_all)
+        #self.tabs.tab_index_all = self.tabs.tab_index_all + 1
+        #return
+
     def file_open_thredds_file(self, file_url):
+        import xarray
         # read the netCDF file to a data structure
-        self.ds = pfp_io.NetCDFRead(file_url, checktimestep=False, update=False)
-        if self.ds.returncodes["value"] != 0:
-            return
+        self.ds = xarray.open_dataset(file_url)
         # display the netcdf file in the GUI
-        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
-        # return if something went wrong
-        if self.tabs.tab_dict[self.tabs.tab_index_all].ds.returncodes["value"] != 0:
-            return
+        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore_thredds(self)
         # add a tab for the netCDF file contents
-        tab_title = os.path.basename(self.ds.filepath)
+        tab_title = os.path.basename(os.path.split(file_url)[1])
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
