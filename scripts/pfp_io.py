@@ -375,24 +375,10 @@ def DataFrameToDataStructure(df, l1_info):
                    "cf_role": "timeseries_id"}
     pfp_utils.CreateVariable(ds, var)
     # now do the other variables
-    # get a list of variables requested in the control file
-    labels = list(l1ire["Variables"])
-    # get a list of the netCDF labels for variables requested from the Excel file
-    nc_labels = [l for l in labels if l1ire["src"] in l1ire["Variables"][l]]
-    # get a dictionary that maps the name in the Excel file to the name in
-    # the netCDF file
-    l1ire["src_from_nc"] = {}
-    for nc_label in nc_labels:
-        src_label = l1ire["Variables"][nc_label][l1ire["src"]]["name"]
-        l1ire["src_from_nc"][nc_label] = src_label
-    # loop over variables, extract from the data frame, write to data structure
-    df_labels = list(df)
-    for nc_label in nc_labels:
-        src_label = l1ire["src_from_nc"][nc_label]
-        if src_label not in df_labels:
-            continue
-        var = pfp_utils.CreateEmptyVariable(nc_label, nrecs)
-        data = df[src_label].apply(coerce_to_numeric).to_numpy()
+    labels = list(df)
+    for label in labels:
+        var = pfp_utils.CreateEmptyVariable(label, nrecs)
+        data = df[label].apply(coerce_to_numeric).to_numpy()
         # mask non-finite records
         mask = numpy.isfinite(data)
         var["Data"] = numpy.ma.masked_where(mask == False, data)
@@ -401,7 +387,7 @@ def DataFrameToDataStructure(df, l1_info):
         # set the QC flag to 1 for masked data
         mask = numpy.ma.getmaskarray(var["Data"])
         var["Flag"] = numpy.where(mask == False, zeros, ones)
-        var["Attr"] = l1ire["Variables"][nc_label]["Attr"]
+        var["Attr"] = l1ire["Variables"][label]["Attr"]
         pfp_utils.CreateVariable(ds, var)
     return ds
 
@@ -684,6 +670,10 @@ def ReadExcelWorkbook(l1_info):
         # coerce all columns with dtype "object" to "float64"
         cols = dfs[df_name].columns[dfs[df_name].dtypes.eq(object)]
         dfs[df_name][cols] = dfs[df_name][cols].apply(pandas.to_numeric, errors='coerce')
+    # rename the pandas dataframe columns from the Excel variable names to the netCDF
+    # variable names
+    for df_name in df_names:
+        dfs[df_name] = dfs[df_name].rename(columns=l1ire["xl_sheets"][df_name]["xl_labels"])
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     return dfs
 
@@ -2056,12 +2046,12 @@ def MergeDataFrames(dfs, l1_info):
         dt = pandas.date_range(start, end, freq=ts)
         # create an empty data frame
         df = pandas.DataFrame({'DateTime': dt})
-        # set the datetinne as the index
+        # set the datetime as the index
         df = df.set_index("DateTime")
         # list of data frames
         frames = [dfs[s] for s in sorted(list(dfs.keys()))]
-        # merge the data frames
-        df = pandas.concat(frames)
+        # merge the data frames on columns (axis=1)
+        df = pandas.concat(frames, axis=1)
     else:
         df = dfs[df_names[0]]
     return df
