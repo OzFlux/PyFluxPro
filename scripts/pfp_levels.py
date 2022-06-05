@@ -54,7 +54,6 @@ def l1qc(cfg):
     pfp_ts.CalculateStandardDeviations(ds)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds)
-
     return ds
 
 def l2qc(cf,ds1):
@@ -90,7 +89,6 @@ def l2qc(cf,ds1):
     pfp_io.get_seriesstats(cf, ds2)
     # write the percentage of good data as a variable attribute
     pfp_utils.get_coverage_individual(ds2)
-
     return ds2
 
 def l3qc(cf, ds2):
@@ -270,7 +268,6 @@ def l4qc(main_gui, cf, ds3):
     pfp_utils.get_coverage_groups(ds4)
     # remove intermediate series from the data structure
     pfp_ts.RemoveIntermediateSeries(ds4, l4_info)
-
     return ds4
 
 def l5qc(main_gui, cf, ds4):
@@ -330,7 +327,6 @@ def l5qc(main_gui, cf, ds4):
     pfp_utils.get_coverage_groups(ds5)
     # remove intermediate series from the data structure
     pfp_ts.RemoveIntermediateSeries(ds5, l5_info)
-
     return ds5
 
 def l6qc(main_gui, cf, ds5):
@@ -379,5 +375,4 @@ def l6qc(main_gui, cf, ds5):
     pfp_ts.RemoveIntermediateSeries(ds6, l6_info)
     # do the L6 summary
     pfp_rp.L6_summary(cf, ds6)
-
     return ds6

@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.2"
+version_number = "V3.4.3"
+# V3.4.3 - June 2022
+#        - bug fixes at L1
 # V3.4.2 - June 2022
 #        - added Cacilia's windrose plotting code
 #          - standard (via menu)
