@@ -15,6 +15,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from siphon.catalog import TDSCatalog
+import xarray
 # PFP modules
 sys.path.insert(0, 'scripts')
 from scripts import cfg
@@ -334,35 +335,13 @@ class pfp_main_ui(QWidget):
             thredds["urls"][site] = {"version": {"level": {"default": "https://"}}}
         # display the THREDDS catalog in the GUI
         self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.display_thredds_tree(self, catalogs, thredds, info)
-        ## return if something went wrong
-        #if self.tabs.tab_dict[self.tabs.tab_index_all].ds.returncodes["value"] != 0:
-            #return
         # add a tab for the netCDF file contents
-        #tab_title = os.path.basename(self.ds.filepath)
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], "THREDDS server")
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         return
 
-    #def file_open_thredds_file(self, file_url):
-        ## read the netCDF file to a data structure
-        #self.ds = pfp_io.NetCDFRead(file_url, checktimestep=False, update=False)
-        #if self.ds.returncodes["value"] != 0:
-            #return
-        ## display the netcdf file in the GUI
-        #self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
-        ## return if something went wrong
-        #if self.tabs.tab_dict[self.tabs.tab_index_all].ds.returncodes["value"] != 0:
-            #return
-        ## add a tab for the netCDF file contents
-        #tab_title = os.path.basename(self.ds.filepath)
-        #self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
-        #self.tabs.setCurrentIndex(self.tabs.tab_index_all)
-        #self.tabs.tab_index_all = self.tabs.tab_index_all + 1
-        #return
-
     def file_open_thredds_file(self, file_url):
-        import xarray
         # read the netCDF file to a data structure
         self.ds = xarray.open_dataset(file_url)
         # display the netcdf file in the GUI
