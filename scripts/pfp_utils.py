@@ -1378,7 +1378,7 @@ def CreateVariable(ds, var_in, over_write=True):
      pfp_utils.CreateVariable(ds,Fsd)
     Author: PRI
     Date: September 2016
-          June 2021 - copy the variablle before adding to the data structure otherwise
+          June 2021 - copy the variable before adding to the data structure otherwise
                       the contents of the input variable will be changed
     """
     variable = CopyVariable(var_in)
@@ -1477,48 +1477,6 @@ def find_nearest_value(array, value):
         if abs(array[i+1]-value) <= abs(array[i]-value):
             i = i + 1
     return i
-
-def FindIndicesOfBInA(a,b):
-    """
-    Purpose:
-     Find the indices of elements in b that also occur in a.
-     The routine is intended for use only with lists of Python datetime
-     values.  This ensures the input series are monotonically increasing
-     (though this is not a requirement) and contain no duplicates (which
-     is required, or at least not handled).
-    Limitations:
-     Argument a is converted to a set to greatly speed the comparison
-     of b elements with a.  This means that duplicates in a will be
-     dropped and hence only 1 index will be returned for each value
-     in b.
-    Usage:
-     indices = pfp_utils.FindIndicesOfBInA(a,b)
-     where a is a list of Python datetime objects
-           b is a list of Python datetime objects
-           indices is a list of indices in b where the elements of b
-                also occur in a
-    Author: PRI
-    Date: July 2015
-    Comments: Replaces find_indices used up to V2.9.3.
-    March 2018 - rewritten to handle numpy.ndarray and lists
-    """
-    if len(set(a)) != len(a):
-        msg = " FindIndicesOfBInA: first argument contains duplicate values"
-        logger.error(msg)
-        indices = []
-        return
-    if isinstance(a, numpy.ndarray) and isinstance(b, numpy.ndarray):
-        asorted = numpy.argsort(a)
-        bpos = numpy.searchsorted(a[asorted], b)
-        indices = asorted[bpos]
-    elif isinstance(a, list) and isinstance(b, list):
-        tmpset = set(a)
-        indices = [i for i,item in enumerate(b) if item in tmpset]
-    else:
-        msg = " FindIndicesOfBInA: inputs must be both list or both numpy arrays"
-        logger.error(msg)
-        indices = []
-    return indices
 
 def FindMatchingIndices(a, b):
     """
@@ -2133,10 +2091,11 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
     Purpose:
      Returns a data variable from the data structure as a dictionary.
     Usage:
-     data,flag,attr = pfp_utils.GetSeriesasMA(ds,label,si=0,ei=-1)
-    where the arguments are;
-      ds    - the data structure (dict)
+     variable = pfp_utils.GetSeriesasMA(ds, label)
+    Required arguments are;
+      ds    - the data structure (class)
       label - label of the data variable in ds (string)
+    Optional arguments are;
       start - start date or index (integer), default 0
       end   - end date or index (integer), default -1
       mode  - truncate or pad the data
@@ -2149,11 +2108,11 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
                                the last whole day
                 "wholemonths" - finds the start of the first whole month and end of
                                the last whole month
-     The data are returned as a dictionary;
-      variable["label"] - variable label in data structure
-      variable["data"] - numpy float64 masked array containing data
-      variable["flag"] - numpy int32 array containing QC flags
-      variable["attr"] - dictionary of variable attributes
+     This function returns a variable as a dictionary;
+      variable["Label"] - variable label in data structure
+      variable["Data"] - numpy float64 masked array containing data
+      variable["Flag"] - numpy int32 array containing QC flags
+      variable["Attr"] - dictionary of variable attributes
       variable["DateTime] - datetimes of the data
     Example:
      The code snippet below will return the incoming shortwave data values
@@ -2252,7 +2211,7 @@ def get_base_path():
     """
     Purpose:
      Return the base path dependng on whether we are running as a script
-     or a Pyinstaller app;ication.
+     or a Pyinstaller application.
     Author: https://stackoverflow.com/questions/7674790/bundling-data-files-with-pyinstaller-onefile
     """
     # check if we running as a PyInstaller application

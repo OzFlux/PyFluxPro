@@ -30,6 +30,60 @@ from scripts import pfp_utils
 logger = logging.getLogger("pfp_log")
 
 class DataStructure(object):
+    """
+    This is the main data structure used throughout PyFluxPro.
+
+    A data structure is used to hold all of the data and metadata used by
+    PyFluxPro during data procssing.  It is basically a representation in
+    Python of a netCDF file.
+
+    Creating a data structure:
+     A data structure can be created directly using;
+      ds = pfp_io.Datastructure()
+
+    Attributes of a data structure:
+     ds.globalattributes - a dictionary containing the global attributes read from
+                           or written to a netCDF file.
+     ds.series - a dictionary containing the variables read from or written to a
+                 netCDF file.
+
+    Variables in a data structure:
+     Each variable in the ds.series dictionary is another dictionary that
+     contains the data, the quality control flag and the attributes.
+     For example, the air temperature variable (Ta) is stored in the data
+     structure as follows;
+      ds.series["Ta"]["Data"] - a 1D numpy array containing the data values
+      ds.series["Ta"]["Flag"] - a 1D numpy array containing the quality
+                                control flag values
+      ds.series["Ta"]["Attr"] - a dictionary containing the variable attributes
+
+    Reading a data structure from file:
+     A data structure is returned when a netCDF file is read e.g.;
+      ds = pfp_io.NetCDFRead(file_name)
+      where file_name is the name of the netCDF file.
+
+    Writing a data structure to file:
+     A data structure can be written to a netCDF file using;
+      pfp_io.NetCDFWrite(file_name, ds)
+      where file_name is the name of the netCDF file to be created
+            ds is the data structure to be written to the file
+
+    Accessing variables in a data structure:
+     Variables in a data structure can be accessed using the GetVariable
+     helper function as follows;
+      Ta = pfp_utils.GetVariable(ds, "Ta")
+     where "Ta" is the label of the variable.
+           ds is the data structure containing the variable.
+           Ta is a dictionary containing the data, quality control flag
+              and attributes for the air temperature.
+
+    Useful functions:
+     pfp_utils.GetVariable(ds, label)
+     pfp_utils.CreateVariable(ds, variable)
+
+    Date: Way back in the day
+    Author: PRI
+    """
     def __init__(self):
         self.series = {}
         self.globalattributes = {}
@@ -376,6 +430,83 @@ def nc_2xls(ncfilename, outputlist=None):
             if len(xlsxfilename) == 0: return
         xlsx_write_series(ds, xlsxfilename, outputlist=outputlist)
     return
+
+def PadDataStructure(ds_original, pad_to="whole_years"):
+    """
+    Purpose:
+     Pad a data structure so that it starts and ends on a whole year,
+     a whole month or a whole day.
+     Only whole year is implemented at present.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: May 2022
+    """
+    # get the time step as a time delta object
+    ts = int(ds_original.globalattributes["time_step"])
+    dts = datetime.timedelta(minutes=ts)
+    # get the original datetime and the start and end year
+    ldt_original = pfp_utils.GetVariable(ds_original, "DateTime")
+    start_year = ldt_original["Data"][0].year
+    end_year = ldt_original["Data"][-1].year
+    # get the padding option
+    if pad_to == "whole_years":
+        # pad to whole years
+        # get the start and end datetimes of the padded data structure
+        start_date = datetime.datetime(start_year, 1, 1, 0, 0, 0) + dts
+        end_date = datetime.datetime(end_year+1, 1, 1, 0, 0, 0)
+    else:
+        msg = "PadDataStructure: unrecognised pad_to option "
+        msg += "(" + pad_to + ")"
+        raise RuntimeError(msg)
+    # create the padded data structure
+    ds_padded = DataStructure()
+    # copy over the global attributes
+    for gattr in list(ds_original.globalattributes.keys()):
+        ds_padded.globalattributes[gattr] = ds_original.globalattributes[gattr]
+    # update the start and end datetime global attributes
+    ds_padded.globalattributes["time_coverage_start"] = start_date.strftime("%Y-%m-%d %H:%M")
+    ds_padded.globalattributes["time_coverage_end"] = end_date.strftime("%Y-%m-%d %H:%M")
+    # greate a datetime series between the padded start and end datetimes
+    dt_padded = numpy.array([d for d in pfp_utils.perdelta(start_date, end_date, dts)])
+    # get the number of records
+    nrecs_padded = len(dt_padded)
+    # update the number of records global attribute
+    ds_padded.globalattributes["nc_nrecs"] = nrecs_padded
+    # create the padded datetime variable
+    ldt_padded = {"Label": "DateTime",
+                  "Data": dt_padded,
+                  "Flag": numpy.zeros(nrecs_padded),
+                  "Attr": {"long_name": "Datetime in local timezone",
+                           "units": "",
+                           "calendar": "gregorian"}}
+    # put the padded datetime variable into the padded datastructure
+    pfp_utils.CreateVariable(ds_padded, ldt_padded)
+    # generate the netCDF time variable
+    pfp_utils.get_nctime_from_datetime(ds_padded)
+    # get the indices of matching elements
+    idx_original, idx_padded = pfp_utils.FindMatchingIndices(ldt_original["Data"],
+                                                             ldt_padded["Data"])
+    # get the variable labels in the original datastructure
+    labels_original = list(ds_original.series.keys())
+    # remove DateTime and time labels, these are done separately
+    for label in ["DateTime", "time"]:
+        if label in labels_original:
+            labels_original.remove(label)
+    # loop over variables, copy to padded datastructure
+    for label in labels_original:
+        # read the original variable
+        var_original = pfp_utils.GetVariable(ds_original, label)
+        # create an empty variable
+        var_padded = pfp_utils.CreateEmptyVariable(label, nrecs_padded)
+        # copy contents from original to padded variable
+        var_padded["Label"] = var_original["Label"]
+        var_padded["Data"][idx_padded] = var_original["Data"][idx_original]
+        var_padded["Flag"][idx_padded] = var_original["Flag"][idx_original]
+        var_padded["Attr"] = var_original["Attr"]
+        # put the variable into the padded datastructure
+        pfp_utils.CreateVariable(ds_padded, var_padded)
+    return ds_padded
 
 def ReadCSVFile(l1_info):
     """
@@ -1891,25 +2022,134 @@ def netcdf_concatenate_truncate(ds_in, info):
 
 def MergeDataFrames(dfs, l1_info):
     """
+    Purpose:
+     Merge several data frames into a single data frame.
+     pfp_io.ReadExcelWorkbook() returns one pandas data frame per worksheet in the
+     workbook.  This routine combines these data frames into a single data frame
+     that spans all of the times on the worksheets.
+    Usage:
+     df = pfp_io.MergeDataFrames(dfs, l1_info)
+     where dfs is a dictionary of pandas data frames
+           l1_info is the information dictionary created from the L1 control file
+           df is a single pandas data frame containing all data from the data frames
+              in dfs.
+    Side effects:
+     Returns a pandas data frame.
+    Author: PRI
+    Date: Back in the day
     """
+    # get a list of data frame names
     df_names = list(dfs)
+    # merge data frames
     if len(df_names) > 1:
         msg = " Merging " + ','.join(df_names) + " to a single data frame"
         logger.info(msg)
+        # get the earliest start and latest end time
         start = min(dfs[df_names[0]].index.values)
         end = max(dfs[df_names[0]].index.values)
         for df_name in df_names[1:]:
             start = min([min(dfs[df_name].index.values), start])
             end = max([max(dfs[df_name].index.values), end])
+        # get the timestep as a string pandas will recognise
         ts = str(int(l1_info["read_excel"]["Global"]["time_step"])) + "T"
+        # create a pandas datetime range
         dt = pandas.date_range(start, end, freq=ts)
+        # create an empty data frame
         df = pandas.DataFrame({'DateTime': dt})
+        # set the datetinne as the index
         df = df.set_index("DateTime")
-        for df_name in df_names:
-            df = df.merge(dfs[df_name], left_index=True, right_index=True, how='inner')
+        # list of data frames
+        frames = [dfs[s] for s in sorted(list(dfs.keys()))]
+        # merge the data frames
+        df = pandas.concat(frames)
     else:
         df = dfs[df_names[0]]
     return df
+
+def MergeDataStructures(ds_dict, l1_info):
+    """
+    Purpose:
+     Merge multiple data structures into a single data structure.
+     Merging is done on the time axis as follows:
+      1) find the earliest start time
+      2) find the latest end time
+      3) construct a datetime series between the earliest start datetime
+         and the latest end datetime at the time step interval
+      4) create the datetime series in the merged data structure
+      5) insert the data from each individual data structure into
+         the merged data structure by matching the datetimes
+    Usage:
+    Side effects:
+     Returns a new data structure with the contents of the individual
+     data structures passed in as ds_dict.
+    Author: PRI
+    Date: February 2020
+    """
+    msg = " Merging " + str(list(ds_dict.keys()))
+    logger.info(msg)
+    l1ire = l1_info["read_excel"]
+    # data structure to hold all data
+    ds = DataStructure()
+    ds.globalattributes = copy.deepcopy(l1ire["Global"])
+    # get the earliest start datetime and the latest datetime
+    start = []
+    end = []
+    for item in list(ds_dict.keys()):
+        start.append(ds_dict[item].series["DateTime"]["Data"][0])
+        end.append(ds_dict[item].series["DateTime"]["Data"][-1])
+    start = min(start)
+    end = max(end)
+    # put the datetime into the data structure
+    ts = int(float(ds.globalattributes["time_step"]))
+    dts = datetime.timedelta(minutes=ts)
+    # generate an aray of datetime from start to end with spacing of ts
+    dt = numpy.array([d for d in pfp_utils.perdelta(start, end, dts)])
+    nrecs = len(dt)
+    var = pfp_utils.CreateEmptyVariable("DateTime", nrecs)
+    var["Label"] = "DateTime"
+    var["Data"] = dt
+    var["Flag"] = numpy.zeros(len(var["Data"]), dtype=numpy.int32)
+    var["Attr"] = {"long_name": "Datetime in local timezone",
+                   "cf_role": "timeseries_id",
+                   "units": "days since 1899-12-31 00:00:00"}
+    pfp_utils.CreateVariable(ds, var)
+    # update the global attributes
+    ds.globalattributes["time_coverage_start"] = str(dt[0])
+    ds.globalattributes["time_coverage_end"] = str(dt[-1])
+    ds.globalattributes["nc_nrecs"] = len(dt)
+    # put the data into the data structure
+    dt1 = pfp_utils.GetVariable(ds, "DateTime")
+    for item in list(ds_dict.keys()):
+        #print item
+        # get the datetime for this worksheet
+        dtn = pfp_utils.GetVariable(ds_dict[item], "DateTime")
+        # remove duplicate timestamps
+        dtn_unique, index_unique = numpy.unique(dtn["Data"], return_index=True)
+        # restore the original order of the unique timestamps
+        dtn_sorted = dtn_unique[numpy.argsort(index_unique)]
+        # check to see if there were duplicates
+        if len(dtn_sorted) < len(dtn["Data"]):
+            n = len(dtn["Data"]) - len(dtn_sorted)
+            msg = str(n) + " duplicate time stamps were removed for sheet " + item
+            logger.warning(msg)
+        # get the indices where the timestamps match
+        idxa, idxb = pfp_utils.FindMatchingIndices(dt1["Data"], dtn_sorted)
+        # check that all datetimes in ds_dict[item] were found in ds
+        if len(idxa) != len(dtn_sorted):
+            no_match = 100*(len(dtn_sorted) - len(idxa))//len(dtn_sorted)
+            msg = str(no_match) + "% of time stamps for " + item + " do not match"
+            logger.warning(msg)
+        labels = list(ds_dict[item].series.keys())
+        if "DateTime" in labels:
+            labels.remove("DateTime")
+        for label in labels:
+            var1 = pfp_utils.CreateEmptyVariable(label, nrecs)
+            varn = pfp_utils.GetVariable(ds_dict[item], label)
+            var1["Data"][idxa] = varn["Data"][idxb]
+            var1["Flag"][idxa] = varn["Flag"][idxb]
+            var1["Attr"] = varn["Attr"]
+            pfp_utils.CreateVariable(ds, var1)
+    return ds
 
 def ncsplit_run(split_gui):
     infilename = split_gui.info["input_file_path"]
@@ -2245,6 +2485,16 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", updat
 
 def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3):
     """
+    Purpose:
+     Wrapper for the pfp_io.nc_write_series() routine so we have a nice name
+     to use.  Over time, pfp_io.nc_write_series() will be rewritten and
+     eventualy deprecated.
+    Usage:
+     pfp_io.NetCDFWrite(nc_file_uri, ds)
+     where nc_file_uri is a netCDF file name or URL pointing to a netCDF file
+           ds is a PFP data structure
+    Author: PRI
+    Date: June 2021
     """
     file_name = os.path.split(nc_file_path)
     msg = " Writing netCDF file " + file_name[1]

@@ -9877,10 +9877,6 @@ class file_explore(QtWidgets.QWidget):
         self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.view.customContextMenuRequested.connect(self.context_menu)
         self.view.doubleClicked.connect(self.double_click)
-        vbox = QtWidgets.QVBoxLayout()
-        vbox.addWidget(self.view)
-        self.setLayout(vbox)
-        self.setGeometry(300, 300, 600, 400)
         self.view.setAlternatingRowColors(True)
         self.view.setHeaderHidden(False)
         self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
@@ -9941,10 +9937,6 @@ class file_explore(QtWidgets.QWidget):
             section = model.item(i)
             key1 = str(section.text())
             if key1 in ["Global attributes"]:
-                # sections with only 1 level
-                for j in range(section.rowCount()):
-                    key2 = str(section.child(j, 0).text())
-                    val2 = str(section.child(j, 1).text())
                     self.ds.globalattributes[key2] = val2
             elif key1 in ["Variables"]:
                 for j in range(section.rowCount()):
@@ -10127,13 +10119,349 @@ class file_explore(QtWidgets.QWidget):
             logger.error(error_message)
         return
 
+class edit_cfg_windrose(QtWidgets.QWidget):
+    def __init__(self, main_gui):
+        super(edit_cfg_windrose, self).__init__()
+        self.cfg = copy.deepcopy(main_gui.file)
+        self.tabs = main_gui.tabs
+        self.edit_windrose_gui()
+
+    #def add_new_variable(self):
+        #""" Add a new variable to the 'Variables' section."""
+        ## get the index of the selected item
+        #idx = self.view.selectedIndexes()[0]
+        ## get the selected item from the index
+        #parent = idx.model().itemFromIndex(idx)
+        #dict_to_add = {"name": ""}
+        #subsection = QtGui.QStandardItem("New variable")
+        #self.add_subsection(subsection, dict_to_add)
+        #parent.appendRow(subsection)
+        ## add an asterisk to the tab text to indicate the tab contents have changed
+        #self.update_tab_text()
+
+    #def add_subsection(self, section, dict_to_add):
+        #""" Add a subsection to the model."""
+        #for key in dict_to_add:
+            #val = str(dict_to_add[key])
+            #child0 = QtGui.QStandardItem(key)
+            #child0.setEditable(False)
+            #child1 = QtGui.QStandardItem(val)
+            #section.appendRow([child0, child1])
+
+    def browse_file_path(self):
+        """ Browse for the data file path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the selected entry text
+        file_path = str(idx.data())
+        # dialog for new directory
+        new_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose a folder",
+                                                             file_path, QtWidgets.QFileDialog.ShowDirsOnly)
+        # quit if cancel button pressed
+        if len(str(new_dir)) > 0:
+            # make sure the string ends with a path delimiter
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
+            # update the model
+            parent.child(selected_item.row(), 1).setText(new_dir)
+
+    def browse_input_file(self):
+        """ Browse for the input data file path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
+        # dialog for open file
+        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
+                                                              directory=file_path)[0]
+        # update the model
+        if len(str(new_file_path)) > 0:
+            new_file_parts = os.path.split(str(new_file_path))
+            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
+            ## populate the output file name with a default based on the input file name
+            #for n in range(parent.rowCount()):
+                #if parent.child(n, 0).text() == "out_filename":
+                    #xls_filename = new_file_parts[1].replace(".nc", "_CPD_Barr.xls")
+                    #parent.child(n, 1).setText(xls_filename)
+        return
+
+    #def browse_output_file(self):
+        #""" Browse for the output data file path."""
+        ## get the index of the selected item
+        #idx = self.view.selectedIndexes()[0]
+        ## get the selected item from the index
+        #selected_item = idx.model().itemFromIndex(idx)
+        ## get the parent of the selected item
+        #parent = selected_item.parent()
+        ## get the top level and sub sections
+        ## get the file_path so it can be used as a default directory
+        #key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
+        ## dialog for open file
+        #new_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
+                                                              #directory=file_path, filter="*.xls")[0]
+        ## update the model
+        #if len(str(new_file_path)) > 0:
+            #new_file_parts = os.path.split(str(new_file_path))
+            #parent.child(selected_item.row(), 1).setText(new_file_parts[1])
+
+    def context_menu(self, position):
+        """ Right click context menu."""
+        # get a menu
+        self.context_menu = QtWidgets.QMenu()
+        # get the index of the selected item
+        if len(self.view.selectedIndexes()) == 0:
+            # trap right click when nothing is selected
+            return
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item text
+        selected_text = str(idx.data())
+        # get the selected item
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the level of the selected item
+        level = self.get_level_selected_item()
+        if level == 0:
+            if selected_text in ["Variables"]:
+                #self.context_menu.actionAddVariable = QtWidgets.QAction(self)
+                #self.context_menu.actionAddVariable.setText("Add variable")
+                #self.context_menu.addAction(self.context_menu.actionAddVariable)
+                #self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
+                pass
+            elif selected_text in ["Options"]:
+                pass
+            else:
+                pass
+        elif level == 1:
+            # sections with 2 levels
+            # get the parent of the selected item
+            parent = selected_item.parent()
+            if (str(parent.text()) == "Files") and (selected_item.column() == 1):
+                key = str(parent.child(selected_item.row(),0).text())
+                if key in ["file_path", "plot_path"]:
+                    self.context_menu.actionBrowseFilePath = QtWidgets.QAction(self)
+                    self.context_menu.actionBrowseFilePath.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
+                    self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
+                elif key in ["in_filename"]:
+                    self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
+                    self.context_menu.actionBrowseInputFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
+                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+                #elif key in ["out_filename"]:
+                    #self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
+                    #self.context_menu.actionBrowseInputFile.setText("Browse...")
+                    #self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
+                    #self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_output_file)
+                else:
+                    pass
+            elif (str(parent.text()) == "Options") and (selected_item.column() == 0):
+                pass
+            elif (str(parent.text()) == "Variables") and (selected_item.column() == 0):
+                #self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
+                #self.context_menu.actionRemoveOption.setText("Remove variable")
+                #self.context_menu.addAction(self.context_menu.actionRemoveOption)
+                #self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
+                pass
+            else:
+                pass
+        else:
+            pass
+        self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
+        return
+
+    def double_click(self):
+        """ Save the selected text on double click events."""
+        idx = self.view.selectedIndexes()
+        self.double_click_selected_text = idx[0].data()
+        return
+
+    def edit_windrose_gui(self):
+        """ Edit a windrose control file GUI."""
+        # get a QTreeView and a standard model
+        self.view = myTreeView()
+        # get a QStandardItemModel
+        self.model = QtGui.QStandardItemModel()
+        # add the model to the view
+        self.view.setModel(self.model)
+        # set the context menu policy
+        self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        # connect the context menu requested signal to appropriate slot
+        self.view.customContextMenuRequested.connect(self.context_menu)
+        self.view.doubleClicked.connect(self.double_click)
+        # do the QTreeView layout
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addWidget(self.view)
+        self.setLayout(vbox)
+        self.setGeometry(300, 300, 600, 400)
+        # build the model
+        self.get_model_from_data()
+        # set the default width for the first column
+        self.view.setColumnWidth(0, 200)
+        # expand the top level of the sections
+        for row in range(self.model.rowCount()):
+            idx = self.model.index(row, 0)
+            self.view.expand(idx)
+
+    def get_data_from_model(self):
+        """ Iterate over the model and get the data."""
+        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
+        cfg["level"] = "windrose"
+        model = self.model
+        # there must be a way to do this recursively
+        for i in range(model.rowCount()):
+            section = model.item(i)
+            key1 = str(section.text())
+            cfg[key1] = {}
+            if key1 in ["Files", "Options"]:
+                # sections with only 1 level
+                for j in range(section.rowCount()):
+                    key2 = str(section.child(j, 0).text())
+                    val2 = str(section.child(j, 1).text())
+                    cfg[key1][key2] = val2
+            elif key1 in ["Variables"]:
+                # sections with 2 levels
+                for j in range(section.rowCount()):
+                    subsection = section.child(j)
+                    key2 = str(subsection.text())
+                    cfg[key1][key2] = {}
+                    for k in range(subsection.rowCount()):
+                        key3 = str(subsection.child(k, 0).text())
+                        val3 = str(subsection.child(k, 1).text())
+                        cfg[key1][key2][key3] = val3
+
+        return cfg
+
+    def get_keyval_by_key_name(self, section, key):
+        """ Get the value from a section based on the key name."""
+        found = False
+        val_child = ""
+        key_child = ""
+        for i in range(section.rowCount()):
+            if str(section.child(i, 0).text()) == str(key):
+                found = True
+                key_child = str(section.child(i, 0).text())
+                val_child = str(section.child(i, 1).text())
+                break
+        return key_child, val_child, found, i
+
+    def get_level_selected_item(self):
+        """ Get the level of the selected item."""
+        indexes = self.view.selectedIndexes()
+        level = -1
+        if len(indexes) > 0:
+            level = 0
+            index = indexes[0]
+            while index.parent().isValid():
+                index = index.parent()
+                level += 1
+        return level
+
+    def get_model_from_data(self):
+        """ Build the data model."""
+        self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
+        self.model.itemChanged.connect(self.handleItemChanged)
+        # there must be someway outa here, said the Joker to the Thief ...
+        self.sections = {}
+        for key1 in self.cfg:
+            if not self.cfg[key1]:
+                continue
+            if key1 in ["Files", "Options"]:
+                # sections with only 1 level
+                self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
+                for key2 in self.cfg[key1]:
+                    val = self.cfg[key1][key2]
+                    child0 = QtGui.QStandardItem(key2)
+                    child0.setEditable(False)
+                    child1 = QtGui.QStandardItem(val)
+                    self.sections[key1].appendRow([child0, child1])
+                self.model.appendRow(self.sections[key1])
+            elif key1 in ["Variables"]:
+                # sections with 2 levels
+                self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
+                # key2 is the variable name
+                for key2 in self.cfg[key1]:
+                    parent2 = QtGui.QStandardItem(key2)
+                    # key3 is the variable options
+                    for key3 in self.cfg[key1][key2]:
+                        val = self.cfg[key1][key2][key3]
+                        child0 = QtGui.QStandardItem(key3)
+                        child0.setEditable(False)
+                        child1 = QtGui.QStandardItem(val)
+                        parent2.appendRow([child0, child1])
+                    self.sections[key1].appendRow(parent2)
+                self.model.appendRow(self.sections[key1])
+
+    def get_sibling_names(self):
+        idx = self.view.selectedIndexes()[0]
+        parent = idx.parent().model().itemFromIndex(idx.parent())
+        sibling_names = []
+        if parent.hasChildren():
+            for i in range(parent.rowCount()):
+                sibling_names.append(str(parent.child(i, 0).text()))
+        return sibling_names
+
+    def handleItemChanged(self, item):
+        """ Handler for when view items are edited."""
+        # here we trap attempts by the user to add duplicate entries
+        # index of selected item
+        idx = self.view.selectedIndexes()[0]
+        # selected item from index
+        selected_item = idx.model().itemFromIndex(idx)
+        # text of selected item, this will be the name of the item the user
+        # is trying to add
+        selected_text = selected_item.text()
+        # parent of the item the user is trying to add
+        parent = selected_item.parent()
+        # user has done something silly
+        if not hasattr(parent, "text"):
+            return
+        # check parent text to see if this item needs to be checked for duplicates
+        if parent.text() in ["Files", "Options", "Variables"]:
+            # get the names of the new item's siblings
+            sibling_names = self.get_sibling_names()
+            # if the user is trying to use the same name as an existing entry there
+            # will be entries with this name in the siblings name list
+            if len(list(set(sibling_names))) != len(sibling_names):
+                # duplicate entries found
+                msg = "'" + selected_text + "' already exists in " + parent.text() + " section"
+                # put up a message box to tell the user
+                MsgBox_Continue(msg)
+                # change the item name back to the original
+                selected_item.setText(self.double_click_selected_text)
+                return
+        # update the control file contents
+        self.cfg = self.get_data_from_model()
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    #def remove_item(self):
+        #""" Remove an item from the view."""
+        ## loop over selected items in the tree
+        #for idx in self.view.selectedIndexes():
+            ## get the selected item from the index
+            #selected_item = idx.model().itemFromIndex(idx)
+            ## get the parent of the selected item
+            #parent = selected_item.parent()
+            ## remove the row
+            #parent.removeRow(selected_item.row())
+        #self.update_tab_text()
+
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-        return
 
 class file_explore_thredds(QtWidgets.QWidget):
     def __init__(self, main_gui):

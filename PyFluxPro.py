@@ -125,6 +125,8 @@ class pfp_main_ui(QWidget):
         self.actionPlotQuickCheck.setText("Summary")
         self.actionPlotTimeSeries = QAction(self)
         self.actionPlotTimeSeries.setText("Time series")
+        self.actionPlotWindrose = QAction(self)
+        self.actionPlotWindrose.setText("Windrose")
         self.actionPlotClosePlots = QAction(self)
         self.actionPlotClosePlots.setText("Close plots")
         # Utilities menu
@@ -165,6 +167,7 @@ class pfp_main_ui(QWidget):
         self.menuPlot.addAction(self.actionPlotFingerprints)
         self.menuPlot.addAction(self.actionPlotQuickCheck)
         self.menuPlot.addAction(self.actionPlotTimeSeries)
+        self.menuPlot.addAction(self.actionPlotWindrose)
         self.menuPlot.addSeparator()
         self.menuPlot.addAction(self.actionPlotClosePlots)
         # Utilities/u* threshold submenu
@@ -232,6 +235,7 @@ class pfp_main_ui(QWidget):
         self.actionPlotFingerprints.triggered.connect(pfp_top_level.do_plot_fingerprints)
         self.actionPlotQuickCheck.triggered.connect(pfp_top_level.do_plot_quickcheck)
         self.actionPlotTimeSeries.triggered.connect(pfp_top_level.do_plot_timeseries)
+        self.actionPlotWindrose.triggered.connect(pfp_top_level.do_plot_windrose_standard)
         self.actionPlotClosePlots.triggered.connect(pfp_top_level.do_plot_closeplots)
         # Utilities menu actions
         self.actionUtilitiesClimatology.triggered.connect(self.utilities_climatology_standard)
@@ -410,6 +414,8 @@ class pfp_main_ui(QWidget):
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_reddyproc(self)
         elif self.file["level"] in ["batch"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_batch(self)
+        elif self.file["level"] in ["windrose"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_windrose(self)
         else:
             logger.error(" Unrecognised control file type: " + self.file["level"])
             return
@@ -818,6 +824,10 @@ class pfp_main_ui(QWidget):
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_reddyproc":
             pfp_top_level.do_file_convert_nc2reddyproc(self, mode="custom")
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "windrose":
+            if pfp_compliance.check_windrose_controlfile(cfg):
+                pfp_top_level.do_plot_windrose_custom(self)
             self.actionRunCurrent.setDisabled(False)
         else:
             logger.error("Level not implemented yet ...")

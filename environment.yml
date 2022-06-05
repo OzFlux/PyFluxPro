@@ -18,6 +18,7 @@ dependencies:
   - siphon
   - statsmodels
   - timezonefinder
+  - windrose
   - xarray
   - xlwt
   - xlrd

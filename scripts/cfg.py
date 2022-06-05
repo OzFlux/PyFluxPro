@@ -1,5 +1,9 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.1"
+version_number = "V3.4.2"
+# V3.4.2 - June 2022
+#        - added Cacilia's windrose plotting code
+#          - standard (via menu)
+#          - custom (via control file)
 # V3.4.1 - May 2022
 #        - fixed missing data after 2D interpolation in pfp_clim.climatology()
 # V3.4.0 - April 2022
