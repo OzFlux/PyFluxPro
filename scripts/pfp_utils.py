@@ -1964,7 +1964,10 @@ def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
         if ThisOne == "DateTime":
             ts = int(ds.globalattributes["time_step"])
             dts = datetime.timedelta(minutes=ts)
-            start_date = datetime.datetime(Series[0].year, Series[0].month, Series[0].day, 0, 0, 0)
+            #start_date = datetime.datetime(Series[0].year, Series[0].month, Series[0].day, 0, 0, 0)
+            start_date = datetime.datetime((Series[0]-dts).year,
+                                           (Series[0]-dts).month,
+                                           (Series[0]-dts).day, 0, 0, 0)
             start_date = start_date + dts
             end_date = datetime.datetime(Series[-1].year, Series[-1].month, Series[-1].day, 0, 0, 0)
             if not ((Series[-1].hour == 0) and
