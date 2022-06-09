@@ -6,6 +6,7 @@ import datetime
 import logging
 import numbers
 import os
+import platform
 import sys
 import time
 # third party modules
@@ -2395,6 +2396,29 @@ def get_end_index(ldt, end, default=-1, mode="quiet"):
             logger.warning(msg)
         ei = default
     return ei
+
+def get_executable_suffix():
+    """ Returns the executable suffix based on operating system and architecture."""
+    if platform.system() in ["Windows"]:
+        if platform.machine() in ["i386", "AMD64", "x86_64"]:
+            executable_suffix = ".exe"
+        else:
+            msg = "Unrecgnised architecture for Windows"
+            raise RuntimeError(msg)
+    elif platform.system() in ["Darwin"]:
+        if platform.machine() in ["arm64"]:
+            executable_suffix = "_arm64"
+        elif platform.machine() in ["x86_64"]:
+            executable_suffix = "_x86_64"
+        else:
+            msg = "Unrecognised architecture for macOS"
+            raise RuntimeError(msg)
+    elif platform.system() in ["Linux"]:
+        executable_suffix = ""
+    else:
+        msg = "Unrecognised operating system"
+        raise RuntimeError(msg)
+    return executable_suffix
 
 def get_keyvaluefromcf(cf,sections,key,default=None,mode="quiet"):
     """
