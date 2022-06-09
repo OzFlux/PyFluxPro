@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash -l
 # activate the environment
-source activate pfp_env
+conda activate pfp_env
 # wait until the command has completed
 wait
 # check the command line arguments
