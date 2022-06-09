@@ -1,5 +1,6 @@
-#!/usr/bin/env bash -l
+#!/bin/bash -l
 # activate the environment
+eval "$(conda shell.bash hook)"
 conda activate pfp_env
 # wait until the command has completed
 wait
