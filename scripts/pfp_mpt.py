@@ -113,6 +113,8 @@ def run_mpt_code(cf, ds, mpt):
             PRI wrote this wrapper
     Date: Back in the day
     """
+    # get the executable suffix
+    suffix = pfp_utils.get_executable_suffix()
     # set up file paths, headers and formats etc
     out_file_paths = {}
     header = "TIMESTAMP,NEE,VPD,USTAR,TA,SW_IN,H,LE"
@@ -155,7 +157,7 @@ def run_mpt_code(cf, ds, mpt):
         numpy.savetxt(in_full_path, data, header=header, delimiter=",", comments="", fmt=fmt)
         # get the base path of script or Pyinstaller application
         base_path = pfp_utils.get_base_path()
-        ustar_mp_exe = os.path.join(base_path, "mpt", "bin", "ustar_mp")
+        ustar_mp_exe = os.path.join(base_path, "mpt", "bin", "ustar_mp"+suffix)
         if ts == 30:
             cmd = [ustar_mp_exe, "-input_path="+in_full_path, "-output_path="+out_base_path]
         elif ts == 60:

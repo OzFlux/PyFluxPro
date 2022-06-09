@@ -671,6 +671,8 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
     # file path and input file name
     l5_info[called_by]["info"]["file_path"] = cf["Files"]["file_path"]
     l5_info[called_by]["info"]["in_filename"] = cf["Files"]["in_filename"]
+    # get the executable suffix
+    l5_info[called_by]["info"]["executable_suffix"] = pfp_utils.get_executable_suffix()
     # get the plot path
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     plot_path = os.path.join(opt, "L5", "")
@@ -977,6 +979,7 @@ def gfSOLO_createdict_info(cf, ds, l5_info, called_by):
     l5s["info"]["called_by"] = called_by
     l5s["info"]["time_step"] = time_step
     l5s["info"]["site_name"] = ds.globalattributes["site_name"]
+    l5s["info"]["executable_suffix"] = pfp_utils.get_executable_suffix()
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
     l5s["info"]["call_mode"] = call_mode

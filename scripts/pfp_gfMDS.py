@@ -81,7 +81,7 @@ def GapFillUsingMDS(ds, l5_info, called_by):
             numpy.savetxt(in_file_path, data, header=header, delimiter=",", comments="", fmt=fmt)
             l5im["outputs"][mds_label]["in_file_paths"].append(in_file_path)
         # then we construct the MDS C code command options list
-        cmd = gfMDS_make_cmd_string(l5im["outputs"][mds_label])
+        cmd = gfMDS_make_cmd_string(l5im, mds_label)
         # then we spawn a subprocess for the MDS C code
         subprocess.call(cmd, stdout=mdslogfile)
         mds_out_file = os.path.join(td, "output", "mds.csv")
@@ -179,7 +179,7 @@ def gfMDS_initplot(**kwargs):
     pd["ts_height"] = (1.0 - pd["margin_top"] - pd["ts_bottom"])/float(pd["nDrivers"]+1)
     return pd
 
-def gfMDS_make_cmd_string(info):
+def gfMDS_make_cmd_string(l5im, mds_label):
     """
     Purpose:
      Construct the command line options string passed to the MDS C code.
@@ -187,15 +187,17 @@ def gfMDS_make_cmd_string(info):
     Author: PRI
     Date: May 2018
     """
+    info = l5im["outputs"][mds_label]
     # create the input files string
     in_files = info["in_file_paths"][0]
+    suffix = l5im["info"]["executable_suffix"]
     for in_file in info["in_file_paths"][1:]:
         in_files = in_files + "+" + in_file
     # get the output base path
     out_base_path = info["out_base_path"]
     # get the base path of script or Pyinstaller application
     base_path = pfp_utils.get_base_path()
-    gf_mds_exe = os.path.join(base_path, "mds", "bin", "gf_mds")
+    gf_mds_exe = os.path.join(base_path, "mds", "bin", "gf_mds"+suffix)
     # start creating the command list of MDS options
     cmd = [gf_mds_exe, '-input='+in_files, '-output='+out_base_path,
            '-date=TIMESTAMP', '-rows_min=0']

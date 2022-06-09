@@ -3,6 +3,7 @@ import csv
 import datetime
 import logging
 import os
+import platform
 import subprocess
 import tempfile
 # 3rd party modules
@@ -823,6 +824,7 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,
     Run SEQSOLO.
     '''
     td = solo["tmp_dir"]
+    suffix = solo["info"]["executable_suffix"]
     # get the number of drivers
     ndrivers = len(drivers)
     # add an extra column for the target data
@@ -869,7 +871,7 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,
     seqsolologfile = open(seqsolo_log, 'w')
     # get the base path of script or Pyinstaller application
     base_path = pfp_utils.get_base_path()
-    seqsolo_exe = os.path.join(base_path, "solo", "bin", "seqsolo")
+    seqsolo_exe = os.path.join(base_path, "solo", "bin", "seqsolo"+suffix)
     seqsolo_inf = os.path.join(td, "inf", "seqsolo.inf")
     subprocess.call([seqsolo_exe, seqsolo_inf], stdout=seqsolologfile)
     seqsolologfile.close()
@@ -896,6 +898,7 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     Run SOFM, the pre-processor for SOLO.
     '''
     td = solo["tmp_dir"]
+    suffix = solo["info"]["executable_suffix"]
     # get the number of drivers
     ndrivers = len(drivers)
     # add an extra column for the target data
@@ -944,7 +947,7 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     sofmlogfile = open(sofm_log, 'w')
     # get the base path of script or Pyinstaller application
     base_path = pfp_utils.get_base_path()
-    sofm_exe = os.path.join(base_path, "solo", "bin", "sofm")
+    sofm_exe = os.path.join(base_path, "solo", "bin", "sofm"+suffix)
     sofm_inf = os.path.join(td, "inf", "sofm.inf")
     subprocess.call([sofm_exe, sofm_inf], stdout=sofmlogfile)
     sofmlogfile.close()
@@ -961,6 +964,7 @@ def gfSOLO_runsolo(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     Run SOLO.
     '''
     td = solo["tmp_dir"]
+    suffix = solo["info"]["executable_suffix"]
     ndrivers = len(drivers)
     # add an extra column for the target data
     soloinputdata = numpy.zeros((nRecs, ndrivers+1))
@@ -1001,7 +1005,7 @@ def gfSOLO_runsolo(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     solologfile = open(solo_log, 'w')
     # get the base path of script or Pyinstaller application
     base_path = pfp_utils.get_base_path()
-    solo_exe = os.path.join(base_path, "solo", "bin", "solo")
+    solo_exe = os.path.join(base_path, "solo", "bin", "solo"+suffix)
     solo_inf = os.path.join(td, "inf", "solo.inf")
     subprocess.call([solo_exe, solo_inf], stdout=solologfile)
     solologfile.close()
