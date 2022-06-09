@@ -4,7 +4,6 @@ channels:
 dependencies:
   - python
   - configobj
-  - cfchecker
   - python-dateutil
   - lmfit
   - matplotlib
