@@ -271,9 +271,12 @@ def climatology(cf):
             # fill any missing data in the interpolated array with the monthly climatology
             month = numpy.array([dt.month-1 for dt in ldt2])
             month_daily = month.reshape(nDays_daily, ntsInDay)
-            hour = numpy.array([int(2*(dt.hour+float(dt.minute)/float(60))) for dt in ldt2])
+            hour = numpy.array([int(60/ts*(dt.hour+float(dt.minute)/float(60))) for dt in ldt2])
             hour_daily = hour.reshape(nDays_daily,ntsInDay)
-            data_daily_i[idx] = Av_all[hour_daily[idx], month_daily[idx]]
+            try:
+                data_daily_i[idx] = Av_all[hour_daily[idx], month_daily[idx]]
+            except:
+                print("oi va vey")
             # write the interpolated data to the Excel workbook
             xlSheet = xlFile.add_sheet(ThisOne+'i(day)')
             write_data_1columnpertimestep(xlSheet, data_daily_i, ts, startdate=sdate, format_string=fmt_str)
