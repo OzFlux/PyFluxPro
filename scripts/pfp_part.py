@@ -46,11 +46,15 @@ class partition(object):
     """
     def __init__(self, dataframe, names_dict = None, fit_daytime_rb = False,
                  weights_air_soil = 'air', noct_threshold = 10,
-                 convert_to_photons = True):
+                 convert_to_photons = True, time_step=30):
 
         #interval = int(filter(lambda x: x.isdigit(),
                               #pd.infer_freq(dataframe.index)))
-        interval = int(float(pfp_utils.strip_non_numeric(pd.infer_freq(dataframe.index))))
+        # pandas.infer_freq() returns 'H' for hourly data causing pfp_utils.strip_non_numeric()
+        # to return an empty string causing the float() to fail.
+        #interval = int(float(pfp_utils.strip_non_numeric(pd.infer_freq(dataframe.index))))
+        # simplify by passing the time step as an argument
+        interval = int(time_step)
         assert interval % 30 == 0
         self.interval = interval
         if not names_dict:

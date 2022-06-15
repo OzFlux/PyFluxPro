@@ -157,6 +157,8 @@ def EcoResp(ds, l6_info, called_by):
     Author: IMcH, PRI
     Date: August 2019
     """
+    # get the time step
+    ts = int(float(ds.globalattributes["time_step"]))
     # Get required configs dict
     iel = l6_info[called_by]
     outputs = iel["outputs"].keys()
@@ -229,7 +231,8 @@ def EcoResp(ds, l6_info, called_by):
             else:
                 weighting = "air"
         # Pass the dataframe to the respiration class and get the results
-        ptc = pfp_part.partition(df, weights_air_soil = weighting, fit_daytime_rb = rb_mode)
+        ptc = pfp_part.partition(df, weights_air_soil = weighting, fit_daytime_rb = rb_mode,
+                                 time_step=ts)
         params_df = ptc.estimate_parameters(mode = er_mode)
         ER = ptc.estimate_er_time_series(params_df)
         ER_flag = numpy.tile(30, len(ER))
