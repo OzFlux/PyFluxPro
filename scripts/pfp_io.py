@@ -802,7 +802,7 @@ def write_tsv_reddyproc(cf):
     if not os.path.exists(file_name[0]):
         os.makedirs(file_name[0])
     # open the csv file
-    csvfile = open(csvFileName,'w')
+    csvfile = open(csvFileName,'w', newline='', encoding='utf-8')
     writer = csv.writer(csvfile,dialect='excel-tab')
     # read the netCDF file
     ds = NetCDFRead(ncFileName)
