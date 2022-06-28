@@ -84,8 +84,13 @@ class DataStructure(object):
     Date: Way back in the day
     Author: PRI
     """
-    def __init__(self):
-        self.series = {}
+    def __init__(self, groups=[]):
+        if len(groups) == 0:
+            self.series = {}
+        else:
+            self.groups = {}
+            for group in groups:
+                self.groups[group] = {}
         self.globalattributes = {}
         self.mergeserieslist = []
         self.averageserieslist = []
@@ -833,10 +838,7 @@ def write_tsv_reddyproc(cf):
             logger.error(msg)
             series_list.remove(series)
             continue
-        d, f, a = pfp_utils.GetSeries(ds, ncname, si=si, ei=ei)
-        data[series]["Data"] = d
-        data[series]["Flag"] = f
-        data[series]["Attr"] = a
+        data[series] = pfp_utils.GetVariable(ds, ncname, start=si, end=ei, out_type="-9999")
         fmt = data[series]["format"]
         if "." in fmt:
             numdec = len(fmt) - (fmt.index(".") + 1)
@@ -896,17 +898,17 @@ def write_tsv_reddyproc(cf):
     csvfile.close()
     return 1
 
-def smap_datetodatadictionary(ds,data_dict,nperday,ndays,si,ei):
+def smap_datetodatadictionary(ds, data_dict, nperday, ndays, si, ei):
     ldt = ds.series["DateTime"]["Data"][si:ei+1]
     # do the months
-    month_1d,f,a = pfp_utils.GetSeries(ds,"Month",si=si,ei=ei)
+    month_1d = pfp_utils.GetVariable(ds, "Month", start=si, end=ei)
     data_dict["Mo"] = {}
-    data_dict["Mo"]["data"] = numpy.reshape(month_1d,[ndays,nperday])[:,0]
+    data_dict["Mo"]["data"] = numpy.reshape(month_1d["Data"], [ndays, nperday])[:,0]
     data_dict["Mo"]["fmt"] = "0"
     # do the days
     data_dict["Day"] = {}
-    day_1d,f,a = pfp_utils.GetSeries(ds,"Day",si=si,ei=ei)
-    data_dict["Day"]["data"] = numpy.reshape(day_1d,[ndays,nperday])[:,0]
+    day_1d = pfp_utils.GetVariable(ds, "Day", start=si, end=ei)
+    data_dict["Day"]["data"] = numpy.reshape(day_1d["Data"], [ndays, nperday])[:,0]
     data_dict["Day"]["fmt"] = "0"
     # day of the year
     data_dict["DOY"] = {}
@@ -914,37 +916,45 @@ def smap_datetodatadictionary(ds,data_dict,nperday,ndays,si,ei):
     data_dict["DOY"]["data"] = numpy.reshape(doy_1d,[ndays,nperday])[:,0]
     data_dict["DOY"]["fmt"] = "0"
 
-def smap_docarbonfluxes(cf,ds,smap_label,si,ei):
+def smap_docarbonfluxes(cf, ds, smap_label, si, ei):
     ncname = cf["Variables"][smap_label]["name"]
-    data,flag,attr = pfp_utils.GetSeriesasMA(ds,ncname,si=si,ei=ei)
-    data = data*12.01*1800/1E6
-    data = numpy.ma.filled(data,float(-9999))
-    return data,flag
+    var = pfp_utils.GetVariable(ds, ncname, start=si, end=ei)
+    var["Data"] = var["Data"]*12.01*1800/1E6
+    var["Data"] = numpy.ma.filled(var["Data"], float(-9999))
+    return var
 
-def smap_donetshortwave(ds,smap_label,si,ei):
+def smap_donetshortwave(ds, smap_label, si, ei):
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     ts = int(float(ds.globalattributes["time_step"]))
     # do the net shortwave radiation
-    Fsd,Fsd_flag,a = pfp_utils.GetSeriesasMA(ds,"Fsd",si=si,ei=ei)
-    Fsu,Fsu_flag,a = pfp_utils.GetSeriesasMA(ds,"Fsu",si=si,ei=ei)
+    Fsd = pfp_utils.GetVariable(ds, "Fsd", start=si, end=ei)
+    Fsu = pfp_utils.GetVariable(ds, "Fsu", start=si, end=ei)
     # get the net shortwave radiation and convert to MJ/m2/day at the same time
-    Fnsw = ((Fsd - Fsu)*ts*60)/1E6
+    Fnsw = pfp_utils.CreateEmptyVariable("Fnsw", nrecs)
+    Fnsw = ((Fsd["Data"] - Fsu["Data"])*ts*60)/1E6
     # now get the QC flag
-    Fnsw_flag = Fsd_flag+Fsu_flag
-    Fnsw = numpy.ma.filled(Fnsw,float(-9999))
-    return Fnsw,Fnsw_flag
+    Fnsw["Flag"] = Fsd["Flag"] + Fsu["Flag"]
+    Fnsw["Data"] = numpy.ma.filled(Fnsw["Data"], float(-9999))
+    Fnsw["Attr"] = {"long_name": "Net shortwave radiation",
+                    "units": "W/m^2",
+                    "statistic_type": "average"}
+    return Fnsw
 
-def smap_dopressure(ds,smap_label,si,ei):
-    ps,ps_flag,attr = pfp_utils.GetSeriesasMA(ds,"ps",si=si,ei=ei)
-    ps = ps/float(1000)
-    ps = numpy.ma.filled(ps,float(-9999))
-    return ps,ps_flag
+def smap_dopressure(ds, smap_label, si, ei):
+    ps = pfp_utils.GetVariable(ds, "ps", start=si, end=ei)
+    ps["Data"] = ps["Data"]/float(1000)
+    ps["Data"] = numpy.ma.filled(ps["Data"], float(-9999))
+    return ps
 
-def smap_doshortwave(ds,smap_label,si,ei):
+def smap_doshortwave(ds, smap_label, si, ei):
     ts = int(float(ds.globalattributes["time_step"]))
-    Fsd,Fsd_flag,a = pfp_utils.GetSeriesasMA(ds,"Fsd",si=si,ei=ei)
-    Fsd = (Fsd*ts*60)/1E6
-    Fsd = numpy.ma.filled(Fsd,float(-9999))
-    return Fsd,Fsd_flag
+    Fsd = pfp_utils.GetVariable(ds, "Fsd", start=si, end=ei)
+    Fsd["Data"] = (Fsd["Data"]*ts*60)/1E6
+    Fsd["Data"] = numpy.ma.filled(Fsd["Data"], float(-9999))
+    Fsd["Attr"] = {"long_name": "Shortwave radiation",
+                    "units": "W/m^2",
+                    "statistic_type": "average"}
+    return Fsd
 
 def smap_parseformat(fmt):
     if "." in fmt:
@@ -961,26 +971,30 @@ def smap_qclabel(smap_label):
         smap_qc_label=smap_label+"_qc"
     return smap_qc_label
 
-def smap_updatedatadictionary(cfvars,data_dict,data,flag,smap_label,nperday,ndays):
+def smap_updatedatadictionary(cfvars, data_dict, var, smap_label, nperday, ndays):
     data_dict[smap_label] = {}
-    if cfvars[smap_label]["daily"].lower()=="sum":
-        data_dict[smap_label]["data"] = numpy.ma.sum(numpy.ma.reshape(data,[ndays,nperday]),axis=1)
-    elif cfvars[smap_label]["daily"].lower()=="average":
-        data_dict[smap_label]["data"] = numpy.ma.average(numpy.ma.reshape(data,[ndays,nperday]),axis=1)
-    elif cfvars[smap_label]["daily"].lower()=="skip":
-        data_dict[smap_label]["data"] = numpy.reshape(data,[ndays,nperday])[:,0]
+    if cfvars[smap_label]["daily"].lower() == "sum":
+        data = numpy.ma.reshape(var["Data"], [ndays, nperday])
+        data_dict[smap_label]["data"] = numpy.ma.sum(data, axis=1)
+    elif cfvars[smap_label]["daily"].lower() == "average":
+        data = numpy.ma.reshape(var["Data"], [ndays, nperday])
+        data_dict[smap_label]["data"] = numpy.ma.average(data, axis=1)
+    elif cfvars[smap_label]["daily"].lower() == "skip":
+        data = numpy.reshape(var["Data"], [ndays, nperday])[:,0]
+        data_dict[smap_label]["data"] = data
     else:
-        msg = "smap_updatedatadictionary: unrecognised option for daily ("+str(cfvars[smap_label]["daily"])+")"
+        msg = "  unrecognised option for daily (" + str(cfvars[smap_label]["daily"]) + ")"
         logger.warning(msg)
     data_dict[smap_label]["fmt"] = cfvars[smap_label]["format"]
-    if cfvars[smap_label]["genqc"]=="True":
+    if cfvars[smap_label]["genqc"] == "True":
         smap_qc_label = smap_qclabel(smap_label)
         data_dict[smap_qc_label] = {}
-        index_0 = numpy.where(flag==0)[0]
-        index_not0 = numpy.where(flag>0)[0]
-        flag[index_0] = numpy.int32(1)
-        flag[index_not0] = numpy.int32(0)
-        data_dict[smap_qc_label]["data"] = numpy.ma.sum(numpy.ma.reshape(flag,[ndays,nperday]),axis=1)/float(nperday)
+        index_0 = numpy.where(var["Flag"] == 0)[0]
+        index_not0 = numpy.where(var["Flag"] > 0)[0]
+        var["Flag"][index_0] = numpy.int32(1)
+        var["Flag"][index_not0] = numpy.int32(0)
+        flag = numpy.ma.reshape(var["Flag"], [ndays, nperday])
+        data_dict[smap_qc_label]["data"] = numpy.ma.sum(flag, axis=1)/float(nperday)
         data_dict[smap_qc_label]["fmt"] = "0.00"
 
 def smap_write_csv(cf):
@@ -1025,22 +1039,23 @@ def smap_write_csv(cf):
         # loop over the data required, massage units if necessary and put the data into a dictionary for later use
         smap_list = ["Rn_f","Rs_f","PAR_f","Ta","VPD","Ts_f","PREC","SWC","NEE","GPP","Reco","PRESS","SNOWD"]
         for smap_label in smap_list:
-            if smap_label in ["Mo","Day","DOY"]: continue
-            if smap_label=="Rn_f":
-                data,flag = smap_donetshortwave(ds,smap_label,si,ei)
-            elif smap_label=="Rs_f":
-                data,flag = smap_doshortwave(ds,smap_label,si,ei)
-            elif smap_label=="PAR_f" or smap_label=="SNOWD":
-                data = numpy.array([-9999]*len(data_dict["DateTime"]))
-                flag = numpy.array([1]*len(data_dict["DateTime"]))
+            if smap_label in ["Mo", "Day", "DOY"]:
+                continue
+            if smap_label == "Rn_f":
+                var = smap_donetshortwave(ds, smap_label, si, ei)
+            elif smap_label == "Rs_f":
+                var = smap_doshortwave(ds, smap_label, si, ei)
+            elif smap_label == "PAR_f" or smap_label == "SNOWD":
+                var = pfp_utils.CreateEmptyVariable(smap_label, len(data_dict["DateTime"]))
+                var["Attr"] = {"long_name": smap_label, "units": "", "statistic_type": "average"}
                 cfvars[smap_label]["daily"] = "skip"
-            elif smap_label=="PRESS":
-                data,flag = smap_dopressure(ds,smap_label,si,ei)
-            elif smap_label in ["GPP","NEE","Reco"]:
-                data,flag = smap_docarbonfluxes(cf,ds,smap_label,si,ei)
+            elif smap_label == "PRESS":
+                var = smap_dopressure(ds, smap_label, si, ei)
+            elif smap_label in ["GPP", "NEE", "Reco"]:
+                var = smap_docarbonfluxes(cf, ds, smap_label, si, ei)
             else:
-                data,flag,attr = pfp_utils.GetSeries(ds,cfvars[smap_label]["name"],si=si,ei=ei)
-            smap_updatedatadictionary(cfvars,data_dict,data,flag,smap_label,nperday,ndays)
+                var = pfp_utils.GetVariable(ds, cfvars[smap_label]["name"], start=si, end=ei)
+            smap_updatedatadictionary(cfvars, data_dict, var, smap_label, nperday, ndays)
         # now loop over the days and write the data out
         for i in range(ndays):
             data_list = []
@@ -1526,28 +1541,28 @@ def get_outfilenamefromcf(cfg):
 def get_seriesstats(cf,ds):
     # open an Excel file for the flag statistics
     out_filename = get_outfilenamefromcf(cf)
-    xl_filename = out_filename.replace('.nc','_FlagStats.xls')
+    xl_filename = out_filename.replace(".nc", "_FlagStats.xls")
     file_name = os.path.split(xl_filename)
-    logger.info(' Writing flag stats to '+file_name[1])
+    logger.info(" Writing flag stats to " + file_name[1])
     xlFile = xlwt.Workbook()
-    xlFlagSheet = xlFile.add_sheet('Flag')
+    xlFlagSheet = xlFile.add_sheet("Flag")
     # get the flag statistics
-    bins = numpy.arange(-0.5,23.5)
+    bins = numpy.arange(-0.5, 23.5)
     xlRow = 5
     xlCol = 1
     for Value in bins[:len(bins)-1]:
-        xlFlagSheet.write(xlRow,xlCol,int(Value+0.5))
+        xlFlagSheet.write(xlRow, xlCol, int(Value+0.5))
         xlCol = xlCol + 1
     xlRow = xlRow + 1
     xlCol = 0
     dsVarNames = sorted(ds.series.keys())
     for ThisOne in dsVarNames:
-        data,flag,attr = pfp_utils.GetSeries(ds, ThisOne)
-        hist, bin_edges = numpy.histogram(flag, bins=bins)
-        xlFlagSheet.write(xlRow,xlCol,ThisOne)
+        var = pfp_utils.GetVariable(ds, ThisOne)
+        hist, bin_edges = numpy.histogram(var["Flag"], bins=bins)
+        xlFlagSheet.write(xlRow, xlCol, ThisOne)
         xlCol = xlCol + 1
         for Value in hist:
-            xlFlagSheet.write(xlRow,xlCol,float(Value))
+            xlFlagSheet.write(xlRow, xlCol, float(Value))
             xlCol = xlCol + 1
         xlCol = 0
         xlRow = xlRow + 1
@@ -2192,7 +2207,14 @@ def ncsplit_run(split_gui):
     msg = " Finished splitting " + os.path.basename(infilename)
     logger.info(msg)
 
-def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
+def nc_read_groups(nc_file, checktimestep=True, fixtimestepmethod="round"):
+    groups = list(nc_file.groups.keys())
+    msg = " Reading netCDF file with groups " + ",".join(groups)
+    logger.info(msg)
+    ds = DataStructure(groups=groups)
+    return ds
+
+def nc_read_series(nc_file, checktimestep=True, fixtimestepmethod="round"):
     """
     Purpose:
      Reads a netCDF file and returns the meta-data and data in a DataStructure.
@@ -2229,29 +2251,27 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
     Author: PRI
     Date: Back in the day
     """
-    logger.info(" Reading netCDF file " + os.path.basename(ncFullName))
-    # file probably exists, so let's read it
-    ncFile = netCDF4.Dataset(ncFullName, "r")
+    logger.info(" Reading netCDF file " + os.path.basename(nc_file.filepath()))
     # disable automatic masking of data when valid_range specified
-    ncFile.set_auto_mask(False)
+    nc_file.set_auto_mask(False)
     # get an instance of a PFP data structure
     ds = DataStructure()
-    ds.filepath = ncFullName
+    ds.filepath = nc_file.filepath()
     # now deal with the global attributes
-    gattrlist = ncFile.ncattrs()
+    gattrlist = nc_file.ncattrs()
     if len(gattrlist) != 0:
         for gattr in gattrlist:
-            ds.globalattributes[gattr] = getattr(ncFile, gattr)
+            ds.globalattributes[gattr] = getattr(nc_file, gattr)
     # get a list of the variables in the netCDF file (not their QC flags)
-    varlist = [x for x in list(ncFile.variables.keys()) if "_QCFlag" not in x]
+    varlist = [x for x in list(nc_file.variables.keys()) if "_QCFlag" not in x]
     for ThisOne in varlist:
         # skip variables that do not have time as a dimension
-        dimlist = [x.lower() for x in ncFile.variables[ThisOne].dimensions]
+        dimlist = [x.lower() for x in nc_file.variables[ThisOne].dimensions]
         if "time" not in dimlist: continue
         # create the series in the data structure
         ds.series[str(ThisOne)] = {}
         # get the data and the QC flag
-        data, flag, attr = nc_read_var(ncFile, ThisOne)
+        data, flag, attr = nc_read_var(nc_file, ThisOne)
         ds.series[ThisOne]["Data"] = data
         ds.series[ThisOne]["Flag"] = flag
         ds.series[ThisOne]["Attr"] = attr
@@ -2268,7 +2288,7 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
         msg = "Unable to find any datetime data in netCDF file"
         logger.error(msg)
         raise RuntimeError(msg)
-    ncFile.close()
+    nc_file.close()
     # check to see if we have the "nc_nrecs" global attribute
     if "nc_nrecs" not in list(ds.globalattributes.keys()):
         ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
@@ -2453,7 +2473,7 @@ def ds_update_statistic_type(variable):
         pass
     return variable_changed
 
-def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", update=True):
+def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", update=False):
     """
     Purpose:
      Wrapper for the pfp_io.nc_read_series() routine so we have a nice name
@@ -2466,9 +2486,20 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", updat
     Author: PRI
     Date: June 2021
     """
-    ds = nc_read_series(nc_file_uri,
-                        checktimestep=checktimestep,
-                        fixtimestepmethod=fixtimestepmethod)
+    if not os.path.isfile(nc_file_uri):
+        msg = nc_file_uri + " not found"
+        logger.error(msg)
+        raise RuntimeError(msg)
+    # file probably exists, so let's read it
+    nc_file = netCDF4.Dataset(nc_file_uri, "r")
+    if len(nc_file.groups.keys()) == 0:
+        ds = nc_read_series(nc_file,
+                            checktimestep=checktimestep,
+                            fixtimestepmethod=fixtimestepmethod)
+    else:
+        ds = nc_read_groups(nc_file,
+                            checktimestep=checktimestep,
+                            fixtimestepmethod=fixtimestepmethod)
     if update:
         ds = ds_update(ds)
     return ds
@@ -3022,15 +3053,16 @@ def xl_write_series(ds, xlfullname, outputlist=None):
     # write the Excel date/time to the data and the QC flags as the first column
     if "xlDateTime" not in ds.series:
         pfp_utils.get_xldatefromdatetime(ds)
-    xlDateTime, f, a = pfp_utils.GetSeries(ds, "xlDateTime")
+    xlDateTime = pfp_utils.GetVariable(ds, "xlDateTime", out_type="-9999")
     logger.info(" Writing the datetime to the Excel file")
-    d_xf = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
-    xlDataSheet.write(2,xlcol,'xlDateTime')
+    d_xf = xlwt.easyxf(num_format_str="dd/mm/yyyy hh:mm")
+    xlDataSheet.write(2, xlcol, "xlDateTime")
     for j in range(nRecs):
-        xlDataSheet.write(j+3,xlcol,xlDateTime[j],d_xf)
-        xlFlagSheet.write(j+3,xlcol,xlDateTime[j],d_xf)
+        xlDataSheet.write(j+3, xlcol, xlDateTime["Data"][j], d_xf)
+        xlFlagSheet.write(j+3, xlcol, xlDateTime["Data"][j], d_xf)
     # remove xlDateTime from the list of variables to be written to the Excel file
-    if "xlDateTime" in outputlist: outputlist.remove("xlDateTime")
+    if "xlDateTime" in outputlist:
+        outputlist.remove("xlDateTime")
     # now start looping over the other variables in the xl file
     xlcol = xlcol + 1
     # loop over variables to be output to xl file

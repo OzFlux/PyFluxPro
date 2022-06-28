@@ -1506,12 +1506,12 @@ def RemoveDuplicateRecords(ds):
     # the ds.series["DateTime"]["Data"] series is actually a list
     for item in ["DateTime","DateTime_UTC"]:
         if item in list(ds.series.keys()):
-            ldt,ldt_flag,ldt_attr = GetSeries(ds,item)
+            ldt = GetVariable(ds, item)
             # ldt_nodups is returned as an ndarray
-            ldt_nodups,idx_nodups = numpy.unique(ldt,return_index=True)
+            ldt_nodups, idx_nodups = numpy.unique(ldt["Data"], return_index=True)
             # and put it back into the data structure
             ds.series[item]["Data"] = ldt_nodups
-            ds.series[item]["Flag"] = ldt_flag[idx_nodups]
+            ds.series[item]["Flag"] = ldt["Flag"][idx_nodups]
     # get a list of the series in the data structure
     series_list = [item for item in list(ds.series.keys()) if '_QCFlag' not in item]
     # remove the DateTime
@@ -1519,11 +1519,11 @@ def RemoveDuplicateRecords(ds):
         if item in series_list: series_list.remove(item)
     # loop over the series in the data structure
     for ThisOne in series_list:
-        data_dups,flag_dups,attr = GetSeriesasMA(ds,ThisOne)
-        data_nodups = data_dups[idx_nodups]
-        flag_nodups = flag_dups[idx_nodups]
-        CreateSeries(ds,ThisOne,data_nodups,flag_nodups,attr)
-    ds.globalattributes['nc_nrecs'] = len(ds.series["DateTime"]["Data"])
+        var = GetVariable(ds, ThisOne)
+        var["Data"] = var["Data"][idx_nodups]
+        var["Flag"] = var["Flag"][idx_nodups]
+        CreateVariable(ds, var)
+    ds.globalattributes["nc_nrecs"] = len(ds.series["DateTime"]["Data"])
 
 def FixNonIntegralTimeSteps(ds,fixtimestepmethod=""):
     """
@@ -1582,7 +1582,6 @@ def FixTimeGaps(ds):
     """
     ts = int(float(ds.globalattributes["time_step"]))
     delta = datetime.timedelta(minutes=ts)
-    #ldt_gaps,ldt_flag,ldt_attr = GetSeries(ds,"DateTime")
     ldt_gaps = GetVariable(ds, "DateTime")
     # generate a datetime list from the start datetime to the end datetime
     ldt_start = ldt_gaps["Data"][0]
@@ -1781,10 +1780,7 @@ def GetDateIndex(ldt, date, ts=30, default=0, match='exact'):
         default = len(ldt)-1
     # is the input date a string?
     if (isinstance(date, numbers.Number)):
-        if date >= 0 and date <= len(ldt):
-            i = date
-        else:
-            i = default
+        i = date
     elif isinstance(date, str):
         # if so, is it an empty string?
         if len(date) != 0:
@@ -2110,20 +2106,17 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
     Author: PRI
     """
     nrecs = int(ds.globalattributes["nc_nrecs"])
+    if end == -1:
+        end = nrecs-1
     ldt = ds.series["DateTime"]["Data"]
     # get the start and end indices
     match_options = {"start": {"exact": "exact", "wholehours": "startnexthour",
                                "wholedays": "startnextday", "wholemonths": "startnextmonth"},
                      "end": {"exact": "exact", "wholehours": "endprevioushour",
                              "wholedays": "endpreviousday", "wholemonths": "endpreviousmonth"}}
-    time_step = ds.globalattributes["time_step"]
-    try:
-        ts = int(float(time_step))
-        si = GetDateIndex(ldt, start, ts=ts, default=0, match=match_options["start"][match])
-        ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match=match_options["end"][match])
-    except:
-        si = 0
-        ei = nrecs - 1
+    ts = int(float(ds.globalattributes["time_step"]))
+    si = GetDateIndex(ldt, start, ts=ts, default=0, match=match_options["start"][match])
+    ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match=match_options["end"][match])
     dt = ldt[si: ei+1]
     data, flag, attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
     # check to see what kind of output the user wants
@@ -2133,9 +2126,18 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
     elif isinstance(data, numpy.ndarray) and out_type == "nan":
         # leave as ndarray, convert c.missing_value to NaN
         data = numpy.where(data == c.missing_value, numpy.nan, data)
+    elif isinstance(data, numpy.ndarray) and int(float(out_type)) == c.missing_value:
+        # leave as ndarray, leave c.missing_value
+        pass
+    elif isinstance(data, numpy.ndarray) and numpy.isfinite(float(out_type)):
+        # user specified missing data codeGetSeries(
+        data = numpy.where(data == c.missing_value, float(out_type), data)
+    else:
+        # default is masked array
+        data, WasND = SeriestoMA(data)
     # assemble the variable dictionary
     variable = {"Label": label, "Data": data, "Flag": flag, "Attr": attr,
-                "DateTime": dt, "time_step": time_step}
+                "DateTime": dt, "time_step": ts}
     # make sure there is a value for the long_name attribute
     if "long_name" not in variable["Attr"]:
         variable["Attr"]["long_name"] = label
@@ -2955,7 +2957,7 @@ def nxMom_nxScalar_alpha(zoL):
     alpha[stable] = 1
     return nxMom, nxScalar, alpha
 
-def PadVariable(var_in, start, end, out_type="nan"):
+def PadVariable(var_in, start, end, out_type="ma"):
     """
     Purpose:
      Pad a variable to the specified start and end dates.

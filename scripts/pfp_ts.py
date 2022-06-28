@@ -2676,55 +2676,6 @@ def RemoveIntermediateSeries(ds, info):
             iris["not_output"] = []
     return
 
-def ReplaceOnDiff(cf,ds,series=''):
-    # Gap fill using data from alternate sites specified in the control file
-    ts = ds.globalattributes['time_step']
-    if len(series)!=0:
-        ds_alt = {}                     # create a dictionary for the data from alternate sites
-        open_ncfiles = []               # create an empty list of open netCDF files
-        for ThisOne in series:          # loop over variables in the series list
-            # has ReplaceOnDiff been specified for this series?
-            if pfp_utils.incf(cf,ThisOne) and pfp_utils.haskey(cf,ThisOne,'ReplaceOnDiff'):
-                # loop over all entries in the ReplaceOnDiff section
-                for Alt in list(cf['Variables'][ThisOne]['ReplaceOnDiff'].keys()):
-                    if 'FileName' in list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys()):
-                        alt_filename = cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['FileName']
-                        if 'AltVarName' in list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys()):
-                            alt_varname = cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['AltVarName']
-                        else:
-                            alt_varname = ThisOne
-                        if alt_filename not in open_ncfiles:
-                            n = len(open_ncfiles)
-                            open_ncfiles.append(alt_filename)
-                            ds_alt[n] = pfp_io.NetCDFRead(alt_filename)
-                            if ds_alt[n].returncodes["value"] != 0: return
-                        else:
-                            n = open_ncfiles.index(alt_filename)
-                        if 'Transform' in list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys()):
-                            AltDateTime = ds_alt[n].series['DateTime']['Data']
-                            AltSeriesData = ds_alt[n].series[alt_varname]['Data']
-                            TList = pfp_utils.string_to_list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['Transform'])
-                            for TListEntry in TList:
-                                TransformAlternate(TListEntry,AltDateTime,AltSeriesData,ts=ts)
-                        if 'Range' in list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys()):
-                            RList = pfp_utils.string_to_list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['Range'])
-                            for RListEntry in RList:
-                                ReplaceWhenDiffExceedsRange(ds.series['DateTime']['Data'],ds.series[ThisOne],
-                                                            ds.series[ThisOne],ds_alt[n].series[alt_varname],
-                                                            RListEntry)
-                    elif 'AltVarName' in list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys()):
-                        alt_varname = ThisOne
-                        if 'Range' in list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt].keys()):
-                            RList = pfp_utils.string_to_list(cf['Variables'][ThisOne]['ReplaceOnDiff'][Alt]['Range'])
-                            for RListEntry in RList:
-                                ReplaceWhenDiffExceedsRange(ds.series['DateTime']['Data'],ds.series[ThisOne],
-                                                            ds.series[ThisOne],ds.series[alt_varname],
-                                                            RListEntry)
-                    else:
-                        logger.error('ReplaceOnDiff: Neither AltFileName nor AltVarName given in control file')
-    else:
-        logger.error('ReplaceOnDiff: No input series specified')
-
 def ReplaceWhereMissing(Destination,Primary,Secondary,FlagOffset=None,FlagValue=None):
     p_data = Primary['Data'].copy()
     p_flag = Primary['Flag'].copy()
@@ -2866,11 +2817,3 @@ def TaFromTv(cf, ds, Ta_out="Ta_SONIC_Av", Tv_in="Tv_SONIC_Av", AH_in="AH",
             descr_level: "Ta calculated from Tv using " + Tv_in, "units": "degC",
             "standard_name": "air_temperature", "statistic_type": "average"}
     pfp_utils.CreateSeries(ds, Ta_out, Ta_data, Ta_flag, attr)
-
-def TransformAlternate(TList,DateTime,Series,ts=30):
-    # Apply polynomial transform to data series being used as replacement data for gap filling
-    si = pfp_utils.GetDateIndex(DateTime,TList[0],ts=ts,default=0,match='exact')
-    ei = pfp_utils.GetDateIndex(DateTime,TList[1],ts=ts,default=-1,match='exact')
-    Series = numpy.ma.masked_where(abs(Series-float(c.missing_value))<c.eps,Series)
-    Series[si:ei] = pfp_utils.polyval(TList[2],Series[si:ei])
-    Series = numpy.ma.filled(Series,float(c.missing_value))

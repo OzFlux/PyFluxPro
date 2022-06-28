@@ -239,8 +239,8 @@ def gfMDS_make_data_array(ds, current_year, info):
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     nrecs = int(ds.globalattributes["nc_nrecs"])
     ts = int(float(ds.globalattributes["time_step"]))
-    start = datetime.datetime(current_year,1,1,0,30,0)
-    end = datetime.datetime(current_year+1,1,1,0,0,0)
+    start = datetime.datetime(current_year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+    end = datetime.datetime(current_year+1, 1, 1, 0, 0, 0)
     cdt = numpy.array([dt for dt in pfp_utils.perdelta(start, end, datetime.timedelta(minutes=ts))])
     mt = numpy.ones(len(cdt))*float(-9999)
     # need entry for the timestamp and the target ...

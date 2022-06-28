@@ -294,7 +294,7 @@ class file_explore(QtWidgets.QWidget):
         return self.ds
 
     def get_model_from_data(self):
-        self.model.setHorizontalHeaderLabels(['Variable', 'long_name'])
+        self.model.setHorizontalHeaderLabels(["Variable", "long_name"])
         self.model.itemChanged.connect(self.handleItemChanged)
         gattrs = sorted(list(self.ds.globalattributes.keys()))
         long_name = QtGui.QStandardItem("")
@@ -306,23 +306,44 @@ class file_explore(QtWidgets.QWidget):
             child1 = QtGui.QStandardItem(value)
             section.appendRow([child0, child1])
         self.model.appendRow([section, long_name])
-        labels = sorted(list(self.ds.series.keys()))
-        variables_section = QtGui.QStandardItem("Variables")
-        variables_section.setEditable(False)
-        for label in labels:
-            var = pfp_utils.GetVariable(self.ds, label)
-            long_name = QtGui.QStandardItem(var["Attr"]["long_name"])
-            variable_section = QtGui.QStandardItem(label)
-            # some variable names are not editable
-            if label in ["DateTime", "time"]:
-                variable_section.setEditable(False)
-            for attr in var["Attr"]:
-                value = str(var["Attr"][attr])
-                child0 = QtGui.QStandardItem(attr)
-                child1 = QtGui.QStandardItem(value)
-                variable_section.appendRow([child0, child1])
-            variables_section.appendRow([variable_section, long_name])
-        self.model.appendRow([variables_section, QtGui.QStandardItem("")])
+        if hasattr(self.ds, "series"):
+            labels = sorted(list(self.ds.series.keys()))
+            variables_section = QtGui.QStandardItem("Variables")
+            variables_section.setEditable(False)
+            for label in labels:
+                var = pfp_utils.GetVariable(self.ds, label)
+                long_name = QtGui.QStandardItem(var["Attr"]["long_name"])
+                variable_section = QtGui.QStandardItem(label)
+                # some variable names are not editable
+                if label in ["DateTime", "time"]:
+                    variable_section.setEditable(False)
+                for attr in var["Attr"]:
+                    value = str(var["Attr"][attr])
+                    child0 = QtGui.QStandardItem(attr)
+                    child1 = QtGui.QStandardItem(value)
+                    variable_section.appendRow([child0, child1])
+                variables_section.appendRow([variable_section, long_name])
+            self.model.appendRow([variables_section, QtGui.QStandardItem("")])
+        elif hasattr(self.ds, "groups"):
+            groups = sorted(list(self.ds.groups.keys()))
+            for group in groups:
+                group_section = QtGui.QStandardItem(group)
+                group_section.setEditable(False)
+                labels = sorted(list(self.ds.groups[group].keys()))
+                for label in labels:
+                    var = pfp_utils.GetVariable(self.ds, label)
+                    long_name = QtGui.QStandardItem(var["Attr"]["long_name"])
+                    variable_section = QtGui.QStandardItem(label)
+                    # some variable names are not editable
+                    if label in ["DateTime", "time"]:
+                        variable_section.setEditable(False)
+                    for attr in var["Attr"]:
+                        value = str(var["Attr"][attr])
+                        child0 = QtGui.QStandardItem(attr)
+                        child1 = QtGui.QStandardItem(value)
+                        variable_section.appendRow([child0, child1])
+                    variables_section.appendRow([group_section, long_name])
+                self.model.appendRow([group_section, QtGui.QStandardItem("")])
         return
 
     def handleItemChanged(self, item):

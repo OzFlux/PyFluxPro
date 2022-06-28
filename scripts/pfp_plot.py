@@ -1422,7 +1422,7 @@ def plot_windrose(cf):
     """
     wrinfo = plot_windrose_parse_controlfile(cf)
     # read the netCDF file to a data structure
-    ds = pfp_io.NetCDFRead(wrinfo["in_filename"], update=False)
+    ds = pfp_io.NetCDFRead(wrinfo["in_filename"])
     # check the required variables are in the data structure
     if not plot_windrose_check_variables(ds, wrinfo):
         return

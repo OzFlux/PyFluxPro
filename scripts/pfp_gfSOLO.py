@@ -832,19 +832,19 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,
     # now fill the driver data array
     i = 0
     for label in drivers:
-        driver, _, _ = pfp_utils.GetSeries(dsb, label, si=si, ei=ei)
-        seqsoloinputdata[:, i] = driver[:]
+        driver = pfp_utils.GetVariable(dsb, label, start=si, end=ei)
+        seqsoloinputdata[:, i] = numpy.ma.filled(driver["Data"][:], c.missing_value)
         i = i + 1
     # get the target data
-    target, _, _ = pfp_utils.GetSeries(dsb, targetlabel, si=si, ei=ei)
+    target = pfp_utils.GetVariable(dsb, targetlabel, start=si, end=ei)
     # now load the target data into the data array
-    seqsoloinputdata[:, ndrivers] = target[:]
+    seqsoloinputdata[:, ndrivers] = numpy.ma.filled(target["Data"][:], c.missing_value)
     # now strip out the bad data
     cind = numpy.zeros(nRecs)
     iind = numpy.arange(nRecs)
     # do only the drivers not the target
     for i in range(ndrivers):
-        index = numpy.where(seqsoloinputdata[:, i] == c.missing_value)[0]
+        index = numpy.where(abs(seqsoloinputdata[:, i]-c.missing_value)<c.eps)[0]
         if len(index) != 0:
             cind[index] = 1
     # index of good data
@@ -909,10 +909,11 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     baddates = []
     badvalues = []
     for label in drivers:
-        driver, _, _ = pfp_utils.GetSeries(dsb, label, si=si, ei=ei)
-        index = numpy.where(abs(driver-float(c.missing_value)) < c.eps)[0]
+        driver = pfp_utils.GetVariable(dsb, label, start=si, end=ei)
+        driver["Data"] = numpy.ma.filled(driver["Data"], c.missing_value)
+        index = numpy.where(abs(driver["Data"]-c.missing_value)<c.eps)[0]
         if len(index) != 0:
-            msg = " GapFillUsingSOLO: c.missing_value found in driver " + label + " at lines " + str(index)
+            msg = " GapFillUsingSOLO: missing value found in driver " + label + " at lines " + str(index)
             logger.error(msg)
             badlines = badlines + index.tolist()
             for n in index:
@@ -922,7 +923,7 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
             logger.error(msg)
             msg = " GapFillUsingSOLO: datetimes: " + str(baddates)
             logger.error(msg)
-        sofminputdata[:, i] = driver[:]
+        sofminputdata[:, i] = driver["Data"][:]
         i = i + 1
     if len(badlines) != 0:
         nBad = len(badlines)
@@ -971,17 +972,17 @@ def gfSOLO_runsolo(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     # now fill the driver data array, drivers come from the modified ds
     i = 0
     for label in drivers:
-        driver, _, _ = pfp_utils.GetSeries(dsb, label, si=si, ei=ei)
-        soloinputdata[:, i] = driver[:]
+        driver = pfp_utils.GetVariable(dsb, label, start=si, end=ei)
+        soloinputdata[:, i] = numpy.ma.filled(driver["Data"][:], c.missing_value)
         i = i + 1
     # get the target data
-    target, _, _ = pfp_utils.GetSeries(dsb, targetlabel, si=si, ei=ei)
+    target = pfp_utils.GetVariable(dsb, targetlabel, start=si, end=ei)
     # now load the target data into the data array
-    soloinputdata[:, ndrivers] = target[:]
+    soloinputdata[:, ndrivers] = numpy.ma.filled(target["Data"][:], c.missing_value)
     # now strip out the bad data
     cind = numpy.zeros(nRecs)
     for i in range(ndrivers + 1):
-        index = numpy.where(soloinputdata[:, i] == c.missing_value)[0]
+        index = numpy.where(abs(soloinputdata[:, i]-c.missing_value)<c.eps)[0]
         if len(index) != 0:
             cind[index] = 1
     index = numpy.where(cind == 0)[0]

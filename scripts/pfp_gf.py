@@ -544,32 +544,42 @@ def gfalternate_matchstartendtimes(ds,ds_alternate):
         # check that the indices point to the same times
         ldta = [ldt_alternate[i] for i in alternate_index]
         ldtt = [ldt_tower[i] for i in tower_index]
-        if ldta!=ldtt:
+        if ldta != ldtt:
             # and exit with a helpful message if they dont
-            logger.error(" Something went badly wrong and I'm giving up")
-            sys.exit()
+            msg = " Something went badly wrong at L4 and I'm giving up"
+            logger.error(msg)
+            raise RuntimeError(msg)
         # get a list of alternate series
         alternate_series_list = [item for item in list(ds_alternate.series.keys()) if "_QCFlag" not in item]
         # number of records in truncated or padded alternate data
         nRecs_tower = len(ldt_tower)
         # force the alternate dattime to be the tower date time
         ds_alternate.series["DateTime"] = ds.series["DateTime"]
+        # update the number of records in the file
+        ds_alternate.globalattributes["nc_nrecs"] = nRecs_tower
         # loop over the alternate series and truncate or pad as required
         # truncation or padding is handled by the indices
         for series in alternate_series_list:
             if series in ["DateTime","DateTime_UTC"]: continue
             # get the alternate data
-            data,flag,attr = pfp_utils.GetSeriesasMA(ds_alternate,series)
+            #data,flag,attr = pfp_utils.GetSeriesasMA(ds_alternate,series)
+            var_alternate = pfp_utils.GetVariable(ds_alternate, series)
             # create an array of missing data of the required length
-            data_overlap = numpy.full(nRecs_tower,c.missing_value,dtype=numpy.float64)
-            flag_overlap = numpy.ones(nRecs_tower,dtype=numpy.int32)
+            #data_overlap = numpy.full(nRecs_tower,c.missing_value,dtype=numpy.float64)
+            #flag_overlap = numpy.ones(nRecs_tower,dtype=numpy.int32)
+            var_overlap = pfp_utils.CreateEmptyVariable(series, nRecs_tower,
+                                                        attr=var_alternate["Attr"])
             # replace missing data with alternate data where times match
-            data_overlap[tower_index] = data[alternate_index]
-            flag_overlap[tower_index] = flag[alternate_index]
+            #data_overlap[tower_index] = data[alternate_index]
+            var_overlap["Data"][tower_index] = var_alternate["Data"][alternate_index]
+            #flag_overlap[tower_index] = flag[alternate_index]
+            var_overlap["Flag"][tower_index] = var_alternate["Flag"][alternate_index]
             # write the truncated or padded series back into the alternate data structure
-            pfp_utils.CreateSeries(ds_alternate,series,data_overlap,flag_overlap,attr)
-        # update the number of records in the file
-        ds_alternate.globalattributes["nc_nrecs"] = nRecs_tower
+            #pfp_utils.CreateSeries(ds_alternate,series,data_overlap,flag_overlap,attr)
+            pfp_utils.CreateVariable(ds_alternate, var_overlap)
+
+        ## update the number of records in the file
+        #ds_alternate.globalattributes["nc_nrecs"] = nRecs_tower
     else:
         # there is no overlap between the alternate and tower data, create dummy series
         nRecs = len(ldt_tower)

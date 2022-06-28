@@ -412,41 +412,28 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
         source_list = source_string.split(",")
     else:
         source_list = [source_string]
-    # check to see if the "ignore_missing" flag is set
-    opt = pfp_utils.get_keyvaluefromcf(cf, [section,series,"DependencyCheck"], "ignore_missing", default="no")
-    ignore_missing = False
-    if opt.lower() in ["yes", "y", "true", "t"]:
-        ignore_missing = True
     # get the data
-    dependent_data,dependent_flag,dependent_attr = pfp_utils.GetSeries(ds, series)
+    dependent = pfp_utils.GetVariable(ds, series)
     # loop over the precursor source list
     for item in source_list:
         # check the precursor is in the data structure
         if item not in list(ds.series.keys()):
-            msg = " DependencyCheck: "+series+" precursor series "+item+" not found, skipping ..."
+            msg = " DependencyCheck: " + series + " precursor series "
+            msg += item + " not found, skipping ..."
             logger.warning(msg)
             continue
         # get the precursor data
-        precursor_data,precursor_flag,precursor_attr = pfp_utils.GetSeries(ds,item)
-        # check if the user wants to ignore missing precursor data
-        if ignore_missing:
-            # they do, so make an array of missing values
-            nRecs = int(ds.globalattributes["nc_nrecs"])
-            missing_array = numpy.ones(nRecs)*float(c.missing_value)
-            # and find the indicies of elements equal to the missing value
-            bool_array = numpy.isclose(precursor_data, missing_array)
-            idx = numpy.where(bool_array == True)[0]
-            # and set these flags to 0 so missing data is ignored
-            precursor_flag[idx] = numpy.int32(0)
+        precursor = pfp_utils.GetVariable(ds, item)
         # mask the dependent data where the precursor flag shows data not OK
-        dependent_data = numpy.ma.masked_where(numpy.mod(precursor_flag, 10)!=0, dependent_data)
+        dependent["Data"] = numpy.ma.masked_where(numpy.mod(precursor["Flag"], 10) != 0,
+                                                  dependent["Data"])
         # get an index where the precursor flag shows data not OK
-        idx = numpy.ma.where(numpy.mod(precursor_flag, 10)!=0)[0]
+        idx = numpy.ma.where(numpy.mod(precursor["Flag"], 10) != 0)[0]
         # set the dependent QC flag
-        dependent_flag[idx] = numpy.int32(code)
+        dependent["Flag"][idx] = numpy.int32(code)
     # put the data back into the data structure
-    dependent_attr["DependencyCheck"] = ",".join(source_list)
-    pfp_utils.CreateSeries(ds,series,dependent_data,dependent_flag,dependent_attr)
+    dependent["Attr"]["DependencyCheck"] = ",".join(source_list)
+    pfp_utils.CreateVariable(ds, dependent)
     # our work here is done
     return
 
@@ -1063,20 +1050,20 @@ def do_rangecheck(cf, ds, section, series, code=2):
     valid_lower = numpy.min(lwr)
     lwr = lwr[month - 1]
     # get the data, flag and attributes
-    data, flag, attr = pfp_utils.GetSeriesasMA(ds, series)
+    var = pfp_utils.GetVariable(ds, series)
     # convert the data from a masked array to an ndarray so the range check works
-    data = numpy.ma.filled(data, fill_value=c.missing_value)
+    var["Data"] = numpy.ma.filled(var["Data"], fill_value=c.missing_value)
     # get the indices of elements outside this range
-    idx = numpy.where((data<lwr)|(data>upr))[0]
+    idx = numpy.where((var["Data"] < lwr)|(var["Data"] > upr))[0]
     # set elements outside range to missing and set the QC flag
-    data[idx] = numpy.float64(c.missing_value)
-    flag[idx] = numpy.int32(code)
+    var["Data"][idx] = numpy.float64(c.missing_value)
+    var["Flag"][idx] = numpy.int32(code)
     # update the variable attributes
-    attr["rangecheck_lower"] = cf[section][series]["RangeCheck"]["lower"]
-    attr["rangecheck_upper"] = cf[section][series]["RangeCheck"]["upper"]
-    attr["valid_range"] = repr(valid_lower) + "," + repr(valid_upper)
+    var["Attr"]["rangecheck_lower"] = cf[section][series]["RangeCheck"]["lower"]
+    var["Attr"]["rangecheck_upper"] = cf[section][series]["RangeCheck"]["upper"]
+    var["Attr"]["valid_range"] = repr(valid_lower) + "," + repr(valid_upper)
     # and now put the data back into the data structure
-    pfp_utils.CreateSeries(ds, series, data, Flag=flag, Attr=attr)
+    pfp_utils.CreateVariable(ds, var)
     # now we can return
     return
 
@@ -1186,13 +1173,13 @@ def do_lowercheck(cf,ds,section,series,code=2):
 
     ldt = ds.series["DateTime"]["Data"]
     ts = int(float(ds.globalattributes["time_step"]))
-    data, flag, attr = pfp_utils.GetSeriesasMA(ds, series)
+    var = pfp_utils.GetVariable(ds, series)
 
     lc_list = list(cf[section][series]["LowerCheck"].keys())
     for n,item in enumerate(lc_list):
         # this should be a list and we should probably check for compliance
         lwr_string = cf[section][series]["LowerCheck"][item]
-        attr["lowercheck_"+str(n)] = lwr_string
+        var["Attr"]["lowercheck_"+str(n)] = lwr_string
         lwr_list = lwr_string.split(",")
         start_date = dateutil.parser.parse(lwr_list[0])
         sl = float(lwr_list[1])
@@ -1202,17 +1189,17 @@ def do_lowercheck(cf,ds,section,series,code=2):
         si = pfp_utils.GetDateIndex(ldt, start_date, ts=ts, default=0, match="exact")
         ei = pfp_utils.GetDateIndex(ldt, end_date, ts=ts, default=len(ldt)-1, match="exact")
         # get the segment of data between this start and end date
-        seg_data = data[si:ei+1]
-        seg_flag = flag[si:ei+1]
+        seg_data = var["Data"][si:ei+1]
+        seg_flag = var["Flag"][si:ei+1]
         x = numpy.arange(si, ei+1, 1)
         lower = numpy.interp(x, [si, ei], [sl, el])
         index = numpy.ma.where((seg_data < lower))[0]
         seg_data[index] = numpy.ma.masked
         seg_flag[index] = numpy.int32(code)
-        data[si:ei+1] = seg_data
-        flag[si:ei+1] = seg_flag
+        var["Data"][si:ei+1] = seg_data
+        var["Flag"][si:ei+1] = seg_flag
     # now put the data back into the data structure
-    pfp_utils.CreateSeries(ds, series, data, Flag=flag, Attr=attr)
+    pfp_utils.CreateVariable(ds, var)
     return
 
 def do_uppercheck(cf,ds,section,series,code=2):
@@ -1233,13 +1220,13 @@ def do_uppercheck(cf,ds,section,series,code=2):
 
     ldt = ds.series["DateTime"]["Data"]
     ts = int(float(ds.globalattributes["time_step"]))
-    data, flag, attr = pfp_utils.GetSeriesasMA(ds, series)
+    var = pfp_utils.GetVariable(ds, series)
 
     uc_list = list(cf[section][series]["UpperCheck"].keys())
     for n,item in enumerate(uc_list):
         # this should be a list and we should probably check for compliance
         upr_string = cf[section][series]["UpperCheck"][item]
-        attr["uppercheck_"+str(n)] = str(upr_string)
+        var["Attr"]["uppercheck_"+str(n)] = str(upr_string)
         upr_list = upr_string.split(",")
         start_date = dateutil.parser.parse(upr_list[0])
         su = float(upr_list[1])
@@ -1248,17 +1235,17 @@ def do_uppercheck(cf,ds,section,series,code=2):
         # get the start and end indices
         si = pfp_utils.GetDateIndex(ldt, start_date, ts=ts, default=0, match="exact")
         ei = pfp_utils.GetDateIndex(ldt, end_date, ts=ts, default=len(ldt)-1, match="exact")
-        seg_data = data[si:ei+1]
-        seg_flag = flag[si:ei+1]
+        seg_data = var["Data"][si:ei+1]
+        seg_flag = var["Flag"][si:ei+1]
         x = numpy.arange(si, ei+1, 1)
         upper = numpy.interp(x, [si, ei], [su, eu])
         index = numpy.ma.where((seg_data > upper))[0]
         seg_data[index] = numpy.ma.masked
         seg_flag[index] = numpy.int32(code)
-        data[si:ei+1] = seg_data
-        flag[si:ei+1] = seg_flag
+        var["Data"][si:ei+1] = seg_data
+        var["Flag"][si:ei+1] = seg_flag
     # now put the data back into the data structure
-    pfp_utils.CreateSeries(ds, series, data, Flag=flag, Attr=attr)
+    pfp_utils.CreateVariable(ds, var)
     return
 
 def UpdateVariableAttributes_QC(cf, variable):
