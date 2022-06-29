@@ -34,15 +34,18 @@ def CalculateET(ds):
     Author: PRI
     Date: June 2015
     """
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     series_list = list(ds.series.keys())
     Fe_list = [item for item in series_list if "Fe" in item[0:2]]
     for label in Fe_list:
-        Fe, flag, attr = pfp_utils.GetSeriesasMA(ds, label)
-        ET = Fe/c.Lv
-        attr["long_name"] = "Evapo-transpiration"
-        attr["standard_name"] = "water_evapotranspiration_flux"
-        attr["units"] = "kg/m^2/s"
-        pfp_utils.CreateSeries(ds, label.replace("Fe","ET"), ET, flag, attr)
+        Fe = pfp_utils.GetVariable(ds, label)
+        ET = pfp_utils.CreateEmptyVariable(label.replace("Fe","ET"), nrecs)
+        ET["Data"] = Fe["Data"]/c.Lv
+        ET["Attr"]["long_name"] = "Evapo-transpiration"
+        ET["Attr"]["standard_name"] = "water_evapotranspiration_flux"
+        ET["Attr"]["units"] = "kg/m^2/s"
+        pfp_utils.CreateVariable(ds, ET)
+    return
 
 def CalculateNEE(cf, ds, l6_info):
     """
@@ -65,28 +68,29 @@ def CalculateNEE(cf, ds, l6_info):
     # get the Fsd threshold
     Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
     # get the incoming shortwave radiation
-    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    Fsd = pfp_utils.GetVariable(ds, "Fsd")
     for label in list(l6_info["NetEcosystemExchange"].keys()):
-        if "Fco2" not in l6_info["NetEcosystemExchange"][label] and "ER" not in l6_info["NetEcosystemExchange"][label]:
+        if (("Fco2" not in l6_info["NetEcosystemExchange"][label]) and
+            ("ER" not in l6_info["NetEcosystemExchange"][label])):
             continue
-        Fc_label = l6_info["NetEcosystemExchange"][label]["Fco2"]
+        Fco2_label = l6_info["NetEcosystemExchange"][label]["Fco2"]
         ER_label = l6_info["NetEcosystemExchange"][label]["ER"]
         output_label = l6_info["NetEcosystemExchange"][label]["output"]
-        Fc, Fc_flag, Fc_attr = pfp_utils.GetSeriesasMA(ds, Fc_label)
-        ER, ER_flag, _ = pfp_utils.GetSeriesasMA(ds, ER_label)
+        Fco2 = pfp_utils.GetVariable(ds, Fco2_label)
+        ER = pfp_utils.GetVariable(ds, ER_label)
         # put the day time Fc into the NEE series
-        index = numpy.ma.where(Fsd >= Fsd_threshold)[0]
-        ds.series[output_label]["Data"][index] = Fc[index]
-        ds.series[output_label]["Flag"][index] = Fc_flag[index]
+        index = numpy.ma.where(Fsd["Data"] >= Fsd_threshold)[0]
+        ds.series[output_label]["Data"][index] = Fco2["Data"][index]
+        ds.series[output_label]["Flag"][index] = Fco2["Flag"][index]
         # put the night time ER into the NEE series
-        index = numpy.ma.where(Fsd < Fsd_threshold)[0]
-        ds.series[output_label]["Data"][index] = ER[index]
-        ds.series[output_label]["Flag"][index] = ER_flag[index]
+        index = numpy.ma.where(Fsd["Data"] < Fsd_threshold)[0]
+        ds.series[output_label]["Data"][index] = ER["Data"][index]
+        ds.series[output_label]["Flag"][index] = ER["Flag"][index]
         # update the attributes
-        attr = ds.series[output_label]["Attr"]
-        attr["units"] = Fc_attr["units"]
+        attr = copy.deepcopy(ds.series[output_label]["Attr"])
+        attr["units"] = Fco2["Attr"]["units"]
         attr["long_name"] = "Net Ecosystem Exchange"
-        tmp = " Calculated from " + Fc_label + " and " + ER_label
+        tmp = " Calculated from " + Fco2_label + " and " + ER_label
         pfp_utils.append_to_attribute(attr, {descr_level: tmp})
         attr["comment1"] = "Fsd threshold used was " + str(Fsd_threshold)
         ds.series[output_label]["Attr"] = attr
@@ -105,15 +109,18 @@ def CalculateNEP(cf, ds):
     Author: PRI
     Date: May 2015
     """
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     # make the L6 "description" attribute for the target variable
     descr_level = "description_" + ds.globalattributes["processing_level"]
     for nee_name in list(cf["NetEcosystemExchange"].keys()):
         nep_name = nee_name.replace("NEE", "NEP")
-        nee, flag, attr = pfp_utils.GetSeriesasMA(ds, nee_name)
-        nep = float(-1)*nee
-        attr["long_name"] = "Net Ecosystem Productivity"
-        pfp_utils.append_to_attribute(attr, {descr_level: "calculated as -1*" + nee_name})
-        pfp_utils.CreateSeries(ds, nep_name, nep, flag, attr)
+        NEE = pfp_utils.GetVariable(ds, nee_name)
+        NEP = pfp_utils.CreateEmptyVariable(nep_name, nrecs, attr=NEE["Attr"])
+        NEP["Data"] = float(-1)*NEE["Data"]
+        NEP["Attr"]["long_name"] = "Net Ecosystem Productivity"
+        pfp_utils.append_to_attribute(NEP["Attr"], {descr_level: "calculated as -1*" + nee_name})
+        pfp_utils.CreateVariable(ds, NEP)
+    return
 
 def ERUsingLasslop(ds, l6_info):
     """
@@ -1169,6 +1176,7 @@ def PartitionNEE(ds, l6_info):
     """
     if "GrossPrimaryProductivity" not in l6_info:
         return
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     # make the L6 "description" attribute for the target variable
     descr_level = "description_" + ds.globalattributes["processing_level"]
     # calculate GPP from NEE and ER
@@ -1179,21 +1187,22 @@ def PartitionNEE(ds, l6_info):
         NEE_label = l6_info["GrossPrimaryProductivity"][label]["NEE"]
         ER_label = l6_info["GrossPrimaryProductivity"][label]["ER"]
         output_label = l6_info["GrossPrimaryProductivity"][label]["output"]
-        NEE, NEE_flag, NEE_attr = pfp_utils.GetSeriesasMA(ds, NEE_label)
-        ER, _, _ = pfp_utils.GetSeriesasMA(ds, ER_label)
+        NEE = pfp_utils.GetVariable(ds, NEE_label)
+        ER = pfp_utils.GetVariable(ds, ER_label)
+        GPP = pfp_utils.CreateEmptyVariable(output_label, nrecs)
         # calculate GPP
         # here we use the conventions from Chapin et al (2006)
         #  NEP = -1*NEE
         #  GPP = NEP + ER ==> GPP = -1*NEE + ER
-        GPP = float(-1)*NEE + ER
-        ds.series[output_label]["Data"] = GPP
-        ds.series[output_label]["Flag"] = NEE_flag
+        GPP["Data"] = float(-1)*NEE["Data"] + ER["Data"]
+        GPP["Flag"] = NEE["Flag"]
         # copy the attributes
-        attr = ds.series[output_label]["Attr"]
-        attr["units"] = NEE_attr["units"]
-        attr["long_name"] = "Gross Primary Productivity"
-        attr[descr_level] = "Calculated as -1*" + NEE_label + " + " + ER_label
-        ds.series[output_label]["Attr"] = attr
+        GPP["Attr"]["units"] = NEE["Attr"]["units"]
+        GPP["Attr"]["long_name"] = "Gross Primary Productivity"
+        GPP["Attr"][descr_level] = "Calculated as -1*" + NEE_label + " + " + ER_label
+        GPP["Attr"]["statistic_type"] = "average"
+        pfp_utils.CreateVariable(ds, GPP)
+    return
 
 def cleanup_ustar_dict(ds, ustar_in):
     """
@@ -1287,9 +1296,9 @@ def get_ustar_thresholds(cf, ds):
     return ustar_out
 
 def get_daynight_indicator(cf, ds):
-    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    Fsd = pfp_utils.GetVariable(ds, "Fsd")
     # get the day/night indicator
-    daynight_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
+    daynight_indicator = {"values":numpy.zeros(len(Fsd["Data"]), dtype=numpy.int32), "attr":{}}
     inds = daynight_indicator["values"]
     attr = daynight_indicator["attr"]
     # get the filter type
@@ -1303,7 +1312,7 @@ def get_daynight_indicator(cf, ds):
         Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
-        idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
+        idx = numpy.ma.where(Fsd["Data"] <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(1)
     elif filter_type.lower() == "sa":
         # get the solar altitude threshold
@@ -1312,8 +1321,8 @@ def get_daynight_indicator(cf, ds):
         # we are using solar altitude to define day/night
         if "solar_altitude" not in list(ds.series.keys()):
             pfp_ts.get_synthetic_fsd(ds)
-        sa, _, _ = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
-        idx = numpy.ma.where(sa < sa_threshold)[0]
+        sa = pfp_utils.GetVariable(ds, "solar_altitude")
+        idx = numpy.ma.where(sa["Data"] < sa_threshold)[0]
         inds[idx] = numpy.int32(1)
     else:
         msg = "Unrecognised DayNightFilter option in L6 control file"
@@ -1930,7 +1939,7 @@ def rp_createdict_info(cf, ds, erl, called_by):
     erl["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
     # Get the data path
     path_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path")
-    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename")
+    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "out_filename")
     file_name = file_name.replace(".nc", suffix_dict[called_by])
     erl['info']['data_file_path'] = os.path.join(path_name, file_name)
     # get the plot path
@@ -2018,8 +2027,8 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
         dt = ds.series['DateTime']['Data'][si:ei+1]
     xdt = numpy.array(dt)
     # get the observed and modelled values
-    obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
-    mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
+    obs = pfp_utils.GetVariable(ds, target, start=si, end=ei)
+    mod = pfp_utils.GetVariable(ds, output, start=si, end=ei)
     # make the figure
     if iel["gui"]["show_plots"]:
         plt.ion()
@@ -2034,14 +2043,14 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
-    mask = numpy.ma.mask_or(obs.mask, mod.mask)
-    obs_mor = numpy.ma.array(obs, mask=mask)
+    mask = numpy.ma.mask_or(obs["Data"].mask, mod["Data"].mask)
+    obs_mor = numpy.ma.array(obs["Data"], mask=mask)
     dstats = pfp_utils.get_diurnalstats(dt, obs_mor, ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'b-', label="Obs")
     # get the diurnal stats of all predictions
-    dstats = pfp_utils.get_diurnalstats(dt, mod, ieli)
+    dstats = pfp_utils.get_diurnalstats(dt, mod["Data"], ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'r-', label=mode + "(all)")
-    mod_mor = numpy.ma.masked_where(numpy.ma.getmaskarray(obs) == True, mod, copy=True)
+    mod_mor = numpy.ma.masked_where(numpy.ma.getmaskarray(obs["Data"]) == True, mod["Data"], copy=True)
     dstats = pfp_utils.get_diurnalstats(dt, mod_mor, ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'g-', label=mode + "(obs)")
     plt.xlim(0, 24)
@@ -2052,24 +2061,25 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     # XY plot of the 30 minute data
     rect2 = [0.40, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax2 = plt.axes(rect2)
-    ax2.plot(mod, obs, 'b.')
+    ax2.plot(mod["Data"], obs["Data"], 'b.')
     ax2.set_ylabel(target + '_obs')
     ax2.set_xlabel(target + '_' + mode)
     # plot the best fit line
-    coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
-    xfit = numpy.ma.array([numpy.ma.minimum.reduce(mod), numpy.ma.maximum.reduce(mod)])
+    coefs = numpy.ma.polyfit(numpy.ma.copy(mod["Data"]), numpy.ma.copy(obs["Data"]), 1)
+    xfit = numpy.ma.array([numpy.ma.minimum.reduce(mod["Data"]),
+                           numpy.ma.maximum.reduce(mod["Data"])])
     yfit = numpy.polyval(coefs, xfit)
-    r = numpy.ma.corrcoef(mod, obs)
+    r = numpy.ma.corrcoef(mod["Data"], obs["Data"])
     ax2.plot(xfit, yfit, 'r--', linewidth=3)
     eqnstr = 'y = %.3fx + %.3f, r = %.3f'%(coefs[0], coefs[1], r[0][1])
     ax2.text(0.5, 0.875, eqnstr, fontsize=8, horizontalalignment='center', transform=ax2.transAxes)
     # write the fit statistics to the plot
-    numpoints = numpy.ma.count(obs)
-    numfilled = numpy.ma.count(mod)-numpy.ma.count(obs)
-    diff = mod - obs
+    numpoints = numpy.ma.count(obs["Data"])
+    numfilled = numpy.ma.count(mod["Data"])-numpy.ma.count(obs["Data"])
+    diff = mod["Data"] - obs["Data"]
     bias = numpy.ma.average(diff)
     ielo[output]["results"]["Bias"].append(bias)
-    rmse = numpy.ma.sqrt(numpy.ma.mean((obs-mod)*(obs-mod)))
+    rmse = numpy.ma.sqrt(numpy.ma.mean((obs["Data"]-mod["Data"])*(obs["Data"]-mod["Data"])))
     plt.figtext(0.725, 0.225, 'No. points')
     plt.figtext(0.825, 0.225, str(numpoints))
     ielo[output]["results"]["No. points"].append(numpoints)
@@ -2087,38 +2097,41 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     plt.figtext(0.725, 0.100, 'RMSE')
     plt.figtext(0.825, 0.100, str(pfp_utils.round2significant(rmse, 4)))
     ielo[output]["results"]["RMSE"].append(rmse)
-    var_obs = numpy.ma.var(obs)
+    var_obs = numpy.ma.var(obs["Data"])
     ielo[output]["results"]["Var (obs)"].append(var_obs)
-    var_mod = numpy.ma.var(mod)
+    var_mod = numpy.ma.var(mod["Data"])
     ielo[output]["results"]["Var (" + mode + ")"].append(var_mod)
     ielo[output]["results"]["Var ratio"].append(var_obs/var_mod)
-    ielo[output]["results"]["Avg (obs)"].append(numpy.ma.average(obs))
-    ielo[output]["results"]["Avg (" + mode + ")"].append(numpy.ma.average(mod))
+    ielo[output]["results"]["Avg (obs)"].append(numpy.ma.average(obs["Data"]))
+    ielo[output]["results"]["Avg (" + mode + ")"].append(numpy.ma.average(mod["Data"]))
     # time series of drivers and target
     ts_axes = []
     rect = [pd["margin_left"], pd["ts_bottom"], pd["ts_width"], pd["ts_height"]]
     ts_axes.append(plt.axes(rect))
-    ts_axes[0].plot(xdt, obs, 'b.')
-    ts_axes[0].scatter(xdt, obs)
-    ts_axes[0].plot(xdt, mod, 'r-')
+    ts_axes[0].plot(xdt, obs["Data"], 'b.')
+    ts_axes[0].scatter(xdt, obs["Data"])
+    ts_axes[0].plot(xdt, mod["Data"], 'r-')
     plt.axhline(0)
     ts_axes[0].set_xlim(xdt[0], xdt[-1])
     TextStr = target + '_obs (' + ds.series[target]['Attr']['units'] + ')'
-    ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
+    ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left',
+                    transform=ts_axes[0].transAxes)
     TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
-    ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
+    ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right',
+                    transform=ts_axes[0].transAxes)
     for ThisOne, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
         this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
         rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
         ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
-        data, flag, attr = pfp_utils.GetSeriesasMA(ds, ThisOne, si=si, ei=ei)
-        data_notgf = numpy.ma.masked_where(flag != 0, data)
-        data_gf = numpy.ma.masked_where(flag == 0, data)
+        driver = pfp_utils.GetVariable(ds, ThisOne, start=si, end=ei)
+        data_notgf = numpy.ma.masked_where(driver["Flag"] != 0, driver["Data"])
+        data_gf = numpy.ma.masked_where(driver["Flag"] == 0, driver["Data"])
         ts_axes[i].plot(xdt, data_notgf, 'b-')
         ts_axes[i].plot(xdt, data_gf, 'r-')
         plt.setp(ts_axes[i].get_xticklabels(), visible=False)
-        TextStr = ThisOne + '(' + ds.series[ThisOne]['Attr']['units'] + ')'
-        ts_axes[i].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[i].transAxes)
+        TextStr = ThisOne + '(' + driver['Attr']['units'] + ')'
+        ts_axes[i].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left',
+                        transform=ts_axes[i].transAxes)
     # save a hard copy of the plot
     sdt = xdt[0].strftime("%Y%m%d")
     edt = xdt[-1].strftime("%Y%m%d")

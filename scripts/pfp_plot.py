@@ -382,8 +382,10 @@ def plot_fingerprint(cf):
                     msg = " No alias found for "+nc_varname+", skipping ..."
                     logger.warning(msg)
                     continue
-            data,flag,attr = pfp_utils.GetSeriesasMA(ds[infilename],nc_varname,si=si,ei=ei)
-            data = pfp_ck.cliptorange(data,fp_info["variables"][var]["lower"], fp_info["variables"][var]["upper"])
+            obs = pfp_utils.GetVariable(ds[infilename], nc_varname, start=si, end=ei)
+            data = pfp_ck.cliptorange(obs["Data"],
+                                      fp_info["variables"][var]["lower"],
+                                      fp_info["variables"][var]["upper"])
             data_daily = data.reshape(nDays,nPerDay)
             units = str(ds[infilename].series[nc_varname]['Attr']['units'])
             label = var + ' (' + units + ')'
@@ -451,14 +453,14 @@ def plot_fluxnet(cf):
             logger.error("Series " + label + " not found in input file, skipping ...")
             continue
         logger.info(" Doing plot for " + label)
-        data, flag, attr = pfp_utils.GetSeriesasMA(ds, label)
+        var = pfp_utils.GetVariable(ds, label)
         nFig = nFig + 1
         fig = plt.figure(nFig,figsize=(10.9, 7.5))
         fig.canvas.manager.set_window_title(label)
-        plt.plot(ldt, data, "b.")
+        plt.plot(ldt, var["Data"], "b.")
         plt.xlim(sdt, edt)
         plt.xlabel("Date")
-        plt.ylabel(label + " (" + attr["units"] + ")")
+        plt.ylabel(label + " (" + var["Attr"]["units"] + ")")
         title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
         title_str += edt.strftime("%Y-%m-%d") + "; " + series
         plt.title(title_str)
@@ -1623,24 +1625,24 @@ def plotxy(cf, title, plt_cf, dsa, dsb):
     logger.info(' Plotting xy: '+str(XSeries)+' v '+str(YSeries))
     if dsa == dsb:
         for xname,yname in zip(XSeries,YSeries):
-            xa,flag,attr = pfp_utils.GetSeriesasMA(dsa,xname)
-            ya,flag,attr = pfp_utils.GetSeriesasMA(dsa,yname)
-            xyplot(xa,ya,sub=[1,1,1],regr=1,xlabel=xname,ylabel=yname)
+            xa = pfp_utils.GetVariable(dsa, xname)
+            ya = pfp_utils.GetVariable(dsa, yname)
+            xyplot(xa["Data"], ya["Data"], sub=[1,1,1],regr=1, xlabel=xname, ylabel=yname)
     else:
-        for xname,yname in zip(XSeries,YSeries):
-            xa,flag,attr = pfp_utils.GetSeriesasMA(dsa,xname)
-            ya,flag,attr = pfp_utils.GetSeriesasMA(dsa,yname)
-            xb,flag,attr = pfp_utils.GetSeriesasMA(dsb,xname)
-            yb,flag,attr = pfp_utils.GetSeriesasMA(dsb,yname)
-            xyplot(xa,ya,sub=[1,2,1],xlabel=xname,ylabel=yname)
-            xyplot(xb,yb,sub=[1,2,2],regr=1,xlabel=xname,ylabel=yname)
+        for xname,yname in zip(XSeries, YSeries):
+            xa = pfp_utils.GetVariable(dsa, xname)
+            ya = pfp_utils.GetVariable(dsa, yname)
+            xb = pfp_utils.GetVariable(dsb, xname)
+            yb = pfp_utils.GetVariable(dsb, yname)
+            xyplot(xa["Data"], ya["Data"], sub=[1,2,1], xlabel=xname, ylabel=yname)
+            xyplot(xb["Data"], yb["Data"], sub=[1,2,2], regr=1, xlabel=xname, ylabel=yname)
     plt.draw()
     pfp_utils.mypause(0.5)
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
     fname = os.path.join(plot_path, SiteName.replace(' ','')+'_'+Level+'_'+PlotDescription.replace(' ','')+'.png')
-    fig.savefig(fname,format='png')
+    fig.savefig(fname, format='png')
     # draw the plot on the screen
     if show_plots.lower() == "yes":
         plt.draw()

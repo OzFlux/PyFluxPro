@@ -84,14 +84,14 @@ class DataStructure(object):
     Date: Way back in the day
     Author: PRI
     """
-    def __init__(self, groups=[]):
+    def __init__(self, groups=[], global_attributes={}):
         if len(groups) == 0:
             self.series = {}
         else:
             self.groups = {}
             for group in groups:
                 self.groups[group] = {}
-        self.globalattributes = {}
+        self.globalattributes = copy.deepcopy(global_attributes)
         self.mergeserieslist = []
         self.averageserieslist = []
         self.intermediate = []
@@ -2188,8 +2188,8 @@ def ncsplit_run(split_gui):
         if item in series_list: series_list.remove(item)
     # loop over the series
     for item in series_list:
-        data,flag,attr = pfp_utils.GetSeriesasMA(ds_in,item,si=si,ei=ei)
-        pfp_utils.CreateSeries(ds_out,item,data,flag,attr)
+        var = pfp_utils.GetVariable(ds_in, item, start=si, end=ei)
+        pfp_utils.CreateSeries(ds_out, var)
     # deal with the Python datetime series
     ldt_out = ldt_in[si:ei+1]
     ldt_out_flag = ldt_in_flag[si:ei+1]

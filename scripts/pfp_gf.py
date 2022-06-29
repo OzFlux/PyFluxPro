@@ -1,4 +1,5 @@
 # standard modules
+import copy
 import datetime
 import os
 import logging
@@ -265,8 +266,7 @@ def ReadAlternateFiles(ds, l4_info):
         if f not in ds_alt:
             ds_alternate = pfp_io.NetCDFRead(f, fixtimestepmethod="round")
             if ds_alternate.returncodes["value"] != 0: return ds_alt
-            gfalternate_matchstartendtimes(ds, ds_alternate)
-            ds_alt[f] = ds_alternate
+            ds_alt[f] = gfalternate_matchstartendtimes(ds, ds_alternate)
     return ds_alt
 
 def gfalternate_createdict(cf, ds, l4_info, label, called_by):
@@ -504,7 +504,7 @@ def gfalternate_createdict_gui(cf, ds, l4_info, called_by):
     l4a["gui"]["enddate"] = ed
     return
 
-def gfalternate_matchstartendtimes(ds,ds_alternate):
+def gfalternate_matchstartendtimes(ds, ds_alternate):
     """
     Purpose:
      Match the start and end times of the alternate and tower data.
@@ -521,22 +521,40 @@ def gfalternate_matchstartendtimes(ds,ds_alternate):
            ds_alternate is the data structure containing the alternate data
     Author: PRI
     Date: July 2015
+    Modifications:
+     June 2022 - rewrote to use pfp_utils.GetVariable() and pfp_utils.CreateVariable()
+                 and to return a new data structure instead of modify ds_alternate
+                 in place.
     """
     # check the time steps are the same
     ts_tower = int(float(ds.globalattributes["time_step"]))
     ts_alternate = int(float(ds_alternate.globalattributes["time_step"]))
-    if ts_tower!=ts_alternate:
+    if ts_tower != ts_alternate:
         msg = " GapFillFromAlternate: time step for tower and alternate data are different, returning ..."
         logger.error(msg)
         ds.returncodes["GapFillFromAlternate"] = "error"
         return
+    # get a list of alternate series
+    labels_alternate = [item for item in list(ds_alternate.series.keys()) if "_QCFlag" not in item]
+    for label in ["DateTime", "DateTime_UTC"]:
+        if label in labels_alternate:
+            labels_alternate.remove(label)
+    # number of records in truncated or padded alternate data
+    nRecs_tower = int(ds.globalattributes["nc_nrecs"])
+    # create new data strucure to hold alternate data spanning period of tower data
+    gattrs = ds_alternate.globalattributes
+    ds_matched = pfp_io.DataStructure(global_attributes=gattrs)
+    # force the matched datetime to be the tower datetime
+    ds_matched.series["DateTime"] = copy.deepcopy(ds.series["DateTime"])
+    # update the number of records in the file
+    ds_matched.globalattributes["nc_nrecs"] = nRecs_tower
     # get the start and end times of the tower and the alternate data and see if they overlap
     ldt_alternate = ds_alternate.series["DateTime"]["Data"]
     start_alternate = ldt_alternate[0]
     ldt_tower = ds.series["DateTime"]["Data"]
     end_tower = ldt_tower[-1]
     # since the datetime is monotonically increasing we need only check the start datetime
-    overlap = start_alternate<=end_tower
+    overlap = start_alternate <= end_tower
     # do the alternate and tower data overlap?
     if overlap:
         # index of alternate datetimes that are also in tower datetimes
@@ -549,51 +567,31 @@ def gfalternate_matchstartendtimes(ds,ds_alternate):
             msg = " Something went badly wrong at L4 and I'm giving up"
             logger.error(msg)
             raise RuntimeError(msg)
-        # get a list of alternate series
-        alternate_series_list = [item for item in list(ds_alternate.series.keys()) if "_QCFlag" not in item]
-        # number of records in truncated or padded alternate data
-        nRecs_tower = len(ldt_tower)
-        # force the alternate dattime to be the tower date time
-        ds_alternate.series["DateTime"] = ds.series["DateTime"]
-        # update the number of records in the file
-        ds_alternate.globalattributes["nc_nrecs"] = nRecs_tower
         # loop over the alternate series and truncate or pad as required
         # truncation or padding is handled by the indices
-        for series in alternate_series_list:
-            if series in ["DateTime","DateTime_UTC"]: continue
+        for label in labels_alternate:
             # get the alternate data
-            #data,flag,attr = pfp_utils.GetSeriesasMA(ds_alternate,series)
-            var_alternate = pfp_utils.GetVariable(ds_alternate, series)
-            # create an array of missing data of the required length
-            #data_overlap = numpy.full(nRecs_tower,c.missing_value,dtype=numpy.float64)
-            #flag_overlap = numpy.ones(nRecs_tower,dtype=numpy.int32)
-            var_overlap = pfp_utils.CreateEmptyVariable(series, nRecs_tower,
-                                                        attr=var_alternate["Attr"])
+            var_alternate = pfp_utils.GetVariable(ds_alternate, label)
+            # create an empty variable of the required length
+            attr = copy.deepcopy(var_alternate["Attr"])
+            var_overlap = pfp_utils.CreateEmptyVariable(label, nRecs_tower, attr=attr)
             # replace missing data with alternate data where times match
-            #data_overlap[tower_index] = data[alternate_index]
             var_overlap["Data"][tower_index] = var_alternate["Data"][alternate_index]
-            #flag_overlap[tower_index] = flag[alternate_index]
             var_overlap["Flag"][tower_index] = var_alternate["Flag"][alternate_index]
-            # write the truncated or padded series back into the alternate data structure
-            #pfp_utils.CreateSeries(ds_alternate,series,data_overlap,flag_overlap,attr)
-            pfp_utils.CreateVariable(ds_alternate, var_overlap)
-
-        ## update the number of records in the file
-        #ds_alternate.globalattributes["nc_nrecs"] = nRecs_tower
+            # write the truncated or padded series back into the matched data structure
+            pfp_utils.CreateVariable(ds_matched, var_overlap)
     else:
         # there is no overlap between the alternate and tower data, create dummy series
-        nRecs = len(ldt_tower)
-        ds_alternate.globalattributes["nc_nrecs"] = nRecs
-        ds_alternate.series["DateTime"] = ds.series["DateTime"]
-        alternate_series_list = [item for item in list(ds_alternate.series.keys()) if "_QCFlag" not in item]
-        for series in alternate_series_list:
-            if series in ["DateTime","DateTime_UTC"]:
-                continue
-            _,  _, attr = pfp_utils.GetSeriesasMA(ds_alternate, series)
-            data = numpy.full(nRecs, c.missing_value, dtype=numpy.float64)
-            flag = numpy.ones(nRecs, dtype=numpy.int32)
-            pfp_utils.CreateSeries(ds_alternate, series, data, flag, attr)
+        for label in labels_alternate:
+            # get the alternate data
+            var_alternate = pfp_utils.GetVariable(ds_alternate, label)
+            # create an empty variable of the required length
+            attr = copy.deepcopy(var_alternate["Attr"])
+            var_overlap = pfp_utils.CreateEmptyVariable(label, nRecs_tower, attr=attr)
+            # write the truncated or padded series back into the matched data structure
+            pfp_utils.CreateVariable(ds_matched, var_overlap)
     ds.returncodes["GapFillFromAlternate"] = "normal"
+    return ds_matched
 
 def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     """
@@ -1125,6 +1123,8 @@ def gfClimatology_interpolateddaily(ds, series, output, xlbook, flag_code):
     Gap fill using data interpolated over a 2D array where the days are
     the rows and the time of day is the columns.
     """
+    # description string for this level of processing
+    descr_level = "description_" + ds.globalattributes["processing_level"]
     # gap fill from interpolated 30 minute data
     sheet_name = series + 'i(day)'
     if sheet_name not in xlbook.sheet_names():
@@ -1154,9 +1154,9 @@ def gfClimatology_interpolateddaily(ds, series, output, xlbook, flag_code):
         # fill the climatological value array
         val1d[xlRow*nts:(xlRow+1)*nts] = thissheet.row_values(xlRow+2, start_colx=1, end_colx=nts+1)
     # get the data to be filled with climatological values
-    data, flag, attr = pfp_utils.GetSeriesasMA(ds, series)
+    var = pfp_utils.GetVariable(ds, series)
     # get an index of missing values
-    idx = numpy.where(numpy.ma.getmaskarray(data) == True)[0]
+    idx = numpy.where(numpy.ma.getmaskarray(var["Data"]) == True)[0]
     # there must be a better way to do this ...
     # simply using the index (idx) to set a slice of the data array to the gap filled values in val1d
     # does not seem to work (mask stays true on replaced values in data), the work around is to
@@ -1168,16 +1168,15 @@ def gfClimatology_interpolateddaily(ds, series, output, xlbook, flag_code):
     for ii in idx:
         try:
             jj = pfp_utils.find_nearest_value(cdt, ldt[ii])
-            data[ii] = val1d[jj]
-            flag[ii] = numpy.int32(flag_code)
+            var["Data"][ii] = val1d[jj]
+            var["Flag"][ii] = numpy.int32(flag_code)
         except ValueError:
-            data[ii] = numpy.float64(c.missing_value)
-            flag[ii] = numpy.int32(flag_code+1)
+            var["Data"][ii] = numpy.float64(c.missing_value)
+            var["Flag"][ii] = numpy.int32(flag_code+1)
     # put the gap filled data back into the data structure
-    pfp_utils.CreateSeries(ds, output, data, flag, attr)
-    # PRI_Check - make sure climatology variable is OK
-    #ds.series[output]["Data"] = data
-    #ds.series[output]["Flag"] = flag
+    var["Label"] = output
+    var["Attr"][descr_level] = "climatology"
+    pfp_utils.CreateVariable(ds, var)
     return
 
 def gfClimatology_monthly(ds, series, output, xlbook):
@@ -1253,12 +1252,12 @@ def gf_getdiurnalstats(DecHour,Data,ts):
                 Mn[i] = numpy.ma.min(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn
 
-def ImportSeries(cf,ds):
+def ImportSeries(cf, ds):
     # check to see if there is an Imports section
     if "Imports" not in list(cf.keys()):
         return
     # number of records
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.globalattributes["nc_nrecs"])
     # get the start and end datetime
     ldt = ds.series["DateTime"]["Data"]
     start_date = ldt[0]
@@ -1276,19 +1275,19 @@ def ImportSeries(cf,ds):
             logger.warning(msg)
             continue
         ds_import = pfp_io.NetCDFRead(import_filename)
-        if ds_import.returncodes["value"] != 0: return
+        if ds_import.returncodes["value"] != 0:
+            return
         ts_import = int(float(ds_import.globalattributes["time_step"]))
         ldt_import = ds_import.series["DateTime"]["Data"]
-        si = pfp_utils.GetDateIndex(ldt_import, str(start_date), ts=ts_import, default=0, match="exact")
-        ei = pfp_utils.GetDateIndex(ldt_import, str(end_date), ts=ts_import, default=len(ldt_import)-1, match="exact")
-        data = numpy.ma.ones(nRecs)*float(c.missing_value)
-        flag = numpy.ma.ones(nRecs)
-        data_import, flag_import, attr_import = pfp_utils.GetSeriesasMA(ds_import, var_name, si=si, ei=ei)
-        attr_import["time_coverage_start"] = ldt_import[0].strftime("%Y-%m-%d %H:%M")
-        attr_import["time_coverage_end"] = ldt_import[-1].strftime("%Y-%m-%d %H:%M")
+        si = pfp_utils.GetDateIndex(ldt_import, start_date, ts=ts_import, default=0, match="exact")
+        ei = pfp_utils.GetDateIndex(ldt_import, end_date, ts=ts_import, default=len(ldt_import)-1, match="exact")
+        var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=var_import["Attr"])
+        var_import = pfp_utils.GetVariable(ds_import, var_name, start=si, end=ei)
+        var_import["Attr"]["time_coverage_start"] = ldt_import[0].strftime("%Y-%m-%d %H:%M")
+        var_import["Attr"]["time_coverage_end"] = ldt_import[-1].strftime("%Y-%m-%d %H:%M")
         ldt_import = ldt_import[si:ei+1]
         indainb, indbina = pfp_utils.FindMatchingIndices(ldt_import, ldt)
-        data[indbina] = data_import[indainb]
-        flag[indbina] = flag_import[indainb]
-        pfp_utils.CreateSeries(ds, label, data, flag, attr_import)
+        var["Data"][indbina] = var_import["Data"][indainb]
+        var["Flag"][indbina] = var_import["Flag"][indainb]
+        pfp_utils.CreateVariable(ds, var)
     return

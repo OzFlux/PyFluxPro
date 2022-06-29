@@ -2075,7 +2075,7 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
     Purpose:
      Returns a data variable from the data structure as a dictionary.
     Usage:
-     variable = pfp_utils.GetSeriesasMA(ds, label)
+     variable = pfp_utils.GetVariable(ds, label)
     Required arguments are;
       ds    - the data structure (class)
       label - label of the data variable in ds (string)
@@ -2097,7 +2097,7 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
       variable["Data"] - numpy float64 masked array containing data
       variable["Flag"] - numpy int32 array containing QC flags
       variable["Attr"] - dictionary of variable attributes
-      variable["DateTime] - datetimes of the data
+      variable["DateTime"] - datetimes of the data
     Example:
      The code snippet below will return the incoming shortwave data values
      (Fsd), the associated QC flag and the variable attributes;
@@ -2520,8 +2520,8 @@ def get_missingingapfilledseries(ds, l4_info):
     gap_found = False
     for series in gf_list:
         if series not in list(ds.series.keys()): continue
-        data,flag,attr = GetSeriesasMA(ds,series)
-        idx = numpy.ma.where(data.mask == True)[0]
+        var = GetVariable(ds, series)
+        idx = numpy.ma.where(var["Data"].mask == True)[0]
         if len(idx) != 0:
             gap_found = True
             msg = " Missing points ("+str(len(idx))+") found in "+series
@@ -2529,6 +2529,7 @@ def get_missingingapfilledseries(ds, l4_info):
     if not gap_found:
         msg = " No missing values found in gap filled series"
         logger.info(msg)
+    return
 
 def get_number_from_heightstring(height):
     z = str(height)
