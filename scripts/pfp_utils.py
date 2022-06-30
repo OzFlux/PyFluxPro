@@ -1226,55 +1226,6 @@ def convert_UVtoWSWD(U, V):
         WD["DateTime"] = copy.deepcopy(V["DateTime"])
     return WS, WD
 
-def CreateSeries(ds, Label, Data, Flag, Attr):
-    """
-    Purpose:
-     Create a series (1d array) of data in the data structure.
-     If the series already exists in the data structure, data values and QC flags will be
-     overwritten but attributes will be preserved.  However, the long_name and units attributes
-     are treated differently.  The existing long_name will have long_name appended to it.  The
-     existing units will be overwritten with units.
-     This utility is the prefered method for creating or updating a data series because
-     it implements a consistent method for creating series in the data structure.  Direct
-     writes to the contents of the data structure are discouraged (unless PRI wrote the code:=P).
-    Usage:
-     Fsd,flag,attr = pfp_utils.GetSeriesasMA(ds,"Fsd")
-      ... do something to Fsd here ...
-     pfp_utils.CreateSeries(ds,"Fsd",Fsd,flag,attr)
-    Author: PRI
-    Date: Back in the day
-    """
-    # create a temporary series to avoid premature overwrites
-    ds.series['_tmp_'] = {}
-    # put the data into the temporary series
-    if numpy.ma.isMA(Data):
-        ds.series['_tmp_']['Data'] = numpy.ma.filled(Data, float(c.missing_value))
-    else:
-        ds.series['_tmp_']['Data'] = numpy.array(Data)
-    # copy or make the QC flag
-    ds.series['_tmp_']['Flag'] = Flag.astype(numpy.int32)
-    # do the attributes
-    ds.series['_tmp_']['Attr'] = {}
-    # check to see if the series already exists
-    if Label in list(ds.series.keys()):
-        # if it does, copy the existing attributes
-        for attr in ds.series[Label]['Attr']:
-            if attr in Attr and ds.series[Label]['Attr'][attr] != Attr[attr]:
-                ds.series['_tmp_']['Attr'][attr] = Attr[attr]
-            else:
-                ds.series['_tmp_']['Attr'][attr] = ds.series[Label]['Attr'][attr]
-        for attr in Attr:
-            if attr not in list(ds.series['_tmp_']['Attr'].keys()):
-                ds.series['_tmp_']['Attr'][attr] = Attr[attr]
-    else:
-        for item in Attr:
-            ds.series['_tmp_']['Attr'][item] = Attr[item]
-    # copy temporary series to new series
-    ds.series[str(Label)] = ds.series['_tmp_']
-    # delete the temporary series
-    del ds.series['_tmp_']
-    return
-
 def CopyVariable(var_in):
     """
     Purpose:
@@ -2042,34 +1993,6 @@ def MakeEmptySeries(ds, ThisOne):
     Attr = make_attribute_dictionary()
     return Series, Flag, Attr
 
-def GetSeriesasMA(ds,ThisOne,si=0,ei=-1,mode="truncate"):
-    """
-    Purpose:
-     Returns a data series and the QC flag series from the data structure.
-    Usage:
-     data,flag,attr = pfp_utils.GetSeriesasMA(ds,label,si=0,ei=-1)
-    where the arguments are;
-      ds    - the data structure (dict)
-      label - label of the data series in ds (string)
-      si    - start index (integer), default 0
-      ei    - end index (integer), default -1
-    and the returned values are;
-      data - values for the requested series in ds
-             (numpy masked array, float64)
-      flag - QC flag for the requested series in ds
-             (numpy masked array, int32)
-      attr - attribute dictionary for series
-    Example:
-     The code snippet below will return the incoming shortwave data values
-     (Fsd) and the associated QC flag (f) as numpy masked arrays;
-      ds = pfp_io.nc_read_series("HowardSprings_2011_L3.nc")
-      Fsd,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd")
-    Author: PRI
-    """
-    Series,Flag,Attr = GetSeries(ds,ThisOne,si=si,ei=ei,mode=mode)
-    Series,WasND = SeriestoMA(Series)
-    return Series,Flag,Attr
-
 def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", match="exact"):
     """
     Purpose:
@@ -2130,7 +2053,7 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
         # leave as ndarray, leave c.missing_value
         pass
     elif isinstance(data, numpy.ndarray) and numpy.isfinite(float(out_type)):
-        # user specified missing data codeGetSeries(
+        # user specified missing data code
         data = numpy.where(data == c.missing_value, float(out_type), data)
     else:
         # default is masked array
@@ -2735,7 +2658,9 @@ def get_xldatefromdatetime(ds):
                                                       datemode) for i in range(0,len(ldt))]
     xldt_new = numpy.ma.array(xldate, dtype=numpy.float64)
     # create the Excel datetime series
-    CreateSeries(ds,"xlDateTime",xldt_new,flag,xldt_attr)
+    var = {"Label": "xlDateTime", "Data": xldt_new, "Flag": flag, "Attr": xldt_attr}
+    CreateVariable(ds, var)
+    return
 
 def get_yearfractionfromdatetime(dt):
     """
@@ -2778,14 +2703,23 @@ def get_ymdhmsfromdatetime(ds):
     Second = numpy.array([dt[i].second for i in range(0,nRecs)]).astype(numpy.int32)
     Hdh = numpy.array([float(Hour[i])+float(Minute[i])/60. for i in range(0,nRecs)]).astype(numpy.float64)
     Ddd = numpy.array([(dt[i] - datetime.datetime(Year[i],1,1)).days+1+Hdh[i]/24. for i in range(0,nRecs)]).astype(numpy.float64)
-    CreateSeries(ds, "Year", Year, flag,{"long_name": "Year"})
-    CreateSeries(ds, "Month", Month, flag, {"long_name": "Month"})
-    CreateSeries(ds, "Day", Day, flag, {"long_name": "Day"})
-    CreateSeries(ds, "Hour", Hour, flag, {"long_name": "Hour"})
-    CreateSeries(ds, "Minute", Minute, flag, {"long_name": "Minute"})
-    CreateSeries(ds, "Second", Second, flag, {"long_name": "Second"})
-    CreateSeries(ds, "Hdh", Hdh, flag, {"long_name": "Decimal hour of the day"})
-    CreateSeries(ds, 'Ddd', Ddd, flag, {"long_name": "Decimal day of the year"})
+    var = {"Label": "Year", "Data": Year, "Flag": flag, "Attr": {"long_name": "Year"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Month", "Data": Month, "Flag": flag, "Attr": {"long_name": "Month"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Day", "Data": Day, "Flag": flag, "Attr": {"long_name": "Day"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Hour", "Data": Hour, "Flag": flag, "Attr": {"long_name": "Hour"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Minute", "Data": Minute, "Flag": flag, "Attr": {"long_name": "Minute"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Second", "Data": Second, "Flag": flag, "Attr": {"long_name": "Second"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Hdh", "Data": Hdh, "Flag": flag, "Attr": {"long_name": "Decimal hour of the day"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Ddd", "Data": Ddd, "Flag": flag, "Attr": {"long_name": "Decimal day of the year"}}
+    CreateVariable(ds, var)
+    return
 
 def get_ymdhmsfromxldate(ds):
     """
@@ -2819,14 +2753,22 @@ def get_ymdhmsfromxldate(ds):
         Second[i] = int(DateTuple[5])
         Hdh[i] = float(DateTuple[3])+float(DateTuple[4])/60.
         Ddd[i] = ds.series['xlDateTime']['Data'][i] - xlrd.xldate.xldate_from_date_tuple((Year[i],1,1),datemode) + 1
-    CreateSeries(ds, "Year", Year, flag,{"long_name": "Year"})
-    CreateSeries(ds, "Month", Month, flag, {"long_name": "Month"})
-    CreateSeries(ds, "Day", Day, flag, {"long_name": "Day"})
-    CreateSeries(ds, "Hour", Hour, flag, {"long_name": "Hour"})
-    CreateSeries(ds, "Minute", Minute, flag, {"long_name": "Minute"})
-    CreateSeries(ds, "Second", Second, flag, {"long_name": "Second"})
-    CreateSeries(ds, "Hdh", Hdh, flag, {"long_name": "Decimal hour of the day"})
-    CreateSeries(ds, 'Ddd', Ddd, flag, {"long_name": "Decimal day of the year"})
+    var = {"Label": "Year", "Data": Year, "Flag": flag, "Attr": {"long_name": "Year"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Month", "Data": Month, "Flag": flag, "Attr": {"long_name": "Month"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Day", "Data": Day, "Flag": flag, "Attr": {"long_name": "Day"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Hour", "Data": Hour, "Flag": flag, "Attr": {"long_name": "Hour"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Minute", "Data": Minute, "Flag": flag, "Attr": {"long_name": "Minute"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Second", "Data": Second, "Flag": flag, "Attr": {"long_name": "Second"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Hdh", "Data": Hdh, "Flag": flag, "Attr": {"long_name": "Decimal hour of the day"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Ddd", "Data": Ddd, "Flag": flag, "Attr": {"long_name": "Decimal day of the year"}}
+    CreateVariable(ds, var)
     return
 
 def haskey(cf,ThisOne,key):

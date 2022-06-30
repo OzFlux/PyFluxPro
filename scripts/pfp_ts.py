@@ -57,7 +57,7 @@ def ApplyLinear(cf,ds,ThisOne):
             ds.series[ThisOne]['Data'] = numpy.ma.filled(data,float(c.missing_value)).astype(numpy.float64)
             ds.series[ThisOne]['Flag'] = flag
 
-def AverageSeriesByElements(cf,ds,Av_out):
+def AverageSeriesByElements(cf, ds, Av_out):
     """
         Calculates the average of multiple time series.  Multiple time series
         are entered and a single time series representing the average at each
@@ -74,6 +74,9 @@ def AverageSeriesByElements(cf,ds,Av_out):
         return
     if Av_out in ds.averageserieslist:
         return
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    ones = numpy.ones(nrecs)
+    zeros = numpy.zeros(nrecs)
     # get the name of the description variable attribute
     processing_level = ds.globalattributes["processing_level"]
     descr_level = "description_" + processing_level
@@ -88,38 +91,24 @@ def AverageSeriesByElements(cf,ds,Av_out):
             logger.warning(msg)
             srclist.remove(label)
     nSeries = len(srclist)
-    if nSeries==0:
-        logger.error('  AverageSeriesByElements: no input series specified for'+str(Av_out))
+    if nSeries == 0:
+        logger.error("  AverageSeriesByElements: no input series specified for " + str(Av_out))
         return
-    if nSeries==1:
-        tmp_data = ds.series[srclist[0]]['Data'].copy()
-        tmp_flag = ds.series[srclist[0]]['Flag'].copy()
-        tmp_attr = ds.series[srclist[0]]['Attr'].copy()
-        Av_data = numpy.ma.masked_where(tmp_data==float(c.missing_value),tmp_data)
-        Mn_flag = tmp_flag
-        SeriesNameString = srclist[0]
-    else:
-        tmp_data = ds.series[srclist[0]]['Data'].copy()
-        tmp_flag = ds.series[srclist[0]]['Flag'].copy()
-
-        index = numpy.where(numpy.mod(tmp_flag,10)==0)    # find the elements with flag = 0, 10, 20 etc
-        tmp_flag[index] = 0                               # set them all to 0
-
-        tmp_attr = ds.series[srclist[0]]['Attr'].copy()
-        SeriesNameString = srclist[0]
-        srclist.remove(srclist[0])
-        for ThisOne in srclist:
-            SeriesNameString = SeriesNameString+', '+ThisOne
-            tmp_data = numpy.vstack((tmp_data,ds.series[ThisOne]['Data'].copy()))
-            tmp_flag = numpy.vstack((tmp_flag,ds.series[ThisOne]['Flag'].copy()))
-        tmp_data = numpy.ma.masked_where(tmp_data==float(c.missing_value),tmp_data)
-        Av_data = numpy.ma.average(tmp_data,axis=0)
-        Mn_flag = numpy.min(tmp_flag,axis=0)
+    avg = pfp_utils.GetVariable(ds, srclist[0])
+    labels_averaged = srclist[0]
+    if len(srclist) > 1:
+        for ThisOne in srclist[1:]:
+            labels_averaged = labels_averaged + ", " + ThisOne
+            var = pfp_utils.GetVariable(ds, ThisOne)
+            avg["Data"] = numpy.ma.vstack((avg["Data"], var["Data"]))
+        avg["Data"] = numpy.ma.average(avg["Data"], axis=0)
+        avg["Flag"] = numpy.where(numpy.ma.getmaskarray(avg["Data"]) == True, ones, zeros)
     ds.averageserieslist.append(Av_out)
-    # this is a temporary fix, better to have a routine update the attr dictionary
-    tmp = "Element-wise average of series " + SeriesNameString
-    pfp_utils.append_to_attribute(tmp_attr, {descr_level: tmp})
-    pfp_utils.CreateSeries(ds,Av_out,Av_data,Mn_flag,tmp_attr)
+    # update the attributes
+    tmp = "Element-wise average of series " + labels_averaged
+    pfp_utils.append_to_attribute(avg["Attr"], {descr_level: tmp})
+    avg["Label"] = Av_out
+    pfp_utils.CreateVariable(ds, avg)
 
 def CalculateAvailableEnergy(ds, Fa_out="Fa", Fn_in="Fn", Fg_in="Fg"):
     """
@@ -344,94 +333,106 @@ def CalculateHumiditiesAfterGapFill(ds, info):
 
 def AbsoluteHumidityFromRelativeHumidity(ds):
     """ Calculate absolute humidity from relative humidity. """
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     logger.info(' Calculating absolute humidity from relative humidity')
     descr_level = "description_" + ds.globalattributes["processing_level"]
-    Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds, "Ta")
-    RH,RH_flag,a = pfp_utils.GetSeriesasMA(ds, "RH")
-    AH_new_flag = pfp_utils.MergeQCFlag([Ta_flag, RH_flag])
-    AH_new = pfp_mf.absolutehumidityfromrelativehumidity(Ta, RH)
+    Ta = pfp_utils.GetVariable(ds, "Ta")
+    RH = pfp_utils.GetVariable(ds, "RH")
+    AH_new = pfp_utils.CreateEmptyVariable("AH", nrecs)
+    AH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], RH["Flag"]])
+    AH_new["Data"] = pfp_mf.absolutehumidityfromrelativehumidity(Ta["Data"], RH["Data"])
     if "AH" in list(ds.series.keys()):
-        AH, AH_flag, AH_attr = pfp_utils.GetSeriesasMA(ds, "AH")
-        index = numpy.where(numpy.ma.getmaskarray(AH) == True)[0]
-        #index = numpy.ma.where(numpy.ma.getmaskarray(AH) == True)[0]
-        AH[index] = AH_new[index]
-        AH_flag[index] = AH_new_flag[index]
-        pfp_utils.append_to_attribute(AH_attr, {descr_level: "merged with AH calculated from RH"})
-        pfp_utils.CreateSeries(ds, "AH", AH, AH_flag, AH_attr)
+        AH = pfp_utils.GetVariable(ds, "AH")
+        index = numpy.where(numpy.ma.getmaskarray(AH["Data"]) == True)[0]
+        AH["Data"][index] = AH_new["Data"][index]
+        AH["Flag"][index] = AH_new["Flag"][index]
+        pfp_utils.append_to_attribute(AH["Attr"], {descr_level: "merged with AH calculated from RH"})
+        pfp_utils.CreateVariable(ds, AH)
     else:
-        attr = {"long_name": "Absolute humidity", "units": "g/m^3", "statistic_type": "average",
-                "standard_name": "mass_concentration_of_water_vapor_in_air",
-                descr_level: "Absoulte humidity calculated from Ta and RH"}
-        pfp_utils.CreateSeries(ds, "AH", AH_new, AH_new_flag, attr)
+        AH_new["Attr"] = {"long_name": "Absolute humidity", "units": "g/m^3",
+                          "statistic_type": "average",
+                          "standard_name": "mass_concentration_of_water_vapor_in_air",
+                          descr_level: "Absoulte humidity calculated from Ta and RH"}
+        pfp_utils.CreateVariable(ds, AH_new)
+    return
 
 def AbsoluteHumidityFromSpecificHumidity(ds):
     """ Calculate absolute humidity from specific humidity. """
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     logger.info(" Calculating absolute humidity from specific humidity")
     descr_level = "description_" + ds.globalattributes["processing_level"]
-    Ta, Ta_flag, a = pfp_utils.GetSeriesasMA(ds, "Ta")
-    ps, ps_flag, a = pfp_utils.GetSeriesasMA(ds, "ps")
-    SH, SH_flag, a = pfp_utils.GetSeriesasMA(ds, "SH")
-    AH_new_flag = pfp_utils.MergeQCFlag([Ta_flag, ps_flag, SH_flag])
-    RH = pfp_mf.relativehumidityfromspecifichumidity(SH, Ta, ps)
-    AH_new = pfp_mf.absolutehumidityfromrelativehumidity(Ta, RH)
+    Ta = pfp_utils.GetVariable(ds, "Ta")
+    ps = pfp_utils.GetVariable(ds, "ps")
+    SH = pfp_utils.GetVariable(ds, "SH")
+    AH_new = pfp_utils.CreateEmptyVariable("AH", nrecs)
+    AH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], ps["Flag"], SH["Flag"]])
+    RH = pfp_mf.relativehumidityfromspecifichumidity(SH["Data"], Ta["Data"], ps["Data"])
+    AH_new["Data"] = pfp_mf.absolutehumidityfromrelativehumidity(Ta["Data"], RH)
     if "AH" in list(ds.series.keys()):
-        AH, AH_flag, AH_attr = pfp_utils.GetSeriesasMA(ds, "AH")
-        index = numpy.where(numpy.ma.getmaskarray(AH) == True)[0]
-        #index = numpy.ma.where(numpy.ma.getmaskarray(AH) == True)[0]
-        AH[index] = AH_new[index]
-        AH_flag[index] = AH_new_flag[index]
-        pfp_utils.append_to_attribute(AH_attr, {descr_level: "merged with AH calculated from SH"})
-        pfp_utils.CreateSeries(ds, "AH", AH, AH_flag, AH_attr)
+        AH = pfp_utils.GetVariable(ds, "AH")
+        index = numpy.where(numpy.ma.getmaskarray(AH["Data"]) == True)[0]
+        AH["Data"][index] = AH_new["Data"][index]
+        AH["Flag"][index] = AH_new["Flag"][index]
+        pfp_utils.append_to_attribute(AH["Attr"], {descr_level: "merged with AH calculated from SH"})
+        pfp_utils.CreateVariable(ds, AH)
     else:
-        attr = {"long_name": "Absolute humidity", "units": "g/m^3", "statistic_type": "average",
-                "standard_name": "mass_concentration_of_water_vapor_in_air",
-                descr_level: "Absoulte humidity calculated from Ta, ps and SH"}
-        pfp_utils.CreateSeries(ds, "AH", AH_new, AH_new_flag, attr)
+        AH_new["Attr"] = {"long_name": "Absolute humidity", "units": "g/m^3",
+                          "statistic_type": "average",
+                          "standard_name": "mass_concentration_of_water_vapor_in_air",
+                          descr_level: "Absoulte humidity calculated from Ta, ps and SH"}
+        pfp_utils.CreateVariable(ds, AH_new)
+    return
 
 def RelativeHumidityFromSpecificHumidity(ds):
     """ Calculate relative humidity from specific humidity. """
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     logger.info(' Calculating relative humidity from specific humidity')
     descr_level = "description_" + ds.globalattributes["processing_level"]
-    Ta, Ta_flag, a = pfp_utils.GetSeriesasMA(ds, "Ta")
-    ps, ps_flag, a = pfp_utils.GetSeriesasMA(ds, "ps")
-    SH, SH_flag, a = pfp_utils.GetSeriesasMA(ds, "SH")
-    RH_new_flag = pfp_utils.MergeQCFlag([Ta_flag, ps_flag, SH_flag])
-    RH_new = pfp_mf.relativehumidityfromspecifichumidity(SH, Ta, ps)
+    Ta = pfp_utils.GetVariable(ds, "Ta")
+    ps = pfp_utils.GetVariable(ds, "ps")
+    SH = pfp_utils.GetVariable(ds, "SH")
+    RH_new = pfp_utils.CreateEmptyVariable("RH", nrecs)
+    RH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], ps["Flag"], SH["Flag"]])
+    RH_new["Data"] = pfp_mf.relativehumidityfromspecifichumidity(SH["Data"], Ta["Data"], ps["Data"])
     if "RH" in list(ds.series.keys()):
-        RH, RH_flag, RH_attr = pfp_utils.GetSeriesasMA(ds, "RH")
-        index = numpy.where(numpy.ma.getmaskarray(RH) == True)[0]
-        #index = numpy.ma.where(numpy.ma.getmaskarray(RH) == True)[0]
-        RH[index] = RH_new[index]
-        RH_flag[index] = RH_new_flag[index]
-        pfp_utils.append_to_attribute(RH_attr, {descr_level: "merged with RH calculated from SH"})
-        pfp_utils.CreateSeries(ds, "RH", RH, RH_flag, RH_attr)
+        RH = pfp_utils.GetVariable(ds, "RH")
+        index = numpy.where(numpy.ma.getmaskarray(RH["Data"]) == True)[0]
+        RH["Data"][index] = RH_new["Data"][index]
+        RH["Flag"][index] = RH_new["Flag"][index]
+        pfp_utils.append_to_attribute(RH["Attr"], {descr_level: "merged with RH calculated from SH"})
+        pfp_utils.CreateVariable(ds, RH)
     else:
-        attr = {"long_name": "Relative humidity", "units": "percent",
-                "standard_name": "relative_humidity", "statistic_type": "average",
-                descr_level: "Relative humidity calculated from SH, Ta and ps"}
-        pfp_utils.CreateSeries(ds, "RH", RH_new, RH_new_flag, attr)
+        RH_new["Attr"] = {"long_name": "Relative humidity", "units": "percent",
+                          "standard_name": "relative_humidity", "statistic_type": "average",
+                          descr_level: "Relative humidity calculated from SH, Ta and ps"}
+        pfp_utils.CreateVariable(ds, RH_new)
+    return
 
 def RelativeHumidityFromAbsoluteHumidity(ds):
     """ Calculate relative humidity from absolute humidity. """
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     logger.info(' Calculating relative humidity from absolute humidity')
     descr_level = "description_" + ds.globalattributes["processing_level"]
-    Ta, Ta_flag, a = pfp_utils.GetSeriesasMA(ds, "Ta")
-    AH, AH_flag, a = pfp_utils.GetSeriesasMA(ds, "AH")
-    RH_new_flag = pfp_utils.MergeQCFlag([Ta_flag, AH_flag])
+    Ta = pfp_utils.GetVariable(ds, "Ta")
+    AH = pfp_utils.GetVariable(ds, "AH")
+    RH_new = pfp_utils.CreateEmptyVariable("RH", nrecs)
+    RH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], AH["Flag"]])
     # relative humidity in units of percent
-    RH_new = pfp_mf.relativehumidityfromabsolutehumidity(AH, Ta)
+    RH_new["Data"] = pfp_mf.relativehumidityfromabsolutehumidity(AH["Data"], Ta["Data"])
     if "RH" in list(ds.series.keys()):
-        RH, RH_flag, RH_attr = pfp_utils.GetSeriesasMA(ds, "RH")
-        index = numpy.where(numpy.ma.getmaskarray(RH) == True)[0]
-        RH[index] = RH_new[index]
-        RH_flag[index] = RH_new_flag[index]
-        pfp_utils.append_to_attribute(RH_attr, {descr_level: "merged with RH calculated from AH"})
-        pfp_utils.CreateSeries(ds, "RH", RH, RH_flag, RH_attr)
+        RH = pfp_utils.GetVariable(ds, "RH")
+        index = numpy.where(numpy.ma.getmaskarray(RH["Data"]) == True)[0]
+        RH["Data"][index] = RH_new["Data"][index]
+        RH["Flag"][index] = RH_new["Flag"][index]
+        pfp_utils.append_to_attribute(RH["Attr"], {descr_level: "merged with RH calculated from AH"})
+        pfp_utils.CreateVariable(ds, RH)
     else:
-        attr = {"long_name": "Relative humidity", "units": "percent",
-                "standard_name": "relative_humidity", "statistic_type": "average",
-                descr_level: "Relative humidity calculated from AH and Ta"}
-        pfp_utils.CreateSeries(ds, "RH", RH_new, RH_new_flag, attr)
+        RH_new["Attr"] = {"long_name": "Relative humidity", "units": "percent",
+                          "statistic_type": "average",
+                          "standard_name": "relative_humidity",
+                          descr_level: "Relative humidity calculated from AH and Ta"}
+        pfp_utils.CreateVariable(ds, RH_new)
+    return
 
 def smooth(x,window_len=11,window='hanning'):
     """
@@ -481,57 +482,66 @@ def smooth(x,window_len=11,window='hanning'):
 
 def SpecificHumidityFromAbsoluteHumidity(ds):
     """ Calculate specific humidity from absolute humidity. """
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     logger.info(' Calculating specific humidity from absolute humidity')
     descr_level = "description_" + ds.globalattributes["processing_level"]
-    Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds,"Ta")
-    ps,ps_flag,a = pfp_utils.GetSeriesasMA(ds,"ps")
-    AH,AH_flag,a = pfp_utils.GetSeriesasMA(ds,"AH")
-    SH_new_flag = pfp_utils.MergeQCFlag([Ta_flag,ps_flag,AH_flag])
-    RH = pfp_mf.relativehumidityfromabsolutehumidity(AH,Ta)
-    SH_new = pfp_mf.specifichumidityfromRH(RH, Ta, ps)
+    Ta = pfp_utils.GetVariable(ds,"Ta")
+    ps = pfp_utils.GetVariable(ds,"ps")
+    AH = pfp_utils.GetVariable(ds,"AH")
+    SH_new = pfp_utils.CreateEmptyVariable("SH", nrecs)
+    SH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], ps["Flag"], AH["Flag"]])
+    RH = pfp_mf.relativehumidityfromabsolutehumidity(AH["Data"], Ta["Data"])
+    SH_new["Data"] = pfp_mf.specifichumidityfromRH(RH, Ta["Data"], ps["Data"])
     if "SH" in list(ds.series.keys()):
-        SH, SH_flag, SH_attr = pfp_utils.GetSeriesasMA(ds, "SH")
-        index = numpy.where(numpy.ma.getmaskarray(SH)==True)[0]
-        SH[index] = SH_new[index]
-        SH_flag[index] = SH_new_flag[index]
-        pfp_utils.append_to_attribute(SH_attr, {descr_level: "merged with SH calculated from AH"})
-        pfp_utils.CreateSeries(ds, "SH", SH, SH_flag, SH_attr)
+        SH = pfp_utils.GetVariable(ds, "SH")
+        index = numpy.where(numpy.ma.getmaskarray(SH["Data"]) == True)[0]
+        SH["Data"][index] = SH_new["Data"][index]
+        SH["Flag"][index] = SH_new["Flag"][index]
+        pfp_utils.append_to_attribute(SH["Attr"], {descr_level: "merged with SH calculated from AH"})
+        pfp_utils.CreateVariable(ds, SH)
     else:
-        attr = {"long_name": "Specific humidity", "units": "kg/kg",
-                "standard_name": "specific_humidity", "statistic_type": "average",
-                descr_level: "Specific humidity calculated from AH, Ta and ps"}
-        pfp_utils.CreateSeries(ds, "SH", SH_new, SH_new_flag, attr)
+        SH_new["Attr"] = {"long_name": "Specific humidity", "units": "kg/kg",
+                          "standard_name": "specific_humidity",
+                          "statistic_type": "average",
+                          descr_level: "Specific humidity calculated from AH, Ta and ps"}
+        pfp_utils.CreateVariable(ds, SH_new)
+    return
 
 def SpecificHumidityFromRelativeHumidity(ds):
     """ Calculate specific humidity from relative humidity."""
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     logger.info(' Calculating specific humidity from relative humidity')
     descr_level = "description_" + ds.globalattributes["processing_level"]
-    Ta,Ta_flag,a = pfp_utils.GetSeriesasMA(ds,"Ta")
-    ps,ps_flag,a = pfp_utils.GetSeriesasMA(ds,"ps")
-    RH,RH_flag,a = pfp_utils.GetSeriesasMA(ds,"RH")
-    SH_new_flag = pfp_utils.MergeQCFlag([Ta_flag,ps_flag,RH_flag])
-    SH_new = pfp_mf.specifichumidityfromRH(RH,Ta,ps)   # specific humidity in units of kg/kg
+    Ta = pfp_utils.GetVariable(ds, "Ta")
+    ps = pfp_utils.GetVariable(ds, "ps")
+    RH = pfp_utils.GetVariable(ds, "RH")
+    SH_new = pfp_utils.CreateEmptyVariable("SH", nrecs)
+    SH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], ps["Flag"], RH["Flag"]])
+    SH_new["Data"] = pfp_mf.specifichumidityfromRH(RH["Data"], Ta["Data"], ps["Data"])
     if "SH" in list(ds.series.keys()):
-        SH, SH_flag, SH_attr = pfp_utils.GetSeriesasMA(ds, "SH")
-        index = numpy.where(numpy.ma.getmaskarray(SH)==True)[0]
-        #index = numpy.ma.where(numpy.ma.getmaskarray(SH)==True)[0]
-        SH[index] = SH_new[index]
-        SH_flag[index] = SH_new_flag[index]
-        pfp_utils.append_to_attribute(SH_attr, {descr_level: "merged with SH calculated from RH"})
-        pfp_utils.CreateSeries(ds, "SH", SH, SH_flag, SH_attr)
+        SH = pfp_utils.GetVariable(ds, "SH")
+        index = numpy.where(numpy.ma.getmaskarray(SH["Data"]) == True)[0]
+        SH["Data"][index] = SH_new["Data"][index]
+        SH["Flag"][index] = SH_new["Flag"][index]
+        pfp_utils.append_to_attribute(SH["Attr"], {descr_level: "merged with SH calculated from RH"})
+        pfp_utils.CreateVariable(ds, SH)
     else:
-        attr = {"long_name": "Specific humidity", "units": "kg/kg",
-                "standard_name": "specific_humidity", "statistic_type": "average",
-                descr_level: "Specific humidity calculated from AH, Ta and ps"}
-        pfp_utils.CreateSeries(ds, "SH", SH_new, SH_new_flag, attr)
+        SH_new["Attr"] = {"long_name": "Specific humidity", "units": "kg/kg",
+                          "standard_name": "specific_humidity",
+                          "statistic_type": "average",
+                          descr_level: "Specific humidity calculated from AH, Ta and ps"}
+        pfp_utils.CreateVariable(ds, SH_new)
+    return
 
 def CalculateMeteorologicalVariables(ds, info, Ta_name='Ta', Tv_name='Tv_SONIC_Av',
                                      ps_name='ps', SH_name="SH",AH_name='AH', RH_name='RH'):
     """
-        Add time series of meteorological variables based on fundamental
-        relationships (Stull 1988)
-
-        Usage pfp_ts.CalculateMeteorologicalVariables(ds,Ta_name,Tv_name,ps_name,SH_name,AH_name,RH_name)
+    Purpose:
+     Add time series of meteorological variables based on fundamental
+     relationships (Stull 1988)
+    Usage:
+     pfp_ts.CalculateMeteorologicalVariables(ds,Ta_name,Tv_name,ps_name,SH_name,AH_name,RH_name)
+     where
         ds: data structure
         Ta_name: data series name for air temperature
         Tv_name: data series name for sonic virtual air temperature
@@ -539,19 +549,23 @@ def CalculateMeteorologicalVariables(ds, info, Ta_name='Ta', Tv_name='Tv_SONIC_A
         AH_name: data series name for absolute humidity
         SH_name : data series name for specific humidity
         RH_name: data series for relative humidity
-
-        Variables added:
-            rhom: density of moist air, pfp_mf.densitymoistair(Ta,ps,AH)
-            Lv: latent heat of vapourisation, pfp_mf.Lv(Ta)
-            SH: specific humidity, pfp_mf.specifichumidity(mr)
-                where mr (mixing ratio) = pfp_mf.mixingratio(ps,vp)
-            Cpm: specific heat of moist air, pfp_mf.specificheatmoistair(SH)
-            VPD: vapour pressure deficit, VPD = VPsat(Ta) - VP
-        """
+    Side effects:
+     The following variables are added:
+        rhom: density of moist air, pfp_mf.densitymoistair(Ta,ps,AH)
+        Lv: latent heat of vapourisation, pfp_mf.Lv(Ta)
+        SH: specific humidity, pfp_mf.specifichumidity(mr)
+            where mr (mixing ratio) = pfp_mf.mixingratio(ps,vp)
+        Cpm: specific heat of moist air, pfp_mf.specificheatmoistair(SH)
+        VPD: vapour pressure deficit, VPD = VPsat(Ta) - VP
+    Author: PRI
+    Date: Back in the day
+    Modifications:
+     June 2022 - rewrote to use pfp_utils.GetVariable() and pfp_utils.CreateVariable()
+    """
     iris = info["RemoveIntermediateSeries"]
-    nRecs = int(ds.globalattributes["nc_nrecs"])
-    zeros = numpy.zeros(nRecs,dtype=numpy.int32)
-    ones = numpy.ones(nRecs,dtype=numpy.int32)
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    zeros = numpy.zeros(nrecs, dtype=numpy.int32)
+    ones = numpy.ones(nrecs, dtype=numpy.int32)
     for item in [Ta_name, ps_name, AH_name, SH_name]:
         if item not in list(ds.series.keys()):
             msg = " CalculateMeteorologicalVariables: series "
@@ -561,115 +575,133 @@ def CalculateMeteorologicalVariables(ds, info, Ta_name='Ta', Tv_name='Tv_SONIC_A
     logger.info(' Adding standard met variables to database')
     descr_level = "description_" + ds.globalattributes["processing_level"]
     # get the required data series
-    Ta,f,a = pfp_utils.GetSeriesasMA(ds, Ta_name)
+    Ta = pfp_utils.GetVariable(ds, Ta_name)
     # deal with possible aliases for the sonic temperature for the time being
     if Tv_name not in list(ds.series.keys()):
+        # use Tv_CSAT if it is in the data structure, otherwise use Ta
         if "Tv_CSAT_Av" in list(ds.series.keys()):
             Tv_name = "Tv_CSAT_Av"
         elif "Tv_CSAT" in list(ds.series.keys()):
             Tv_name = "Tv_CSAT"
         else:
-            Tv_name = Ta_name   # use Tv_CSAT if it is in the data structure, otherwise use Ta
-
-    Tv,f,a = pfp_utils.GetSeriesasMA(ds,Tv_name)
-    ps,f,a = pfp_utils.GetSeriesasMA(ds, ps_name)
-    AH,f,a = pfp_utils.GetSeriesasMA(ds, AH_name)
-    SH,f,a = pfp_utils.GetSeriesasMA(ds, SH_name)
+            Tv_name = Ta_name
+    Tv = pfp_utils.GetVariable(ds, Tv_name)
+    ps = pfp_utils.GetVariable(ds, ps_name)
+    AH = pfp_utils.GetVariable(ds, AH_name)
+    SH = pfp_utils.GetVariable(ds, SH_name)
     # do the calculations
-    vp = pfp_mf.vapourpressure(AH, Ta)                # vapour pressure from absolute humidity and temperature
-    vpsat = pfp_mf.VPsat(Ta)                          # saturation vapour pressure
-    rhod = pfp_mf.densitydryair(Ta, ps, vp)           # partial density of dry air
-    rhom = pfp_mf.densitymoistair(Ta, ps, vp)         # density of moist air
-    rhow = pfp_mf.densitywatervapour(Ta, vp)          # partial density of water vapour
-    Lv = pfp_mf.Lv(Ta)                                # latent heat of vapourisation
-    mrsat = pfp_mf.mixingratio(ps, vpsat)             # saturation mixing ratio
-    SHsat = pfp_mf.specifichumidity(mrsat)            # saturation specific humidity from saturation mixing ratio
-    Cpd = pfp_mf.specificheatcapacitydryair(Tv)
-    Cpw = pfp_mf.specificheatcapacitywatervapour(Ta, AH)
-    RhoCp = pfp_mf.densitytimesspecificheat(rhow, Cpw, rhod, Cpd)
-    Cpm = pfp_mf.specificheatmoistair(SH)             # specific heat of moist air
-    VPD = vpsat - vp                                  # vapour pressure deficit
-    SHD = SHsat - SH                                  # specific humidity deficit
-    h2o = pfp_mf.h2o_mmolpmolfromgpm3(AH, Ta, ps)
-    # write the meteorological series to the data structure
-    attr = {"long_name": "Vapour pressure", "units": "kPa",
-            "standard_name": "water_vapor_partial_pressure_in_air",
-            descr_level: "Vapour pressure calculated from AH, Ta and ps",
-            "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(vp) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, "VP", vp, flag, attr)
-
-    attr = {"long_name": "Saturation vapour pressure", "units": "kPa", "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(vpsat) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, "VPsat", vpsat, flag, attr)
+    # vapour pressure from absolute humidity and temperature
+    VP = pfp_utils.CreateEmptyVariable("VP", nrecs)
+    VP["Data"] = pfp_mf.vapourpressure(AH["Data"], Ta["Data"])
+    VP["Attr"] = {"long_name": "Vapour pressure", "units": "kPa",
+                  "standard_name": "water_vapor_partial_pressure_in_air",
+                  descr_level: "Vapour pressure calculated from AH, Ta and ps",
+                  "statistic_type": "average"}
+    VP["Flag"] = numpy.where(numpy.ma.getmaskarray(VP["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, VP)
+    # saturation vapour pressure
+    VPsat = pfp_utils.CreateEmptyVariable("VPsat", nrecs)
+    VPsat["Data"] = pfp_mf.VPsat(Ta["Data"])
+    VPsat["Attr"] = {"long_name": "Saturation vapour pressure", "units": "kPa",
+                     "statistic_type": "average"}
+    VPsat["Flag"] = numpy.where(numpy.ma.getmaskarray(VPsat["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, VPsat)
     iris["not_output"].append("VPsat")
-
-    attr = {"long_name": "Density of dry air", "units": "kg/m^3", "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(rhod) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, "rhod", rhod, flag, attr)
+    # partial density of dry air
+    rhod = pfp_utils.CreateEmptyVariable("rhod", nrecs)
+    rhod["Data"] = pfp_mf.densitydryair(Ta["Data"], ps["Data"], VP["Data"])
+    rhod["Attr"] = {"long_name": "Density of dry air", "units": "kg/m^3",
+                    "statistic_type": "average"}
+    rhod["Flag"] = numpy.where(numpy.ma.getmaskarray(rhod["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, rhod)
     iris["not_output"].append("rhod")
-
-    attr = {"long_name": "Density of moist air", "units": "kg/m^3",
-            "standard_name": "air_density", "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(rhom) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, "rhom", rhom, flag, attr)
+    # density of moist air
+    rhom = pfp_utils.CreateEmptyVariable("rhom", nrecs)
+    rhom["Data"] = pfp_mf.densitymoistair(Ta["Data"], ps["Data"], VP["Data"])
+    rhom["Attr"] = {"long_name": "Density of moist air", "units": "kg/m^3",
+                    "standard_name": "air_density", "statistic_type": "average"}
+    rhom["Flag"] = numpy.where(numpy.ma.getmaskarray(rhom["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, rhom)
     iris["not_output"].append("rhom")
-
-    attr = {"long_name": "Partial density of water vapour", "units": "kg/m^3",
-            "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(rhow) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, "rhow", rhow, flag, attr)
+    # partial density of water vapour
+    rhow = pfp_utils.CreateEmptyVariable("rhow", nrecs)
+    rhow["Data"] = pfp_mf.densitywatervapour(Ta["Data"], VP["Data"])
+    rhow["Attr"] = {"long_name": "Partial density of water vapour", "units": "kg/m^3",
+                    "statistic_type": "average"}
+    rhow["Flag"] = numpy.where(numpy.ma.getmaskarray(rhow["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, rhow)
     iris["not_output"].append("rhow")
-
-    attr = {"long_name": "Latent heat of vapourisation", "units": "J/kg",
-            "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(Lv) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, "Lv", Lv, flag, attr)
+    # latent heat of vapourisation
+    Lv = pfp_utils.CreateEmptyVariable("Lv", nrecs)
+    Lv["Data"] = pfp_mf.Lv(Ta["Data"])
+    Lv["Attr"] = {"long_name": "Latent heat of vapourisation", "units": "J/kg",
+                  "statistic_type": "average"}
+    Lv["Flag"] = numpy.where(numpy.ma.getmaskarray(Lv["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, Lv)
     iris["not_output"].append("Lv")
-
-    attr = {"long_name": "Specific heat capacity of dry air", "units": "J/kg/K",
-            "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(Cpd) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, "Cpd", Cpd, flag, attr)
+    # saturation mixing ratio
+    mrsat = pfp_mf.mixingratio(ps["Data"], VPsat["Data"])
+    # saturation specific humidity from saturation mixing ratio
+    SHsat = pfp_mf.specifichumidity(mrsat)
+    # specific heat capacity of dry air
+    Cpd = pfp_utils.CreateEmptyVariable("Cpd", nrecs)
+    Cpd["Data"] = pfp_mf.specificheatcapacitydryair(Tv["Data"])
+    Cpd["Attr"] = {"long_name": "Specific heat capacity of dry air", "units": "J/kg/K",
+                   "statistic_type": "average"}
+    Cpd["Flag"] = numpy.where(numpy.ma.getmaskarray(Cpd["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, Cpd)
     iris["not_output"].append("Cpd")
-
-    attr = {"long_name": "Specific heat capacity of water vapour", "units": "J/kg/K",
-            "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(Cpw) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, 'Cpw', Cpw, flag, attr)
+    # specific heat capacity of water vapour
+    Cpw = pfp_utils.CreateEmptyVariable("Cpw", nrecs)
+    Cpw["Data"] = pfp_mf.specificheatcapacitywatervapour(Ta["Data"], AH["Data"])
+    Cpw["Attr"] = {"long_name": "Specific heat capacity of water vapour", "units": "J/kg/K",
+                   "statistic_type": "average"}
+    Cpw["Flag"] = numpy.where(numpy.ma.getmaskarray(Cpw["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, Cpw)
     iris["not_output"].append("Cpw")
-
-    attr = {"long_name": "Specific heat capacity of moist air", "units": "J/kg/K",
-            "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(Cpm) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, "Cpm", Cpm, flag, attr)
-    iris["not_output"].append("Cpm")
-
-    attr = {"long_name": "Product of air density and specific heat capacity",
-            "units": "J/m^3/K", "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(RhoCp) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds,"RhoCp", RhoCp, flag, attr)
+    # product of air density and specific heat capacity
+    RhoCp = pfp_utils.CreateEmptyVariable("RhoCp", nrecs)
+    RhoCp["Data"] = pfp_mf.densitytimesspecificheat(rhow["Data"], Cpw["Data"],
+                                                    rhod["Data"], Cpd["Data"])
+    RhoCp["Attr"] = {"long_name": "Product of air density and specific heat capacity",
+                     "units": "J/m^3/K", "statistic_type": "average"}
+    RhoCp["Flag"] = numpy.where(numpy.ma.getmaskarray(RhoCp["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, RhoCp)
     iris["not_output"].append("RhoCp")
-
-    attr = {"long_name": "Vapour pressure deficit", "units": "kPa",
-            "standard_name": "water_vapor_saturation_deficit_in_air",
-            descr_level: "Vapour pressure deficit calculated from AH, Ta and ps",
-            "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(VPD) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, "VPD", VPD, flag, attr)
-
-    attr = {"long_name": "Specific humidity deficit", "units": "kg/kg",
-            descr_level: "Specific humidity deficit calculated from SH, Ta and ps",
-            "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(SHD) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, "SHD", SHD, flag, attr)
-
-    attr = {"long_name": "H2O concentration", "units": "mmol/mol",
-            "standard_name": "mole_fraction_of_water_vapor_in_air",
-            descr_level: "Water vapour mixing ratio calculated from AH, Ta and ps",
-            "statistic_type": "average"}
-    flag = numpy.where(numpy.ma.getmaskarray(h2o) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, 'H2O', h2o, flag, attr)
+    # specific heat of moist air
+    Cpm = pfp_utils.CreateEmptyVariable("Cpm", nrecs)
+    Cpm["Data"] = pfp_mf.specificheatmoistair(SH["Data"])
+    Cpm["Attr"] = {"long_name": "Specific heat capacity of moist air", "units": "J/kg/K",
+                   "statistic_type": "average"}
+    Cpm["Flag"] = numpy.where(numpy.ma.getmaskarray(Cpm["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, Cpm)
+    iris["not_output"].append("Cpm")
+    # vapour pressure deficit
+    VPD = pfp_utils.CreateEmptyVariable("VPD", nrecs)
+    VPD["Data"] = VPsat["Data"] - VP["Data"]
+    VPD["Attr"] = {"long_name": "Vapour pressure deficit", "units": "kPa",
+                   "standard_name": "water_vapor_saturation_deficit_in_air",
+                   descr_level: "Vapour pressure deficit calculated from AH, Ta and ps",
+                   "statistic_type": "average"}
+    VPD["Flag"] = numpy.where(numpy.ma.getmaskarray(VPD["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, VPD)
+    # specific humidity deficit
+    SHD = pfp_utils.CreateEmptyVariable("SHD", nrecs)
+    SHD["Data"] = SHsat - SH["Data"]
+    SHD["Attr"] = {"long_name": "Specific humidity deficit", "units": "kg/kg",
+                   descr_level: "Specific humidity deficit calculated from SH, Ta and ps",
+                   "statistic_type": "average"}
+    SHD["Flag"] = numpy.where(numpy.ma.getmaskarray(SHD["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, SHD)
+    # H2O concentration
+    H2O = pfp_utils.CreateEmptyVariable("H2O", nrecs)
+    H2O["Data"] = pfp_mf.h2o_mmolpmolfromgpm3(AH["Data"], Ta["Data"], ps["Data"])
+    H2O["Attr"] = {"long_name": "H2O concentration", "units": "mmol/mol",
+                   "standard_name": "mole_fraction_of_water_vapor_in_air",
+                   descr_level: "Water vapour mixing ratio calculated from AH, Ta and ps",
+                   "statistic_type": "average"}
+    H2O["Flag"] = numpy.where(numpy.ma.getmaskarray(H2O["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, H2O)
     return
 
 def CalculateMoninObukhovLength(ds):
@@ -736,39 +768,48 @@ def CalculateNetRadiation(cf,ds,Fn_out='Fn_4cmpt',Fsd_in='Fsd',Fsu_in='Fsu',Fld_
     """
     logger.info(' Calculating net radiation from 4 components')
     descr_level = "description_" + ds.globalattributes["processing_level"]
-    nRecs = int(ds.globalattributes["nc_nrecs"])
-    zeros = numpy.zeros(nRecs,dtype=numpy.int32)
-    ones = numpy.ones(nRecs,dtype=numpy.int32)
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    zeros = numpy.zeros(nrecs,dtype=numpy.int32)
+    ones = numpy.ones(nrecs,dtype=numpy.int32)
+    Fn_calc = pfp_utils.CreateEmptyVariable(Fn_out, nrecs)
     if ((Fsd_in in list(ds.series.keys())) and
         (Fsu_in in list(ds.series.keys())) and
         (Fld_in in list(ds.series.keys())) and
         (Flu_in in list(ds.series.keys()))):
-        Fsd,f,a = pfp_utils.GetSeriesasMA(ds,Fsd_in)
-        Fsu,f,a = pfp_utils.GetSeriesasMA(ds,Fsu_in)
-        Fld,f,a = pfp_utils.GetSeriesasMA(ds,Fld_in)
-        Flu,f,a = pfp_utils.GetSeriesasMA(ds,Flu_in)
-        Fn_calc = (Fsd - Fsu) + (Fld - Flu)
+        Fsd = pfp_utils.GetVariable(ds, Fsd_in)
+        Fsu = pfp_utils.GetVariable(ds, Fsu_in)
+        Fld = pfp_utils.GetVariable(ds, Fld_in)
+        Flu = pfp_utils.GetVariable(ds, Flu_in)
+        Fn_calc["Data"] = (Fsd["Data"] - Fsu["Data"]) + (Fld["Data"] - Flu["Data"])
         if Fn_out not in list(ds.series.keys()):
-            attr = {"long_name": "Net radiation", "statistic_type": "average",
-                    descr_level: "Calculated net radiation using "+Fsd_in+','+Fsu_in+','+Fld_in+','+Flu_in,
-                    "standard_name": "surface_net_downward_radiative_flux", "units": "W/m^2"}
-            flag = numpy.where(numpy.ma.getmaskarray(Fn_calc) == True, ones, zeros)
-            pfp_utils.CreateSeries(ds, Fn_out, Fn_calc, flag, attr)
+            descr = "Calculated net radiation using "+Fsd_in+','+Fsu_in+','+Fld_in+','+Flu_in
+            Fn_calc["Attr"] = {"long_name": "Net radiation", "statistic_type": "average",
+                               descr_level: descr,
+                               "standard_name": "surface_net_downward_radiative_flux",
+                               "units": "W/m^2"}
+            Fn_calc["Flag"] = numpy.where(numpy.ma.getmaskarray(Fn_calc["Data"]) == True, ones, zeros)
+            pfp_utils.CreateVariable(ds, Fn_calc)
         else:
-            Fn_exist,flag,attr = pfp_utils.GetSeriesasMA(ds,Fn_out)
-            idx = numpy.where((numpy.ma.getmaskarray(Fn_exist)==True)&(numpy.ma.getmaskarray(Fn_calc)==False))[0]
-            if len(idx)!=0:
-                Fn_exist[idx] = Fn_calc[idx]
-                flag[idx] = numpy.int32(20)
-            pfp_utils.CreateSeries(ds,Fn_out,Fn_exist,flag,attr)
+            Fn_exist = pfp_utils.GetVariable(ds, Fn_out)
+            idx = numpy.where((numpy.ma.getmaskarray(Fn_exist["Data"]) == True)&
+                              (numpy.ma.getmaskarray(Fn_calc["Data"]) == False))[0]
+            if len(idx) != 0:
+                Fn_exist["Data"][idx] = Fn_calc["Data"][idx]
+                Fn_exist["Flag"][idx] = numpy.int32(20)
+            pfp_utils.CreateVariable(ds, Fn_exist)
     else:
-        nRecs = int(ds.globalattributes['nc_nrecs'])
-        Fn = numpy.array([c.missing_value]*nRecs,dtype=numpy.float64)
-        flag = numpy.ones(nRecs,dtype=numpy.int32)
+        missing_items = []
+        for item in [Fsd_in, Fsu_in, Fld_in, Flu_in]:
+            if item not in list(ds.series.keys()):
+                missing_items.append(item)
+        msg = "  " + ",".join(missing_items) + " not found, Fn set to missing"
+        logger.warning(msg)
         attr = {"long_name": "Calculated net radiation (one or more components missing)",
                 "standard_name": "surface_net_downward_radiative_flux", "units": "W/m^2",
                 "statistic_type": "average"}
-        pfp_utils.CreateSeries(ds, Fn_out, Fn,flag, attr)
+        Fn = pfp_utils.CreateEmptyVariable(Fn_out, nrecs, attr=attr)
+        pfp_utils.CreateVariable(ds, Fn)
+    return
 
 def CheckCovarianceUnits(ds):
     """
@@ -782,23 +823,24 @@ def CheckCovarianceUnits(ds):
     h2o_list = ["UxA", "UyA", "UzA", "UxH", "UyH", "UzH"]
     for item in co2_list:
         if item not in list(ds.series.keys()): continue
-        data, flag, attr = pfp_utils.GetSeriesasMA(ds, item)
-        if "umol" in attr["units"]:
-            Ta, f, a = pfp_utils.GetSeriesasMA(ds, "Ta")
-            ps, f, a = pfp_utils.GetSeriesasMA(ds, "ps")
-            data = pfp_mf.co2_mgCO2pm3fromppm(data, Ta, ps)
-            attr["units"] = "mg/m^2/s"
-            pfp_utils.CreateSeries(ds, item, data, flag, attr)
+        var = pfp_utils.GetVariable(ds, item)
+        if "umol" in var["Attr"]["units"]:
+            Ta = pfp_utils.GetVariable(ds, "Ta")
+            ps = pfp_utils.GetVariable(ds, "ps")
+            var["Data"] = pfp_mf.co2_mgCO2pm3fromppm(var["Data"], Ta["Data"], ps["Data"])
+            var["Attr"]["units"] = "mg/m^2/s"
+            pfp_utils.CreateVariable(ds, var)
     for item in h2o_list:
         if item not in list(ds.series.keys()): continue
-        data, flag, attr = pfp_utils.GetSeriesasMA(ds, item)
-        if "mmol" in attr["units"]:
-            Ta, f, a = pfp_utils.GetSeriesasMA(ds, "Ta")
-            ps, f, a = pfp_utils.GetSeriesasMA(ds, "ps")
-            data = pfp_mf.h2o_gpm3frommmolpmol(data, Ta, ps)
-            attr["units"] = "g/m^2/s"
+        var = pfp_utils.GetVariable(ds, item)
+        if "mmol" in var["Attr"]["units"]:
+            Ta = pfp_utils.GetVariable(ds, "Ta")
+            ps = pfp_utils.GetVariable(ds, "ps")
+            var["Data"] = pfp_mf.h2o_gpm3frommmolpmol(var["Data"], Ta["Data"], ps["Data"])
+            var["Attr"]["units"] = "g/m^2/s"
             if "H" in item: item = item.replace("H","A")
-            pfp_utils.CreateSeries(ds, item, data, flag, attr)
+            pfp_utils.CreateVariable(ds, var)
+    return
 
 def CombineSeries(cf, ds, labels, convert_units=False, save_originals=False, mode="quiet"):
     """
@@ -1290,9 +1332,9 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts', Sws_i
         """
     iris = info["RemoveIntermediateSeries"]
     descr_level = "description_" + ds.globalattributes["processing_level"]
-    nRecs = int(ds.globalattributes["nc_nrecs"])
-    zeros = numpy.zeros(nRecs,dtype=numpy.int32)
-    ones = numpy.ones(nRecs,dtype=numpy.int32)
+    nrecs = int(ds.globalattributes["nc_nrecs"])
+    zeros = numpy.zeros(nrecs, dtype=numpy.int32)
+    ones = numpy.ones(nrecs,dtype=numpy.int32)
     # check to see if the user wants to skip the correction
     if not pfp_utils.get_optionskeyaslogical(cf, "CorrectFgForStorage", default=True):
         logger.info(' CorrectFgForStorage: storage correction disabled in control file')
@@ -1308,64 +1350,72 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts', Sws_i
     mc = 1.0 - oc
     Sws_default = min(1.0,max(0.0,float(cf['Soil']['SwsDefault'])))
     # get the data
-    Fg,Fg_flag,Fg_attr = pfp_utils.GetSeriesasMA(ds,Fg_in)
-    Ts,Ts_flag,Ts_attr = pfp_utils.GetSeriesasMA(ds,Ts_in)
-    Sws,Sws_flag,Sws_attr = pfp_utils.GetSeriesasMA(ds,Sws_in)
-    iom = numpy.where(numpy.mod(Sws_flag,10)!=0)[0]
+    Fg = pfp_utils.GetVariable(ds, Fg_in)
+    Ts = pfp_utils.GetVariable(ds, Ts_in)
+    Sws = pfp_utils.GetVariable(ds, Sws_in)
+    iom = numpy.where(numpy.mod(Sws["Flag"], 10) != 0)[0]
     if len(iom) != 0:
         msg = "  CorrectFgForStorage: default soil moisture used for "
         msg += str(len(iom)) + " values"
         logger.info(msg)
-        Sws[iom] = Sws_default
+        Sws["Data"][iom] = Sws_default
+    # create the output variable
+    Fg_corr = pfp_utils.CreateEmptyVariable(Fg_out, nrecs)
     # get the soil temperature difference from time step to time step
-    dTs = numpy.ma.zeros(nRecs)
-    dTs[1:] = numpy.ma.diff(Ts)
+    dTs = pfp_utils.CreateEmptyVariable("dTs", nrecs)
+    dTs["Data"] = numpy.ma.zeros(nrecs)
+    dTs["Data"][1:] = numpy.ma.diff(Ts["Data"])
     # set the temporal difference in Ts for the first value of the series to missing value ...
     dTs[0] = numpy.ma.masked
     # write the temperature difference into the data structure so we can use its flag later
-    dTs_flag = numpy.zeros(nRecs,dtype=numpy.int32)
-    index = numpy.where(numpy.ma.getmaskarray(dTs) == True)[0]
-    dTs_flag[index] = numpy.int32(1)
-    attr = {"long_name": "Change in soil temperature", "units": "degC",
-            "statistic_type": "average"}
-    attr = pfp_utils.make_attribute_dictionary(attr)
-    pfp_utils.CreateSeries(ds, "dTs", dTs, dTs_flag, attr)
+    dTs["Flag"] = numpy.zeros(nrecs, dtype=numpy.int32)
+    index = numpy.where(numpy.ma.getmaskarray(dTs["Data"]) == True)[0]
+    dTs["Flag"][index] = numpy.int32(1)
+    dTs["Attr"] = {"long_name": "Change in soil temperature", "units": "degC",
+                   "statistic_type": "average"}
+    pfp_utils.CreateVariable(ds, dTs)
     iris["not_output"].append("dTs")
     # get the time difference
-    dt = numpy.ma.zeros(nRecs)
-    dt[1:] = numpy.diff(date2num(ds.series['DateTime']['Data']))*float(86400)
+    dt = numpy.ma.zeros(nrecs)
+    dt[1:] = numpy.diff(date2num(ds.series["DateTime"]["Data"]))*float(86400)
     dt[0] = dt[1]
     # calculate the specific heat capacity of the soil
-    Cs = mc*bd*c.Cd + oc*bd*c.Co + Sws*c.rho_water*c.Cw
+    Cs = pfp_utils.CreateEmptyVariable("Cs", nrecs)
+    Cs["Data"] = mc*bd*c.Cd + oc*bd*c.Co + Sws["Data"]*c.rho_water*c.Cw
     # calculate the soil heat storage
-    S = Cs*(dTs/dt)*d
+    S = pfp_utils.CreateEmptyVariable("S", nrecs)
+    S["Data"] = Cs["Data"]*(dTs["Data"]/dt)*d
     # apply the storage term
-    Fg_out_data = Fg + S
+    Fg_corr["Data"] = Fg["Data"] + S["Data"]
     # put the corrected soil heat flux into the data structure
-    attr = {"long_name": "Ground heat flux",
-            descr_level: "Ground heat flux corrected for storage",
-            "units": "W/m^2", "statistic_type": "average",
-            "standard_name": "downward_heat_flux_at_ground_level_in_soil"}
-    flag = numpy.where(numpy.ma.getmaskarray(Fg_out_data) == True, ones, zeros)
-    pfp_utils.CreateSeries(ds, Fg_out, Fg_out_data, flag,attr)
+    Fg_corr["Attr"] = {"long_name": "Ground heat flux",
+                       descr_level: "Ground heat flux corrected for storage",
+                       "units": "W/m^2", "statistic_type": "average",
+                       "standard_name": "downward_heat_flux_at_ground_level_in_soil"}
+    Fg_corr["Flag"] = numpy.where(numpy.ma.getmaskarray(Fg_corr["Data"]) == True, ones, zeros)
+    pfp_utils.CreateVariable(ds, Fg_corr)
     # save the input (uncorrected) soil heat flux series, this will be used if the correction is relaxed
-    attr = {"long_name": "Ground heat flux",
-            descr_level: "Ground heat flux uncorrected for storage",
-            "units": "W/m^2", "statistic_type": "average",
-            "standard_name": "downward_heat_flux_at_ground_level_in_soil"}
-    pfp_utils.CreateSeries(ds, "Fg_Av", Fg, Fg_flag, attr)
-    flag = numpy.where(numpy.ma.getmaskarray(S) == True, ones, zeros)
-    attr = {"long_name": "Ground heat flux storage", "units": "W/m^2",
-            "statistic_type": "average"}
-    pfp_utils.CreateSeries(ds, "S", S, flag, attr)
+    Fg["Attr"] = {"long_name": "Ground heat flux",
+                  descr_level: "Ground heat flux uncorrected for storage",
+                  "units": "W/m^2", "statistic_type": "average",
+                  "standard_name": "downward_heat_flux_at_ground_level_in_soil"}
+    Fg["Label"] = "Fg_Av"
+    pfp_utils.CreateVariable(ds, Fg)
+    # put the storage term in the data structure
+    S["Flag"] = numpy.where(numpy.ma.getmaskarray(S["Data"]) == True, ones, zeros)
+    S["Attr"] = {"long_name": "Ground heat flux storage", "units": "W/m^2",
+                 "statistic_type": "average"}
+    pfp_utils.CreateVariable(ds, S)
     iris["not_output"].append("S")
-    flag = numpy.where(numpy.ma.getmaskarray(Cs) == True, ones, zeros)
-    attr = {"long_name": "Soil specific heat capacity", "units": "J/m^3/K",
-            "statistic_type": "average"}
-    pfp_utils.CreateSeries(ds, "Cs", Cs, flag, attr)
+    # put the soil specific heat capacity into the data structure
+    Cs["Flag"] = numpy.where(numpy.ma.getmaskarray(Cs["Data"]) == True, ones, zeros)
+    Cs["Attr"] = {"long_name": "Soil specific heat capacity", "units": "J/m^3/K",
+                  "statistic_type": "average"}
+    pfp_utils.CreateVariable(ds, Cs)
     iris["not_output"].append("Cs")
     if pfp_utils.get_optionskeyaslogical(cf, "RelaxFgStorage"):
         ReplaceWhereMissing(ds.series["Fg"], ds.series["Fg"], ds.series["Fg_Av"], FlagValue=20)
+    return
 
 def CorrectWindDirection(cf, ds, Wd_in):
     """
@@ -1378,7 +1428,7 @@ def CorrectWindDirection(cf, ds, Wd_in):
         """
     msg = " Correcting wind direction (" + str(Wd_in) + ")"
     logger.info(msg)
-    Wd,f,a = pfp_utils.GetSeriesasMA(ds,Wd_in)
+    Wd = pfp_utils.GetVariable(ds, Wd_in)
     ldt = ds.series["DateTime"]["Data"]
     KeyList = list(cf["Variables"][Wd_in]["CorrectWindDirection"].keys())
     for i in range(len(KeyList)):
@@ -1405,9 +1455,9 @@ def CorrectWindDirection(cf, ds, Wd_in):
             msg += ") for correction, not applied"
             logger.warning(msg)
             return
-        Wd[si:ei] = Wd[si:ei] + Correction
-    Wd = numpy.mod(Wd, float(360))
-    ds.series[Wd_in]["Data"] = numpy.ma.filled(Wd, float(c.missing_value))
+        Wd["Data"][si:ei] = Wd["Data"][si:ei] + Correction
+    Wd["Data"] = numpy.mod(Wd["Data"], float(360))
+    pfp_utils.CreateVariable(ds, Wd)
     return
 
 def do_attributes(cf,ds):
@@ -2047,28 +2097,34 @@ def get_synthetic_fsd(ds):
     Date: Sometime in 2014
     """
     logger.info(' Calculating synthetic Fsd')
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    Fsd_syn = pfp_utils.CreateEmptyVariable("Fsd_syn", nrecs)
+    solar_altitude = pfp_utils.CreateEmptyVariable("solar_altitude", nrecs)
     # get the latitude and longitude
     lat = float(ds.globalattributes["latitude"])
     lon = float(ds.globalattributes["longitude"])
     # get the UTC time from the local time
     ldt_UTC = pfp_utils.get_UTCfromlocaltime(ds)
     # get the solar altitude
-    alt_solar = [pysolar.GetAltitude(lat,lon,dt) for dt in ldt_UTC]
+    solar_altitude["Data"] = [pysolar.GetAltitude(lat, lon, dt) for dt in ldt_UTC]
     # get the synthetic downwelling shortwave radiation
-    Fsd_syn = [pysolar.GetRadiationDirect(dt,alt) for dt,alt in zip(ldt_UTC,alt_solar)]
-    Fsd_syn = numpy.ma.array(Fsd_syn)
+    Fsd_syn["Data"] = [pysolar.GetRadiationDirect(dt, alt)
+                       for dt, alt in
+                       zip(ldt_UTC, solar_altitude["Data"])]
+    Fsd_syn["Data"] = numpy.ma.array(Fsd_syn["Data"])
     # get the QC flag
-    nRecs = len(Fsd_syn)
-    flag = numpy.zeros(nRecs,dtype=numpy.int32)
+    Fsd_syn["Flag"] = numpy.zeros(nrecs, dtype=numpy.int32)
     # add the synthetic downwelling shortwave radiation to the data structure
-    attr = {"long_name": "Synthetic downwelling shortwave radiation", "units": "W/m^2",
-            "standard_name": "surface_downwelling_shortwave_flux_in_air",
-            "statistic_type": "average"}
-    pfp_utils.CreateSeries(ds, "Fsd_syn", Fsd_syn, flag, attr)
+    Fsd_syn["Attr"] = {"long_name": "Synthetic downwelling shortwave radiation",
+                       "units": "W/m^2",
+                       "standard_name": "surface_downwelling_shortwave_flux_in_air",
+                       "statistic_type": "average"}
+    pfp_utils.CreateVariable(ds, Fsd_syn)
     ds.intermediate.append("Fsd_syn")
     # add the solar altitude to the data structure
-    attr = {"long_name": "Solar altitude", "units": "degrees", "statistic_type": "average"}
-    pfp_utils.CreateSeries(ds, "solar_altitude", alt_solar, flag, attr)
+    solar_altitude["Attr"] = {"long_name": "Solar altitude",
+                              "units": "degrees", "statistic_type": "average"}
+    pfp_utils.CreateVariable(ds, solar_altitude)
     ds.intermediate.append("solar_altitude")
 
 def InvertSign(ds,ThisOne):
@@ -2333,15 +2389,18 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
     wC = pfp_utils.GetVariable(ds, "wC")
     wA = pfp_utils.GetVariable(ds, "wA")
     if ustar_in not in list(ds.series.keys()):
-        ustarm = numpy.ma.sqrt(numpy.ma.sqrt(uw["Data"] ** 2 + vw["Data"] ** 2))
+        ustarm = pfp_utils.CreateEmptyVariable(ustar_in, nRecs)
+        ustarm["Data"] = numpy.ma.sqrt(numpy.ma.sqrt(uw["Data"] ** 2 + vw["Data"] ** 2))
     else:
-        ustarm, _, _ = pfp_utils.GetSeriesasMA(ds, ustar_in)
+        ustarm = pfp_utils.GetVariable(ds, ustar_in)
     if L_in not in list(ds.series.keys()):
-        Lm = pfp_mf.molen(Ta["Data"], AH["Data"], ps["Data"], ustarm, wT["Data"], fluxtype="kinematic")
+        Lm = pfp_utils.CreateEmptyVariable(L_in, nRecs)
+        Lm["Data"] = pfp_mf.molen(Ta["Data"], AH["Data"], ps["Data"], ustarm["Data"], wT["Data"],
+                                  fluxtype="kinematic")
     else:
-        Lm, _, _ = pfp_utils.GetSeriesasMA(ds, L_in)
+        Lm = pfp_utils.GetVariable(ds, L_in)
     # now calculate z on L
-    zoLm = zmd / Lm
+    zoLm = zmd / Lm["Data"]
     # start calculating the correction coefficients for approximate corrections
     #  create nxMom, nxScalar and alpha series with their unstable values by default
     nxMom, nxScalar, alpha = pfp_utils.nxMom_nxScalar_alpha(zoLm)
@@ -2386,9 +2445,10 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
     # we have calculated the first pass corrected momentum and temperature covariances, now we use
     # these to calculate the final corrections
     #  first, get the 2nd pass corrected friction velocity and Monin-Obukhov length
-    ustarm = numpy.ma.sqrt(numpy.ma.sqrt(uwm ** 2 + vwm ** 2))
-    Lm = pfp_mf.molen(Ta["Data"], AH["Data"], ps["Data"], ustarm, wTm, fluxtype='kinematic')
-    zoLm = zmd / Lm
+    ustarm["Data"] = numpy.ma.sqrt(numpy.ma.sqrt(uwm ** 2 + vwm ** 2))
+    Lm["Data"] = pfp_mf.molen(Ta["Data"], AH["Data"], ps["Data"], ustarm["Data"], wTm,
+                              fluxtype='kinematic')
+    zoLm = zmd / Lm["Data"]
     nxMom, nxScalar, alpha = pfp_utils.nxMom_nxScalar_alpha(zoLm)
     fxMom = nxMom * (u["Data"] / zmd)
     fxScalar = nxScalar * (u["Data"] / zmd)
@@ -2493,7 +2553,8 @@ def MergeSeriesUsingDict(ds, info, merge_order="standard"):
                 logger.error(" MergeSeries: secondary input series "+label+" not found")
         s2add = "gap filled using " + s2add
         pfp_utils.append_to_attribute(attr, {descr_level: s2add})
-        pfp_utils.CreateSeries(ds, target, data, flag1, attr)
+        var = {"Label": target, "Data": data, "Flag": flag1, "Attr": attr}
+        pfp_utils.CreateVariable(ds, var)
     return
 
 def MergeHumidities(cf, ds, convert_units=False):
@@ -2644,13 +2705,13 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
 
 def ReplaceRotatedCovariance(cf,ds,rot_cov_label,non_cov_label):
     logger.info(' Replacing missing '+rot_cov_label+' when '+non_cov_label+' is good')
-    cr_data,cr_flag,cr_attr = pfp_utils.GetSeriesasMA(ds,rot_cov_label)
-    cn_data,cn_flag,cn_attr = pfp_utils.GetSeriesasMA(ds,non_cov_label)
-    index = numpy.where((numpy.ma.getmaskarray(cr_data)==True)&
-                           (numpy.ma.getmaskarray(cn_data)==False))[0]
+    cr = pfp_utils.GetVariable(ds, rot_cov_label)
+    cn = pfp_utils.GetVariable(ds, non_cov_label)
+    index = numpy.where((numpy.ma.getmaskarray(cr["Data"]) == True)&
+                        (numpy.ma.getmaskarray(cn["Data"]) == False))[0]
     if len(index)!=0:
-        ds.series[rot_cov_label]['Data'][index] = cn_data[index]
-        ds.series[rot_cov_label]['Flag'][index] = numpy.int32(20)
+        ds.series[rot_cov_label]["Data"][index] = cn["Data"][index]
+        ds.series[rot_cov_label]["Flag"][index] = numpy.int32(20)
     return
 
 def RemoveIntermediateSeries(ds, info):
@@ -2777,6 +2838,11 @@ def TaFromTv(cf, ds, Ta_out="Ta_SONIC_Av", Tv_in="Tv_SONIC_Av", AH_in="AH",
     #       to calculate the vapour pressure from the absolute humidity, the
     #       approximation involved here is of the order of 1%.
     logger.info(" Calculating Ta from Tv")
+    nRecs = int(ds.globalattributes["nc_nrecs"])
+    ones = numpy.ones(nRecs)
+    zeros = numpy.zeros(nRecs)
+    SH = pfp_utils.CreateEmptyVariable("SH", nRecs)
+    Ta = pfp_utils.CreateEmptyVariable(Ta_out, nRecs)
     # check to see if we have enough data to proceed
     # deal with possible aliases for the sonic temperature
     if Tv_in not in list(ds.series.keys()):
@@ -2795,25 +2861,25 @@ def TaFromTv(cf, ds, Ta_out="Ta_SONIC_Av", Tv_in="Tv_SONIC_Av", AH_in="AH",
         return
     # we seem to have enough to continue
     descr_level = "description_" + str(ds.globalattributes["processing_level"])
-    Tv, f, a = pfp_utils.GetSeriesasMA(ds, Tv_in)
-    ps, f, a = pfp_utils.GetSeriesasMA(ds, ps_in)
-    if AH_in in list(ds.series.keys()):
-        AH, f, a = pfp_utils.GetSeriesasMA(ds, AH_in)
-        vp = pfp_mf.vapourpressure(AH, Tv)
-        mr = pfp_mf.mixingratio(ps, vp)
-        SH = pfp_mf.specifichumidity(mr)
+    Tv = pfp_utils.GetVariable(ds, Tv_in)
+    ps = pfp_utils.GetVariable(ds, ps_in)
+    if SH_in in list(ds.series.keys()):
+        SH = pfp_utils.GetVariable(ds, SH_in)
+    elif AH_in in list(ds.series.keys()):
+        AH = pfp_utils.GetVariable(ds, AH_in)
+        vp = pfp_mf.vapourpressure(AH["Data"], Tv["Data"])
+        mr = pfp_mf.mixingratio(ps["Data"], vp)
+        SH["Data"] = pfp_mf.specifichumidity(mr)
     elif RH_in in list(ds.series.keys()):
-        RH, f, a = pfp_utils.GetSeriesasMA(ds, RH_in)
-        SH = pfp_mf.specifichumidityfromRH(RH, Tv, ps)
-    elif SH_in in list(ds.series.keys()):
-        SH, f, a = pfp_utils.GetSeriesasMA(ds, SH_in)
-    Ta_data = pfp_mf.tafromtv(Tv, SH)
-    nRecs = int(ds.globalattributes["nc_nrecs"])
-    Ta_flag = numpy.zeros(nRecs, numpy.int32)
-    mask = numpy.ma.getmask(Ta_data)
-    index = numpy.where(mask.astype(numpy.int32) == 1)
-    Ta_flag[index] = 15
-    attr = {"long_name": "Air temperature",
-            descr_level: "Ta calculated from Tv using " + Tv_in, "units": "degC",
-            "standard_name": "air_temperature", "statistic_type": "average"}
-    pfp_utils.CreateSeries(ds, Ta_out, Ta_data, Ta_flag, attr)
+        RH = pfp_utils.GetVariable(ds, RH_in)
+        SH["Data"] = pfp_mf.specifichumidityfromRH(RH["Data"], Tv["Data"], ps["Data"])
+    else:
+        msg = " TaFromTv: no humidities found"
+        logger.warning(msg)
+    Ta["Data"] = pfp_mf.tafromtv(Tv["Data"], SH["Data"])
+    Ta["Flag"] = numpy.where(numpy.ma.getmaskarray(Ta["Data"]) == True, ones, zeros)
+    Ta["Attr"] = {"long_name": "Air temperature",
+                  descr_level: "Ta calculated from Tv using " + Tv_in, "units": "degC",
+                  "standard_name": "air_temperature", "statistic_type": "average"}
+    pfp_utils.CreateVariable(ds, Ta)
+    return

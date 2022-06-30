@@ -659,9 +659,11 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
         l4co[output]["flag_code"] = flag_codes[l4co[output]["method"]]
         # create an empty series in ds if the climatology output series doesn't exist yet
         if output not in list(ds.series.keys()):
-            data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
-            attr[descr_level] = "climatology"
-            pfp_utils.CreateSeries(ds, output, data, flag, attr)
+            nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+            var = pfp_utils.CreateEmptyVariable(output, nrecs)
+            var["Attr"][descr_level] = "climatology"
+            pfp_utils.CreateVariable(ds, var)
+    return
 
 def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
     """
@@ -820,8 +822,10 @@ def gfMergeSeries_createdict(cf, ds, info, label, called_by):
     info[called_by][merge_order][label]["source"] = src_list
     # create an empty series in ds if the output series doesn't exist yet
     if label not in list(ds.series.keys()):
-        data, flag, attr = pfp_utils.MakeEmptySeries(ds, label)
-        pfp_utils.CreateSeries(ds, label, data, flag, attr)
+        nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+        var = pfp_utils.CreateEmptyVariable(label, nrecs)
+        pfp_utils.CreateVariable(ds, var)
+    return
 
 def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by, flag_code):
     """

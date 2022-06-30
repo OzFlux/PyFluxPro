@@ -164,8 +164,10 @@ def EcoResp(ds, l6_info, called_by):
     Author: IMcH, PRI
     Date: August 2019
     """
-    # get the time step
+    # get the time step and number of records
     ts = int(float(ds.globalattributes["time_step"]))
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    site_name = ds.globalattributes["site_name"]
     # Get required configs dict
     iel = l6_info[called_by]
     outputs = iel["outputs"].keys()
@@ -180,10 +182,8 @@ def EcoResp(ds, l6_info, called_by):
     descr = {"ERUsingLasslop": "Ecosystem respiration modelled by Lasslop",
              "ERUsingLloydTaylor": "Ecosystem respiration modelled by Lloyd-Taylor"}
     descr_level = "description_" + ds.globalattributes["processing_level"]
-    ER_attr = {"units": "umol/m^2/s", "long_name": "Ecosystem respiration",
-               descr_level: descr[called_by], "statistic_type": "average"}
-    ER_attr = pfp_utils.make_attribute_dictionary(attr=ER_attr)
-    site_name = ds.globalattributes["site_name"]
+    attr = {"units": "umol/m^2/s", "long_name": "Ecosystem respiration",
+            descr_level: descr[called_by], "statistic_type": "average"}
     # set the figure number
     if len(plt.get_fignums()) == 0:
         fig_num = 0
@@ -194,6 +194,8 @@ def EcoResp(ds, l6_info, called_by):
     xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
     # loop over the series of outputs (usually one only)
     for output in outputs:
+        # make an empty variable for the ecosystem respiration
+        ER = pfp_utils.CreateEmptyVariable(output, nrecs, attr=attr)
         # Make the filtered dataframe (fix this to allow gap-filled drivers)
         ustars_dict = {x.split("_")[-1]: float(ds.series["Fco2"]["Attr"][x])
                        for x in ds.series["Fco2"]["Attr"] if "ustar" in x}
@@ -241,12 +243,12 @@ def EcoResp(ds, l6_info, called_by):
         ptc = pfp_part.partition(df, weights_air_soil = weighting, fit_daytime_rb = rb_mode,
                                  time_step=ts)
         params_df = ptc.estimate_parameters(mode = er_mode)
-        ER = ptc.estimate_er_time_series(params_df)
-        ER_flag = numpy.tile(30, len(ER))
-        # Write to series
+        ER["Data"] = numpy.ma.array(ptc.estimate_er_time_series(params_df))
+        ER["Flag"] = numpy.tile(30, len(ER["Data"]))
+        # Write ER to data structure
         drivers = iel["outputs"][output]["drivers"]
-        ER_attr["comment1"] = "Drivers were {}".format(str(drivers))
-        pfp_utils.CreateSeries(ds, output, ER, ER_flag, ER_attr)
+        ER["Attr"]["comment1"] = "Drivers were {}".format(str(drivers))
+        pfp_utils.CreateVariable(ds, ER)
         # Write to excel
         params_df.to_excel(xl_writer, output)
         xl_writer.save()
@@ -1754,6 +1756,7 @@ def get_ustar_thresholds_annual(ldt,ustar_threshold):
 
 def rpGPP_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about calculating GPP."""
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     # create the dictionary keys for this series
     info[label] = {}
     # output series name
@@ -1768,8 +1771,8 @@ def rpGPP_createdict(cf, ds, info, label):
     info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
     if info[label]["output"] not in list(ds.series.keys()):
-        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
-        pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
+        var = pfp_utils.CreateEmptyVariable(info[label]["output"], nrecs)
+        pfp_utils.CreateVariable(ds, var)
     return
 
 def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
@@ -1796,6 +1799,7 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
 
 def rpNEE_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about calculating NEE."""
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
     # create the dictionary keys for this series
     info[label] = {}
     # output series name
@@ -1810,8 +1814,8 @@ def rpNEE_createdict(cf, ds, info, label):
     info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
     if info[label]["output"] not in list(ds.series.keys()):
-        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
-        pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
+        var = pfp_utils.CreateEmptyVariable(info[label]["output"], nrecs)
+        pfp_utils.CreateVariable(ds, var)
     return
 
 def rpSOLO_createdict(cf, ds, l6_info, output, called_by, flag_code):

@@ -2189,7 +2189,7 @@ def ncsplit_run(split_gui):
     # loop over the series
     for item in series_list:
         var = pfp_utils.GetVariable(ds_in, item, start=si, end=ei)
-        pfp_utils.CreateSeries(ds_out, var)
+        pfp_utils.CreateVariable(ds_out, var)
     # deal with the Python datetime series
     ldt_out = ldt_in[si:ei+1]
     ldt_out_flag = ldt_in_flag[si:ei+1]
