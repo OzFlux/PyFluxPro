@@ -1,5 +1,8 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.3"
+version_number = "V3.4.4"
+# V3.4.4 - July 2022
+#        - check control file exists ib pfp_batch.py and exit
+#          gracefully if it doesn't
 # V3.4.3 - June 2022
 #        - bug fixes at L1
 # V3.4.2 - June 2022
