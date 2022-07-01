@@ -19,16 +19,6 @@ from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-#def do_batch_cfcheck(cfg):
-    #"""
-    #Purpose:
-     #Wrapper to call CF compliance check routine.
-    #Author: PRI
-    #Date: July 2021
-    #"""
-    #nc_file_uri = pfp_io.get_outfilenamefromcf(cfg)
-    #pfp_compliance.CheckCFCompliance(nc_file_uri)
-    #return
 def do_batch_fingerprints(cfg):
     """
     Purpose:
@@ -58,6 +48,8 @@ def do_L1_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting L1 processing with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf_l1 = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.l1_update_controlfile(cf_l1):
@@ -74,7 +66,7 @@ def do_L1_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_L2_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
@@ -84,6 +76,8 @@ def do_L2_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting L2 processing with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf_l2 = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.l2_update_controlfile(cf_l2):
@@ -121,7 +115,7 @@ def do_L2_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_L3_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
@@ -131,6 +125,8 @@ def do_L3_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting L3 processing with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf_l3 = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.l3_update_controlfile(cf_l3):
@@ -168,7 +164,7 @@ def do_L3_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_ecostress_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
@@ -178,6 +174,8 @@ def do_ecostress_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting ECOSTRESS output with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf = pfp_io.get_controlfilecontents(cf_level[i])
             pfp_io.write_csv_ecostress(cf)
@@ -190,7 +188,7 @@ def do_ecostress_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_fluxnet_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
@@ -200,12 +198,14 @@ def do_fluxnet_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting FluxNet output with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         cf = pfp_io.get_controlfilecontents(cf_level[i])
         pfp_io.write_csv_fluxnet(cf)
         msg = "Finished FluxNet output with " + cf_file_name[1]
         logger.info(msg)
         logger.info("")
-    return
+    return 1
 def do_reddyproc_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
@@ -215,19 +215,17 @@ def do_reddyproc_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting REddyProc output with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         cf = pfp_io.get_controlfilecontents(cf_level[i])
         pfp_io.write_tsv_reddyproc(cf)
         msg = "Finished REddyProc output with " + cf_file_name[1]
         logger.info(msg)
         logger.info("")
-    return
+    return 1
 def do_concatenate_batch(main_ui, cf_level):
     sites = sorted(list(cf_level.keys()), key=int)
     for i in sites:
-        if not os.path.isfile(cf_level[i]):
-            msg = " Control file " + cf_level[i] + " not found"
-            logger.error(msg)
-            continue
         # check the stop flag
         if main_ui.stop_flag:
             # break out of the loop if user requested stop
@@ -235,6 +233,8 @@ def do_concatenate_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting concatenation with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf_cc = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.concatenate_update_controlfile(cf_cc):
@@ -258,13 +258,9 @@ def do_concatenate_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_climatology_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
-        if not os.path.isfile(cf_level[i]):
-            msg = " Control file " + cf_level[i] + " not found"
-            logger.error(msg)
-            continue
         # check the stop flag
         if main_ui.stop_flag:
             # break out of the loop if user requested stop
@@ -272,6 +268,8 @@ def do_climatology_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting climatology with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf_ct = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.climatology_update_controlfile(cf_ct):
@@ -286,7 +284,7 @@ def do_climatology_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_cpd_barr_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
@@ -296,6 +294,8 @@ def do_cpd_barr_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting CPD (Barr) with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.cpd_barr_update_controlfile(cf):
@@ -314,7 +314,7 @@ def do_cpd_barr_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_cpd_mchugh_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
@@ -324,6 +324,8 @@ def do_cpd_mchugh_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting CPD (McHugh) with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.cpd_mchugh_update_controlfile(cf):
@@ -342,7 +344,7 @@ def do_cpd_mchugh_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_cpd_mcnew_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
@@ -352,6 +354,8 @@ def do_cpd_mcnew_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting CPD (McNew) with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.cpd_mcnew_update_controlfile(cf):
@@ -370,7 +374,7 @@ def do_cpd_mcnew_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_mpt_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
         # check the stop flag
@@ -380,6 +384,8 @@ def do_mpt_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting MPT with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.mpt_update_controlfile(cf):
@@ -398,14 +404,10 @@ def do_mpt_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_L4_batch(main_ui, cf_level):
     sites = sorted(list(cf_level.keys()), key=int)
     for i in sites:
-        if not os.path.isfile(cf_level[i]):
-            msg = " Control file " + cf_level[i] + " not found"
-            logger.error(msg)
-            continue
         # check the stop flag
         if main_ui.stop_flag:
             # break out of the loop if user requested stop
@@ -413,6 +415,8 @@ def do_L4_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting L4 processing with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf_l4 = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.l4_update_controlfile(cf_l4):
@@ -440,14 +444,10 @@ def do_L4_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_L5_batch(main_ui, cf_level):
     sites = sorted(list(cf_level.keys()), key=int)
     for i in sites:
-        if not os.path.isfile(cf_level[i]):
-            msg = " Control file " + cf_level[i] + " not found"
-            logger.error(msg)
-            continue
         # check the stop flag
         if main_ui.stop_flag:
             # break out of the loop if user requested stop
@@ -455,6 +455,8 @@ def do_L5_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting L5 processing with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf_l5 = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.l5_update_controlfile(cf_l5):
@@ -482,13 +484,9 @@ def do_L5_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_L6_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
-        if not os.path.isfile(cf_level[i]):
-            msg = " Control file " + cf_level[i] + " not found"
-            logger.error(msg)
-            continue
         # check the stop flag
         if main_ui.stop_flag:
             # break out of the loop if user requested stop
@@ -496,6 +494,8 @@ def do_L6_batch(main_ui, cf_level):
         cf_file_name = os.path.split(cf_level[i])
         msg = "Starting L6 processing with " + cf_file_name[1]
         logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
         try:
             cf_l6 = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.l6_update_controlfile(cf_l6):
@@ -521,7 +521,7 @@ def do_L6_batch(main_ui, cf_level):
             error_message = traceback.format_exc()
             logger.error(error_message)
             continue
-    return
+    return 1
 def do_levels_batch(main_ui):
     logger = logging.getLogger("pfp_log")
     if main_ui.mode == "interactive":
@@ -563,50 +563,75 @@ def do_levels_batch(main_ui):
             continue
         if level.lower() == "l1":
             # L1 processing
-            do_L1_batch(main_ui, cf_batch["Levels"][level])
+            if not do_L1_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "l2":
             # L2 processing
-            do_L2_batch(main_ui, cf_batch["Levels"][level])
+            if not do_L2_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "l3":
             # L3 processing
-            do_L3_batch(main_ui, cf_batch["Levels"][level])
+            if not do_L3_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "ecostress":
             # convert netCDF files to ECOSTRESS CSV files
-            do_ecostress_batch(main_ui, cf_batch["Levels"][level])
+            if not do_ecostress_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "fluxnet":
             # convert netCDF files to FluxNet CSV files
-            do_fluxnet_batch(main_ui, cf_batch["Levels"][level])
+            if not do_fluxnet_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "reddyproc":
             # convert netCDF files to REddyProc CSV files
-            do_reddyproc_batch(main_ui, cf_batch["Levels"][level])
+            if not do_reddyproc_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "concatenate":
             # concatenate netCDF files
-            do_concatenate_batch(main_ui, cf_batch["Levels"][level])
+            if not do_concatenate_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "climatology":
             # climatology
-            do_climatology_batch(main_ui, cf_batch["Levels"][level])
+            if not do_climatology_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "cpd_barr":
             # ustar threshold from change point detection
-            do_cpd_barr_batch(main_ui, cf_batch["Levels"][level])
+            if not do_cpd_barr_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "cpd_mchugh":
             # ustar threshold from change point detection
-            do_cpd_mchugh_batch(main_ui, cf_batch["Levels"][level])
+            if not do_cpd_mchugh_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "cpd_mcnew":
             # ustar threshold from change point detection
-            do_cpd_mcnew_batch(main_ui, cf_batch["Levels"][level])
+            if not do_cpd_mcnew_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "mpt":
             # ustar threshold from change point detection
-            do_mpt_batch(main_ui, cf_batch["Levels"][level])
+            if not do_mpt_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "l4":
             # L4 processing
-            do_L4_batch(main_ui, cf_batch["Levels"][level])
+            if not do_L4_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "l5":
             # L5 processing
-            do_L5_batch(main_ui, cf_batch["Levels"][level])
+            if not do_L5_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "l6":
             # L6 processing
-            do_L6_batch(main_ui, cf_batch["Levels"][level])
+            if not do_L6_batch(main_ui, cf_batch["Levels"][level]):
+                break
     end = datetime.datetime.now()
     msg = " Finished batch processing at " + end.strftime("%Y%m%d%H%M")
     logger.info(msg)
     return
+def check_file_exits(file_name):
+    if not os.path.isfile(file_name):
+        msg = file_name + " not found."
+        logger.error("")
+        logger.error(msg)
+        logger.error("")
+        ok = 0
+    else:
+        ok = 1
+    return ok
