@@ -31,6 +31,7 @@ import scripts.meteorologicalfunctions as mf
 import scripts.pfp_ck as pfp_ck
 import scripts.pfp_io as pfp_io
 import scripts.pfp_log as pfp_log
+import scripts.pfp_ts as pfp_ts
 import scripts.pfp_utils as pfp_utils
 import scripts.pfp_compliance as pfp_compliance
 
@@ -161,22 +162,9 @@ def read_isd_file(isd_file_path):
     ds.series["Precip"]["Data"] = numpy.ma.masked_where(condition,ds.series["Precip"]["Data"])
     ds.series["Precip"]["Flag"] = numpy.where(numpy.ma.getmaskarray(ds.series["Precip"]["Data"])==True,f1,f0)
     # get the humidities from Td
-    Ta, flag, attr = pfp_utils.GetSeriesasMA(ds, "Ta")
-    Td, flag, attr = pfp_utils.GetSeriesasMA(ds, "Td")
-    ps, flag, attr = pfp_utils.GetSeriesasMA(ds, "ps")
-
-    RH = mf.relativehumidityfromdewpoint(Td, Ta)
-    flag = numpy.where(numpy.ma.getmaskarray(RH)==True, f1, f0)
-    attr = {"long_name":"Relative humidity", "units":"percent"}
-    pfp_utils.CreateSeries(ds, "RH", RH, Flag=flag, Attr=attr)
-    AH = mf.absolutehumidityfromrelativehumidity(Ta, RH)
-    flag = numpy.where(numpy.ma.getmaskarray(AH)==True, f1, f0)
-    attr = {"long_name":"Absolute humidity", "units":"g/m^3"}
-    pfp_utils.CreateSeries(ds, "AH", AH, Flag=flag, Attr=attr)
-    SH = mf.specifichumidityfromrelativehumidity(RH, Ta, ps)
-    flag = numpy.where(numpy.ma.getmaskarray(SH)==True, f1, f0)
-    attr = {"long_name":"Specific humidity", "units":"kg/kg"}
-    pfp_utils.CreateSeries(ds, "SH", SH, Flag=flag, Attr=attr)
+    pfp_ts.RelativeHumidityFromDewpoint(ds)
+    pfp_ts.AbsoluteHumidityFromRelativeHumidity(ds)
+    pfp_ts.SpecificHumidityFromAbsoluteHumidity(ds)
 
     # return the data
     return ds
@@ -217,7 +205,7 @@ def interpolate_ds(ds_in, ts, k=3):
         series_list.remove("DateTime")
     for label in series_list:
         #print label
-        data_in, flag_in, attr_in = pfp_utils.GetSeriesasMA(ds_in, label)
+        data_in = pfp_utils.GetVariable(ds_in, label)
         # check if we are dealing with precipitation
         if "Precip" in label:
             # precipitation shouldn't be interpolated, just assign any precipitation
@@ -225,14 +213,14 @@ def interpolate_ds(ds_in, ts, k=3):
             data_out = numpy.ma.zeros(len(idt), dtype=numpy.float64)
             idx = numpy.searchsorted(x2, numpy.intersect1d(x2, x1))
             idy = numpy.searchsorted(x1, numpy.intersect1d(x1, x2))
-            data_out[idx] = data_in[idy]
+            data_out[idx] = data_in["Data"][idy]
         else:
             # interpolate everything else
-            data_out = interpolate_1d(x1, data_in, x2)
+            data_out = interpolate_1d(x1, data_in["Data"], x2)
         flag_out = numpy.zeros(len(idt))
         attr_out = attr_in
-        pfp_utils.CreateSeries(ds_out, label, data_out, Flag=flag_out, Attr=attr_out)
-
+        # pfp_utils.CreateSeries(ds_out, label, data_out, Flag=flag_out, Attr=attr_out)
+        pfp_utils.CreateVariable(ds_out, label)
     return ds_out
 
 def interpolate_1d(x1, y1, x2):
@@ -488,7 +476,16 @@ for site in site_list:
             isd_time_steps[isd_site][year]["mode"] = scipy.stats.mode(dt)[0][0]
 
             # interpolate from the ISD site time step to the tower time step
-            ds_out[site_index[isd_site]] = interpolate_ds(ds_in, time_step, k=1)
+            
+            # ds_out[site_index[isd_site]] = interpolate_ds(ds_in, time_step, k=1)
+            
+            labels = [l for l in list(ds_in.series.keys()) if "DateTime" not in l]
+            # interpolate from the ACCESS time step (60 minutes) to the tower time step
+            ds_out[site_index[isd_site]] = pfp_ts.InterpolateDataStructure(ds_in, labels=labels,
+                                                            new_time_step=time_step,
+                                                            sums="interpolate",
+                                                            mode="quiet")
+            
             # adjust time from UTC to local using the time zone
             convert_time_zone(ds_out[site_index[isd_site]], pytz.utc, time_zone)
             # add some useful global attributes
@@ -562,10 +559,9 @@ for site in site_list:
                 all_label = label+"_"+str(i)
                 # create empty data and flag arrays
                 variable = pfp_utils.CreateEmptyVariable(all_label, nrecs)
-                pfp_utils.CreateSeries(ds_all, all_label, variable["Data"], Flag = variable["Flag"],
-                                    Attr = variable["Attr"])
+                pfp_utils.CreateVariable(ds_all, variable)
                 # read the data out of the ISD site data structure
-                data, flag, attr = pfp_utils.GetSeriesasMA(ds_out[i], label)
+                data = pfp_utils.GetVariable(ds_out[i], label)
                 # add the ISD site ID
                 attr["isd_site_id"] = isd_site_id
                 # put the data, flag and attributes into the all-in-one data structure

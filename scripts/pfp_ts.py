@@ -383,6 +383,32 @@ def AbsoluteHumidityFromSpecificHumidity(ds):
         pfp_utils.CreateVariable(ds, AH_new)
     return
 
+def RelativeHumidityFromDewpoint(ds):
+    """ Calculate relative humidity from dewpoint. """
+    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    logger.info(' Calculating relative humidity from dewpoint')
+    descr_level = "description_" + ds.globalattributes["processing_level"]
+    Ta = pfp_utils.GetVariable(ds, "Ta")
+    Td = pfp_utils.GetVariable(ds, "Td")
+    RH_new = pfp_utils.CreateEmptyVariable("RH", nrecs)
+    RH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], Td["Flag"]])
+    # relative humidity in units of percent
+    RH_new["Data"] = pfp_mf.relativehumidityfromdewpoint(Td["Data"], Ta["Data"])
+    if "RH" in list(ds.series.keys()):
+        RH = pfp_utils.GetVariable(ds, "RH")
+        index = numpy.where(numpy.ma.getmaskarray(RH["Data"]) == True)[0]
+        RH["Data"][index] = RH_new["Data"][index]
+        RH["Flag"][index] = RH_new["Flag"][index]
+        pfp_utils.append_to_attribute(RH["Attr"], {descr_level: "merged with RH calculated from AH"})
+        pfp_utils.CreateVariable(ds, RH)
+    else:
+        RH_new["Attr"] = {"long_name": "Relative humidity", "units": "percent",
+                          "statistic_type": "average",
+                          "standard_name": "relative_humidity",
+                          descr_level: "Relative humidity calculated from AH and Ta"}
+        pfp_utils.CreateVariable(ds, RH_new)
+    return
+
 def RelativeHumidityFromSpecificHumidity(ds):
     """ Calculate relative humidity from specific humidity. """
     nrecs = int(float(ds.globalattributes["nc_nrecs"]))
