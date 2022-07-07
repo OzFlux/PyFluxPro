@@ -305,10 +305,10 @@ def CPD_run(cf):
             names[item] = item
     # read the netcdf file
     ds = pfp_io.NetCDFRead(file_in)
-    if ds.returncodes["value"] != 0: return
-    ts = int(float(ds.globalattributes["time_step"]))
+    if ds.info["returncodes"]["value"] != 0: return
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     # get the datetime
-    dt = ds.series["DateTime"]["Data"]
+    dt = ds.root["Variables"]["DateTime"]["Data"]
     # adjust the datetime so that the last time period in a year is correctly assigned.
     # e.g. last period for 2013 is 2014-01-01 00:00, here we make the year 2013
     dt = dt - datetime.timedelta(minutes=ts)
@@ -336,8 +336,8 @@ def CPD_run(cf):
     d={}
     d["radiation_threshold"] = int(cf["Options"]["Fsd_threshold"])
     d["num_bootstraps"] = int(cf["Options"]["Num_bootstraps"])
-    d["flux_period"] = int(float(ds.globalattributes["time_step"]))
-    d["site_name"] = ds.globalattributes["site_name"]
+    d["flux_period"] = int(float(ds.root["Attributes"]["time_step"]))
+    d["site_name"] = ds.root["Attributes"]["site_name"]
     d["call_mode"] = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode",
                                                   default="interactive", mode="quiet")
     d["show_plots"] = pfp_utils.get_optionskeyaslogical(cf, "show_plots", default=True)

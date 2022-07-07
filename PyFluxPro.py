@@ -389,15 +389,15 @@ class pfp_main_ui(QWidget):
         self.file.close()
         # read the netCDF file to a data structure
         self.ds = pfp_io.NetCDFRead(file_uri, checktimestep=False)
-        if self.ds.returncodes["value"] != 0:
+        if self.ds.info["returncodes"]["value"] != 0:
             return
         # display the netcdf file in the GUI
         self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
         # return if something went wrong
-        if self.tabs.tab_dict[self.tabs.tab_index_all].ds.returncodes["value"] != 0:
+        if self.tabs.tab_dict[self.tabs.tab_index_all].ds.info["returncodes"]["value"] != 0:
             return
         # add a tab for the netCDF file contents
-        tab_title = os.path.basename(self.ds.filepath)
+        tab_title = os.path.basename(self.ds.info["filepath"])
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
@@ -631,7 +631,7 @@ class pfp_main_ui(QWidget):
         # get the updated control file data
         ds = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # write the data structure to file
-        pfp_io.NetCDFWrite(ds.filepath, ds)
+        pfp_io.NetCDFWrite(ds.info["filepath"], ds)
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
@@ -659,11 +659,11 @@ class pfp_main_ui(QWidget):
             self.save_as_control_file(content)
         elif isinstance(content, pfp_io.DataStructure):
             # we are opening a netCDF file
-            file_uri = content.filepath
+            file_uri = content.info["filepath"]
             file_uri = QFileDialog.getSaveFileName(self, "Save as ...", file_uri)[0]
             if len(str(file_uri)) == 0:
                 return
-            content.filepath = file_uri
+            content.info["filepath"] = file_uri
             self.save_as_netcdf_file(content)
         else:
             # unrecognised file type
@@ -688,9 +688,9 @@ class pfp_main_ui(QWidget):
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
         # write the data structure to file
-        pfp_io.NetCDFWrite(ds.filepath, ds)
+        pfp_io.NetCDFWrite(ds.info["filepath"], ds)
         # update the tab text
-        tab_title = os.path.basename(str(ds.filepath))
+        tab_title = os.path.basename(str(ds.info["filepath"]))
         self.tabs.setTabText(tab_index_current, tab_title)
         return
 

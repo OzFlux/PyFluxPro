@@ -61,8 +61,8 @@ def get_bootstrap_results(contents):
 
 def make_data_array(cf, ds, current_year):
     ldt = pfp_utils.GetVariable(ds, "DateTime")
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    ts = int(float(ds.globalattributes["time_step"]))
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     start = datetime.datetime(current_year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
     end = datetime.datetime(current_year+1, 1, 1, 0, 0, 0)
     cdt = numpy.array([dt for dt in pfp_utils.perdelta(start, end, datetime.timedelta(minutes=ts))])
@@ -86,7 +86,7 @@ def mpt_main(cf):
     nc_file_name = cf["Files"]["in_filename"]
     nc_file_path = os.path.join(base_file_path, nc_file_name)
     ds = pfp_io.NetCDFRead(nc_file_path)
-    if ds.returncodes["value"] != 0: return
+    if ds.info["returncodes"]["value"] != 0: return
     # get a temporary directory for the log, input and output files
     tmp_dir = tempfile.TemporaryDirectory(prefix="pfp_mpt_")
     mpt = {"paths": {"tmp_base": tmp_dir.name}}
@@ -135,7 +135,7 @@ def run_mpt_code(cf, ds, mpt):
     in_base_path = os.path.join(mpt["paths"]["input"], "")
     out_base_path = os.path.join(mpt["paths"]["output"], "")
     # get the time step
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     if (ts != 30) and (ts != 60):
         msg = "MPT: time step must be 30 or 60 minutes (" + str(ts) + "), skipping MPT ..."
         logger.error(msg)
@@ -150,7 +150,7 @@ def run_mpt_code(cf, ds, mpt):
     for year in years:
         msg = " MPT: processing year " + str(year)
         logger.info(msg)
-        #in_name = ds.filepath.replace(".nc","_"+str(year)+"_MPT.csv")
+        #in_name = ds.info["filepath"].replace(".nc","_"+str(year)+"_MPT.csv")
         in_full_path = os.path.join(in_base_path, "mpt_"+str(year)+".csv")
         out_full_path = in_full_path.replace("input", "output").replace(".csv", "_ut.txt")
         data = make_data_array(cf, ds, year)

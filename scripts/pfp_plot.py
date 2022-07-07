@@ -79,8 +79,8 @@ def get_ticks(start, end):
     return loc,fmt
 
 def get_yarray(ds,ThisOne):
-    yarray = numpy.ma.masked_where(abs(ds.series[ThisOne]['Data']-float(c.missing_value))<c.eps,
-                                        ds.series[ThisOne]['Data'])
+    yarray = numpy.ma.masked_where(abs(ds.root["Variables"][ThisOne]['Data']-float(c.missing_value))<c.eps,
+                                        ds.root["Variables"][ThisOne]['Data'])
     nRecs = numpy.ma.size(yarray)
     nNotM = numpy.ma.count(yarray)
     nMskd = numpy.ma.count_masked(yarray)
@@ -132,8 +132,8 @@ def plot_fcvsustar(ds):
      (summer=DJF, autumn=MAM, winter=JJA, spring=SON) in
      each year.
     """
-    site_name = ds.globalattributes["site_name"]
-    ts = int(float(ds.globalattributes["time_step"]))
+    site_name = ds.root["Attributes"]["site_name"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     nbins = 20
     # plot each year
@@ -281,23 +281,23 @@ def pltfingerprint_createdict(cf,ds):
     # get the start and end datetimes for all files and find the overlap period
     var_list = list(fp_info["variables"].keys())
     ds_0 = ds[fp_info["variables"][var_list[0]]["in_filename"]]
-    fp_info["variables"][var_list[0]]["time_coverage_start"] = ds_0.series["DateTime"]["Data"][0]
-    fp_info["variables"][var_list[0]]["time_coverage_end"] = ds_0.series["DateTime"]["Data"][-1]
+    fp_info["variables"][var_list[0]]["time_coverage_start"] = ds_0.root["Variables"]["DateTime"]["Data"][0]
+    fp_info["variables"][var_list[0]]["time_coverage_end"] = ds_0.root["Variables"]["DateTime"]["Data"][-1]
     fp_info["general"]["overlap_start"] = fp_info["variables"][var_list[0]]["time_coverage_start"]
     fp_info["general"]["overlap_end"] = fp_info["variables"][var_list[0]]["time_coverage_end"]
-    fp_info["variables"][var_list[0]]["nc_nrecs"] = int(ds_0.globalattributes["nc_nrecs"])
-    fp_info["variables"][var_list[0]]["site_name"] = str(ds_0.globalattributes["site_name"])
-    fp_info["variables"][var_list[0]]["processing_level"] = str(ds_0.globalattributes["processing_level"])
-    fp_info["variables"][var_list[0]]["time_step"] = int(float(ds_0.globalattributes["time_step"]))
+    fp_info["variables"][var_list[0]]["nc_nrecs"] = int(ds_0.root["Attributes"]["nc_nrecs"])
+    fp_info["variables"][var_list[0]]["site_name"] = str(ds_0.root["Attributes"]["site_name"])
+    fp_info["variables"][var_list[0]]["processing_level"] = str(ds_0.root["Attributes"]["processing_level"])
+    fp_info["variables"][var_list[0]]["time_step"] = int(float(ds_0.root["Attributes"]["time_step"]))
     if len(var_list)>1:
         for var in var_list[1:]:
             ds_n = ds[fp_info["variables"][var]["in_filename"]]
-            fp_info["variables"][var]["time_coverage_start"] = ds_n.series["DateTime"]["Data"][0]
-            fp_info["variables"][var]["time_coverage_end"] = ds_n.series["DateTime"]["Data"][-1]
-            fp_info["variables"][var]["nc_nrecs"] = int(ds_n.globalattributes["nc_nrecs"])
-            fp_info["variables"][var]["site_name"] = str(ds_n.globalattributes["site_name"])
-            fp_info["variables"][var]["processing_level"] = str(ds_n.globalattributes["processing_level"])
-            fp_info["variables"][var]["time_step"] = int(float(ds_n.globalattributes["time_step"]))
+            fp_info["variables"][var]["time_coverage_start"] = ds_n.root["Variables"]["DateTime"]["Data"][0]
+            fp_info["variables"][var]["time_coverage_end"] = ds_n.root["Variables"]["DateTime"]["Data"][-1]
+            fp_info["variables"][var]["nc_nrecs"] = int(ds_n.root["Attributes"]["nc_nrecs"])
+            fp_info["variables"][var]["site_name"] = str(ds_n.root["Attributes"]["site_name"])
+            fp_info["variables"][var]["processing_level"] = str(ds_n.root["Attributes"]["processing_level"])
+            fp_info["variables"][var]["time_step"] = int(float(ds_n.root["Attributes"]["time_step"]))
             # get the start and end datetimes where the files overlap
             fp_info["general"]["overlap_start"] = max([fp_info["general"]["overlap_start"],fp_info["variables"][var]["time_coverage_start"]])
             fp_info["general"]["overlap_end"] = min([fp_info["general"]["overlap_end"],fp_info["variables"][var]["time_coverage_end"]])
@@ -313,7 +313,7 @@ def pltfingerprint_readncfiles(cf):
             if cf["Variables"][var]["in_filename"] not in ds:
                 infilename = cf["Variables"][var]["in_filename"]
                 ds[cf["Variables"][var]["in_filename"]] = pfp_io.NetCDFRead(infilename)
-                if ds[cf["Variables"][var]["in_filename"]].returncodes["value"] != 0: return ds
+                if ds[cf["Variables"][var]["in_filename"]].info["returncodes"]["value"] != 0: return ds
     return ds
 
 def plot_fingerprint(cf):
@@ -357,7 +357,7 @@ def plot_fingerprint(cf):
         for n,var in enumerate(fig_var_list):
             nc_varname = fp_info["variables"][var]["name"]
             infilename = fp_info["variables"][var]["in_filename"]
-            ldt = ds[infilename].series["DateTime"]["Data"]
+            ldt = ds[infilename].root["Variables"]["DateTime"]["Data"]
             ts = fp_info["variables"][var]["time_step"]
             si = pfp_utils.GetDateIndex(ldt, str(overlap_start), ts=ts, default=0, match='startnextday')
             ei = pfp_utils.GetDateIndex(ldt, str(overlap_end), ts=ts, default=-1, match='endpreviousday')
@@ -366,12 +366,12 @@ def plot_fingerprint(cf):
             nPerDay = int(float(24)*nPerHr + 0.5)
             nDays = len(ldt)//nPerDay
             # let's check the named variable is in the data structure
-            if nc_varname not in list(ds[infilename].series.keys()):
+            if nc_varname not in list(ds[infilename].root["Variables"].keys()):
                 # if it isn't, let's look for an alias
                 if nc_varname in list(aliases.keys()):
                     found_alias = False
                     for alias in aliases[nc_varname]:
-                        if alias in list(ds[infilename].series.keys()):
+                        if alias in list(ds[infilename].root["Variables"].keys()):
                             nc_varname = alias
                             found_alias = True
                     if not found_alias:
@@ -387,7 +387,7 @@ def plot_fingerprint(cf):
                                       fp_info["variables"][var]["lower"],
                                       fp_info["variables"][var]["upper"])
             data_daily = data.reshape(nDays,nPerDay)
-            units = str(ds[infilename].series[nc_varname]['Attr']['units'])
+            units = str(ds[infilename].root["Variables"][nc_varname]['Attr']['units'])
             label = var + ' (' + units + ')'
             if n==0:
                 ax = plt.subplot(1,nPlots,n+1)
@@ -437,9 +437,9 @@ def plot_fluxnet(cf):
     infilename = pfp_io.get_infilenamefromcf(cf)
 
     ds = pfp_io.NetCDFRead(infilename)
-    if ds.returncodes["value"] != 0: return
-    site_name = ds.globalattributes["site_name"]
-    ldt=ds.series["DateTime"]["Data"]
+    if ds.info["returncodes"]["value"] != 0: return
+    site_name = ds.root["Attributes"]["site_name"]
+    ldt=ds.root["Variables"]["DateTime"]["Data"]
     sdt = ldt[0]
     edt = ldt[-1]
     nFig = 0
@@ -449,7 +449,7 @@ def plot_fluxnet(cf):
             label = cf["Variables"][series]["name"]
         else:
             label = series
-        if label not in ds.series.keys():
+        if label not in ds.root["Variables"].keys():
             logger.error("Series " + label + " not found in input file, skipping ...")
             continue
         logger.info(" Doing plot for " + label)
@@ -464,15 +464,15 @@ def plot_fluxnet(cf):
         title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
         title_str += edt.strftime("%Y-%m-%d") + "; " + series
         plt.title(title_str)
-        figname = 'plots/' + ds.globalattributes['site_name'].replace(' ','')
-        figname += '_' + ds.globalattributes['processing_level'] + '_FC_' + label + '.png'
+        figname = 'plots/' + ds.root["Attributes"]['site_name'].replace(' ','')
+        figname += '_' + ds.root["Attributes"]['processing_level'] + '_FC_' + label + '.png'
         fig.savefig(figname, format='png')
         plt.draw()
         pfp_utils.mypause(0.5)
     plt.ioff()
     return
 
-def plot_explore_fingerprints(ds, labels):
+def plot_explore_fingerprints(ds, selections):
     """
     Purpose:
      Plot fingerprints of variables selected by the user from the GUI
@@ -482,75 +482,83 @@ def plot_explore_fingerprints(ds, labels):
     Author: PRI
     Date: April 2020
     """
+    groups = sorted(list(selections.keys()))
+    labels = []
+    for group in groups:
+        labels += selections[group]
     msg = " Plotting fingerprint for " + ", ".join(labels)
     logger.info(msg)
-    site_name = ds.globalattributes["site_name"]
+    site_name = ds.root["Attributes"]["site_name"]
     # number of columns, each column will be 1 fingerprint
     ncols = len(labels)
-    # get the time step
-    ts = int(float(ds.globalattributes["time_step"]))
-    # get the start and end dates for whole days
-    dt = pfp_utils.GetVariable(ds, "DateTime")
-    si = pfp_utils.GetDateIndex(dt["Data"], dt["Data"][0], ts=ts, default=0, match='startnextday')
-    ei = pfp_utils.GetDateIndex(dt["Data"], dt["Data"][-1], ts=ts, default=-1, match='endpreviousday')
-    # subset the datetime to who;e days
-    ldt = dt["Data"][si:ei + 1]
-    # get the number of records per day and the number of whole days
-    nPerHr = int(float(60)/ts + 0.5)
-    nPerDay = int(float(24)*nPerHr + 0.5)
-    nDays = len(ldt)//nPerDay
     # create the figure
     plt.ion()
     fig, axs = plt.subplots(ncols=ncols, sharey=True, figsize=(7.5, 10.9))
     # axs must be a list
     if ncols == 1: axs = [axs]
     fig.subplots_adjust(wspace=0.05, hspace=0.05, left=0.1, right=0.95, top=0.95, bottom=0.1)
-    # put a title on the figure
-    title_str = site_name + ": " + ldt[0].strftime("%Y-%m-%d") + " to "
-    title_str += ldt[-1].strftime("%Y-%m-%d")
-    fig.suptitle(title_str, fontsize=16)
     # put a title on the figure window
     fig.canvas.manager.set_window_title(site_name)
-    # loop over variables to be plotted
-    for n, label in enumerate(labels):
-        # get the data
-        var = pfp_utils.GetVariable(ds, label, start=si, end=ei)
-        if numpy.ma.count(var["Data"]) == 0:
-            msg = label + ": no data found, skipping..."
-            logger.warning(msg)
-            continue
-        # reshape into a 2D array
-        data_daily = var["Data"].reshape(nDays, nPerDay)
-        # clip data to the 0.25 and 99.75 percentiles to suppress outliers
-        # this helps make the colour scale even
-        vmin = numpy.percentile(numpy.ma.compressed(data_daily), 0.25)
-        vmax = numpy.percentile(numpy.ma.compressed(data_daily), 99.75)
-        # get the start and end dates as numbers
-        sd = mdt.date2num(ldt[0])
-        ed = mdt.date2num(ldt[-1])
-        # get the image
-        #im = axs[n].imshow(data_daily, extent=[0, 24, sd, ed], aspect='auto',
-                           #origin='lower', interpolation="hanning",
-                           #cmap="viridis", vmin=vmin, vmax=vmax)
-        im = axs[n].imshow(data_daily, extent=[0, 24, sd, ed], aspect='auto',
-                           origin='lower', interpolation="none",
-                           cmap="viridis", vmin=vmin, vmax=vmax)
-        # add a colour bar
-        divider = make_axes_locatable(axs[n])
-        cax = divider.append_axes('bottom', size='1%', pad=0.5)
-        fig.colorbar(im, cax=cax, orientation='horizontal')
-        # do the major ticks on the Y (date) axis
-        axs[n].yaxis_date()
-        axs[n].yaxis.set_major_locator(mdt.YearLocator())
-        axs[n].yaxis.set_major_formatter(mdt.DateFormatter('%Y'))
-        # set the ticks on the X (hour) axis
-        axs[n].set_xticks([0, 6, 12, 18, 24])
-        # label the X axis
-        xlabel = label + " (" + var["Attr"]["units"] + ")"
-        axs[n].set_xlabel(xlabel)
-        # suppress the Y axis labels if more than 1 image
-        if n != 0:
-            plt.setp(axs[n].get_yticklabels(), visible=False)
+    n = 0
+    for group in groups:
+        gattr = getattr(ds, group)["Attributes"]
+        # get the time step
+        ts = int(float(gattr["time_step"]))
+        # get the start and end dates for whole days
+        dt = pfp_utils.GetVariable(ds, "DateTime", group=group)
+        si = pfp_utils.GetDateIndex(dt["Data"], dt["Data"][0], ts=ts,
+                                    default=0, match='startnextday')
+        ei = pfp_utils.GetDateIndex(dt["Data"], dt["Data"][-1], ts=ts,
+                                    default=-1, match='endpreviousday')
+        # subset the datetime to whole days
+        ldt = dt["Data"][si:ei + 1]
+        if n == 0:
+            # put a title on the figure
+            title_str = site_name + ": " + ldt[0].strftime("%Y-%m-%d") + " to "
+            title_str += ldt[-1].strftime("%Y-%m-%d")
+            fig.suptitle(title_str, fontsize=16)
+        # get the number of records per day and the number of whole days
+        nPerHr = int(float(60)/ts + 0.5)
+        nPerDay = int(float(24)*nPerHr + 0.5)
+        nDays = len(ldt)//nPerDay
+        # loop over variables to be plotted
+        for label in labels:
+            # get the data
+            var = pfp_utils.GetVariable(ds, label, group=group, start=si, end=ei)
+            if numpy.ma.count(var["Data"]) == 0:
+                msg = label + ": no data found, skipping..."
+                logger.warning(msg)
+                continue
+            # reshape into a 2D array
+            data_daily = var["Data"].reshape(nDays, nPerDay)
+            # clip data to the 0.25 and 99.75 percentiles to suppress outliers
+            # this helps make the colour scale even
+            vmin = numpy.percentile(numpy.ma.compressed(data_daily), 0.25)
+            vmax = numpy.percentile(numpy.ma.compressed(data_daily), 99.75)
+            # get the start and end dates as numbers
+            sd = mdt.date2num(ldt[0])
+            ed = mdt.date2num(ldt[-1])
+            # render the image
+            im = axs[n].imshow(data_daily, extent=[0, 24, sd, ed], aspect='auto',
+                               origin='lower', interpolation="none",
+                               cmap="viridis", vmin=vmin, vmax=vmax)
+            # add a colour bar
+            divider = make_axes_locatable(axs[n])
+            cax = divider.append_axes('bottom', size='1%', pad=0.5)
+            fig.colorbar(im, cax=cax, orientation='horizontal')
+            # do the major ticks on the Y (date) axis
+            axs[n].yaxis_date()
+            axs[n].yaxis.set_major_locator(mdt.YearLocator())
+            axs[n].yaxis.set_major_formatter(mdt.DateFormatter('%Y'))
+            # set the ticks on the X (hour) axis
+            axs[n].set_xticks([0, 6, 12, 18, 24])
+            # label the X axis
+            xlabel = label + " (" + var["Attr"]["units"] + ")"
+            axs[n].set_xlabel(xlabel)
+            # suppress the Y axis labels if more than 1 image
+            if n != 0:
+                plt.setp(axs[n].get_yticklabels(), visible=False)
+            n += 1
     # render the fingerprint
     plt.draw()
     # pause to let the image appear on the creen
@@ -567,7 +575,7 @@ def plot_explore_histograms(ds, labels):
          2: {"lwr": 0.5, "upr": 99.5},
          3: {"lwr": 1.0, "upr": 99.0},
          4: {"lwr": 2.5, "upr": 97.5}}
-    site_name = ds.globalattributes["site_name"]
+    site_name = ds.root["Attributes"]["site_name"]
     plt.ion()
     for label in labels:
         var = pfp_utils.GetVariable(ds, label)
@@ -613,124 +621,159 @@ def plot_explore_do_histogram(var, plwr, pupr):
     d["idx"] = idx
     return d
 
-def plot_explore_percentiles(ds, labels):
+def plot_explore_percentiles(ds, selections):
     """ Plot time series histograms of selected variables."""
     p = {0: {"lwr": 0.0, "upr": 100.0},
          1: {"lwr": 0.1, "upr": 99.9},
          2: {"lwr": 0.5, "upr": 99.5},
          3: {"lwr": 1.0, "upr": 99.0},
          4: {"lwr": 2.5, "upr": 97.5}}
-    site_name = ds.globalattributes["site_name"]
+    site_name = ds.root["Attributes"]["site_name"]
+    groups = sorted(list(selections.keys()))
     plt.ion()
-    for label in labels:
-        var = pfp_utils.GetVariable(ds, label)
-        sdt = var["DateTime"][0]
-        edt = var["DateTime"][-1]
-        fig = plt.figure(figsize=(11, 8), tight_layout=True)
-        window_title = site_name + ": " + var["Label"]
-        fig.canvas.manager.set_window_title(window_title)
-        gs = gridspec.GridSpec(5, 2, width_ratios=[5, 1])
-        for n in p:
-            d = plot_explore_do_histogram(var, p[n]["lwr"], p[n]["upr"])
-            ax_ts = fig.add_subplot(gs[n, 0])
-            if n == 0:
-                title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
-                title_str += edt.strftime("%Y-%m-%d") + "; " + label
-                ax_ts.set_title(title_str)
-            legend = str(p[n]["lwr"]) + "," + str(p[n]["upr"])
-            ax_ts.plot(var["DateTime"][d["idx"]], var["Data"][d["idx"]], 'b.', label=legend)
-            ax_ts.legend()
-            lwrs = str(pfp_utils.round2significant(d["lwr"], 4))
-            uprs = str(pfp_utils.round2significant(d["upr"], 4))
-            x = numpy.arange(len(d["hist"]))
-            ax_hist = fig.add_subplot(gs[n, 1])
-            hist_label = str(p[n]["lwr"]) + "," + str(p[n]["upr"])
-            ax_hist.bar(x, d["hist"])
-            ax_hist.text(0.5, 0.85, hist_label, transform=ax_hist.transAxes,
-                         horizontalalignment='center')
-            ax_hist.set_xticks([x[1], x[-2]])
-            ax_hist.set_xticklabels([lwrs, uprs])
-        plt.draw()
-        pfp_utils.mypause(0.5)
+    for group in groups:
+        labels = selections[group]
+        for label in labels:
+            var = pfp_utils.GetVariable(ds, label, group=group)
+            sdt = var["DateTime"][0]
+            edt = var["DateTime"][-1]
+            fig = plt.figure(figsize=(11, 8), tight_layout=True)
+            window_title = site_name + ": " + var["Label"]
+            fig.canvas.manager.set_window_title(window_title)
+            gs = gridspec.GridSpec(5, 2, width_ratios=[5, 1])
+            for n in p:
+                d = plot_explore_do_histogram(var, p[n]["lwr"], p[n]["upr"])
+                ax_ts = fig.add_subplot(gs[n, 0])
+                if n == 0:
+                    title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+                    title_str += edt.strftime("%Y-%m-%d") + "; " + label
+                    ax_ts.set_title(title_str)
+                legend = str(p[n]["lwr"]) + "," + str(p[n]["upr"])
+                ax_ts.plot(var["DateTime"][d["idx"]], var["Data"][d["idx"]], 'b.', label=legend)
+                ax_ts.legend()
+                lwrs = str(pfp_utils.round2significant(d["lwr"], 4))
+                uprs = str(pfp_utils.round2significant(d["upr"], 4))
+                x = numpy.arange(len(d["hist"]))
+                ax_hist = fig.add_subplot(gs[n, 1])
+                hist_label = str(p[n]["lwr"]) + "," + str(p[n]["upr"])
+                ax_hist.bar(x, d["hist"])
+                ax_hist.text(0.5, 0.85, hist_label, transform=ax_hist.transAxes,
+                             horizontalalignment='center')
+                ax_hist.set_xticks([x[1], x[-2]])
+                ax_hist.set_xticklabels([lwrs, uprs])
+            plt.draw()
+            pfp_utils.mypause(0.5)
     return
 
-def plot_explore_timeseries(ds, labels):
+def plot_explore_timeseries(ds, selections):
     """ Plot time series of selected variables."""
-    site_name = ds.globalattributes["site_name"]
-    nrows = len(labels)
+    site_name = ds.root["Attributes"]["site_name"]
+    groups = sorted(list(selections.keys()))
+    nrows = 0
+    for group in groups:
+        nrows += len(selections[group])
     plt.ion()
     fig, axs = plt.subplots(nrows=nrows, sharex=True, figsize=(10.9, 7.5))
     fig.subplots_adjust(wspace=0.0, hspace=0.05, left=0.1, right=0.95, top=0.95, bottom=0.1)
     if nrows == 1: axs = [axs]
     fig.canvas.manager.set_window_title(site_name)
-    for n, label in enumerate(labels):
-        var = pfp_utils.GetVariable(ds, label)
-        count_str = " Total " + str(len(var["Data"])) + ", Usable "
-        count_str += str(numpy.ma.count(var["Data"])) + " ("
-        count_str += str(numpy.rint(100*numpy.ma.count(var["Data"])/len(var["Data"])))
-        count_str += "%)"
-        sdt = var["DateTime"][0]
-        edt = var["DateTime"][-1]
-        axs[n].plot(var["DateTime"], var["Data"], "b.", label=label+count_str)
-        axs[n].legend()
-        axs[n].set_xlim([sdt, edt])
-        if n == 0:
-            title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
-            title_str += edt.strftime("%Y-%m-%d")
-            axs[n].set_title(title_str)
-        if n == nrows-1:
-            axs[n].set_xlabel("Date")
-        axs[n].set_ylabel("(" + var["Attr"]["units"] + ")")
+    n = 0
+    for group in groups:
+        labels = selections[group]
+        for label in labels:
+            var = pfp_utils.GetVariable(ds, label, group=group)
+            count_str = " Total " + str(len(var["Data"])) + ", Usable "
+            count_str += str(numpy.ma.count(var["Data"])) + " ("
+            count_str += str(numpy.rint(100*numpy.ma.count(var["Data"])/len(var["Data"])))
+            count_str += "%)"
+            sdt = var["DateTime"][0]
+            edt = var["DateTime"][-1]
+            axs[n].plot(var["DateTime"], var["Data"], "b.", label=label+count_str)
+            axs[n].legend()
+            axs[n].set_xlim([sdt, edt])
+            if n == 0:
+                title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+                title_str += edt.strftime("%Y-%m-%d")
+                axs[n].set_title(title_str)
+            if n == nrows-1:
+                axs[n].set_xlabel("Date")
+            axs[n].set_ylabel("(" + var["Attr"]["units"] + ")")
+            n += 1
     plt.draw()
     pfp_utils.mypause(0.5)
     plt.ioff()
     return
 
-def plot_explore_timeseries_grouped(ds, labels):
+def plot_explore_timeseries_grouped(ds, selections):
     """ Plot time series of grouped variables."""
-    groups = sorted(list(set([l.split("_")[0] for l in labels])))
-    site_name = ds.globalattributes["site_name"]
-    nrows = len(groups)
+    # colours for the lines
     colors = ["blue","red","green","yellow","magenta","black","cyan","brown"]
+    # site name for the title
+    site_name = ds.root["Attributes"]["site_name"]
+    # get the groups to be plotted
+    groups = sorted(list(selections.keys()))
+    # find all of the labels to be plotted
+    all_labels = []
+    for group in groups:
+        all_labels += selections[group]
+    # get the variable groups to be plotted
+    label_groups = sorted(list(set([l.split("_")[0] for l in all_labels])))
+    # which is also the number of rows in the plot
+    nrows = len(label_groups)
+    # now rearrange the variable group, netCDF group and variable labels into
+    # a dictionary for convenience of plotting
+    # d = {'ER': {'root': ['ER_LL', 'ER_LT', 'ER_SOLO']},
+    #      'GPP': {'root': ['GPP_LL', 'GPP_LT', 'GPP_SOLO']},
+    #      'NEE': {'root': ['NEE_LL', 'NEE_LT', 'NEE_SOLO']}}
+    d = {}
+    for lg in label_groups:
+        d[lg] = {}
+        gll = []
+        for g in groups:
+            for al in all_labels:
+                if lg in al:
+                    gll.append(al)
+            d[lg][g] = gll
+    # and then do the plot
     plt.ion()
     fig, axs = plt.subplots(nrows=nrows, sharex=True, figsize=(10.9, 7.5))
-    fig.subplots_adjust(wspace=0.0, hspace=0.05, left=0.1, right=0.95, top=0.95, bottom=0.1)
     if nrows == 1: axs = [axs]
+    fig.subplots_adjust(wspace=0.0, hspace=0.05, left=0.1, right=0.95, top=0.95, bottom=0.1)
     fig.canvas.manager.set_window_title(site_name)
-    for n, group in enumerate(groups):
-        group_labels = sorted([l for l in labels if group in l])
-        for m, label in enumerate(group_labels):
-            var = pfp_utils.GetVariable(ds, label)
-            sdt = var["DateTime"][0]
-            edt = var["DateTime"][-1]
-            axs[n].plot(var["DateTime"], var["Data"], label=label,
-                        marker=".", color=colors[numpy.mod(m, 8)])
-            if m == 0:
-                axs[n].set_ylabel("(" + var["Attr"]["units"] + ")")
-        axs[n].legend()
-        axs[n].set_xlim([sdt, edt])
-        if n == 0:
-            title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
-            title_str += edt.strftime("%Y-%m-%d")
-            axs[n].set_title(title_str)
-        if n == nrows-1:
-            axs[n].set_xlabel("Date")
+    for i, lg in enumerate(d.keys()):
+        for j, group in enumerate(d[lg].keys()):
+            for k, label in enumerate(d[lg][group]):
+                var = pfp_utils.GetVariable(ds, label, group=group)
+                sdt = var["DateTime"][0]
+                edt = var["DateTime"][-1]
+                axs[i].plot(var["DateTime"], var["Data"], label=label,
+                            marker=".", color=colors[numpy.mod(j+k, 8)])
+                if j+k == 0:
+                    axs[i].set_ylabel("(" + var["Attr"]["units"] + ")")
+            axs[i].legend()
+            axs[i].set_xlim([sdt, edt])
+            if i == 0:
+                title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+                title_str += edt.strftime("%Y-%m-%d")
+                axs[i].set_title(title_str)
+            if i == nrows-1:
+                axs[i].set_xlabel("Date")
     plt.draw()
     pfp_utils.mypause(0.5)
     plt.ioff()
     return
 
 def plottimeseries(cf, nFig, dsa, dsb):
-    SiteName = dsa.globalattributes['site_name']
-    Level = dsb.globalattributes['processing_level']
-    ts = int(dsa.globalattributes['time_step'])
-    ldt = dsa.series["DateTime"]["Data"]
+    SiteName = dsa.root["Attributes"]['site_name']
+    Level = dsb.root["Attributes"]['processing_level']
+    ts = int(dsa.root["Attributes"]['time_step'])
+    ldt = dsa.root["Variables"]["DateTime"]["Data"]
     Month = ldt[0].month
     Hdh = [dt.hour+(dt.minute+dt.second/float(60))/float(60) for dt in ldt]
     p = plot_setup(cf,nFig)
     logger.info(' Plotting series: '+str(p['SeriesList']))
-    L1XArray = dsa.series['DateTime']['Data']
-    L2XArray = dsb.series['DateTime']['Data']
+    L1XArray = dsa.root["Variables"]['DateTime']['Data']
+    L2XArray = dsb.root["Variables"]['DateTime']['Data']
     p['XAxMin'] = min(L2XArray)
     p['XAxMax'] = max(L2XArray)
     p['loc'],p['fmt'] = get_ticks(p['XAxMin'],p['XAxMax'])
@@ -769,21 +812,21 @@ def plottimeseries(cf, nFig, dsa, dsb):
     fig.canvas.manager.set_window_title(p['PlotDescription'])
     plt.figtext(0.5,0.95,SiteName+': '+p['PlotDescription'],ha='center',size=16)
     for ThisOne, n in zip(p['SeriesList'],list(range(p['nGraphs']))):
-        if ThisOne in list(dsa.series.keys()):
+        if ThisOne in list(dsa.root["Variables"].keys()):
             p["Units"] = ""
-            if "units" in dsa.series[ThisOne]["Attr"]:
-                p["Units"] = dsa.series[ThisOne]["Attr"]["units"]
+            if "units" in dsa.root["Variables"][ThisOne]["Attr"]:
+                p["Units"] = dsa.root["Variables"][ThisOne]["Attr"]["units"]
             p['YAxOrg'] = p['ts_YAxOrg'] + n*p['yaxOrgOffset']
             L1YArray,p['nRecs'],p['nNotM'],p['nMskd'] = get_yarray(dsa, ThisOne)
             # check the control file to see if the Y axis minima have been specified
             nSer = p['SeriesList'].index(ThisOne)
             p['LYAxMax'],p['LYAxMin'] = get_yaxislimitsfromcf(cf,nFig,'YLMax','YLMin',nSer,L1YArray)
             plot_onetimeseries_left(fig,n,ThisOne,L1XArray,L1YArray,p)
-        if ThisOne in list(dsb.series.keys()):
-            bflag = dsb.series[ThisOne]['Flag']
+        if ThisOne in list(dsb.root["Variables"].keys()):
+            bflag = dsb.root["Variables"][ThisOne]['Flag']
             p["Units"] = ""
-            if "units" in dsb.series[ThisOne]["Attr"]:
-                p["Units"] = dsb.series[ThisOne]["Attr"]["units"]
+            if "units" in dsb.root["Variables"][ThisOne]["Attr"]:
+                p["Units"] = dsb.root["Variables"][ThisOne]["Attr"]["units"]
             p['YAxOrg'] = p['ts_YAxOrg'] + n*p['yaxOrgOffset']
             #Plot the Level 2 data series on the same X axis but with the scale on the right Y axis.
             L2YArray,p['nRecs'],p['nNotM'],p['nMskd'] = get_yarray(dsb, ThisOne)
@@ -793,7 +836,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
             plot_onetimeseries_right(fig,n,ThisOne,L2XArray,L2YArray,p)
 
             #Plot the diurnal averages.
-            Hr2,Av2,Sd2,Mx2,Mn2=get_diurnalstats(Hdh, dsb.series[ThisOne]['Data'], ts)
+            Hr2,Av2,Sd2,Mx2,Mn2=get_diurnalstats(Hdh, dsb.root["Variables"][ThisOne]['Data'], ts)
             Av2 = numpy.ma.masked_where(Av2==c.missing_value,Av2)
             Sd2 = numpy.ma.masked_where(Sd2==c.missing_value,Sd2)
             Mx2 = numpy.ma.masked_where(Mx2==c.missing_value,Mx2)
@@ -1059,15 +1102,15 @@ def plot_quickcheck(cf):
     ncfilename = pfp_io.get_infilenamefromcf(cf)
     # read the netCDF file and return the data structure "ds"
     ds = pfp_io.NetCDFRead(ncfilename)
-    if ds.returncodes["value"] != 0: return
-    series_list = list(ds.series.keys())
+    if ds.info["returncodes"]["value"] != 0: return
+    series_list = list(ds.root["Variables"].keys())
     # get the time step
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     # get the site name
-    site_name = ds.globalattributes["site_name"]
-    level = ds.globalattributes["processing_level"]
+    site_name = ds.root["Attributes"]["site_name"]
+    level = ds.root["Attributes"]["processing_level"]
     # get the datetime series
-    DateTime = ds.series["DateTime"]["Data"]
+    DateTime = ds.root["Variables"]["DateTime"]["Data"]
     # get the initial start and end dates
     StartDate = str(DateTime[0])
     EndDate = str(DateTime[-1])
@@ -1289,7 +1332,7 @@ def plot_quickcheck(cf):
             ticks = [0, 50, 100]
             fig.colorbar(ax, cax=cbins, orientation="horizontal", ticks=ticks)
         # save the plot to file
-        level = ds.globalattributes["processing_level"]
+        level = ds.root["Attributes"]["processing_level"]
         file_name = site_name.replace(" ", "") + "_" + level + "_QC_Diurnal" + label + "ByMonth.png"
         figure_name = os.path.join("plots", file_name)
         fig.savefig(figure_name, format="png")
@@ -1429,9 +1472,9 @@ def plot_windrose(cf):
     if not plot_windrose_check_variables(ds, wrinfo):
         return
     # update the info dictionary
-    wrinfo["start"] = ds.globalattributes["time_coverage_start"]
-    wrinfo["end"] = ds.globalattributes["time_coverage_end"]
-    wrinfo["site_name"] = ds.globalattributes["site_name"]
+    wrinfo["start"] = ds.root["Attributes"]["time_coverage_start"]
+    wrinfo["end"] = ds.root["Attributes"]["time_coverage_end"]
+    wrinfo["site_name"] = ds.root["Attributes"]["site_name"]
     # plot all the data
     plot_windrose_all(ds, wrinfo)
     # plot the seasonal windrose
@@ -1441,7 +1484,7 @@ def plot_windrose(cf):
 def plot_windrose_check_variables(ds, wrinfo):
     """ Check the variables named in the control file exist in the data structure."""
     ok = True
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for item in ["Fsd", "Wd", "Ws"]:
         name = wrinfo[item]
         if name not in labels:
@@ -1490,8 +1533,8 @@ def plot_windrose_all(ds, wrinfo):
     nbins = wrinfo["nbins"]
     wbins = wrinfo["wbins"]
     nsectors = wrinfo["nsectors"]
-    site_name = ds.globalattributes["site_name"]
-    level = ds.globalattributes["processing_level"]
+    site_name = ds.root["Attributes"]["site_name"]
+    level = ds.root["Attributes"]["processing_level"]
     title = site_name + ": " + wrinfo["start"] + " to " + wrinfo["end"]
     title += "; all data"
     # read the variables
@@ -1554,8 +1597,8 @@ def plot_windrose_seasonal(ds, wrinfo):
     nbins = wrinfo["nbins"]
     nsectors = wrinfo["nsectors"]
     wbins = wrinfo["wbins"]
-    site_name = ds.globalattributes["site_name"]
-    level = ds.globalattributes["processing_level"]
+    site_name = ds.root["Attributes"]["site_name"]
+    level = ds.root["Attributes"]["processing_level"]
     title = site_name + ": " + wrinfo["start"] + " to " + wrinfo["end"]
     title += "; Seasonal"
     # read the variables
@@ -1599,8 +1642,8 @@ def plot_windrose_seasonal(ds, wrinfo):
     return
 
 def plotxy(cf, title, plt_cf, dsa, dsb):
-    SiteName = dsa.globalattributes['site_name']
-    Level = dsb.globalattributes['processing_level']
+    SiteName = dsa.root["Attributes"]['site_name']
+    Level = dsb.root["Attributes"]['processing_level']
     PlotDescription = str(title)
     # turn on interactive plotting
     show_plots = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "show_plots", default="yes")

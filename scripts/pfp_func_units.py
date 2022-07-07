@@ -32,11 +32,11 @@ def gH2Opm3_to_percent(ds, RH_out, AH_in, Ta_in):
     Author: PRI
     Date: September 2020
     """
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs, dtype=numpy.int32)
     ones = numpy.ones(nRecs, dtype=numpy.int32)
     for item in [AH_in, Ta_in]:
-        if item not in ds.series.keys():
+        if item not in ds.root["Variables"].keys():
             msg = " Requested series " + item + " not found, " + RH_out + " not calculated"
             logger.error(msg)
             return 0
@@ -59,7 +59,7 @@ def gH2Opm3_to_mmolpm3(ds, H2O_out, AH_in):
     Date: September 2020
     """
     for item in [AH_in]:
-        if item not in ds.series.keys():
+        if item not in ds.root["Variables"].keys():
             msg = " Requested series " + item + " not found, " + H2O_out + " not calculated"
             logger.error(msg)
             return 0
@@ -86,11 +86,11 @@ def gH2Opm3_to_mmolpmol(ds, MF_out, AH_in, Ta_in, ps_in):
     Author: PRI
     Date: August 2019
     """
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs, dtype=numpy.int32)
     ones = numpy.ones(nRecs, dtype=numpy.int32)
     for item in [AH_in, Ta_in, ps_in]:
-        if item not in ds.series.keys():
+        if item not in ds.root["Variables"].keys():
             msg = " Requested series " + item + " not found, " + MF_out + " not calculated"
             logger.error(msg)
             return 0
@@ -131,7 +131,7 @@ def K_to_C(ds, T_out, T_in):
     Author: PRI
     Date: February 2018
     """
-    if T_in not in list(ds.series.keys()):
+    if T_in not in list(ds.root["Variables"].keys()):
         msg = " Convert_K_to_C: variable " + T_in + " not found, skipping ..."
         logger.warning(msg)
         return 0
@@ -172,7 +172,7 @@ def mgCO2pm3_to_mmolpm3(ds, CO2_out, CO2_in):
     Date: September 2020
     """
     for item in [CO2_in]:
-        if item not in ds.series.keys():
+        if item not in ds.root["Variables"].keys():
             msg = " Requested series " + item + " not found, " + CO2_out + " not calculated"
             logger.error(msg)
             return 0
@@ -199,11 +199,11 @@ def mgCO2pm3_to_umolpmol(ds, MF_out, CO2_in, Ta_in, ps_in):
     Author: PRI
     Date: August 2019
     """
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs, dtype=numpy.int32)
     ones = numpy.ones(nRecs, dtype=numpy.int32)
     for item in [CO2_in, Ta_in, ps_in]:
-        if item not in ds.series.keys():
+        if item not in ds.root["Variables"].keys():
             msg = " Requested series " + item + " not found, " + MF_out + " not calculated"
             logger.error(msg)
             return 0
@@ -230,7 +230,7 @@ def mmolpm3_to_gH2Opm3(ds, AH_out, H2O_in):
     Date: August 2020
     """
     for item in [H2O_in]:
-        if item not in list(ds.series.keys()):
+        if item not in list(ds.root["Variables"].keys()):
             msg = " Requested series " + item + " not found, " + AH_out + " not calculated"
             logger.error(msg)
             return 0
@@ -262,11 +262,11 @@ def mmolpmol_to_gH2Opm3(ds, AH_out, MF_in, Ta_in, ps_in):
     Author: PRI
     Date: September 2015
     """
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs, dtype=numpy.int32)
     ones = numpy.ones(nRecs, dtype=numpy.int32)
     for item in [MF_in, Ta_in, ps_in]:
-        if item not in list(ds.series.keys()):
+        if item not in list(ds.root["Variables"].keys()):
             msg = " Requested series " + item + " not found, " + AH_out + " not calculated"
             logger.error(msg)
             return 0
@@ -288,11 +288,11 @@ def percent_to_mmolpmol(ds, MF_out, RH_in, Ta_in, ps_in):
     Purpose:
      Calculate H2O mole fraction from relative humidity (RH).
     """
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
     for item in [RH_in, Ta_in, ps_in]:
-        if item not in list(ds.series.keys()):
+        if item not in list(ds.root["Variables"].keys()):
             msg = " Requested series " + item + " not found, " + MF_out + " not calculated"
             logger.error(msg)
             return 0
@@ -331,11 +331,11 @@ def percent_to_gH2Opm3(ds, AH_out, RH_in, Ta_in):
     Author: PRI
     Date: September 2015
     """
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs, dtype=numpy.int32)
     ones = numpy.ones(nRecs, dtype=numpy.int32)
     for item in [RH_in, Ta_in]:
-        if item not in ds.series.keys():
+        if item not in ds.root["Variables"].keys():
             msg = " Requested series " + item + " not found, " + AH_out + " not calculated"
             logger.error(msg)
             return 0
@@ -392,11 +392,11 @@ def percent_to_m3pm3(ds, Sws_out, Sws_in):
     #Author: PRI
     #Date: August 2019
     #"""
-    #nRecs = int(ds.globalattributes["nc_nrecs"])
+    #nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     #zeros = numpy.zeros(nRecs, dtype=numpy.int32)
     #ones = numpy.ones(nRecs, dtype=numpy.int32)
     #for item in [label_in]:
-        #if item not in ds.series.keys():
+        #if item not in ds.root["Variables"].keys():
             #msg = " Requested series " + item + " not found, " + label_out + " not calculated"
             #logger.error(msg)
             #return 0

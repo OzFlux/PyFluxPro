@@ -195,12 +195,12 @@ def climatology(cf):
     xl_filename = nc_filename.replace(".nc", "_Climatology.xls")
     xlFile = xlwt.Workbook()
     ds = pfp_io.NetCDFRead(nc_filename)
-    if ds.returncodes["value"] != 0:
+    if ds.info["returncodes"]["value"] != 0:
         return
     # get the time step
-    ts = int(ds.globalattributes['time_step'])
+    ts = int(ds.root["Attributes"]['time_step'])
     # get the datetime series
-    dt = ds.series['DateTime']['Data']
+    dt = ds.root["Variables"]['DateTime']['Data']
     start = datetime.datetime(dt[0].year, dt[0].month, dt[0].day, 0, 0, 0)
     start += datetime.timedelta(minutes=ts)
     end = datetime.datetime(dt[-1].year, dt[-1].month, dt[-1].day, 0, 0, 0)
@@ -222,7 +222,7 @@ def climatology(cf):
     ntsInDay = int(24.0*60.0/float(ts))
     # loop over the variables listed in the control file
     cf_labels = sorted(list(cf['Variables'].keys()))
-    ds_labels = sorted(list(ds.series.keys()))
+    ds_labels = sorted(list(ds.root["Variables"].keys()))
     for label in cf_labels:
         # check to see if an alternative variable name is given
         label = pfp_utils.get_keyvaluefromcf(cf, ["Variables"], "name", default=label)
