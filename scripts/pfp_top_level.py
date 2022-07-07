@@ -403,7 +403,7 @@ def do_run_l1(cfg):
     try:
         logger.info("Starting L1 processing")
         ds1 = pfp_levels.l1qc(cfg)
-        if ds1.returncodes["value"] == 0:
+        if ds1.info["returncodes"]["value"] == 0:
             outfilename = pfp_io.get_outfilenamefromcf(cfg)
             pfp_io.NetCDFWrite(outfilename, ds1)
             logger.info("Finished L1 processing")
@@ -438,9 +438,9 @@ def do_run_l2(cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds1 = pfp_io.NetCDFRead(in_filepath)
-        if ds1.returncodes["value"] != 0: return
+        if ds1.info["returncodes"]["value"] != 0: return
         ds2 = pfp_levels.l2qc(cfg, ds1)
-        if ds2.returncodes["value"] != 0:
+        if ds2.info["returncodes"]["value"] != 0:
             logger.error("An error occurred during L2 processing")
             logger.error("")
             return
@@ -489,9 +489,9 @@ def do_run_l3(cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds2 = pfp_io.NetCDFRead(in_filepath)
-        if ds2.returncodes["value"] != 0: return
+        if ds2.info["returncodes"]["value"] != 0: return
         ds3 = pfp_levels.l3qc(cfg, ds2)
-        if ds3.returncodes["value"] != 0:
+        if ds3.info["returncodes"]["value"] != 0:
             logger.error("An error occurred during L3 processing")
             logger.error("")
             return
@@ -542,13 +542,13 @@ def do_run_l4(main_gui):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds3 = pfp_io.NetCDFRead(in_filepath)
-        if ds3.returncodes["value"] != 0: return
-        sitename = ds3.globalattributes['site_name']
+        if ds3.info["returncodes"]["value"] != 0: return
+        sitename = ds3.root["Attributes"]['site_name']
         if "Options" not in cfg:
             cfg["Options"]={}
         cfg["Options"]["call_mode"] = "interactive"
         ds4 = pfp_levels.l4qc(main_gui, cfg, ds3)
-        if ds4.returncodes["value"] != 0:
+        if ds4.info["returncodes"]["value"] != 0:
             logger.info("Quitting L4: " + sitename)
         else:
             logger.info("Finished L4: " + sitename)
@@ -585,14 +585,14 @@ def do_run_l5(main_gui):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds4 = pfp_io.NetCDFRead(in_filepath)
-        if ds4.returncodes["value"] != 0: return
-        sitename = ds4.globalattributes['site_name']
+        if ds4.info["returncodes"]["value"] != 0: return
+        sitename = ds4.root["Attributes"]['site_name']
         if "Options" not in cfg:
             cfg["Options"] = {}
         cfg["Options"]["call_mode"] = "interactive"
         ds5 = pfp_levels.l5qc(main_gui, cfg, ds4)
         # check to see if all went well
-        if ds5.returncodes["value"] != 0:
+        if ds5.info["returncodes"]["value"] != 0:
             # tell the user something went wrong
             logger.info("Quitting L5: "+sitename)
             # delete the output file if it exists
@@ -636,14 +636,14 @@ def do_run_l6(main_gui):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds5 = pfp_io.NetCDFRead(in_filepath)
-        if ds5.returncodes["value"] != 0: return
-        sitename = ds5.globalattributes['site_name']
+        if ds5.info["returncodes"]["value"] != 0: return
+        sitename = ds5.root["Attributes"]['site_name']
         if "Options" not in cfg:
             cfg["Options"] = {}
         cfg["Options"]["call_mode"] = "interactive"
         cfg["Options"]["show_plots"] = "Yes"
         ds6 = pfp_levels.l6qc(main_gui, cfg, ds5)
-        if ds6.returncodes["value"] != 0:
+        if ds6.info["returncodes"]["value"] != 0:
             logger.info("Quitting L6: "+sitename)
         else:
             logger.info("Finished L6: "+sitename)
@@ -679,7 +679,7 @@ def do_plot_fcvsustar():
             return
         # read the netCDF file
         ds = pfp_io.NetCDFRead(file_path)
-        if ds.returncodes["value"] != 0: return
+        if ds.info["returncodes"]["value"] != 0: return
         logger.info("Plotting Fc versus u* ...")
         pfp_plot.plot_fcvsustar(ds)
         logger.info(" Finished plotting Fc versus u*")

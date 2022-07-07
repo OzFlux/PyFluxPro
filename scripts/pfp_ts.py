@@ -29,12 +29,12 @@ def ApplyLinear(cf,ds,ThisOne):
         ds: data structure
         x: input/output variable in ds.  Example: 'Cc_7500_Av'
         """
-    if ThisOne not in list(ds.series.keys()): return
+    if ThisOne not in list(ds.root["Variables"].keys()): return
     if pfp_utils.incf(cf,ThisOne) and pfp_utils.haskey(cf,ThisOne,'Linear'):
         logger.info('  Applying linear correction to '+ThisOne)
-        data = numpy.ma.masked_where(ds.series[ThisOne]['Data']==float(c.missing_value),ds.series[ThisOne]['Data'])
-        flag = ds.series[ThisOne]['Flag'].copy()
-        ldt = ds.series['DateTime']['Data']
+        data = numpy.ma.masked_where(ds.root["Variables"][ThisOne]['Data']==float(c.missing_value),ds.root["Variables"][ThisOne]['Data'])
+        flag = ds.root["Variables"][ThisOne]['Flag'].copy()
+        ldt = ds.root["Variables"]['DateTime']['Data']
         LinearList = list(cf['Variables'][ThisOne]['Linear'].keys())
         for i in range(len(LinearList)):
             linear_dates_string = cf['Variables'][ThisOne]['Linear'][str(i)]
@@ -54,8 +54,8 @@ def ApplyLinear(cf,ds,ThisOne):
             data[si:ei] = Slope * data[si:ei] + Offset
             index = numpy.where(flag[si:ei]==0)[0]
             flag[si:ei][index] = numpy.int32(10)
-            ds.series[ThisOne]['Data'] = numpy.ma.filled(data,float(c.missing_value)).astype(numpy.float64)
-            ds.series[ThisOne]['Flag'] = flag
+            ds.root["Variables"][ThisOne]['Data'] = numpy.ma.filled(data,float(c.missing_value)).astype(numpy.float64)
+            ds.root["Variables"][ThisOne]['Flag'] = flag
 
 def AverageSeriesByElements(cf, ds, Av_out):
     """
@@ -72,19 +72,19 @@ def AverageSeriesByElements(cf, ds, Av_out):
     # sanity checks
     if Av_out not in list(cf['Variables'].keys()):
         return
-    if Av_out in ds.averageserieslist:
+    if Av_out in ds.info["averageserieslist"]:
         return
-    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     ones = numpy.ones(nrecs)
     zeros = numpy.zeros(nrecs)
     # get the name of the description variable attribute
-    processing_level = ds.globalattributes["processing_level"]
+    processing_level = ds.root["Attributes"]["processing_level"]
     descr_level = "description_" + processing_level
     # get the list of series to average
     srclist = pfp_utils.GetAverageSeriesKeys(cf, Av_out)
     logger.info(" Averaging " + str(srclist) + "==>" + Av_out)
     # check to see if they are in the data structure
-    labels = ds.series.keys()
+    labels = ds.root["Variables"].keys()
     for label in list(srclist):
         if label not in labels:
             msg = " Variable " + label + " not found in data structure, skipping ..."
@@ -103,7 +103,7 @@ def AverageSeriesByElements(cf, ds, Av_out):
             avg["Data"] = numpy.ma.vstack((avg["Data"], var["Data"]))
         avg["Data"] = numpy.ma.average(avg["Data"], axis=0)
         avg["Flag"] = numpy.where(numpy.ma.getmaskarray(avg["Data"]) == True, ones, zeros)
-    ds.averageserieslist.append(Av_out)
+    ds.info["averageserieslist"].append(Av_out)
     # update the attributes
     tmp = "Element-wise average of series " + labels_averaged
     pfp_utils.append_to_attribute(avg["Attr"], {descr_level: tmp})
@@ -123,16 +123,16 @@ def CalculateAvailableEnergy(ds, Fa_out="Fa", Fn_in="Fn", Fg_in="Fg"):
     msg = " Calculating available energy from Fn and Fg"
     logger.info(msg)
     # make an empty Fa variable
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     Fa = pfp_utils.CreateEmptyVariable(Fa_out, nrecs)
-    if Fn_in not in list(ds.series.keys()):
+    if Fn_in not in list(ds.root["Variables"].keys()):
         msg = " Series " + Fn_in + " not found in data file"
         logger.warning(msg)
-    elif Fg_in not in list(ds.series.keys()):
+    elif Fg_in not in list(ds.root["Variables"].keys()):
         msg = " Series " + Fg_in + " not found in data file"
         logger.warning(msg)
     else:
-        processing_level = ds.globalattributes["processing_level"]
+        processing_level = ds.root["Attributes"]["processing_level"]
         descr_level = "description_" + processing_level
         ones = numpy.ones(nrecs, dtype=numpy.int32)
         zeros = numpy.zeros(nrecs, dtype=numpy.int32)
@@ -160,8 +160,8 @@ def CalculateFluxes(cf, ds):
 
         Accepts meteorological constants or variables
         """
-    descr_level = "description_" + ds.globalattributes["processing_level"]
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs, dtype=numpy.int32)
     ones = numpy.ones(nRecs, dtype=numpy.int32)
     rhom = pfp_utils.GetVariable(ds, "rhom")
@@ -169,7 +169,7 @@ def CalculateFluxes(cf, ds):
     Lv = pfp_utils.GetVariable(ds, "Lv")
 
     logger.info(" Calculating fluxes from covariances")
-    if "wT" in list(ds.series.keys()):
+    if "wT" in list(ds.root["Variables"].keys()):
         ok_units = ["m.degC/s", "degC.m/s"]
         wT = pfp_utils.GetVariable(ds, "wT")
         if wT["Attr"]["units"] in ok_units:
@@ -186,7 +186,7 @@ def CalculateFluxes(cf, ds):
             logger.error(" CalculateFluxes: Incorrect units for wT, Fhv not calculated")
     else:
         logger.error("  CalculateFluxes: wT not found, Fhv not calculated")
-    if "wA" in list(ds.series.keys()):
+    if "wA" in list(ds.root["Variables"].keys()):
         wA = pfp_utils.GetVariable(ds, "wA")
         if wA["Attr"]["units"] == "g/m^2/s":
             Fe = Lv["Data"]*wA["Data"]/float(1000)
@@ -203,7 +203,7 @@ def CalculateFluxes(cf, ds):
             logger.error(" CalculateFluxes: Incorrect units for wA, Fe not calculated")
     else:
         logger.error("  CalculateFluxes: wA not found, Fe not calculated")
-    if "wC" in list(ds.series.keys()):
+    if "wC" in list(ds.root["Variables"].keys()):
         wC = pfp_utils.GetVariable(ds, "wC")
         if wC["Attr"]["units"] == "mg/m^2/s":
             Fco2 = wC["Data"]
@@ -219,8 +219,8 @@ def CalculateFluxes(cf, ds):
             logger.error(" CalculateFluxes: Incorrect units for wC, Fco2 not calculated")
     else:
         logger.error("  CalculateFluxes: wC not found, Fco2 not calculated")
-    if "uw" in list(ds.series.keys()):
-        if "vw" in list(ds.series.keys()):
+    if "uw" in list(ds.root["Variables"].keys()):
+        if "vw" in list(ds.root["Variables"].keys()):
             uw = pfp_utils.GetVariable(ds, "uw")
             vw = pfp_utils.GetVariable(ds, "vw")
             vs = uw["Data"]*uw["Data"] + vw["Data"]*vw["Data"]
@@ -269,20 +269,20 @@ def CalculateHumidities(ds):
      March 2015
     Author: PRI
     """
-    if "AH" not in list(ds.series.keys()):
-        if "SH" in list(ds.series.keys()):
+    if "AH" not in list(ds.root["Variables"].keys()):
+        if "SH" in list(ds.root["Variables"].keys()):
             AbsoluteHumidityFromSpecificHumidity(ds)   # calculate AH from SH
-        elif "RH" in list(ds.series.keys()):
+        elif "RH" in list(ds.root["Variables"].keys()):
             AbsoluteHumidityFromRelativeHumidity(ds)   # calculate AH from RH
-    if "SH" not in list(ds.series.keys()):
-        if "AH" in list(ds.series.keys()):
+    if "SH" not in list(ds.root["Variables"].keys()):
+        if "AH" in list(ds.root["Variables"].keys()):
             SpecificHumidityFromAbsoluteHumidity(ds)
-        elif "RH" in list(ds.series.keys()):
+        elif "RH" in list(ds.root["Variables"].keys()):
             SpecificHumidityFromRelativeHumidity(ds)
-    if "RH" not in list(ds.series.keys()):
-        if "AH" in list(ds.series.keys()):
+    if "RH" not in list(ds.root["Variables"].keys()):
+        if "AH" in list(ds.root["Variables"].keys()):
             RelativeHumidityFromAbsoluteHumidity(ds)
-        elif "SH" in list(ds.series.keys()):
+        elif "SH" in list(ds.root["Variables"].keys()):
             RelativeHumidityFromSpecificHumidity(ds)
 
 def CalculateHumiditiesAfterGapFill(ds, info):
@@ -333,15 +333,15 @@ def CalculateHumiditiesAfterGapFill(ds, info):
 
 def AbsoluteHumidityFromRelativeHumidity(ds):
     """ Calculate absolute humidity from relative humidity. """
-    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating absolute humidity from relative humidity')
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Ta = pfp_utils.GetVariable(ds, "Ta")
     RH = pfp_utils.GetVariable(ds, "RH")
     AH_new = pfp_utils.CreateEmptyVariable("AH", nrecs)
     AH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], RH["Flag"]])
     AH_new["Data"] = pfp_mf.absolutehumidityfromrelativehumidity(Ta["Data"], RH["Data"])
-    if "AH" in list(ds.series.keys()):
+    if "AH" in list(ds.root["Variables"].keys()):
         AH = pfp_utils.GetVariable(ds, "AH")
         index = numpy.where(numpy.ma.getmaskarray(AH["Data"]) == True)[0]
         AH["Data"][index] = AH_new["Data"][index]
@@ -358,9 +358,9 @@ def AbsoluteHumidityFromRelativeHumidity(ds):
 
 def AbsoluteHumidityFromSpecificHumidity(ds):
     """ Calculate absolute humidity from specific humidity. """
-    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(" Calculating absolute humidity from specific humidity")
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Ta = pfp_utils.GetVariable(ds, "Ta")
     ps = pfp_utils.GetVariable(ds, "ps")
     SH = pfp_utils.GetVariable(ds, "SH")
@@ -368,7 +368,7 @@ def AbsoluteHumidityFromSpecificHumidity(ds):
     AH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], ps["Flag"], SH["Flag"]])
     RH = pfp_mf.relativehumidityfromspecifichumidity(SH["Data"], Ta["Data"], ps["Data"])
     AH_new["Data"] = pfp_mf.absolutehumidityfromrelativehumidity(Ta["Data"], RH)
-    if "AH" in list(ds.series.keys()):
+    if "AH" in list(ds.root["Variables"].keys()):
         AH = pfp_utils.GetVariable(ds, "AH")
         index = numpy.where(numpy.ma.getmaskarray(AH["Data"]) == True)[0]
         AH["Data"][index] = AH_new["Data"][index]
@@ -385,16 +385,16 @@ def AbsoluteHumidityFromSpecificHumidity(ds):
 
 def RelativeHumidityFromSpecificHumidity(ds):
     """ Calculate relative humidity from specific humidity. """
-    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating relative humidity from specific humidity')
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Ta = pfp_utils.GetVariable(ds, "Ta")
     ps = pfp_utils.GetVariable(ds, "ps")
     SH = pfp_utils.GetVariable(ds, "SH")
     RH_new = pfp_utils.CreateEmptyVariable("RH", nrecs)
     RH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], ps["Flag"], SH["Flag"]])
     RH_new["Data"] = pfp_mf.relativehumidityfromspecifichumidity(SH["Data"], Ta["Data"], ps["Data"])
-    if "RH" in list(ds.series.keys()):
+    if "RH" in list(ds.root["Variables"].keys()):
         RH = pfp_utils.GetVariable(ds, "RH")
         index = numpy.where(numpy.ma.getmaskarray(RH["Data"]) == True)[0]
         RH["Data"][index] = RH_new["Data"][index]
@@ -410,16 +410,16 @@ def RelativeHumidityFromSpecificHumidity(ds):
 
 def RelativeHumidityFromAbsoluteHumidity(ds):
     """ Calculate relative humidity from absolute humidity. """
-    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating relative humidity from absolute humidity')
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Ta = pfp_utils.GetVariable(ds, "Ta")
     AH = pfp_utils.GetVariable(ds, "AH")
     RH_new = pfp_utils.CreateEmptyVariable("RH", nrecs)
     RH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], AH["Flag"]])
     # relative humidity in units of percent
     RH_new["Data"] = pfp_mf.relativehumidityfromabsolutehumidity(AH["Data"], Ta["Data"])
-    if "RH" in list(ds.series.keys()):
+    if "RH" in list(ds.root["Variables"].keys()):
         RH = pfp_utils.GetVariable(ds, "RH")
         index = numpy.where(numpy.ma.getmaskarray(RH["Data"]) == True)[0]
         RH["Data"][index] = RH_new["Data"][index]
@@ -482,9 +482,9 @@ def smooth(x,window_len=11,window='hanning'):
 
 def SpecificHumidityFromAbsoluteHumidity(ds):
     """ Calculate specific humidity from absolute humidity. """
-    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating specific humidity from absolute humidity')
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Ta = pfp_utils.GetVariable(ds,"Ta")
     ps = pfp_utils.GetVariable(ds,"ps")
     AH = pfp_utils.GetVariable(ds,"AH")
@@ -492,7 +492,7 @@ def SpecificHumidityFromAbsoluteHumidity(ds):
     SH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], ps["Flag"], AH["Flag"]])
     RH = pfp_mf.relativehumidityfromabsolutehumidity(AH["Data"], Ta["Data"])
     SH_new["Data"] = pfp_mf.specifichumidityfromRH(RH, Ta["Data"], ps["Data"])
-    if "SH" in list(ds.series.keys()):
+    if "SH" in list(ds.root["Variables"].keys()):
         SH = pfp_utils.GetVariable(ds, "SH")
         index = numpy.where(numpy.ma.getmaskarray(SH["Data"]) == True)[0]
         SH["Data"][index] = SH_new["Data"][index]
@@ -509,16 +509,16 @@ def SpecificHumidityFromAbsoluteHumidity(ds):
 
 def SpecificHumidityFromRelativeHumidity(ds):
     """ Calculate specific humidity from relative humidity."""
-    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating specific humidity from relative humidity')
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Ta = pfp_utils.GetVariable(ds, "Ta")
     ps = pfp_utils.GetVariable(ds, "ps")
     RH = pfp_utils.GetVariable(ds, "RH")
     SH_new = pfp_utils.CreateEmptyVariable("SH", nrecs)
     SH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], ps["Flag"], RH["Flag"]])
     SH_new["Data"] = pfp_mf.specifichumidityfromRH(RH["Data"], Ta["Data"], ps["Data"])
-    if "SH" in list(ds.series.keys()):
+    if "SH" in list(ds.root["Variables"].keys()):
         SH = pfp_utils.GetVariable(ds, "SH")
         index = numpy.where(numpy.ma.getmaskarray(SH["Data"]) == True)[0]
         SH["Data"][index] = SH_new["Data"][index]
@@ -563,25 +563,25 @@ def CalculateMeteorologicalVariables(ds, info, Ta_name='Ta', Tv_name='Tv_SONIC_A
      June 2022 - rewrote to use pfp_utils.GetVariable() and pfp_utils.CreateVariable()
     """
     iris = info["RemoveIntermediateSeries"]
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs, dtype=numpy.int32)
     ones = numpy.ones(nrecs, dtype=numpy.int32)
     for item in [Ta_name, ps_name, AH_name, SH_name]:
-        if item not in list(ds.series.keys()):
+        if item not in list(ds.root["Variables"].keys()):
             msg = " CalculateMeteorologicalVariables: series "
             msg = msg + item + " not found, returning ..."
             logger.warning(msg)
             return
     logger.info(' Adding standard met variables to database')
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     # get the required data series
     Ta = pfp_utils.GetVariable(ds, Ta_name)
     # deal with possible aliases for the sonic temperature for the time being
-    if Tv_name not in list(ds.series.keys()):
+    if Tv_name not in list(ds.root["Variables"].keys()):
         # use Tv_CSAT if it is in the data structure, otherwise use Ta
-        if "Tv_CSAT_Av" in list(ds.series.keys()):
+        if "Tv_CSAT_Av" in list(ds.root["Variables"].keys()):
             Tv_name = "Tv_CSAT_Av"
-        elif "Tv_CSAT" in list(ds.series.keys()):
+        elif "Tv_CSAT" in list(ds.root["Variables"].keys()):
             Tv_name = "Tv_CSAT"
         else:
             Tv_name = Ta_name
@@ -718,7 +718,7 @@ def CalculateMoninObukhovLength(ds):
     """
     logger.info(' Calculating Monin-Obukhov length')
     # create a variable dictionary for L
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     L = pfp_utils.CreateEmptyVariable("L", nrecs, datetime=ldt["Data"])
     # create QC flags
@@ -767,21 +767,21 @@ def CalculateNetRadiation(cf,ds,Fn_out='Fn_4cmpt',Fsd_in='Fsd',Fsu_in='Fsu',Fld_
     Date: Sometime early on
     """
     logger.info(' Calculating net radiation from 4 components')
-    descr_level = "description_" + ds.globalattributes["processing_level"]
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs,dtype=numpy.int32)
     ones = numpy.ones(nrecs,dtype=numpy.int32)
     Fn_calc = pfp_utils.CreateEmptyVariable(Fn_out, nrecs)
-    if ((Fsd_in in list(ds.series.keys())) and
-        (Fsu_in in list(ds.series.keys())) and
-        (Fld_in in list(ds.series.keys())) and
-        (Flu_in in list(ds.series.keys()))):
+    if ((Fsd_in in list(ds.root["Variables"].keys())) and
+        (Fsu_in in list(ds.root["Variables"].keys())) and
+        (Fld_in in list(ds.root["Variables"].keys())) and
+        (Flu_in in list(ds.root["Variables"].keys()))):
         Fsd = pfp_utils.GetVariable(ds, Fsd_in)
         Fsu = pfp_utils.GetVariable(ds, Fsu_in)
         Fld = pfp_utils.GetVariable(ds, Fld_in)
         Flu = pfp_utils.GetVariable(ds, Flu_in)
         Fn_calc["Data"] = (Fsd["Data"] - Fsu["Data"]) + (Fld["Data"] - Flu["Data"])
-        if Fn_out not in list(ds.series.keys()):
+        if Fn_out not in list(ds.root["Variables"].keys()):
             descr = "Calculated net radiation using "+Fsd_in+','+Fsu_in+','+Fld_in+','+Flu_in
             Fn_calc["Attr"] = {"long_name": "Net radiation", "statistic_type": "average",
                                descr_level: descr,
@@ -800,7 +800,7 @@ def CalculateNetRadiation(cf,ds,Fn_out='Fn_4cmpt',Fsd_in='Fsd',Fsu_in='Fsu',Fld_
     else:
         missing_items = []
         for item in [Fsd_in, Fsu_in, Fld_in, Flu_in]:
-            if item not in list(ds.series.keys()):
+            if item not in list(ds.root["Variables"].keys()):
                 missing_items.append(item)
         msg = "  " + ",".join(missing_items) + " not found, Fn set to missing"
         logger.warning(msg)
@@ -822,7 +822,7 @@ def CheckCovarianceUnits(ds):
     co2_list = ["UxC", "UyC", "UzC"]
     h2o_list = ["UxA", "UyA", "UzA", "UxH", "UyH", "UzH"]
     for item in co2_list:
-        if item not in list(ds.series.keys()): continue
+        if item not in list(ds.root["Variables"].keys()): continue
         var = pfp_utils.GetVariable(ds, item)
         if "umol" in var["Attr"]["units"]:
             Ta = pfp_utils.GetVariable(ds, "Ta")
@@ -831,7 +831,7 @@ def CheckCovarianceUnits(ds):
             var["Attr"]["units"] = "mg/m^2/s"
             pfp_utils.CreateVariable(ds, var)
     for item in h2o_list:
-        if item not in list(ds.series.keys()): continue
+        if item not in list(ds.root["Variables"].keys()): continue
         var = pfp_utils.GetVariable(ds, item)
         if "mmol" in var["Attr"]["units"]:
             Ta = pfp_utils.GetVariable(ds, "Ta")
@@ -896,7 +896,7 @@ def CoordRotation2D(cf, ds, info):
         ds: data structure
         """
     iris = info["RemoveIntermediateSeries"]
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
     # get the raw wind velocity components
@@ -1083,7 +1083,7 @@ def CoordRotation2D(cf, ds, info):
         RotatedSeriesList = ['wT', 'wA', 'wC', 'uw', 'vw']
         NonRotatedSeriesList = ['UzT', 'UzA', 'UzC', 'UxUz', 'UyUz']
         for ThisOne, ThatOne in zip(RotatedSeriesList, NonRotatedSeriesList):
-            ReplaceWhereMissing(ds.series[ThisOne], ds.series[ThisOne], ds.series[ThatOne], FlagValue=21)
+            ReplaceWhereMissing(ds.root["Variables"][ThisOne], ds.root["Variables"][ThisOne], ds.root["Variables"][ThatOne], FlagValue=21)
 
 def CalculateComponentsFromWsWd(ds):
     """
@@ -1115,13 +1115,13 @@ def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
     Parameters loaded from control file:
         zms: measurement height from surface, m
     """
-    if Fco2_out not in list(ds.series.keys()):
+    if Fco2_out not in list(ds.root["Variables"].keys()):
         logger.info(" Calculating Fco2 storage (single height)")
-        nRecs = int(ds.globalattributes["nc_nrecs"])
+        nRecs = int(ds.root["Attributes"]["nc_nrecs"])
         zeros = numpy.zeros(nRecs, dtype=numpy.int32)
         ones = numpy.ones(nRecs, dtype=numpy.int32)
-        ts = int(float(ds.globalattributes["time_step"]))
-        level = str(ds.globalattributes["processing_level"])
+        ts = int(float(ds.root["Attributes"]["time_step"]))
+        level = str(ds.root["Attributes"]["processing_level"])
         descr_level = "description_" + level
         # create an empty output variable
         ldt = pfp_utils.GetVariable(ds, "DateTime")
@@ -1177,8 +1177,8 @@ def CorrectFco2ForStorage(cf, ds, Fco2_out="Fco2", Fco2_in="Fco2"):
     Fco2_storage: series label of the CO2 flux storage term
 
     """
-    descr_level = "description_" + str(ds.globalattributes["processing_level"])
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    descr_level = "description_" + str(ds.root["Attributes"]["processing_level"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
     # check to see if applying the Fc storage term has been requested for any
@@ -1194,20 +1194,20 @@ def CorrectFco2ForStorage(cf, ds, Fco2_out="Fco2", Fco2_in="Fco2"):
         if not pfp_utils.get_optionskeyaslogical(cf, "ApplyFco2Storage"):
             return
         # check to see if we have the required data series
-        if Fco2_in not in list(ds.series.keys()):
+        if Fco2_in not in list(ds.root["Variables"].keys()):
             msg = Fco2_in + " not found in data, skipping Fco2 storage correction ..."
             logger.warning(msg)
             return
         # check to see if we have an Fco2_profile series
-        if "Fco2_storage" in list(ds.series.keys()):
+        if "Fco2_storage" in list(ds.root["Variables"].keys()):
             msg = " Using Fco2_storage for the storage term"
             logger.info(msg)
             Fco2_storage_in = "Fco2_storage"
-        elif "Fco2_profile" in list(ds.series.keys()):
+        elif "Fco2_profile" in list(ds.root["Variables"].keys()):
             msg = " Using Fco2_profile for the storage term"
             logger.info(msg)
             Fco2_storage_in = "Fco2_profile"
-        elif "Fco2_single" in list(ds.series.keys()):
+        elif "Fco2_single" in list(ds.root["Variables"].keys()):
             msg = " Using Fco2_single for the storage term"
             logger.info(msg)
             Fco2_storage_in = "Fco2_single"
@@ -1254,14 +1254,14 @@ def CorrectFco2ForStorage(cf, ds, Fco2_out="Fco2", Fco2_in="Fco2"):
         # loop over the series for which apply Fco2 storage was requested
         for label in list(apply_storage.keys()):
             # check to make sure the requested series is in the data structure
-            if label not in list(ds.series.keys()):
+            if label not in list(ds.root["Variables"].keys()):
                 # skip if it isn't
                 msg = " Requested series " + label + " not found in data structure"
                 logger.error(msg)
                 continue
             # get the storage flux label
             source = apply_storage[label]
-            if source not in list(ds.series.keys()):
+            if source not in list(ds.root["Variables"].keys()):
                 msg = " Requested series " + source + " not found in data structure"
                 logger.error(msg)
                 continue
@@ -1331,15 +1331,15 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts', Sws_i
             SwsDefault: default value of soil moisture content used when no sensors present
         """
     iris = info["RemoveIntermediateSeries"]
-    descr_level = "description_" + ds.globalattributes["processing_level"]
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs, dtype=numpy.int32)
     ones = numpy.ones(nrecs,dtype=numpy.int32)
     # check to see if the user wants to skip the correction
     if not pfp_utils.get_optionskeyaslogical(cf, "CorrectFgForStorage", default=True):
         logger.info(' CorrectFgForStorage: storage correction disabled in control file')
         return
-    if Fg_in not in list(ds.series.keys()) or Ts_in not in list(ds.series.keys()):
+    if Fg_in not in list(ds.root["Variables"].keys()) or Ts_in not in list(ds.root["Variables"].keys()):
         logger.warning(' CorrectFgForStorage: '+Fg_in+' or '+Ts_in+' not found in data structure, Fg not corrected')
         return
     logger.info(' Correcting soil heat flux for storage')
@@ -1377,7 +1377,7 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts', Sws_i
     iris["not_output"].append("dTs")
     # get the time difference
     dt = numpy.ma.zeros(nrecs)
-    dt[1:] = numpy.diff(date2num(ds.series["DateTime"]["Data"]))*float(86400)
+    dt[1:] = numpy.diff(date2num(ds.root["Variables"]["DateTime"]["Data"]))*float(86400)
     dt[0] = dt[1]
     # calculate the specific heat capacity of the soil
     Cs = pfp_utils.CreateEmptyVariable("Cs", nrecs)
@@ -1414,7 +1414,7 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts', Sws_i
     pfp_utils.CreateVariable(ds, Cs)
     iris["not_output"].append("Cs")
     if pfp_utils.get_optionskeyaslogical(cf, "RelaxFgStorage"):
-        ReplaceWhereMissing(ds.series["Fg"], ds.series["Fg"], ds.series["Fg_Av"], FlagValue=20)
+        ReplaceWhereMissing(ds.root["Variables"]["Fg"], ds.root["Variables"]["Fg"], ds.root["Variables"]["Fg_Av"], FlagValue=20)
     return
 
 def CorrectWindDirection(cf, ds, Wd_in):
@@ -1429,7 +1429,7 @@ def CorrectWindDirection(cf, ds, Wd_in):
     msg = " Correcting wind direction (" + str(Wd_in) + ")"
     logger.info(msg)
     Wd = pfp_utils.GetVariable(ds, Wd_in)
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     KeyList = list(cf["Variables"][Wd_in]["CorrectWindDirection"].keys())
     for i in range(len(KeyList)):
         correct_wd_string = cf["Variables"][Wd_in]["CorrectWindDirection"][str(i)]
@@ -1473,55 +1473,55 @@ def do_attributes(cf,ds):
     logger.info(' Getting the attributes given in control file')
     if 'Global' in list(cf.keys()):
         for gattr in list(cf['Global'].keys()):
-            ds.globalattributes[gattr] = cf['Global'][gattr]
-        ds.globalattributes['Flag00'] = 'Good data'
-        ds.globalattributes['Flag10'] = 'Corrections: Apply Linear'
-        ds.globalattributes['Flag20'] = 'GapFilling: Driver gap filled using ACCESS'
-        ds.globalattributes['Flag30'] = 'GapFilling: Flux gap filled by ANN (SOLO)'
-        ds.globalattributes['Flag40'] = 'GapFilling: Gap filled by climatology'
-        ds.globalattributes['Flag50'] = 'GapFilling: Gap filled by interpolation'
-        ds.globalattributes['Flag60'] = 'GapFilling: Flux gap filled using ratios'
-        ds.globalattributes['Flag01'] = 'QA/QC: Missing value in L1 dataset'
-        ds.globalattributes['Flag02'] = 'QA/QC: L2 Range Check'
-        ds.globalattributes['Flag03'] = 'QA/QC: CSAT Diagnostic'
-        ds.globalattributes['Flag04'] = 'QA/QC: LI7500 Diagnostic'
-        ds.globalattributes['Flag05'] = 'QA/QC: L2 Diurnal SD Check'
-        ds.globalattributes['Flag06'] = 'QA/QC: Excluded Dates'
-        ds.globalattributes['Flag07'] = 'QA/QC: Excluded Hours'
-        ds.globalattributes['Flag08'] = 'QA/QC: Missing value found with QC flag = 0'
-        ds.globalattributes['Flag11'] = 'Corrections/Combinations: Coordinate Rotation (Ux, Uy, Uz, UxT, UyT, UzT, UxA, UyA, UzA, UxC, UyC, UzC, UxUz, UxUx, UxUy, UyUz, UxUy, UyUy)'
-        ds.globalattributes['Flag12'] = 'Corrections/Combinations: Massman Frequency Attenuation Correction (Coord Rotation, Tv_CSAT, AH_HMP, ps)'
-        ds.globalattributes['Flag13'] = 'Corrections/Combinations: Virtual to Actual Fh (Coord Rotation, Massman, Ta_HMP)'
-        ds.globalattributes['Flag14'] = 'Corrections/Combinations: WPL correction for flux effects on density measurements (Coord Rotation, Massman, Fhv to Fh, CO2_IRGA_Av)'
-        ds.globalattributes['Flag15'] = 'Corrections/Combinations: Ta from Tv'
-        ds.globalattributes['Flag16'] = 'Corrections/Combinations: L3 Range Check'
-        ds.globalattributes['Flag17'] = 'Corrections/Combinations: L3 Diurnal SD Check'
-        ds.globalattributes['Flag18'] = 'Corrections/Combinations: u* filter'
-        ds.globalattributes['Flag19'] = 'Corrections/Combinations: Gap coordination'
-        ds.globalattributes['Flag21'] = 'GapFilling: Used non-rotated covariance'
-        ds.globalattributes['Flag31'] = 'GapFilling: Flux gap not filled by ANN'
-        ds.globalattributes['Flag38'] = 'GapFilling: L4 Range Check'
-        ds.globalattributes['Flag39'] = 'GapFilling: L4 Diurnal SD Check'
+            ds.root["Attributes"][gattr] = cf['Global'][gattr]
+        ds.root["Attributes"]['Flag00'] = 'Good data'
+        ds.root["Attributes"]['Flag10'] = 'Corrections: Apply Linear'
+        ds.root["Attributes"]['Flag20'] = 'GapFilling: Driver gap filled using ACCESS'
+        ds.root["Attributes"]['Flag30'] = 'GapFilling: Flux gap filled by ANN (SOLO)'
+        ds.root["Attributes"]['Flag40'] = 'GapFilling: Gap filled by climatology'
+        ds.root["Attributes"]['Flag50'] = 'GapFilling: Gap filled by interpolation'
+        ds.root["Attributes"]['Flag60'] = 'GapFilling: Flux gap filled using ratios'
+        ds.root["Attributes"]['Flag01'] = 'QA/QC: Missing value in L1 dataset'
+        ds.root["Attributes"]['Flag02'] = 'QA/QC: L2 Range Check'
+        ds.root["Attributes"]['Flag03'] = 'QA/QC: CSAT Diagnostic'
+        ds.root["Attributes"]['Flag04'] = 'QA/QC: LI7500 Diagnostic'
+        ds.root["Attributes"]['Flag05'] = 'QA/QC: L2 Diurnal SD Check'
+        ds.root["Attributes"]['Flag06'] = 'QA/QC: Excluded Dates'
+        ds.root["Attributes"]['Flag07'] = 'QA/QC: Excluded Hours'
+        ds.root["Attributes"]['Flag08'] = 'QA/QC: Missing value found with QC flag = 0'
+        ds.root["Attributes"]['Flag11'] = 'Corrections/Combinations: Coordinate Rotation (Ux, Uy, Uz, UxT, UyT, UzT, UxA, UyA, UzA, UxC, UyC, UzC, UxUz, UxUx, UxUy, UyUz, UxUy, UyUy)'
+        ds.root["Attributes"]['Flag12'] = 'Corrections/Combinations: Massman Frequency Attenuation Correction (Coord Rotation, Tv_CSAT, AH_HMP, ps)'
+        ds.root["Attributes"]['Flag13'] = 'Corrections/Combinations: Virtual to Actual Fh (Coord Rotation, Massman, Ta_HMP)'
+        ds.root["Attributes"]['Flag14'] = 'Corrections/Combinations: WPL correction for flux effects on density measurements (Coord Rotation, Massman, Fhv to Fh, CO2_IRGA_Av)'
+        ds.root["Attributes"]['Flag15'] = 'Corrections/Combinations: Ta from Tv'
+        ds.root["Attributes"]['Flag16'] = 'Corrections/Combinations: L3 Range Check'
+        ds.root["Attributes"]['Flag17'] = 'Corrections/Combinations: L3 Diurnal SD Check'
+        ds.root["Attributes"]['Flag18'] = 'Corrections/Combinations: u* filter'
+        ds.root["Attributes"]['Flag19'] = 'Corrections/Combinations: Gap coordination'
+        ds.root["Attributes"]['Flag21'] = 'GapFilling: Used non-rotated covariance'
+        ds.root["Attributes"]['Flag31'] = 'GapFilling: Flux gap not filled by ANN'
+        ds.root["Attributes"]['Flag38'] = 'GapFilling: L4 Range Check'
+        ds.root["Attributes"]['Flag39'] = 'GapFilling: L4 Diurnal SD Check'
         # the following flags are used by James Cleverly's version but not
         # by the standard OzFlux version.
-        #ds.globalattributes['Flag51'] = 'albedo: bad Fsd < threshold (290 W/m^2 default) only if bad time flag (31) not set'
-        #ds.globalattributes['Flag52'] = 'albedo: bad time flag (not midday 10.00 to 14.00)'
-        #ds.globalattributes['Flag61'] = 'Penman-Monteith: bad rst (rst < 0) only if bad Uavg (35), bad Fe (33) and bad Fsd (34) flags not set'
-        #ds.globalattributes['Flag62'] = 'Penman-Monteith: bad Fe < threshold (0 W/m^2 default) only if bad Fsd (34) flag not set'
-        #ds.globalattributes['Flag63'] = 'Penman-Monteith: bad Fsd < threshold (10 W/m^2 default)'
-        #ds.globalattributes['Flag64'] = 'Penman-Monteith: Uavg == 0 (undefined aerodynamic resistance under calm conditions) only if bad Fe (33) and bad Fsd (34) flags not set'
-        #ds.globalattributes['Flag70'] = 'Partitioning Night: Re computed from exponential temperature response curves'
-        #ds.globalattributes['Flag80'] = 'Partitioning Day: GPP/Re computed from light-response curves, GPP = Re - Fc'
-        #ds.globalattributes['Flag81'] = 'Partitioning Day: GPP night mask'
-        #ds.globalattributes['Flag82'] = 'Partitioning Day: Fco2 > Re, GPP = 0, Re = Fco2'
-    for ThisOne in list(ds.series.keys()):
+        #ds.root["Attributes"]['Flag51'] = 'albedo: bad Fsd < threshold (290 W/m^2 default) only if bad time flag (31) not set'
+        #ds.root["Attributes"]['Flag52'] = 'albedo: bad time flag (not midday 10.00 to 14.00)'
+        #ds.root["Attributes"]['Flag61'] = 'Penman-Monteith: bad rst (rst < 0) only if bad Uavg (35), bad Fe (33) and bad Fsd (34) flags not set'
+        #ds.root["Attributes"]['Flag62'] = 'Penman-Monteith: bad Fe < threshold (0 W/m^2 default) only if bad Fsd (34) flag not set'
+        #ds.root["Attributes"]['Flag63'] = 'Penman-Monteith: bad Fsd < threshold (10 W/m^2 default)'
+        #ds.root["Attributes"]['Flag64'] = 'Penman-Monteith: Uavg == 0 (undefined aerodynamic resistance under calm conditions) only if bad Fe (33) and bad Fsd (34) flags not set'
+        #ds.root["Attributes"]['Flag70'] = 'Partitioning Night: Re computed from exponential temperature response curves'
+        #ds.root["Attributes"]['Flag80'] = 'Partitioning Day: GPP/Re computed from light-response curves, GPP = Re - Fc'
+        #ds.root["Attributes"]['Flag81'] = 'Partitioning Day: GPP night mask'
+        #ds.root["Attributes"]['Flag82'] = 'Partitioning Day: Fco2 > Re, GPP = 0, Re = Fco2'
+    for ThisOne in list(ds.root["Variables"].keys()):
         if ThisOne in cf['Variables']:
             if 'Attr' in list(cf['Variables'][ThisOne].keys()):
-                ds.series[ThisOne]['Attr'] = {}
+                ds.root["Variables"][ThisOne]['Attr'] = {}
                 for attr in list(cf['Variables'][ThisOne]['Attr'].keys()):
-                    ds.series[ThisOne]['Attr'][attr] = cf['Variables'][ThisOne]['Attr'][attr]
-                if "missing_value" not in list(ds.series[ThisOne]['Attr'].keys()):
-                    ds.series[ThisOne]['Attr']["missing_value"] = numpy.int32(c.missing_value)
+                    ds.root["Variables"][ThisOne]['Attr'][attr] = cf['Variables'][ThisOne]['Attr'][attr]
+                if "missing_value" not in list(ds.root["Variables"][ThisOne]['Attr'].keys()):
+                    ds.root["Variables"][ThisOne]['Attr']["missing_value"] = numpy.int32(c.missing_value)
 
 def DoFunctions(ds, info):
     """
@@ -1531,7 +1531,7 @@ def DoFunctions(ds, info):
     Author: PRI
     Date: September 2015
     """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     implemented_func_units = [name for name,data in inspect.getmembers(pfp_func_units,inspect.isfunction)]
     implemented_func_stats = [name for name,data in inspect.getmembers(pfp_func_stats,inspect.isfunction)]
     implemented_functions = implemented_func_units + implemented_func_stats
@@ -1560,14 +1560,14 @@ def DoFunctions(ds, info):
         elif function_name in implemented_func_stats:
             functions[label] = {"type": "stats", "name":function_name, "arguments":function_args}
             stats_vars.append(label)
-    series_list = list(ds.series.keys())
+    series_list = list(ds.root["Variables"].keys())
     for label in units_vars:
         if label not in series_list:
             var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=info["Variables"][label]["Attr"])
             pfp_utils.CreateVariable(ds, var)
-        old_units = ds.series[label]["Attr"]["units"]
+        old_units = ds.root["Variables"][label]["Attr"]["units"]
         result = getattr(pfp_func_units, functions[label]["name"])(ds, label, *functions[label]["arguments"])
-        new_units = ds.series[label]["Attr"]["units"]
+        new_units = ds.root["Variables"][label]["Attr"]["units"]
         if result:
             if new_units != old_units:
                 msg = " Units for " + label + " converted from " + old_units + " to " + new_units
@@ -1642,7 +1642,7 @@ def CalculateStandardDeviations(ds):
                          "statistic_type": "standard_deviation",
                          "units": "m/s"}}
     # get a list of variables in the data structure
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     # loop over the variances and create the standard deviations
     for vr_label in list(d.keys()):
         if vr_label in labels and d[vr_label]["sd_label"] not in labels:
@@ -1696,7 +1696,7 @@ def CalculateStandardDeviations(ds):
                          "long_name": "Vertical wind velocity component",
                          "statistic_type": "variance",
                          "units": "m^2/s^2"}}
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     # loop over the standard deviations and create the variances
     for sd_label in list(d.keys()):
         if sd_label in labels and d[sd_label]["vr_label"] not in labels and sd_label not in sd_done:
@@ -1734,7 +1734,7 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
             logger.warning(" WPL correction for Fco2 disabled in control file")
             return 0
     logger.info(" Applying WPL correction to Fco2")
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Fco2 = pfp_utils.GetVariable(ds, Fco2_in)
     Fh = pfp_utils.GetVariable(ds, "Fh")
     Fe = pfp_utils.GetVariable(ds, "Fe")
@@ -1756,8 +1756,8 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
         else:
             msg = " Fco2_WPL: unrecognised units (" + CO2["Attr"]["units"] + ") for CO2"
             logger.error(msg)
-            ds.returncodes["message"] = msg
-            ds.returncodes["value"] = 1
+            ds.info["returncodes"]["message"] = msg
+            ds.info["returncodes"]["value"] = 1
             return 1
     sigma = AH["Data"] / rhod["Data"]
     co2_wpl_Fe = (c.mu/(1+c.mu*sigma))*(CO2["Data"]/rhod["Data"])*(Fe["Data"]/Lv["Data"])
@@ -1799,7 +1799,7 @@ def Fe_WPL(cf, ds):
             logger.warning(" WPL correction for Fe disabled in control file")
             return 0
     logger.info(" Applying WPL correction to Fe")
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Fe = pfp_utils.GetVariable(ds, "Fe")
     Fh = pfp_utils.GetVariable(ds, "Fh")
     Ta = pfp_utils.GetVariable(ds, "Ta")
@@ -1828,7 +1828,7 @@ def Fe_WPL(cf, ds):
     variable = {"Label": "Fe_PFP", "Data": Fe_wpl_data, "Flag": Fe_wpl_flag, "Attr": attr}
     pfp_utils.CreateVariable(ds, variable)
     if pfp_utils.get_optionskeyaslogical(cf, "RelaxFeWPL"):
-        ReplaceWhereMissing(ds.series['Fe'], ds.series['Fe'], ds.series['Fe_raw'], FlagValue=20)
+        ReplaceWhereMissing(ds.root["Variables"]['Fe'], ds.root["Variables"]['Fe'], ds.root["Variables"]['Fe_raw'], FlagValue=20)
     return 0
 
 def FhvtoFh(cf, ds, Tv_in = "Tv_SONIC_Av"):
@@ -1842,7 +1842,7 @@ def FhvtoFh(cf, ds, Tv_in = "Tv_SONIC_Av"):
      All outputs are written to the data structure.
     '''
     logger.info(" Converting virtual Fhv to Fh")
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
     # get the input series
@@ -1873,7 +1873,7 @@ def FhvtoFh(cf, ds, Tv_in = "Tv_SONIC_Av"):
     pfp_utils.CreateVariable(ds, {"Label": "Fh", "Data": Fh, "Flag": flag, "Attr": attr})
     pfp_utils.CreateVariable(ds, {"Label": "Fh_PFP", "Data": Fh, "Flag": flag, "Attr": attr})
     if pfp_utils.get_optionskeyaslogical(cf, "RelaxFhvtoFh"):
-        ReplaceWhereMissing(ds.series['Fh'], ds.series['Fh'], ds.series['Fhv'], FlagValue=20)
+        ReplaceWhereMissing(ds.root["Variables"]['Fh'], ds.root["Variables"]['Fh'], ds.root["Variables"]['Fhv'], FlagValue=20)
 
 def get_averages(Data):
     """
@@ -2080,11 +2080,11 @@ def get_qcflag(ds):
         ds: data structure
         """
     logger.info(' Setting up the QC flags')
-    nRecs = len(ds.series['xlDateTime']['Data'])
-    for ThisOne in list(ds.series.keys()):
-        ds.series[ThisOne]['Flag'] = numpy.zeros(nRecs,dtype=numpy.int32)
-        index = numpy.where(ds.series[ThisOne]['Data']==c.missing_value)[0]
-        ds.series[ThisOne]['Flag'][index] = numpy.int32(1)
+    nRecs = len(ds.root["Variables"]['xlDateTime']['Data'])
+    for ThisOne in list(ds.root["Variables"].keys()):
+        ds.root["Variables"][ThisOne]['Flag'] = numpy.zeros(nRecs,dtype=numpy.int32)
+        index = numpy.where(ds.root["Variables"][ThisOne]['Data']==c.missing_value)[0]
+        ds.root["Variables"][ThisOne]['Flag'][index] = numpy.int32(1)
 
 def get_synthetic_fsd(ds):
     """
@@ -2097,12 +2097,12 @@ def get_synthetic_fsd(ds):
     Date: Sometime in 2014
     """
     logger.info(' Calculating synthetic Fsd')
-    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     Fsd_syn = pfp_utils.CreateEmptyVariable("Fsd_syn", nrecs)
     solar_altitude = pfp_utils.CreateEmptyVariable("solar_altitude", nrecs)
     # get the latitude and longitude
-    lat = float(ds.globalattributes["latitude"])
-    lon = float(ds.globalattributes["longitude"])
+    lat = float(ds.root["Attributes"]["latitude"])
+    lon = float(ds.root["Attributes"]["longitude"])
     # get the UTC time from the local time
     ldt_UTC = pfp_utils.get_UTCfromlocaltime(ds)
     # get the solar altitude
@@ -2120,17 +2120,17 @@ def get_synthetic_fsd(ds):
                        "standard_name": "surface_downwelling_shortwave_flux_in_air",
                        "statistic_type": "average"}
     pfp_utils.CreateVariable(ds, Fsd_syn)
-    ds.intermediate.append("Fsd_syn")
+    ds.info["intermediate"].append("Fsd_syn")
     # add the solar altitude to the data structure
     solar_altitude["Attr"] = {"long_name": "Solar altitude",
                               "units": "degrees", "statistic_type": "average"}
     pfp_utils.CreateVariable(ds, solar_altitude)
-    ds.intermediate.append("solar_altitude")
+    ds.info["intermediate"].append("solar_altitude")
 
 def InvertSign(ds,ThisOne):
     logger.info(' Inverting sign of '+ThisOne)
-    index = numpy.where(abs(ds.series[ThisOne]['Data']-float(c.missing_value))>c.eps)[0]
-    ds.series[ThisOne]['Data'][index] = float(-1)*ds.series[ThisOne]['Data'][index]
+    index = numpy.where(abs(ds.root["Variables"][ThisOne]['Data']-float(c.missing_value))>c.eps)[0]
+    ds.root["Variables"][ThisOne]['Data'][index] = float(-1)*ds.root["Variables"][ThisOne]['Data'][index]
 
 def InterpolateDataStructure(ds_old, labels=None, new_time_step=30, interpolation="Akima",
                              sums="skip", mode="verbose"):
@@ -2145,7 +2145,7 @@ def InterpolateDataStructure(ds_old, labels=None, new_time_step=30, interpolatio
     """
     # coerce the new and old time steps to integers
     new_time_step = int(float(new_time_step))
-    old_time_step = int(float(ds_old.globalattributes["time_step"]))
+    old_time_step = int(float(ds_old.root["Attributes"]["time_step"]))
     # sanity checks
     if ((new_time_step == old_time_step) and (mode != "quiet")):
         msg = " New time step equal to old time step, no interpolation needed ..."
@@ -2165,9 +2165,9 @@ def InterpolateDataStructure(ds_old, labels=None, new_time_step=30, interpolatio
     # create a new data structure
     ds_new = pfp_io.DataStructure()
     # copy the global attributes
-    ds_new.globalattributes = copy.deepcopy(ds_old.globalattributes)
+    ds_new.root["Attributes"] = copy.deepcopy(ds_old.root["Attributes"])
     # update the time step global attribute
-    ds_new.globalattributes["time_step"] = new_time_step
+    ds_new.root["Attributes"]["time_step"] = new_time_step
     # generate a datetime variable at the new time step
     dt_old = pfp_utils.GetVariable(ds_old, "DateTime")
     start_date = dt_old["Data"][0]
@@ -2176,7 +2176,7 @@ def InterpolateDataStructure(ds_old, labels=None, new_time_step=30, interpolatio
     dt_tmp = numpy.array([dt for dt in pfp_utils.perdelta(start_date, end_date, delta)])
     nrecs = len(dt_tmp)
     # and update the nc_nrecs global attribute
-    ds_new.globalattributes["nc_nrecs"] = nrecs
+    ds_new.root["Attributes"]["nc_nrecs"] = nrecs
     dt_new = {"Label": "DateTime", "Data": dt_tmp,
               "Flag": numpy.zeros(nrecs),
               "Attr": dt_old["Attr"]}
@@ -2184,10 +2184,10 @@ def InterpolateDataStructure(ds_old, labels=None, new_time_step=30, interpolatio
     # check the labels to be interpolated
     if labels is None:
         # generate list of labels from data structure
-        labels = [l for l in list(ds_old.series.keys()) if "DateTime" not in l]
+        labels = [l for l in list(ds_old.root["Variables"].keys()) if "DateTime" not in l]
     else:
         for label in list(labels):
-            if label not in list(ds_old.series.keys()):
+            if label not in list(ds_old.root["Variables"].keys()):
                 labels.remove(label)
         if ((len(labels) == 0) and (mode != "quiet")):
             msg = " Requested variables not found in data structure, skipping interpolation ..."
@@ -2241,12 +2241,12 @@ def InterpolateOverMissing(ds, labels, max_length_hours=0, int_type="linear", su
         msg = " Input label " + labels + " must be a string or a list"
         logger.error(msg)
         return
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     max_length_points = int((max_length_hours * float(60)/float(ts)) + 0.5)
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     for label in labels:
         # check that series is in the data structure
-        if label not in list(ds.series.keys()):
+        if label not in list(ds.root["Variables"].keys()):
             msg = " Variable " + label + " not found in data structure"
             logger.error(msg)
             continue
@@ -2274,7 +2274,7 @@ def InterpolateOverMissing(ds, labels, max_length_hours=0, int_type="linear", su
             interpolation = int_type
 
         # convert the Python datetime to a number
-        DateNum = date2num(ds.series["DateTime"]["Data"])
+        DateNum = date2num(ds.root["Variables"]["DateTime"]["Data"])
         # index of good values
         mask = numpy.ma.getmaskarray(var["Data"])
         iog = numpy.where(mask == False)[0]
@@ -2348,8 +2348,8 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
         logger.warning(msg)
         return
     logger.info(" Correcting for flux loss from spectral attenuation")
-    descr_level = str(ds.globalattributes["processing_level"])
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    descr_level = str(ds.root["Attributes"]["processing_level"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs, dtype=numpy.int32)
     ones = numpy.ones(nRecs, dtype=numpy.int32)
     zmd = float(cf["Massman"]["zmd"])             # z-d for site
@@ -2388,12 +2388,12 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
     wT = pfp_utils.GetVariable(ds, "wT")
     wC = pfp_utils.GetVariable(ds, "wC")
     wA = pfp_utils.GetVariable(ds, "wA")
-    if ustar_in not in list(ds.series.keys()):
+    if ustar_in not in list(ds.root["Variables"].keys()):
         ustarm = pfp_utils.CreateEmptyVariable(ustar_in, nRecs)
         ustarm["Data"] = numpy.ma.sqrt(numpy.ma.sqrt(uw["Data"] ** 2 + vw["Data"] ** 2))
     else:
         ustarm = pfp_utils.GetVariable(ds, ustar_in)
-    if L_in not in list(ds.series.keys()):
+    if L_in not in list(ds.root["Variables"].keys()):
         Lm = pfp_utils.CreateEmptyVariable(L_in, nRecs)
         Lm["Data"] = pfp_mf.molen(Ta["Data"], AH["Data"], ps["Data"], ustarm["Data"], wT["Data"],
                                   fluxtype="kinematic")
@@ -2511,7 +2511,7 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
 def MergeSeriesUsingDict(ds, info, merge_order="standard"):
     """ Merge series as defined in the merge dictionary."""
     # create decsription level attribute string
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     merge = info["MergeSeries"]
     if merge_order not in merge:
         msg = "MergeSeriesUsingDict: merge order " + merge_order + " not found"
@@ -2521,19 +2521,19 @@ def MergeSeriesUsingDict(ds, info, merge_order="standard"):
     for target in list(merge[merge_order].keys()):
         srclist = merge[merge_order][target]["source"]
         logger.info(" Merging "+str(srclist)+"==>"+target)
-        if srclist[0] not in list(ds.series.keys()):
+        if srclist[0] not in list(ds.root["Variables"].keys()):
             logger.error("  MergeSeries: primary input series "+srclist[0]+" not found")
             continue
-        data = ds.series[srclist[0]]["Data"].copy()
-        flag1 = ds.series[srclist[0]]["Flag"].copy()
-        flag2 = ds.series[srclist[0]]["Flag"].copy()
-        attr = ds.series[srclist[0]]["Attr"].copy()
+        data = ds.root["Variables"][srclist[0]]["Data"].copy()
+        flag1 = ds.root["Variables"][srclist[0]]["Flag"].copy()
+        flag2 = ds.root["Variables"][srclist[0]]["Flag"].copy()
+        attr = ds.root["Variables"][srclist[0]]["Attr"].copy()
         SeriesNameString = srclist[0]
         tmplist = list(srclist)
         tmplist.remove(tmplist[0])
         s2add = ""
         for label in tmplist:
-            if label in list(ds.series.keys()):
+            if label in list(ds.root["Variables"].keys()):
                 SeriesNameString = SeriesNameString+", "+label
                 # find the elements with flag = 0, 10, 20 etc
                 index = numpy.where(numpy.mod(flag1, 10) == 0)[0]
@@ -2546,9 +2546,9 @@ def MergeSeriesUsingDict(ds, info, merge_order="standard"):
                 # index of flag values other than 0,10,20,30 ...
                 index = numpy.where(flag2 != 0)[0]
                 # replace bad primary with good secondary
-                data[index] = ds.series[label]["Data"][index].copy()
-                flag1[index] = ds.series[label]["Flag"][index].copy()
-                s2add = pfp_utils.append_string(s2add, ds.series[label]["Attr"][descr_level], caps=False)
+                data[index] = ds.root["Variables"][label]["Data"][index].copy()
+                flag1[index] = ds.root["Variables"][label]["Flag"][index].copy()
+                s2add = pfp_utils.append_string(s2add, ds.root["Variables"][label]["Attr"][descr_level], caps=False)
             else:
                 logger.error(" MergeSeries: secondary input series "+label+" not found")
         s2add = "gap filled using " + s2add
@@ -2612,10 +2612,10 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
     if 'MergeSeries' not in list(cf[section][series].keys()):
         return
     # check to see if the series has already been merged
-    if series in ds.mergeserieslist:
+    if series in ds.info["mergeserieslist"]:
         return
     # get the name of the description variable attribute
-    processing_level = ds.globalattributes["processing_level"]
+    processing_level = ds.root["Attributes"]["processing_level"]
     descr_level = "description_" + processing_level
     # now get the source list and the standard name
     srclist = pfp_utils.GetMergeSeriesKeys(cf,series,section=section)
@@ -2627,7 +2627,7 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
         msg = ' Merging ' + str(srclist) + '==>' + series
         logger.info(msg)
         primary_series = srclist[0]
-        if primary_series not in list(ds.series.keys()):
+        if primary_series not in list(ds.root["Variables"].keys()):
             msg = "  MergeSeries: primary input series " + primary_series
             msg = msg + " not found for " + str(series)
             logger.warning(msg)
@@ -2641,12 +2641,12 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
     else:
         msg = " Merging " + str(srclist) + "==>" + series
         logger.info(msg)
-        if srclist[0] not in list(ds.series.keys()):
+        if srclist[0] not in list(ds.root["Variables"].keys()):
             msg = "  MergeSeries: primary input series " + srclist[0] + " not found for " + str(series)
             logger.warning(msg)
             return
         primary_series = srclist[0]
-        if primary_series not in list(ds.series.keys()):
+        if primary_series not in list(ds.root["Variables"].keys()):
             msg = "  MergeSeries: primary input series " + primary_series
             msg = msg + " not found for " + str(series)
             logger.warning(msg)
@@ -2660,7 +2660,7 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
         SeriesNameString = primary_series
         srclist.remove(primary_series)
         for secondary_series in srclist:
-            if secondary_series in list(ds.series.keys()):
+            if secondary_series in list(ds.root["Variables"].keys()):
                 secondary = pfp_utils.GetVariable(ds, secondary_series)
                 s_recs = len(secondary["Data"])
                 if (secondary_series == series) and save_originals:
@@ -2698,7 +2698,7 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
             else:
                 msg = "  MergeSeries: secondary input series " + secondary_series + " not found"
                 logger.warning(msg)
-    ds.mergeserieslist.append(series)
+    ds.info["mergeserieslist"].append(series)
     primary["Label"] = series
     pfp_utils.append_to_attribute(primary["Attr"], {descr_level: "merged from " + SeriesNameString})
     pfp_utils.CreateVariable(ds, primary)
@@ -2710,8 +2710,8 @@ def ReplaceRotatedCovariance(cf,ds,rot_cov_label,non_cov_label):
     index = numpy.where((numpy.ma.getmaskarray(cr["Data"]) == True)&
                         (numpy.ma.getmaskarray(cn["Data"]) == False))[0]
     if len(index)!=0:
-        ds.series[rot_cov_label]["Data"][index] = cn["Data"][index]
-        ds.series[rot_cov_label]["Flag"][index] = numpy.int32(20)
+        ds.root["Variables"][rot_cov_label]["Data"][index] = cn["Data"][index]
+        ds.root["Variables"][rot_cov_label]["Flag"][index] = numpy.int32(20)
     return
 
 def RemoveIntermediateSeries(ds, info):
@@ -2732,8 +2732,8 @@ def RemoveIntermediateSeries(ds, info):
             msg = " Removing intermediate series from data structure"
             logger.info(msg)
             for label in iris["not_output"]:
-                if label in list(ds.series.keys()):
-                    del ds.series[label]
+                if label in list(ds.root["Variables"].keys()):
+                    del ds.root["Variables"][label]
             iris["not_output"] = []
     return
 
@@ -2838,39 +2838,39 @@ def TaFromTv(cf, ds, Ta_out="Ta_SONIC_Av", Tv_in="Tv_SONIC_Av", AH_in="AH",
     #       to calculate the vapour pressure from the absolute humidity, the
     #       approximation involved here is of the order of 1%.
     logger.info(" Calculating Ta from Tv")
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     ones = numpy.ones(nRecs)
     zeros = numpy.zeros(nRecs)
     SH = pfp_utils.CreateEmptyVariable("SH", nRecs)
     Ta = pfp_utils.CreateEmptyVariable(Ta_out, nRecs)
     # check to see if we have enough data to proceed
     # deal with possible aliases for the sonic temperature
-    if Tv_in not in list(ds.series.keys()):
+    if Tv_in not in list(ds.root["Variables"].keys()):
         msg = " TaFromTv: sonic virtual temperature not found in data structure"
         logger.error(msg)
         return
-    if ((AH_in not in list(ds.series.keys())) and (RH_in not in list(ds.series.keys())) and
-        (SH_in not in list(ds.series.keys()))):
+    if ((AH_in not in list(ds.root["Variables"].keys())) and (RH_in not in list(ds.root["Variables"].keys())) and
+        (SH_in not in list(ds.root["Variables"].keys()))):
         labstr = str(AH_in) + "," + str(RH_in) + "," + str(SH_in)
         msg = " TaFromTv: no humidity data (" + labstr + ") found in data structure"
         logger.error(msg)
         return
-    if ps_in not in list(ds.series.keys()):
+    if ps_in not in list(ds.root["Variables"].keys()):
         msg = " TaFromTv: pressure (" + str(ps_in) + ") not found in data structure"
         logger.error(msg)
         return
     # we seem to have enough to continue
-    descr_level = "description_" + str(ds.globalattributes["processing_level"])
+    descr_level = "description_" + str(ds.root["Attributes"]["processing_level"])
     Tv = pfp_utils.GetVariable(ds, Tv_in)
     ps = pfp_utils.GetVariable(ds, ps_in)
-    if SH_in in list(ds.series.keys()):
+    if SH_in in list(ds.root["Variables"].keys()):
         SH = pfp_utils.GetVariable(ds, SH_in)
-    elif AH_in in list(ds.series.keys()):
+    elif AH_in in list(ds.root["Variables"].keys()):
         AH = pfp_utils.GetVariable(ds, AH_in)
         vp = pfp_mf.vapourpressure(AH["Data"], Tv["Data"])
         mr = pfp_mf.mixingratio(ps["Data"], vp)
         SH["Data"] = pfp_mf.specifichumidity(mr)
-    elif RH_in in list(ds.series.keys()):
+    elif RH_in in list(ds.root["Variables"].keys()):
         RH = pfp_utils.GetVariable(ds, RH_in)
         SH["Data"] = pfp_mf.specifichumidityfromRH(RH["Data"], Tv["Data"], ps["Data"])
     else:

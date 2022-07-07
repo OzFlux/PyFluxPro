@@ -554,8 +554,8 @@ def ParseL3ControlFile(cf, ds):
     """
     # PRI 7/10/2021 the code to get zms will give unpredictable results if CO2
     #   profile data present
-    ds.returncodes["message"] = "OK"
-    ds.returncodes["value"] = 0
+    ds.info["returncodes"]["message"] = "OK"
+    ds.info["returncodes"]["value"] = 0
     l3_info = {"CO2": {}, "Fco2": {}, "status": {"value": 0, "message": "OK"}}
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
@@ -570,7 +570,7 @@ def ParseL3ControlFile(cf, ds):
         return l3_info
     # get the height of the CO2 measurement
     got_zms = False
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     CO2_label = l3_info["CO2"]["label"]
     # try and get the height from the CO2 variable
     if CO2_label in labels:
@@ -605,9 +605,9 @@ def ParseL3ControlFile(cf, ds):
                 break
         except:
             pass
-    if not got_zms and "tower_height" in list(ds.globalattributes.keys()):
+    if not got_zms and "tower_height" in list(ds.root["Attributes"].keys()):
         try:
-            zms = float(pfp_utils.strip_non_numeric(ds.globalattributes["tower_height"]))
+            zms = float(pfp_utils.strip_non_numeric(ds.root["Attributes"]["tower_height"]))
             got_zms = True
         except:
             pass
@@ -623,8 +623,8 @@ def ParseL3ControlFile(cf, ds):
         msg = " Unable to find height for CO2 (" + CO2_label + ") measurement"
         l3_info["status"]["value"] = 1
         l3_info["status"]["message"] = msg
-        ds.returncodes["value"] = l3_info["status"]["value"]
-        ds.returncodes["message"] = l3_info["status"]["message"]
+        ds.info["returncodes"]["value"] = l3_info["status"]["value"]
+        ds.info["returncodes"]["message"] = l3_info["status"]["message"]
         return l3_info
     # get a list of Fco2 variables to be merged
     cfv = cf["Variables"]
