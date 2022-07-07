@@ -201,9 +201,10 @@ def climatology(cf):
     ts = int(ds.root["Attributes"]['time_step'])
     # get the datetime series
     dt = ds.root["Variables"]['DateTime']['Data']
-    start = datetime.datetime(dt[0].year, dt[0].month, dt[0].day, 0, 0, 0)
+    ldt = dt - datetime.timedelta(minutes=ts)
+    start = datetime.datetime(ldt[0].year, ldt[0].month, ldt[0].day, 0, 0, 0)
     start += datetime.timedelta(minutes=ts)
-    end = datetime.datetime(dt[-1].year, dt[-1].month, dt[-1].day, 0, 0, 0)
+    end = datetime.datetime(ldt[-1].year, ldt[-1].month, ldt[-1].day, 0, 0, 0)
     end += datetime.timedelta(minutes=1440)
 
     Hdh = numpy.array([(d.hour + d.minute/float(60)) for d in dt])
