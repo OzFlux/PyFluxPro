@@ -1285,12 +1285,12 @@ def ImportSeries(cf, ds):
         ldt_import = ds_import.root["Variables"]["DateTime"]["Data"]
         si = pfp_utils.GetDateIndex(ldt_import, start_date, ts=ts_import, default=0, match="exact")
         ei = pfp_utils.GetDateIndex(ldt_import, end_date, ts=ts_import, default=len(ldt_import)-1, match="exact")
-        var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=var_import["Attr"])
         var_import = pfp_utils.GetVariable(ds_import, var_name, start=si, end=ei)
         var_import["Attr"]["time_coverage_start"] = ldt_import[0].strftime("%Y-%m-%d %H:%M")
         var_import["Attr"]["time_coverage_end"] = ldt_import[-1].strftime("%Y-%m-%d %H:%M")
         ldt_import = ldt_import[si:ei+1]
         indainb, indbina = pfp_utils.FindMatchingIndices(ldt_import, ldt)
+        var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=var_import["Attr"])
         var["Data"][indbina] = var_import["Data"][indainb]
         var["Flag"][indbina] = var_import["Flag"][indainb]
         pfp_utils.CreateVariable(ds, var)
