@@ -2255,8 +2255,19 @@ def nc_read_groups(nc_file):
         pfp_utils.CreateVariable(ds, var, group=grp)
         # get the group attributes
         gattrs = nc_file[grp].ncattrs()
-        for gattr in gattrs:
-            group["Attributes"][gattr] = getattr(nc_file[grp], gattr)
+        # trap legacy L6 summary files with no group attributes
+        if len(gattrs) > 0:
+            # group attributes present
+            for gattr in gattrs:
+                group["Attributes"][gattr] = getattr(nc_file[grp], gattr)
+        else:
+            # group attributes not present so we deduce them from ncfile
+            group["Attributes"]["nc_nrecs"] = nrecs
+            if grp.lower() in ["daily", "monthly", "annual"]:
+                ts = grp.lower()
+            else:
+                ts = ds.root["Attributes"]["time_step"]
+            group["Attributes"]["time_step"] = ts
     nc_file.close()
     ds.info["returncodes"]["value"] = 0
     ds.info["returncodes"]["message"] = "netCDF file read OK"

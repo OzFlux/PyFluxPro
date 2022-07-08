@@ -224,7 +224,7 @@ class file_explore(QtWidgets.QWidget):
         # expand the "Variables" section
         for row in range(self.model.rowCount()):
             section = self.model.item(row)
-            if section.text() not in ["Global attributes"]:
+            if section.text() not in ["Global attributes", "Group attributes"]:
                 idx = self.model.index(row, 0)
                 self.view.expand(idx)
 
@@ -331,6 +331,14 @@ class file_explore(QtWidgets.QWidget):
                 group_section = QtGui.QStandardItem("Variables")
             else:
                 group_section = QtGui.QStandardItem(group)
+                attr_section = QtGui.QStandardItem("Group attributes")
+                gattrs = getattr(self.ds, group)["Attributes"]
+                for gattr in gattrs:
+                    value = str(gattrs[gattr])
+                    child0 = QtGui.QStandardItem(gattr)
+                    child1 = QtGui.QStandardItem(value)
+                    attr_section.appendRow([child0, child1])
+                group_section.appendRow([attr_section, QtGui.QStandardItem("")])
             group_section.setEditable(False)
             labels = sorted(list(gvars.keys()))
             if len(labels) == 0:
@@ -363,16 +371,17 @@ class file_explore(QtWidgets.QWidget):
         # get a list of variables in the data structure
         labels = list(self.ds.root["Variables"].keys())
         # check to see if the selected text before the change was a variable name
-        if self.double_click_selected_text in labels:
-            # if it was, rename the variable in the data structure
-            idx = self.view.selectedIndexes()
-            new_label = idx[0].data()
-            old_label = self.double_click_selected_text
-            self.ds.root["Variables"][new_label] = self.ds.root["Variables"].pop(old_label)
-        else:
-            # renaming attributes or changing their value is handled when the data is
-            # read back from the model by self.get_data_from_model()
-            pass
+        if hasattr(self, "double_click_selected_text"):
+            if self.double_click_selected_text in labels:
+                # if it was, rename the variable in the data structure
+                idx = self.view.selectedIndexes()
+                new_label = idx[0].data()
+                old_label = self.double_click_selected_text
+                self.ds.root["Variables"][new_label] = self.ds.root["Variables"].pop(old_label)
+            else:
+                # renaming attributes or changing their value is handled when the data is
+                # read back from the model by self.get_data_from_model()
+                pass
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
         return
