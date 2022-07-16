@@ -177,8 +177,12 @@ class partition(object):
                   result.conf_interval()['Eo'][2][1]) / 2
             if se > result.params['Eo'].value / 2.0: continue
             Eo_list.append([result.params['Eo'].value, se])
-        if len(Eo_list) == 0: raise RuntimeError('Could not find any valid '
-                                                 'estimates of Eo! Exiting...')
+        if len(Eo_list) == 0:
+            msg = "!!!!! Could not find any valid estimates of E0, exiting..."
+            logger.error("!!!!!")
+            logger.error(msg)
+            logger.error("!!!!!")
+            raise RuntimeError(msg)
         msg = " Found {} valid estimates of Eo".format(str(len(Eo_list)))
         logger.info(msg)
         Eo_array = np.array(Eo_list)
@@ -240,7 +244,8 @@ class partition(object):
 
         priors_dict = self.prior_parameter_estimates()
         func = self._get_func()[mode]
-        if not Eo: Eo = self.estimate_Eo()
+        if not Eo:
+            Eo = self.estimate_Eo()
         result_list, date_list = [], []
         #msg = "Processing the following dates ({} mode): ".format(mode)
         msg = " Processing date ranges using {} mode: ".format(mode)

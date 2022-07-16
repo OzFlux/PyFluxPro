@@ -1035,7 +1035,8 @@ def gfSOLO_createdict_outputs(cf, l5_info, target, called_by, flag_code):
     elif level == "L6":
         section = "EcosystemRespiration"
         drivers = "Ta,Ts,Sws"
-        source = "Fco2"
+        #source = "Fco2"
+        source = target
     else:
         msg = "Unrecognised control file level (must be L5 or L6)"
         logger.error(msg)

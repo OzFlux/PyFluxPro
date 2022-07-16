@@ -273,10 +273,7 @@ def climatology(cf):
             month_daily = month.reshape(nDays_daily, ntsInDay)
             hour = numpy.array([int(60/ts*(dt.hour+float(dt.minute)/float(60))) for dt in ldt2])
             hour_daily = hour.reshape(nDays_daily,ntsInDay)
-            try:
-                data_daily_i[idx] = Av_all[hour_daily[idx], month_daily[idx]]
-            except:
-                print("oi va vey")
+            data_daily_i[idx] = Av_all[hour_daily[idx], month_daily[idx]]
             # write the interpolated data to the Excel workbook
             xlSheet = xlFile.add_sheet(ThisOne+'i(day)')
             write_data_1columnpertimestep(xlSheet, data_daily_i, ts, startdate=sdate, format_string=fmt_str)
