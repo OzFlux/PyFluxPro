@@ -1,6 +1,8 @@
 # standard modules
 import copy
 import logging
+# 3rd party modules
+import pandas
 # PFP modules
 from scripts import pfp_ck
 from scripts import pfp_compliance
@@ -356,14 +358,24 @@ def l6qc(main_gui, cf, ds5):
         logger.error(msg)
     # estimate ER using Lloyd-Taylor
     try:
-        pfp_rp.ERUsingLloydTaylor(ds6, l6_info)
+        # open the Excel file for writing all outputs
+        xl_name = l6_info["ERUsingLloydTaylor"]["info"]["data_file_path"]
+        xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
+        pfp_rp.ERUsingLloydTaylor(ds6, l6_info, xl_writer)
+        xl_writer.close()
     except RuntimeError:
+        xl_writer.close()
         msg = " Error using Lloyd-Taylor to estimate ER"
         logger.error(msg)
     # estimate ER using Lasslop et al
     try:
-        pfp_rp.ERUsingLasslop(ds6, l6_info)
+        # open the Excel file for writing all outputs
+        xl_name = l6_info["ERUsingLasslop"]["info"]["data_file_path"]
+        xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
+        pfp_rp.ERUsingLasslop(ds6, l6_info, xl_writer)
+        xl_writer.close()
     except RuntimeError:
+        xl_writer.close()
         msg = " Error using Lasslop et al to estimate ER"
         logger.error(msg)
     # merge the estimates of ER with the observations

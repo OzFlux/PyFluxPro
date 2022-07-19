@@ -44,7 +44,7 @@ class partition(object):
           e.g. choice of [3, 1] would cause weighting of 3:1 in favour of air
           temperature, or e.g. [1, 3] would result in the reverse.
     """
-    def __init__(self, dataframe, names_dict = None, fit_daytime_rb = False,
+    def __init__(self, dataframe, xl_writer, names_dict = None, fit_daytime_rb = False,
                  weights_air_soil = 'air', noct_threshold = 10,
                  convert_to_photons = True, time_step=30):
 
@@ -65,6 +65,8 @@ class partition(object):
         self.convert_to_photons = convert_to_photons
         self.weighting = _check_weights_format(weights_air_soil)
         self.df = self._make_formatted_df(dataframe)
+        self.xl_writer = xl_writer
+        self.results = {"E0": {}}
         if convert_to_photons:
             self.noct_threshold = noct_threshold * 0.46 * 4.6
         else:
@@ -134,9 +136,13 @@ class partition(object):
 
     def _define_default_internal_names(self):
 
+        #return {'Cflux': 'NEE',
+                #'air_temperature': 'Ta',
+                #'soil_temperature': 'Ts',
+                #'insolation': 'PPFD',
+                #'vapour_pressure_deficit': 'VPD'}
         return {'Cflux': 'NEE',
                 'air_temperature': 'Ta',
-                'soil_temperature': 'Ts',
                 'insolation': 'PPFD',
                 'vapour_pressure_deficit': 'VPD'}
     #--------------------------------------------------------------------------
@@ -147,9 +153,13 @@ class partition(object):
 
     def _define_default_external_names(self):
 
+        #return {'Cflux': 'Fco2',
+                #'air_temperature': 'Ta',
+                #'soil_temperature': 'Ts',
+                #'insolation': 'Fsd',
+                #'vapour_pressure_deficit': 'VPD'}
         return {'Cflux': 'Fco2',
                 'air_temperature': 'Ta',
-                'soil_temperature': 'Ts',
                 'insolation': 'Fsd',
                 'vapour_pressure_deficit': 'VPD'}
     #--------------------------------------------------------------------------
@@ -161,22 +171,46 @@ class partition(object):
            style equation using nocturnal data"""
 
         Eo_list = []
-        for date in self.make_date_iterator(window_size, window_step):
+        for n, date in enumerate(self.make_date_iterator(window_size, window_step)):
+            self.results["E0"][n] = {"start": date, "end": date,
+                                     "num": 0, "T range": -9999,
+                                     "rb_av": -9999, "rb_se": -9999,
+                                     "E0_av": -9999, "E0_se": -9999,
+                                     "E0_av_qc": -9999, "E0_se_qc": -9999}
             df = self.get_subset(date, size = window_size, mode = 'night')
-            if not len(df) > 6: continue
-            if not df.TC.max() - df.TC.min() >= 5: continue
-            f = _Lloyd_and_Taylor
-            model = Model(f, independent_vars = ['t_series'])
-            params = model.make_params(rb = 1,
-                                       Eo = self.prior_parameter_estimates()['Eo'])
-            result = model.fit(df.NEE,
-                               t_series = df.TC,
-                               params = params)
-            if not 50 < result.params['Eo'].value < 400: continue
-            se = (result.conf_interval()['Eo'][4][1] -
-                  result.conf_interval()['Eo'][2][1]) / 2
-            if se > result.params['Eo'].value / 2.0: continue
-            Eo_list.append([result.params['Eo'].value, se])
+            if len(df) == 0:
+                continue
+            self.results["E0"][n]["start"] = df.index.values[0]
+            self.results["E0"][n]["end"] = df.index.values[-1]
+            self.results["E0"][n]["num"] = len(df)
+            self.results["E0"][n]["T range"] = df.TC.max() - df.TC.min()
+            if ((len(df) > 6) and (df.TC.max() - df.TC.min() >= 5)):
+                f = _Lloyd_and_Taylor
+                model = Model(f, independent_vars = ['t_series'])
+                params = model.make_params(rb = 1,
+                                           Eo = self.prior_parameter_estimates()['Eo'])
+                result = model.fit(df.NEE,
+                                   t_series = df.TC,
+                                   params = params)
+                E0_se = (result.conf_interval()['Eo'][4][1] -
+                         result.conf_interval()['Eo'][2][1]) / 2
+                rb_se = (result.conf_interval()['rb'][4][1] -
+                         result.conf_interval()['rb'][2][1]) / 2
+                self.results["E0"][n]["E0_av"] = result.params['Eo'].value
+                self.results["E0"][n]["E0_se"] = E0_se
+                self.results["E0"][n]["rb_av"] = result.params['rb'].value
+                self.results["E0"][n]["rb_se"] = rb_se
+                if ((50 < result.params['Eo'].value < 400) and
+                    (E0_se < result.params['Eo'].value / 2.0)):
+                    self.results["E0"][n]["E0_av_qc"] = result.params['Eo'].value
+                    self.results["E0"][n]["E0_se_qc"] = E0_se
+                    Eo_list.append([result.params['Eo'].value, E0_se])
+                else:
+                    continue
+            else:
+                continue
+        E0_results = pd.DataFrame.from_dict(self.results["E0"], orient="index")
+        E0_results.to_excel(self.xl_writer, "E0 results")
         if len(Eo_list) == 0:
             msg = "!!!!! Could not find any valid estimates of E0, exiting..."
             logger.error("!!!!!")

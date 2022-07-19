@@ -123,7 +123,7 @@ def CalculateNEP(ds, l6_info):
         pfp_utils.CreateSeries(ds, nep_name, nep, flag, attr)
     return
 
-def ERUsingLasslop(ds, l6_info):
+def ERUsingLasslop(ds, l6_info, xl_writer):
     """
     Purpose:
     Usage:
@@ -135,7 +135,7 @@ def ERUsingLasslop(ds, l6_info):
         return
     msg = " Estimating ER using Lasslop"
     logger.info(msg)
-    EcoResp(ds, l6_info, "ERUsingLasslop")
+    EcoResp(ds, l6_info, "ERUsingLasslop", xl_writer)
     for output in l6_info["ERUsingLasslop"]["outputs"]:
         if output in list(ds.series.keys()):
             source = l6_info["ERUsingLasslop"]["outputs"][output]["source"]
@@ -151,7 +151,7 @@ def ERUsingLasslop(ds, l6_info):
             raise RuntimeError(msg)
     return
 
-def ERUsingLloydTaylor(ds, l6_info):
+def ERUsingLloydTaylor(ds, l6_info, xl_writer):
     """
     Purpose:
     Usage:
@@ -162,7 +162,7 @@ def ERUsingLloydTaylor(ds, l6_info):
         return
     msg = " Estimating ER using Lloyd-Taylor"
     logger.info(msg)
-    EcoResp(ds, l6_info, "ERUsingLloydTaylor")
+    EcoResp(ds, l6_info, "ERUsingLloydTaylor", xl_writer)
     for output in l6_info["ERUsingLloydTaylor"]["outputs"]:
         if output in list(ds.series.keys()):
             source = l6_info["ERUsingLloydTaylor"]["outputs"][output]["source"]
@@ -178,7 +178,7 @@ def ERUsingLloydTaylor(ds, l6_info):
             raise RuntimeError(msg)
     return
 
-def EcoResp(ds, l6_info, called_by):
+def EcoResp(ds, l6_info, called_by, xl_writer):
     """
     Purpose:
     Estimate ecosystem respiration
@@ -219,14 +219,15 @@ def EcoResp(ds, l6_info, called_by):
     else:
         fig_num = plt.get_fignums()[-1]
     # open the Excel file for writing all outputs
-    xl_name = iel["info"]["data_file_path"]
-    xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
+    #xl_name = iel["info"]["data_file_path"]
+    #xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
     # loop over the series of outputs (usually one only)
     for output in outputs:
         # Make the filtered dataframe (fix this to allow gap-filled drivers)
         ustars_dict = {x.split("_")[-1]: float(ds.series["Fco2"]["Attr"][x])
                        for x in ds.series["Fco2"]["Attr"] if "ustar" in x}
-        var_list = ["Fco2", "Ta", "Ts", "Fsd", "ustar", "VPD"]
+        #var_list = ["Fco2", "Ta", "Ts", "Fsd", "ustar", "VPD"]
+        var_list = ["Fco2", "Ta", "Fsd", "ustar", "VPD"]
         df = pandas.DataFrame({var: ds.series[var]["Data"] for var in var_list},
                               index = ds.series["DateTime"]["Data"])
         # IM original code causes Fco2 to be masked if any driver is gap filled
@@ -238,7 +239,8 @@ def EcoResp(ds, l6_info, called_by):
         #  - any driver has a QC flag not ending in 0
         #  - Fco2 is gap filled (only use observations)
         is_valid = numpy.tile(True, int(ds.globalattributes["nc_nrecs"]))
-        for this_var in ["Ta", "Ts", "Fsd", "ustar", "VPD"]:
+        #for this_var in ["Ta", "Ts", "Fsd", "ustar", "VPD"]:
+        for this_var in ["Ta", "Fsd", "ustar", "VPD"]:
             is_valid *= numpy.mod(ds.series[this_var]["Flag"], 10) == 0
         for this_var in ["Fco2"]:
             is_valid *= ds.series[this_var]["Flag"] == 0
@@ -267,9 +269,11 @@ def EcoResp(ds, l6_info, called_by):
             else:
                 weighting = "air"
         # Pass the dataframe to the respiration class and get the results
-        ptc = pfp_part.partition(df, weights_air_soil = weighting, fit_daytime_rb = rb_mode,
-                                 time_step=ts)
+        ptc = pfp_part.partition(df, xl_writer, weights_air_soil = weighting,
+                                 fit_daytime_rb = rb_mode, time_step=ts)
         params_df = ptc.estimate_parameters(mode = er_mode)
+        #E0_results = pandas.DataFrame.from_dict(ptc.results["E0"], orient="index")
+        #E0_results.to_excel(xl_writer, output + " (E0 results)")
         ER = ptc.estimate_er_time_series(params_df)
         ER_flag = numpy.tile(30, len(ER))
         # Write to series
