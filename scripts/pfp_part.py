@@ -6,6 +6,7 @@ Created on Thu Mar 15 13:53:16 2018
 @author: ian
 """
 import logging
+import os
 
 import datetime as dt
 from lmfit import Model
@@ -141,10 +142,17 @@ class partition(object):
                 #'soil_temperature': 'Ts',
                 #'insolation': 'PPFD',
                 #'vapour_pressure_deficit': 'VPD'}
+        # PRI 20220720 removed Ts
+        #return {'Cflux': 'NEE',
+                #'air_temperature': 'Ta',
+                #'insolation': 'PPFD',
+                #'vapour_pressure_deficit': 'VPD'}
+        # PRI 20220720 added Sws
         return {'Cflux': 'NEE',
                 'air_temperature': 'Ta',
                 'insolation': 'PPFD',
-                'vapour_pressure_deficit': 'VPD'}
+                'vapour_pressure_deficit': 'VPD',
+                'soil moisture': 'Sws'}
     #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
@@ -158,10 +166,17 @@ class partition(object):
                 #'soil_temperature': 'Ts',
                 #'insolation': 'Fsd',
                 #'vapour_pressure_deficit': 'VPD'}
+        # PRI 20220720 removed Ts
+        #return {'Cflux': 'Fco2',
+                #'air_temperature': 'Ta',
+                #'insolation': 'Fsd',
+                #'vapour_pressure_deficit': 'VPD'}
+        # PRI 20220720 added Sws
         return {'Cflux': 'Fco2',
                 'air_temperature': 'Ta',
                 'insolation': 'Fsd',
-                'vapour_pressure_deficit': 'VPD'}
+                'vapour_pressure_deficit': 'VPD',
+                'soil moisture': 'Sws'}
     #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
@@ -180,6 +195,7 @@ class partition(object):
             df = self.get_subset(date, size = window_size, mode = 'night')
             if len(df) == 0:
                 continue
+            self.plot_raw_data(df)
             self.results["E0"][n]["start"] = df.index.values[0]
             self.results["E0"][n]["end"] = df.index.values[-1]
             self.results["E0"][n]["num"] = len(df)
@@ -321,8 +337,11 @@ class partition(object):
         date_tuple = (ref_date - dt.timedelta(size / 2.0 -
                                               self.interval / 1440.0),
                       ref_date + dt.timedelta(size / 2.0))
+        #sub_df = self.df.loc[date_tuple[0]: date_tuple[1],
+                             #['NEE', 'PPFD', 'TC', 'VPD']].dropna()
+        # PRI 20220720 added Sws
         sub_df = self.df.loc[date_tuple[0]: date_tuple[1],
-                             ['NEE', 'PPFD', 'TC', 'VPD']].dropna()
+                             ['NEE', 'PPFD', 'TC', 'VPD', 'Sws']].dropna()
         return sub_df[ops[mode](sub_df.PPFD, self.noct_threshold)]
     #--------------------------------------------------------------------------
 
@@ -474,6 +493,20 @@ class partition(object):
         ax.legend(loc = [0.05, 0.1], fontsize = 12)
         return fig
     #--------------------------------------------------------------------------
+
+    def plot_raw_data(self, df):
+        title = np.datetime_as_string(df.index.values[0], unit='D') + " to "
+        title += np.datetime_as_string(df.index.values[-1], unit='D')
+        file_name = os.path.join("plots", "estimate_e0_" + title.replace(" ", "_") + ".png")
+        fig, axs = plt.subplots()
+        sc = axs.scatter(df.TC.values, df.NEE.values, c=df.Sws.values, s=10)
+        axs.set_title(title)
+        axs.set_xlabel("Temperature (degC)")
+        axs.set_ylabel("NEE (umol/m^2/s)")
+        clb = plt.colorbar(sc)
+        clb.ax.set_title("Sws")
+        fig.savefig(file_name, format="png")
+        plt.close()
 
     #--------------------------------------------------------------------------
     def prior_parameter_estimates(self):

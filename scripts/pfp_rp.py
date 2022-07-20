@@ -227,7 +227,7 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         ustars_dict = {x.split("_")[-1]: float(ds.series["Fco2"]["Attr"][x])
                        for x in ds.series["Fco2"]["Attr"] if "ustar" in x}
         #var_list = ["Fco2", "Ta", "Ts", "Fsd", "ustar", "VPD"]
-        var_list = ["Fco2", "Ta", "Fsd", "ustar", "VPD"]
+        var_list = ["Fco2", "Ta", "Fsd", "ustar", "VPD", "Sws"]
         df = pandas.DataFrame({var: ds.series[var]["Data"] for var in var_list},
                               index = ds.series["DateTime"]["Data"])
         # IM original code causes Fco2 to be masked if any driver is gap filled
@@ -246,10 +246,12 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
             is_valid *= ds.series[this_var]["Flag"] == 0
         df.loc[~is_valid, "Fco2"] = numpy.nan
 
+        # this may be a duplicate ustar filter...
         for year in ustars_dict:
             df.loc[(df.index.year == int(year)) &
                    (df.ustar < ustars_dict[year]) &
                    (df.Fsd < 10), "Fco2"] = numpy.nan
+
         # Set the weighting of air and soil temperatures
         configs_dict = iel["outputs"][output]
         drivers = configs_dict["drivers"]
