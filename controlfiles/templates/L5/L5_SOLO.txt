@@ -7,7 +7,6 @@ level = L5
     cpd_filename = Right click to browse
 [Options]
     MaxGapInterpolate = 3
-    MaxShortGapLength = 14
     FilterList = Fco2
     TurbulenceFilter = ustar
     DayNightFilter = Fsd

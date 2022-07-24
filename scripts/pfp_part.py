@@ -6,6 +6,7 @@ Created on Thu Mar 15 13:53:16 2018
 @author: ian
 """
 import logging
+import os
 
 import datetime as dt
 from lmfit import Model
@@ -44,7 +45,7 @@ class partition(object):
           e.g. choice of [3, 1] would cause weighting of 3:1 in favour of air
           temperature, or e.g. [1, 3] would result in the reverse.
     """
-    def __init__(self, dataframe, names_dict = None, fit_daytime_rb = False,
+    def __init__(self, dataframe, xl_writer, names_dict = None, fit_daytime_rb = False,
                  weights_air_soil = 'air', noct_threshold = 10,
                  convert_to_photons = True, time_step=30):
 
@@ -65,6 +66,8 @@ class partition(object):
         self.convert_to_photons = convert_to_photons
         self.weighting = _check_weights_format(weights_air_soil)
         self.df = self._make_formatted_df(dataframe)
+        self.xl_writer = xl_writer
+        self.results = {"E0": {}}
         if convert_to_photons:
             self.noct_threshold = noct_threshold * 0.46 * 4.6
         else:
@@ -134,11 +137,22 @@ class partition(object):
 
     def _define_default_internal_names(self):
 
+        #return {'Cflux': 'NEE',
+                #'air_temperature': 'Ta',
+                #'soil_temperature': 'Ts',
+                #'insolation': 'PPFD',
+                #'vapour_pressure_deficit': 'VPD'}
+        # PRI 20220720 removed Ts
+        #return {'Cflux': 'NEE',
+                #'air_temperature': 'Ta',
+                #'insolation': 'PPFD',
+                #'vapour_pressure_deficit': 'VPD'}
+        # PRI 20220720 added Sws
         return {'Cflux': 'NEE',
                 'air_temperature': 'Ta',
-                'soil_temperature': 'Ts',
                 'insolation': 'PPFD',
-                'vapour_pressure_deficit': 'VPD'}
+                'vapour_pressure_deficit': 'VPD',
+                'soil moisture': 'Sws'}
     #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
@@ -147,11 +161,22 @@ class partition(object):
 
     def _define_default_external_names(self):
 
+        #return {'Cflux': 'Fco2',
+                #'air_temperature': 'Ta',
+                #'soil_temperature': 'Ts',
+                #'insolation': 'Fsd',
+                #'vapour_pressure_deficit': 'VPD'}
+        # PRI 20220720 removed Ts
+        #return {'Cflux': 'Fco2',
+                #'air_temperature': 'Ta',
+                #'insolation': 'Fsd',
+                #'vapour_pressure_deficit': 'VPD'}
+        # PRI 20220720 added Sws
         return {'Cflux': 'Fco2',
                 'air_temperature': 'Ta',
-                'soil_temperature': 'Ts',
                 'insolation': 'Fsd',
-                'vapour_pressure_deficit': 'VPD'}
+                'vapour_pressure_deficit': 'VPD',
+                'soil moisture': 'Sws'}
     #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
@@ -161,24 +186,53 @@ class partition(object):
            style equation using nocturnal data"""
 
         Eo_list = []
-        for date in self.make_date_iterator(window_size, window_step):
+        for n, date in enumerate(self.make_date_iterator(window_size, window_step)):
+            self.results["E0"][n] = {"start": date, "end": date,
+                                     "num": 0, "T range": -9999,
+                                     "rb_av": -9999, "rb_se": -9999,
+                                     "E0_av": -9999, "E0_se": -9999,
+                                     "E0_av_qc": -9999, "E0_se_qc": -9999}
             df = self.get_subset(date, size = window_size, mode = 'night')
-            if not len(df) > 6: continue
-            if not df.TC.max() - df.TC.min() >= 5: continue
-            f = _Lloyd_and_Taylor
-            model = Model(f, independent_vars = ['t_series'])
-            params = model.make_params(rb = 1,
-                                       Eo = self.prior_parameter_estimates()['Eo'])
-            result = model.fit(df.NEE,
-                               t_series = df.TC,
-                               params = params)
-            if not 50 < result.params['Eo'].value < 400: continue
-            se = (result.conf_interval()['Eo'][4][1] -
-                  result.conf_interval()['Eo'][2][1]) / 2
-            if se > result.params['Eo'].value / 2.0: continue
-            Eo_list.append([result.params['Eo'].value, se])
-        if len(Eo_list) == 0: raise RuntimeError('Could not find any valid '
-                                                 'estimates of Eo! Exiting...')
+            if len(df) == 0:
+                continue
+            self.plot_raw_data(df)
+            self.results["E0"][n]["start"] = df.index.values[0]
+            self.results["E0"][n]["end"] = df.index.values[-1]
+            self.results["E0"][n]["num"] = len(df)
+            self.results["E0"][n]["T range"] = df.TC.max() - df.TC.min()
+            if ((len(df) > 6) and (df.TC.max() - df.TC.min() >= 5)):
+                f = _Lloyd_and_Taylor
+                model = Model(f, independent_vars = ['t_series'])
+                params = model.make_params(rb = 1,
+                                           Eo = self.prior_parameter_estimates()['Eo'])
+                result = model.fit(df.NEE,
+                                   t_series = df.TC,
+                                   params = params)
+                E0_se = (result.conf_interval()['Eo'][4][1] -
+                         result.conf_interval()['Eo'][2][1]) / 2
+                rb_se = (result.conf_interval()['rb'][4][1] -
+                         result.conf_interval()['rb'][2][1]) / 2
+                self.results["E0"][n]["E0_av"] = result.params['Eo'].value
+                self.results["E0"][n]["E0_se"] = E0_se
+                self.results["E0"][n]["rb_av"] = result.params['rb'].value
+                self.results["E0"][n]["rb_se"] = rb_se
+                if ((50 < result.params['Eo'].value < 400) and
+                    (E0_se < result.params['Eo'].value / 2.0)):
+                    self.results["E0"][n]["E0_av_qc"] = result.params['Eo'].value
+                    self.results["E0"][n]["E0_se_qc"] = E0_se
+                    Eo_list.append([result.params['Eo'].value, E0_se])
+                else:
+                    continue
+            else:
+                continue
+        E0_results = pd.DataFrame.from_dict(self.results["E0"], orient="index")
+        E0_results.to_excel(self.xl_writer, "E0 results")
+        if len(Eo_list) == 0:
+            msg = "!!!!! Could not find any valid estimates of E0, exiting..."
+            logger.error("!!!!!")
+            logger.error(msg)
+            logger.error("!!!!!")
+            raise RuntimeError(msg)
         msg = " Found {} valid estimates of Eo".format(str(len(Eo_list)))
         logger.info(msg)
         Eo_array = np.array(Eo_list)
@@ -240,7 +294,8 @@ class partition(object):
 
         priors_dict = self.prior_parameter_estimates()
         func = self._get_func()[mode]
-        if not Eo: Eo = self.estimate_Eo()
+        if not Eo:
+            Eo = self.estimate_Eo()
         result_list, date_list = [], []
         #msg = "Processing the following dates ({} mode): ".format(mode)
         msg = " Processing date ranges using {} mode: ".format(mode)
@@ -282,8 +337,11 @@ class partition(object):
         date_tuple = (ref_date - dt.timedelta(size / 2.0 -
                                               self.interval / 1440.0),
                       ref_date + dt.timedelta(size / 2.0))
+        #sub_df = self.df.loc[date_tuple[0]: date_tuple[1],
+                             #['NEE', 'PPFD', 'TC', 'VPD']].dropna()
+        # PRI 20220720 added Sws
         sub_df = self.df.loc[date_tuple[0]: date_tuple[1],
-                             ['NEE', 'PPFD', 'TC', 'VPD']].dropna()
+                             ['NEE', 'PPFD', 'TC', 'VPD', 'Sws']].dropna()
         return sub_df[ops[mode](sub_df.PPFD, self.noct_threshold)]
     #--------------------------------------------------------------------------
 
@@ -435,6 +493,20 @@ class partition(object):
         ax.legend(loc = [0.05, 0.1], fontsize = 12)
         return fig
     #--------------------------------------------------------------------------
+
+    def plot_raw_data(self, df):
+        title = np.datetime_as_string(df.index.values[0], unit='D') + " to "
+        title += np.datetime_as_string(df.index.values[-1], unit='D')
+        file_name = os.path.join("plots", "estimate_e0_" + title.replace(" ", "_") + ".png")
+        fig, axs = plt.subplots()
+        sc = axs.scatter(df.TC.values, df.NEE.values, c=df.Sws.values, s=10)
+        axs.set_title(title)
+        axs.set_xlabel("Temperature (degC)")
+        axs.set_ylabel("NEE (umol/m^2/s)")
+        clb = plt.colorbar(sc)
+        clb.ax.set_title("Sws")
+        fig.savefig(file_name, format="png")
+        plt.close()
 
     #--------------------------------------------------------------------------
     def prior_parameter_estimates(self):

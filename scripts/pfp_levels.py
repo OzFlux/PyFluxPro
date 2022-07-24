@@ -1,6 +1,8 @@
 # standard modules
 import copy
 import logging
+# 3rd party modules
+import pandas
 # PFP modules
 from scripts import pfp_ck
 from scripts import pfp_compliance
@@ -344,25 +346,44 @@ def l6qc(main_gui, cf, ds5):
     # check units of Fco2
     pfp_utils.CheckFco2Units(ds6, "umol/m^2/s", convert_units=True)
     # get ER from the observed Fco2
-    pfp_rp.GetERFromFco2(cf, ds6)
-    # return code will be non-zero if turbulance filter not applied to CO2 flux
-    if ds6.returncodes["value"] != 0:
+    try:
+        pfp_rp.GetERFromFco2(ds6, l6_info)
+    except RuntimeError:
         return ds6
     # estimate ER using SOLO
-    if "ERUsingSOLO" in l6_info:
+    try:
         pfp_rp.ERUsingSOLO(main_gui, ds6, l6_info, "ERUsingSOLO")
-        if ds6.returncodes["value"] != 0:
-            return ds6
+    except RuntimeError:
+        msg = " Error using SOLO to estimate ER"
+        logger.error(msg)
     # estimate ER using Lloyd-Taylor
-    pfp_rp.ERUsingLloydTaylor(cf, ds6, l6_info)
+    try:
+        # open the Excel file for writing all outputs
+        xl_name = l6_info["ERUsingLloydTaylor"]["info"]["data_file_path"]
+        xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
+        pfp_rp.ERUsingLloydTaylor(ds6, l6_info, xl_writer)
+        xl_writer.close()
+    except RuntimeError:
+        xl_writer.close()
+        msg = " Error using Lloyd-Taylor to estimate ER"
+        logger.error(msg)
     # estimate ER using Lasslop et al
-    pfp_rp.ERUsingLasslop(ds6, l6_info)
+    try:
+        # open the Excel file for writing all outputs
+        xl_name = l6_info["ERUsingLasslop"]["info"]["data_file_path"]
+        xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
+        pfp_rp.ERUsingLasslop(ds6, l6_info, xl_writer)
+        xl_writer.close()
+    except RuntimeError:
+        xl_writer.close()
+        msg = " Error using Lasslop et al to estimate ER"
+        logger.error(msg)
     # merge the estimates of ER with the observations
     pfp_ts.MergeSeriesUsingDict(ds6, l6_info, merge_order="standard")
     # calculate NEE from Fco2 and ER
-    pfp_rp.CalculateNEE(cf, ds6, l6_info)
+    pfp_rp.CalculateNEE(ds6, l6_info)
     # calculate NEP from NEE
-    pfp_rp.CalculateNEP(cf, ds6)
+    pfp_rp.CalculateNEP(ds6, l6_info)
     # calculate ET from Fe
     pfp_rp.CalculateET(ds6)
     # partition NEE into GPP and ER
@@ -374,5 +395,5 @@ def l6qc(main_gui, cf, ds5):
     # remove intermediate series from the data structure
     pfp_ts.RemoveIntermediateSeries(ds6, l6_info)
     # do the L6 summary
-    pfp_rp.L6_summary(cf, ds6)
+    pfp_rp.L6_summary(ds6, l6_info)
     return ds6

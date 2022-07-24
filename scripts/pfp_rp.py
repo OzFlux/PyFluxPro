@@ -44,7 +44,7 @@ def CalculateET(ds):
         attr["units"] = "kg/m^2/s"
         pfp_utils.CreateSeries(ds, label.replace("Fe","ET"), ET, flag, attr)
 
-def CalculateNEE(cf, ds, l6_info):
+def CalculateNEE(ds, l6_info):
     """
     Purpose:
      Calculate NEE from observed Fc and observed/modeled ER.
@@ -63,16 +63,22 @@ def CalculateNEE(cf, ds, l6_info):
     # make the L6 "description" attribute for the target variable
     descr_level = "description_" + ds.globalattributes["processing_level"]
     # get the Fsd threshold
-    Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
+    Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(l6_info, ["Options"], "Fsd_threshold",
+                                                       default=10))
     # get the incoming shortwave radiation
     Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
     for label in list(l6_info["NetEcosystemExchange"].keys()):
-        if "Fco2" not in l6_info["NetEcosystemExchange"][label] and "ER" not in l6_info["NetEcosystemExchange"][label]:
+        if (("Fco2" not in l6_info["NetEcosystemExchange"][label]) and
+            ("ER" not in l6_info["NetEcosystemExchange"][label])):
             continue
         Fc_label = l6_info["NetEcosystemExchange"][label]["Fco2"]
         ER_label = l6_info["NetEcosystemExchange"][label]["ER"]
         output_label = l6_info["NetEcosystemExchange"][label]["output"]
+        if Fc_label not in list(ds.series.keys()):
+            continue
         Fc, Fc_flag, Fc_attr = pfp_utils.GetSeriesasMA(ds, Fc_label)
+        if ER_label not in list(ds.series.keys()):
+            continue
         ER, ER_flag, _ = pfp_utils.GetSeriesasMA(ds, ER_label)
         # put the day time Fc into the NEE series
         index = numpy.ma.where(Fsd >= Fsd_threshold)[0]
@@ -90,16 +96,17 @@ def CalculateNEE(cf, ds, l6_info):
         pfp_utils.append_to_attribute(attr, {descr_level: tmp})
         attr["comment1"] = "Fsd threshold used was " + str(Fsd_threshold)
         ds.series[output_label]["Attr"] = attr
+        l6_info["Summary"]["NetEcosystemExchange"].append(label)
     return
 
-def CalculateNEP(cf, ds):
+def CalculateNEP(ds, l6_info):
     """
     Purpose:
      Calculate NEP from NEE
     Usage:
-     pfp_rp.CalculateNEP(cf, ds)
-      where cf is a control file object
-            ds is a data structure
+     pfp_rp.CalculateNEP(ds, l6_info)
+      where ds is a data structure
+            l6_info is the dictionary returned by ParseL6ControlFile()
     Side effects:
      Series to hold the NEP data are created in ds.
     Author: PRI
@@ -107,15 +114,16 @@ def CalculateNEP(cf, ds):
     """
     # make the L6 "description" attribute for the target variable
     descr_level = "description_" + ds.globalattributes["processing_level"]
-    for nee_name in list(cf["NetEcosystemExchange"].keys()):
+    for nee_name in list(l6_info["NetEcosystemExchange"].keys()):
         nep_name = nee_name.replace("NEE", "NEP")
         nee, flag, attr = pfp_utils.GetSeriesasMA(ds, nee_name)
         nep = float(-1)*nee
         attr["long_name"] = "Net Ecosystem Productivity"
         pfp_utils.append_to_attribute(attr, {descr_level: "calculated as -1*" + nee_name})
         pfp_utils.CreateSeries(ds, nep_name, nep, flag, attr)
+    return
 
-def ERUsingLasslop(ds, l6_info):
+def ERUsingLasslop(ds, l6_info, xl_writer):
     """
     Purpose:
     Usage:
@@ -127,9 +135,23 @@ def ERUsingLasslop(ds, l6_info):
         return
     msg = " Estimating ER using Lasslop"
     logger.info(msg)
-    EcoResp(ds, l6_info, 'ERUsingLasslop')
+    EcoResp(ds, l6_info, "ERUsingLasslop", xl_writer)
+    for output in l6_info["ERUsingLasslop"]["outputs"]:
+        if output in list(ds.series.keys()):
+            source = l6_info["ERUsingLasslop"]["outputs"][output]["source"]
+            l6_info["Summary"]["EcosystemRespiration"].append(source)
+            merge = l6_info["EcosystemRespiration"][source]["MergeSeries"]["source"].split(",")
+            l6_info["MergeSeries"]["standard"][source] = {"output": source,
+                                                          "source": merge}
+        else:
+            msg = output + " not in data structure"
+            logger.error("!!!!!")
+            logger.error(msg)
+            logger.error("!!!!!")
+            raise RuntimeError(msg)
+    return
 
-def ERUsingLloydTaylor(cf, ds, l6_info):
+def ERUsingLloydTaylor(ds, l6_info, xl_writer):
     """
     Purpose:
     Usage:
@@ -140,9 +162,23 @@ def ERUsingLloydTaylor(cf, ds, l6_info):
         return
     msg = " Estimating ER using Lloyd-Taylor"
     logger.info(msg)
-    EcoResp(ds, l6_info, "ERUsingLloydTaylor")
+    EcoResp(ds, l6_info, "ERUsingLloydTaylor", xl_writer)
+    for output in l6_info["ERUsingLloydTaylor"]["outputs"]:
+        if output in list(ds.series.keys()):
+            source = l6_info["ERUsingLloydTaylor"]["outputs"][output]["source"]
+            l6_info["Summary"]["EcosystemRespiration"].append(source)
+            merge = l6_info["EcosystemRespiration"][source]["MergeSeries"]["source"].split(",")
+            l6_info["MergeSeries"]["standard"][source] = {"output": source,
+                                                          "source": merge}
+        else:
+            msg = output + " not in data structure"
+            logger.error("!!!!!")
+            logger.error(msg)
+            logger.error("!!!!!")
+            raise RuntimeError(msg)
+    return
 
-def EcoResp(ds, l6_info, called_by):
+def EcoResp(ds, l6_info, called_by, xl_writer):
     """
     Purpose:
     Estimate ecosystem respiration
@@ -183,14 +219,15 @@ def EcoResp(ds, l6_info, called_by):
     else:
         fig_num = plt.get_fignums()[-1]
     # open the Excel file for writing all outputs
-    xl_name = iel["info"]["data_file_path"]
-    xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
+    #xl_name = iel["info"]["data_file_path"]
+    #xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
     # loop over the series of outputs (usually one only)
     for output in outputs:
         # Make the filtered dataframe (fix this to allow gap-filled drivers)
         ustars_dict = {x.split("_")[-1]: float(ds.series["Fco2"]["Attr"][x])
                        for x in ds.series["Fco2"]["Attr"] if "ustar" in x}
-        var_list = ["Fco2", "Ta", "Ts", "Fsd", "ustar", "VPD"]
+        #var_list = ["Fco2", "Ta", "Ts", "Fsd", "ustar", "VPD"]
+        var_list = ["Fco2", "Ta", "Fsd", "ustar", "VPD", "Sws"]
         df = pandas.DataFrame({var: ds.series[var]["Data"] for var in var_list},
                               index = ds.series["DateTime"]["Data"])
         # IM original code causes Fco2 to be masked if any driver is gap filled
@@ -202,16 +239,19 @@ def EcoResp(ds, l6_info, called_by):
         #  - any driver has a QC flag not ending in 0
         #  - Fco2 is gap filled (only use observations)
         is_valid = numpy.tile(True, int(ds.globalattributes["nc_nrecs"]))
-        for this_var in ["Ta", "Ts", "Fsd", "ustar", "VPD"]:
+        #for this_var in ["Ta", "Ts", "Fsd", "ustar", "VPD"]:
+        for this_var in ["Ta", "Fsd", "ustar", "VPD"]:
             is_valid *= numpy.mod(ds.series[this_var]["Flag"], 10) == 0
         for this_var in ["Fco2"]:
             is_valid *= ds.series[this_var]["Flag"] == 0
         df.loc[~is_valid, "Fco2"] = numpy.nan
 
+        # this may be a duplicate ustar filter...
         for year in ustars_dict:
             df.loc[(df.index.year == int(year)) &
                    (df.ustar < ustars_dict[year]) &
                    (df.Fsd < 10), "Fco2"] = numpy.nan
+
         # Set the weighting of air and soil temperatures
         configs_dict = iel["outputs"][output]
         drivers = configs_dict["drivers"]
@@ -231,9 +271,11 @@ def EcoResp(ds, l6_info, called_by):
             else:
                 weighting = "air"
         # Pass the dataframe to the respiration class and get the results
-        ptc = pfp_part.partition(df, weights_air_soil = weighting, fit_daytime_rb = rb_mode,
-                                 time_step=ts)
+        ptc = pfp_part.partition(df, xl_writer, weights_air_soil = weighting,
+                                 fit_daytime_rb = rb_mode, time_step=ts)
         params_df = ptc.estimate_parameters(mode = er_mode)
+        #E0_results = pandas.DataFrame.from_dict(ptc.results["E0"], orient="index")
+        #E0_results.to_excel(xl_writer, output + " (E0 results)")
         ER = ptc.estimate_er_time_series(params_df)
         ER_flag = numpy.tile(30, len(ER))
         # Write to series
@@ -271,21 +313,30 @@ def ERUsingSOLO(main_gui, ds, l6_info, called_by):
                  ER estimation routines to allow for multiple sources
                  of ER.
     """
-    # set the default return code
-    ds.returncodes["value"] = 0
-    ds.returncodes["message"] = "normal"
-    ## check the SOLO drivers for missing data
-    #pfp_gf.CheckDrivers(ds, l6_info, called_by)
-    #if ds.returncodes["value"] != 0:
-        #return ds
-    if l6_info["ERUsingSOLO"]["info"]["call_mode"].lower() == "interactive":
+    if called_by not in l6_info:
+        return
+    if l6_info[called_by]["info"]["call_mode"].lower() == "interactive":
         # call the ERUsingSOLO GUI
         pfp_gfSOLO.gfSOLO_gui(main_gui, ds, l6_info, called_by)
     else:
         # ["gui"] settings dictionary done in pfp_rp.ParseL6ControlFile()
         pfp_gfSOLO.gfSOLO_run(ds, l6_info, called_by)
+    for output in l6_info[called_by]["outputs"]:
+        if output in list(ds.series.keys()):
+            source = l6_info[called_by]["outputs"][output]["source"]
+            l6_info["Summary"]["EcosystemRespiration"].append(source)
+            merge = l6_info["EcosystemRespiration"][source]["MergeSeries"]["source"].split(",")
+            l6_info["MergeSeries"]["standard"][source] = {"output": source,
+                                                          "source": merge}
+        else:
+            msg = output + " not in data structure"
+            logger.error("!!!!!")
+            logger.error(msg)
+            logger.error("!!!!!")
+            raise RuntimeError(msg)
+    return
 
-def GetERFromFco2(cf, ds):
+def GetERFromFco2(ds, l6_info):
     """
     Purpose:
      Get the observed ecosystem respiration from measurements of Fc by
@@ -297,15 +348,14 @@ def GetERFromFco2(cf, ds):
      file.
      Re-write of the original penned in August 2014
     Usage:
-     pfp_rp.GetERFromFco2(cf, ds)
-     where cf is a control file object
-           ds is a data structure
+     pfp_rp.GetERFromFco2(ds, l6_info)
+     where ds is a data structure
+           l6_info is the dictionary returned by ParseL6ControlFile()
     Side effects:
      A new series called "ER" is created in the data structure.
     Author: PRI
     Date: October 2015
     """
-    ds.returncodes = {"value":0,"message":"OK"}
     nrecs = int(ds.globalattributes["nc_nrecs"])
     ER = {"Label": "ER"}
     # get the CO2 flux
@@ -316,8 +366,7 @@ def GetERFromFco2(cf, ds):
         logger.error("!!!!!")
         logger.error(msg)
         logger.error("!!!!!")
-        ds.returncodes = {"value": 1, "message": msg}
-        return
+        raise RuntimeError(msg)
     # get a copy of the Fco2 flag and make the attribute dictionary
     ER["Flag"] = numpy.array(Fco2["Flag"])
     # make the ER attribute dictionary
@@ -335,12 +384,8 @@ def GetERFromFco2(cf, ds):
         notok[idx] = numpy.int(0)
     Fco2["Data"] = numpy.ma.masked_where((notok == 1), Fco2["Data"])
     ER["Flag"] = numpy.where((notok == 1), numpy.full(nrecs, 501), numpy.zeros(nrecs))
-    # only accept Fco2 with QC flag value of 0
-    #Fco2["Data"] = numpy.ma.masked_where((Fco2["Flag"] != 0), Fco2["Data"])
-    #idx_notok = numpy.where((Fco2["Flag"] != 0))[0]
-    #ER["Flag"][idx_notok] = numpy.int32(501)
     # get the indicator series
-    daynight_indicator = get_daynight_indicator(cf, ds)
+    daynight_indicator = get_daynight_indicator(ds, l6_info)
     idx = numpy.where(daynight_indicator["values"] == 0)[0]
     ER["Flag"][idx] = numpy.int32(502)
     # apply the filter to get ER from Fco2
@@ -355,7 +400,7 @@ def GetERFromFco2(cf, ds):
     logger.info(msg)
     return
 
-def L6_summary(cf, ds):
+def L6_summary(ds, l6_info):
     """
     Purpose:
      Produce summaries of L6 data, write them to an Excel spreadsheet and plot them.
@@ -365,9 +410,10 @@ def L6_summary(cf, ds):
     """
     logger.info(" Doing the L6 summary")
     # set up a dictionary of lists
-    series_dict = L6_summary_createseriesdict(cf, ds)
+    series_dict = L6_summary_createseriesdict(ds, l6_info)
     # open the Excel workbook
-    out_name = pfp_io.get_outfilenamefromcf(cf)
+    out_name = os.path.join(l6_info["Files"]["file_path"],
+                            l6_info["Files"]["out_filename"])
     xl_name = out_name.replace(".nc", "_Summary.xls")
     try:
         xl_file = pfp_io.xl_open_write(xl_name)
@@ -437,11 +483,11 @@ def L6_summary(cf, ds):
     # close the Excel workbook
     xl_file.save(xl_name)
     # plot the daily averages and sums
-    L6_summary_plotdaily(cf, ds, daily_dict)
+    L6_summary_plotdaily(daily_dict, l6_info)
     # plot the cumulative sums
-    L6_summary_plotcumulative(cf, ds, cumulative_dict)
+    L6_summary_plotcumulative(cumulative_dict, l6_info)
 
-def L6_summary_plotdaily(cf, ds, daily_dict):
+def L6_summary_plotdaily(daily_dict, l6_info):
     """
     Purpose:
      Plot the daily averages or sums with a 30 day filter.
@@ -461,10 +507,10 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
     # plot time series of NEE, GPP and ER
     sdate = ddv["DateTime"]["Data"][0].strftime("%d-%m-%Y")
     edate = ddv["DateTime"]["Data"][-1].strftime("%d-%m-%Y")
-    site_name = ds.globalattributes["site_name"]
+    site_name = l6_info["Global"]["site_name"]
     title_str = site_name+": "+sdate+" to "+edate
     for item in type_list:
-        if cf["Options"]["call_mode"].lower()=="interactive":
+        if l6_info["Options"]["call_mode"].lower()=="interactive":
             plt.ion()
         else:
             current_backend = plt.get_backend()
@@ -489,13 +535,13 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
         plt.tight_layout()
         sdt = ddv["DateTime"]["Data"][0].strftime("%Y%m%d")
         edt = ddv["DateTime"]["Data"][-1].strftime("%Y%m%d")
-        plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
+        plot_path = pfp_utils.get_keyvaluefromcf(l6_info, ["Files"], "plot_path", default="plots/")
         plot_path = os.path.join(plot_path, "L6", "")
         if not os.path.exists(plot_path): os.makedirs(plot_path)
         figure_name = site_name.replace(" ","")+"_CarbonBudget"+item+"_"+sdt+"_"+edt+'.png'
         figure_path = os.path.join(plot_path, figure_name)
         fig.savefig(figure_path, format='png')
-        if cf["Options"]["call_mode"].lower()=="interactive":
+        if l6_info["Options"]["call_mode"].lower() == "interactive":
             plt.draw()
             pfp_utils.mypause(0.5)
             plt.ioff()
@@ -504,7 +550,7 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
             plt.switch_backend(current_backend)
             plt.ion()
     # plot time series of Fn,Fg,Fh,Fe
-    if cf["Options"]["call_mode"].lower()=="interactive":
+    if l6_info["Options"]["call_mode"].lower() == "interactive":
         plt.ion()
     else:
         current_backend = plt.get_backend()
@@ -524,13 +570,13 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
     plt.tight_layout()
     sdt = ddv["DateTime"]["Data"][0].strftime("%Y%m%d")
     edt = ddv["DateTime"]["Data"][-1].strftime("%Y%m%d")
-    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
+    plot_path = pfp_utils.get_keyvaluefromcf(l6_info, ["Files"], "plot_path", default="plots/")
     plot_path = os.path.join(plot_path, "L6", "")
     if not os.path.exists(plot_path): os.makedirs(plot_path)
     figname = plot_path+site_name.replace(" ","")+"_SEB"
     figname = figname+"_"+sdt+"_"+edt+'.png'
     fig.savefig(figname,format='png')
-    if cf["Options"]["call_mode"].lower()=="interactive":
+    if l6_info["Options"]["call_mode"].lower()=="interactive":
         plt.draw()
         pfp_utils.mypause(0.5)
         plt.ioff()
@@ -539,7 +585,7 @@ def L6_summary_plotdaily(cf, ds, daily_dict):
         plt.switch_backend(current_backend)
         plt.ion()
 
-def L6_summary_plotcumulative(cf, ds, cumulative_dict):
+def L6_summary_plotcumulative(cumulative_dict, l6_info):
     # cumulative plots
     color_list = ["blue","red","green","yellow","magenta","black","cyan","brown"]
     year_list = [y for y in list(cumulative_dict.keys()) if y not in ["all"]]
@@ -547,18 +593,18 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
     cdy0 = cumulative_dict[year_list[0]]
     type_list = []
     for item in list(cdy0["variables"].keys()):
-        if item[0:2]=="ER": type_list.append(item[2:])
+        if item[0:2] == "ER": type_list.append(item[2:])
     for item in type_list:
         if "NEE"+item not in cdy0["variables"] or "GPP"+item not in cdy0["variables"]:
             type_list.remove(item)
     # do the plots
-    site_name = ds.globalattributes["site_name"]
+    site_name = l6_info["Global"]["site_name"]
     title_str = site_name+": "+year_list[0]+" to "+year_list[-1]
     # get lists of X labels (letter of month) and position
     xlabels = numpy.array(["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"])
     xlabel_posn = numpy.array([0,31, 59, 89, 120, 150, 181, 212, 242, 273, 303, 334])/float(366)
     for item in type_list:
-        if cf["Options"]["call_mode"].lower()=="interactive":
+        if l6_info["Options"]["call_mode"].lower() == "interactive":
             plt.ion()
         else:
             current_backend = plt.get_backend()
@@ -628,14 +674,14 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
         # save a hard copy of the plot
         sdt = year_list[0]
         edt = year_list[-1]
-        plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
+        plot_path = pfp_utils.get_keyvaluefromcf(l6_info, ["Files"], "plot_path", default="plots/")
         plot_path = os.path.join(plot_path, "L6", "")
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
         figure_name = site_name.replace(" ", "")+"_Cumulative"+item+"_"+sdt+"_"+edt+'.png'
         figure_path = os.path.join(plot_path, figure_name)
         fig.savefig(figure_path, format='png')
-        if cf["Options"]["call_mode"].lower()=="interactive":
+        if l6_info["Options"]["call_mode"].lower() == "interactive":
             plt.draw()
             pfp_utils.mypause(0.5)
             plt.ioff()
@@ -644,28 +690,32 @@ def L6_summary_plotcumulative(cf, ds, cumulative_dict):
             plt.switch_backend(current_backend)
             plt.ion()
 
-def L6_summary_createseriesdict(cf,ds):
+def L6_summary_createseriesdict(ds, l6_info):
     """
     Purpose:
      Create a dictionary containing lists of variables, operators and formats
     for use by the daily, annual and cumulative routines.
     Usage:
-     series_dict = L6_summary_createseriesdict(cf,ds)
-     where cf is a control file object
-           ds is an OzFluxQC data structure
+     series_dict = L6_summary_createseriesdict(ds, l6_info)
+     where ds is an OzFluxQC data structure
+           l6_info is thye L6 information dictionary from ParseL6ControlFile()
            series_dict is a dictionary of various variable lists
     Author: PRI
     Date: June 2015
     """
+    l6is = l6_info["Summary"]
+    # create a dictionary to hold the data being summarised
     series_dict = {"daily":{},"annual":{},"cumulative":{},"lists":{}}
-    # adjust units of NEE, NEP, GPP and ER
     sdl = series_dict["lists"]
-    sdl["nee"] = [item for item in list(cf["NetEcosystemExchange"].keys()) if "NEE" in item[0:3] and item in list(ds.series.keys())]
-    sdl["gpp"] = [item for item in list(cf["GrossPrimaryProductivity"].keys()) if "GPP" in item[0:3] and item in list(ds.series.keys())]
-    sdl["fre"] = [item for item in list(cf["EcosystemRespiration"].keys()) if "ER" in item[0:2] and item in list(ds.series.keys())]
+    sdl["nee"] = [item for item in l6is["NetEcosystemExchange"]
+                  if "NEE" in item[0:3] and item in list(ds.series.keys())]
+    sdl["gpp"] = [item for item in l6is["GrossPrimaryProductivity"]
+                  if "GPP" in item[0:3] and item in list(ds.series.keys())]
+    sdl["er"] = [item for item in l6is["EcosystemRespiration"]
+                  if "ER" in item[0:2] and item in list(ds.series.keys())]
     sdl["nep"] = [item.replace("NEE","NEP") for item in sdl["nee"]]
     sdl["nep"] = [item for item in sdl["nep"] if item in list(ds.series.keys())]
-    sdl["co2"] = sdl["nee"]+sdl["nep"]+sdl["gpp"]+sdl["fre"]
+    sdl["co2"] = sdl["nee"]+sdl["nep"]+sdl["gpp"]+sdl["er"]
     for item in sdl["co2"]:
         series_dict["daily"][item] = {}
         series_dict["cumulative"][item] = {}
@@ -1130,10 +1180,23 @@ def ParseL6ControlFile(cf, ds):
     """
     # create the L6 information dictionary
     l6_info = {}
+    # summary section
+    l6_info["Summary"] = {"EcosystemRespiration":[],
+                          "NetEcosystemExchange": [],
+                          "GrossPrimaryProductivity": []}
+    # merge section
+    l6_info["MergeSeries"] = {"standard": {}}
+    # propagate the ['Files'] section
+    l6_info["Files"] = copy.deepcopy(cf["Files"])
+    # propagate the ['Options'] section
+    l6_info["Options"] = copy.deepcopy(cf["Options"])
+    # some useful global attributes
+    l6_info["Global"] = {"site_name": ds.globalattributes["site_name"]}
     # add key for suppressing output of intermediate variables e.g. Ta_aws
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     l6_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     if "EcosystemRespiration" in list(cf.keys()):
+        l6_info["EcosystemRespiration"] = copy.deepcopy(cf["EcosystemRespiration"])
         for output in list(cf["EcosystemRespiration"].keys()):
             if "ERUsingSOLO" in list(cf["EcosystemRespiration"][output].keys()):
                 rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO", 610)
@@ -1141,8 +1204,6 @@ def ParseL6ControlFile(cf, ds):
                 rp_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor", 620)
             if "ERUsingLasslop" in list(cf["EcosystemRespiration"][output].keys()):
                 rp_createdict(cf, ds, l6_info, output, "ERUsingLasslop", 630)
-            if "MergeSeries" in list(cf["EcosystemRespiration"][output].keys()):
-                rpMergeSeries_createdict(cf, ds, l6_info, output, "MergeSeries")
     if "NetEcosystemExchange" in list(cf.keys()):
         l6_info["NetEcosystemExchange"] = {}
         for output in list(cf["NetEcosystemExchange"].keys()):
@@ -1179,7 +1240,11 @@ def PartitionNEE(ds, l6_info):
         NEE_label = l6_info["GrossPrimaryProductivity"][label]["NEE"]
         ER_label = l6_info["GrossPrimaryProductivity"][label]["ER"]
         output_label = l6_info["GrossPrimaryProductivity"][label]["output"]
+        if NEE_label not in list(ds.series.keys()):
+            continue
         NEE, NEE_flag, NEE_attr = pfp_utils.GetSeriesasMA(ds, NEE_label)
+        if ER_label not in list(ds.series.keys()):
+            continue
         ER, _, _ = pfp_utils.GetSeriesasMA(ds, ER_label)
         # calculate GPP
         # here we use the conventions from Chapin et al (2006)
@@ -1194,6 +1259,8 @@ def PartitionNEE(ds, l6_info):
         attr["long_name"] = "Gross Primary Productivity"
         attr[descr_level] = "Calculated as -1*" + NEE_label + " + " + ER_label
         ds.series[output_label]["Attr"] = attr
+        l6_info["Summary"]["GrossPrimaryProductivity"].append(label)
+    return
 
 def cleanup_ustar_dict(ds, ustar_in):
     """
@@ -1286,28 +1353,32 @@ def get_ustar_thresholds(cf, ds):
         ds.returncodes["message"] = msg
     return ustar_out
 
-def get_daynight_indicator(cf, ds):
+def get_daynight_indicator(ds, l6_info):
     Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
     # get the day/night indicator
     daynight_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
     inds = daynight_indicator["values"]
     attr = daynight_indicator["attr"]
     # get the filter type
-    filter_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DayNightFilter", default="Fsd")
+    filter_type = pfp_utils.get_keyvaluefromcf(l6_info, ["Options"], "DayNightFilter",
+                                               default="Fsd")
     attr["daynight_filter"] = filter_type
-    use_fsdsyn = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "UseFsdsyn_threshold", default="No")
+    use_fsdsyn = pfp_utils.get_keyvaluefromcf(l6_info, ["Options"], "UseFsdsyn_threshold",
+                                              default="No")
     attr["use_fsdsyn"] = use_fsdsyn
     # get the indicator series
     if filter_type.lower() == "fsd":
         # get the Fsd threshold
-        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10))
+        Fsd_threshold = int(pfp_utils.get_keyvaluefromcf(l6_info, ["Options"], "Fsd_threshold",
+                                                         default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
         idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(1)
     elif filter_type.lower() == "sa":
         # get the solar altitude threshold
-        sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
+        sa_threshold = int(pfp_utils.get_keyvaluefromcf(l6_info, ["Options"], "sa_threshold",
+                                                        default="-5"))
         attr["sa_threshold"] = str(sa_threshold)
         # we are using solar altitude to define day/night
         if "solar_altitude" not in list(ds.series.keys()):
@@ -1930,7 +2001,7 @@ def rp_createdict_info(cf, ds, erl, called_by):
     erl["info"]["maxlags"] = int(float(12)*nperhr + 0.5)
     # Get the data path
     path_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "file_path")
-    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "in_filename")
+    file_name = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "out_filename")
     file_name = file_name.replace(".nc", suffix_dict[called_by])
     erl['info']['data_file_path'] = os.path.join(path_name, file_name)
     # get the plot path
@@ -1970,7 +2041,7 @@ def rp_createdict_outputs(cf, erl, target, called_by, flag_code):
         # get the target
         sl = [section, target, called_by, output]
         eo[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
-        eo[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default="Fco2")
+        eo[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default=target)
         # add the flag_code
         eo[output]["flag_code"] = flag_code
         # list of drivers
