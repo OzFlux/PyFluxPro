@@ -135,6 +135,7 @@ def ERUsingLasslop(ds, l6_info, xl_writer):
         return
     msg = " Estimating ER using Lasslop"
     logger.info(msg)
+    l6_info["Options"]["called_by"] = "ERUsingLasslop"
     EcoResp(ds, l6_info, "ERUsingLasslop", xl_writer)
     for output in l6_info["ERUsingLasslop"]["outputs"]:
         if output in list(ds.series.keys()):
@@ -162,6 +163,7 @@ def ERUsingLloydTaylor(ds, l6_info, xl_writer):
         return
     msg = " Estimating ER using Lloyd-Taylor"
     logger.info(msg)
+    l6_info["Options"]["called_by"] = "ERUsingLloydTaylor"
     EcoResp(ds, l6_info, "ERUsingLloydTaylor", xl_writer)
     for output in l6_info["ERUsingLloydTaylor"]["outputs"]:
         if output in list(ds.series.keys()):
@@ -205,6 +207,7 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
                                              'day_rb_bool': False}}
     er_mode = partition_dict[called_by]['day_night_mode']
     rb_mode = partition_dict[called_by]['day_rb_bool']
+    l6_info["Options"]["fit_daytime_rb"] = rb_mode
     # Set attributes for ER and plotting
     descr = {"ERUsingLasslop": "Ecosystem respiration modelled by Lasslop",
              "ERUsingLloydTaylor": "Ecosystem respiration modelled by Lloyd-Taylor"}
@@ -218,64 +221,49 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         fig_num = 0
     else:
         fig_num = plt.get_fignums()[-1]
-    # open the Excel file for writing all outputs
-    #xl_name = iel["info"]["data_file_path"]
-    #xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
     # loop over the series of outputs (usually one only)
     for output in outputs:
-        # Make the filtered dataframe (fix this to allow gap-filled drivers)
-        ustars_dict = {x.split("_")[-1]: float(ds.series["Fco2"]["Attr"][x])
-                       for x in ds.series["Fco2"]["Attr"] if "ustar" in x}
-        #var_list = ["Fco2", "Ta", "Ts", "Fsd", "ustar", "VPD"]
-        var_list = ["Fco2", "Ta", "Fsd", "ustar", "VPD", "Sws"]
-        df = pandas.DataFrame({var: ds.series[var]["Data"] for var in var_list},
+        l6_info["Options"]["output"] = output
+        # get a list of drivers specified in the control file
+        drivers = [l for l in l6_info[called_by]["outputs"][output]["drivers"]]
+        # check to see if the drivers are in the data structure
+        for driver in drivers:
+            if driver not in ds.series.keys():
+                # throw an exception if a driver is not in the data structre
+                msg = " Requested driver " + driver + " not found in data"
+                logger.error("!!!!!")
+                logger.error(msg)
+                logger.error("!!!!!")
+                raise RuntimeError(msg)
+        # add soil moisture as a driver (for plotting purposes only)
+        if "Sws" in ds.series.keys():
+            drivers.append("Sws")
+        # get the target label
+        target = l6_info[called_by]["outputs"][output]["target"]
+        targets = pfp_utils.string_to_list(target)
+        if called_by == "ERUsingLasslop" and "Fco2" in ds.series.keys():
+            targets.append("Fco2")
+        # list of variables required for this partitioning method
+        labels = drivers + targets
+        # get the required variables as a data frame
+        df = pandas.DataFrame({label: ds.series[label]["Data"] for label in labels},
                               index = ds.series["DateTime"]["Data"])
-        # IM original code causes Fco2 to be masked if any driver is gap filled
-        #is_valid = numpy.tile(True, int(ds.globalattributes["nc_nrecs"]))
-        #for this_var in df.columns: is_valid *= ds.series[this_var]["Flag"] == 0
-        #df.loc[~is_valid, "Fco2"] = numpy.nan
-        # 2022/4/22 PRI
-        # set Fco2 to NaN if
-        #  - any driver has a QC flag not ending in 0
-        #  - Fco2 is gap filled (only use observations)
+        # get a boolean array
         is_valid = numpy.tile(True, int(ds.globalattributes["nc_nrecs"]))
-        #for this_var in ["Ta", "Ts", "Fsd", "ustar", "VPD"]:
-        for this_var in ["Ta", "Fsd", "ustar", "VPD"]:
-            is_valid *= numpy.mod(ds.series[this_var]["Flag"], 10) == 0
-        for this_var in ["Fco2"]:
-            is_valid *= ds.series[this_var]["Flag"] == 0
-        df.loc[~is_valid, "Fco2"] = numpy.nan
-
-        # this may be a duplicate ustar filter...
-        for year in ustars_dict:
-            df.loc[(df.index.year == int(year)) &
-                   (df.ustar < ustars_dict[year]) &
-                   (df.Fsd < 10), "Fco2"] = numpy.nan
-
-        # Set the weighting of air and soil temperatures
-        configs_dict = iel["outputs"][output]
-        drivers = configs_dict["drivers"]
-        weighting = configs_dict["weights_air_soil"]
-        re_drivers = [x for x in drivers if x in ["Ta", "Ts"]]
-        if len(re_drivers) == 1:
-            if re_drivers[0] == "Ta": weighting = "air"
-            if re_drivers[0] == "Ts": weighting = "soil"
-        elif len(re_drivers) == 2:
-            if len(weighting) == 1:
-                weighting = "air"
-            elif len(weighting) == 2:
-                try:
-                    weighting = [float(x) for x in weighting]
-                except TypeError:
-                    weighting = "air"
-            else:
-                weighting = "air"
+        # loop over the drivers
+        for driver in drivers:
+            # allow gap filled drivers
+            is_valid *= numpy.mod(ds.series[driver]["Flag"], 10) == 0
+        # set records with missing drivers to NaN
+        for target in targets:
+            df.loc[~is_valid, target] = numpy.nan
+        # loop over targets
+        for target in targets:
+            # only allow observed (not gap filled) targets (ER, NEE)
+            df.loc[ds.series[target]["Flag"] != 0, target] = numpy.nan
         # Pass the dataframe to the respiration class and get the results
-        ptc = pfp_part.partition(df, xl_writer, weights_air_soil = weighting,
-                                 fit_daytime_rb = rb_mode, time_step=ts)
+        ptc = pfp_part.partition(df, xl_writer, l6_info)
         params_df = ptc.estimate_parameters(mode = er_mode)
-        #E0_results = pandas.DataFrame.from_dict(ptc.results["E0"], orient="index")
-        #E0_results.to_excel(xl_writer, output + " (E0 results)")
         ER = ptc.estimate_er_time_series(params_df)
         ER_flag = numpy.tile(30, len(ER))
         # Write to series
@@ -315,6 +303,7 @@ def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     """
     if called_by not in l6_info:
         return
+    l6_info["Options"]["called_by"] = called_by
     if l6_info[called_by]["info"]["call_mode"].lower() == "interactive":
         # call the ERUsingSOLO GUI
         pfp_gfSOLO.gfSOLO_gui(main_gui, ds, l6_info, called_by)
@@ -1190,8 +1179,17 @@ def ParseL6ControlFile(cf, ds):
     l6_info["Files"] = copy.deepcopy(cf["Files"])
     # propagate the ['Options'] section
     l6_info["Options"] = copy.deepcopy(cf["Options"])
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10)
+    l6_info["Options"]["noct_threshold"] = int(float(opt))
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ConvertToPhotons", default=True)
+    l6_info["Options"]["convert_to_photons"] = opt
+    l6_info["Options"]["plot_raw_data"] = False
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "PlotRawData", default="No")
+    if opt.lower() == "yes":
+        l6_info["Options"]["plot_raw_data"] = True
     # some useful global attributes
-    l6_info["Global"] = {"site_name": ds.globalattributes["site_name"]}
+    l6_info["Global"] = {"site_name": ds.globalattributes["site_name"],
+                         "time_step": int(float(ds.globalattributes["time_step"]))}
     # add key for suppressing output of intermediate variables e.g. Ta_aws
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     l6_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
@@ -2045,10 +2043,30 @@ def rp_createdict_outputs(cf, erl, target, called_by, flag_code):
         # add the flag_code
         eo[output]["flag_code"] = flag_code
         # list of drivers
+        # ERUsingLloydTaylor can have 2 temperaturres e.g. Ta and Ts
+        max_drivers = 2
+        if called_by in ["ERUsingLasslop"]:
+            # ERUsingLasslop can have 4 e.g. Fsd, VPD, Ta and Ts
+            max_drivers = 4
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default="Ta")
-        eo[output]["drivers"] = pfp_utils.string_to_list(opt)
-        opt = pfp_utils.get_keyvaluefromcf(cf, sl, "weights_air_soil", default="1")
-        eo[output]["weights_air_soil"] = pfp_utils.string_to_list(opt)
+        if len(pfp_utils.string_to_list(opt)) <= max_drivers:
+            eo[output]["drivers"] = pfp_utils.string_to_list(opt)
+        else:
+            msg = " Too many drivers specified (only alowed " + str(max_drivers) + "), using Ta"
+            logger.error(msg)
+            eo[output]["drivers"] = pfp_utils.string_to_list("Ta")
+        # weighting for air temperature, soil temperature or combination
+        drivers = [d for d in eo[output]["drivers"] if d[0:2] in ["Ta", "Ts"]]
+        if len(drivers) == 1:
+            eo[output]["weighting"] = pfp_utils.string_to_list("1.0")
+        elif len(drivers) == 2:
+            default = "0.5,0.5"
+            opt = pfp_utils.get_keyvaluefromcf(cf, sl, "weighting", default=default)
+            eo[output]["weighting"] = pfp_utils.string_to_list(opt)
+        else:
+            msg = " Too many temperatures as drivers (only allowed 2), using Ta"
+            eo[output]["drivers"] = pfp_utils.string_to_list("Ta")
+            eo[output]["weighting"] = pfp_utils.string_to_list("1.0")
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "output_plots", default="False")
         eo[output]["output_plots"] = (opt == "True")
         # fit statistics for plotting later on
