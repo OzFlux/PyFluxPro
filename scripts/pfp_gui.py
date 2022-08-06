@@ -8388,6 +8388,20 @@ class edit_cfg_L6(QtWidgets.QWidget):
             section.appendRow(parent2)
         self.update_tab_text()
 
+    def add_options_section(self):
+        """ Add an Options section."""
+        self.sections["Options"] = QtGui.QStandardItem("Options")
+        new_options = {"Fsd_threshold": "10", "PlotRawData": "No"}
+        for key in new_options:
+            value = new_options[key]
+            child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
+            child1 = QtGui.QStandardItem(value)
+            self.sections["Options"].appendRow([child0, child1])
+        self.model.insertRow(self.section_headings.index("EcosystemRespiration"),
+                             self.sections["Options"])
+        self.update_tab_text()
+
     def add_subsection(self, dict_to_add):
         """ Add a subsection to the model."""
         # get the index of the selected item
@@ -8500,6 +8514,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
             new_file_parts = os.path.split(str(new_file_path))
             parent.child(selected_item.row(), 1).setText(new_file_parts[1])
 
+    def change_selected_text(self, new_text):
+        """ Change the selected text."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_item.setText(new_text)
+
     def context_menu(self, position):
         """ Right click context menu."""
         # get a menu
@@ -8518,6 +8538,8 @@ class edit_cfg_L6(QtWidgets.QWidget):
         # initialise logical for inserting a separator
         add_separator = False
         if level == 0:
+            add_separator = False
+            selected_text = str(idx.data())
             # get a list of the section headings at the root level
             self.section_headings = []
             root = self.model.invisibleRootItem()
@@ -8529,6 +8551,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 #self.context_menu.addAction(self.context_menu.actionAddImportsSection)
                 #self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
                 #add_separator = True
+            if "Options" not in self.section_headings and selected_text == "Files":
+                self.context_menu.actionAddOptionsSection = QtWidgets.QAction(self)
+                self.context_menu.actionAddOptionsSection.setText("Add Options section")
+                self.context_menu.addAction(self.context_menu.actionAddOptionsSection)
+                self.context_menu.actionAddOptionsSection.triggered.connect(self.add_options_section)
+                add_separator = True
             if selected_text == "Files":
                 # get a list of existing entries in this section
                 existing_entries = self.get_existing_entries()
@@ -8630,16 +8658,19 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.context_menu.actionRemoveGlobalAttribute.setText("Remove attribute")
                 self.context_menu.addAction(self.context_menu.actionRemoveGlobalAttribute)
                 self.context_menu.actionRemoveGlobalAttribute.triggered.connect(self.remove_item)
-            #elif (str(parent.text()) == "NetEcosystemExchange") and (selected_item.column() == 0):
-                #self.context_menu.actionRemoveNEEVariable = QtWidgets.QAction(self)
-                #self.context_menu.actionRemoveNEEVariable.setText("Remove variable")
-                #self.context_menu.addAction(self.context_menu.actionRemoveNEEVariable)
-                #self.context_menu.actionRemoveNEEVariable.triggered.connect(self.remove_item)
-            #elif (str(parent.text()) == "GrossPrimaryProductivity") and (selected_item.column() == 0):
-                #self.context_menu.actionRemoveGPPVariable = QtWidgets.QAction(self)
-                #self.context_menu.actionRemoveGPPVariable.setText("Remove variable")
-                #self.context_menu.addAction(self.context_menu.actionRemoveGPPVariable)
-                #self.context_menu.actionRemoveGPPVariable.triggered.connect(self.remove_item)
+            elif str(parent.text()) == "Options":
+                key = str(parent.child(selected_item.row(),0).text())
+                if (selected_item.column() == 1) and (key in ["PlotRawData"]):
+                    if selected_text != "Yes":
+                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeOption.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionChangeOption)
+                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("Yes"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeOption.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeOption)
+                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("No"))
             elif (str(parent.text()) == "EcosystemRespiration") and (selected_item.column() == 0):
                 self.context_menu.actionRemoveERVariable = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveERVariable.setText("Remove variable")
@@ -8800,7 +8831,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
         for key1 in self.cfg:
             if not self.cfg[key1]:
                 continue
-            if key1 in ["Files", "Global"]:
+            if key1 in ["Files", "Global", "Options"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 self.sections[key1].setEditable(False)
