@@ -12,10 +12,7 @@ import datetime as dt
 from lmfit import Model
 import matplotlib.pyplot as plt
 import numpy as np
-import operator
 import pandas as pd
-
-from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
@@ -305,6 +302,7 @@ class partition(object):
                 result_list.append(func(date, Eo, window_size, self.priors))
                 date_list.append(date)
             except RuntimeError as e:
+                # not sure we should let exceptions pass quietly ...
                 #msg = '- {}'.format(e)
                 #logger.error(msg)
                 continue
