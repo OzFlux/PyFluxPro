@@ -2,12 +2,13 @@
 import copy
 import inspect
 import logging
+import numbers
 import os
 import platform
 import traceback
 # 3rd party modules
 from configobj import ConfigObj
-import numpy
+#import numpy
 import timezonefinder
 # PFP modules
 from scripts import pfp_func_units
@@ -750,6 +751,28 @@ def check_l5_controlfile(cfg):
         if "cpd_filename" in cfg["Files"]:
             msg = "ustar_threshold section and Files/cpd_filename present"
             messages["ERROR"].append(msg)
+    display_messages(messages)
+    if len(messages["ERROR"]) > 0:
+        ok = False
+    return ok
+def check_l6_controlfile(cfg):
+    """
+    Purpose:
+     Check the L6 control file to make sure it contains all information
+     needed to run L6 and that all information is correct.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: July 2022
+    """
+    ok = True
+    # initialise the messages dictionary
+    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    l6_check_files(cfg, messages)
+    l6_check_options(cfg, messages)
+    l6_check_ecosystemrespiration(cfg, messages)
+    l6_check_netecosystemexchange(cfg, messages)
+    l6_check_grossprimaryproductivity(cfg, messages)
     display_messages(messages)
     if len(messages["ERROR"]) > 0:
         ok = False
@@ -2069,7 +2092,97 @@ def l6_update_controlfile(cfg):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return ok
-
+def l6_check_files(cfg, messages):
+    # check the Files section exists
+    if ("Files" in cfg):
+        # check file_path is in the Files section
+        if "file_path" in cfg["Files"]:
+            file_path = cfg["Files"]["file_path"]
+            # check file_path directory exists
+            if os.path.isdir(file_path):
+                pass
+            else:
+                msg = "Files: " + file_path + " is not a directory"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'file_path' not in section"
+            messages["ERROR"].append(msg)
+        # check in_filename is in the Files section
+        if "in_filename" in cfg["Files"]:
+            file_name = cfg["Files"]["in_filename"]
+            file_parts = os.path.splitext(file_name)
+            # check the file type is supported
+            if (file_parts[-1].lower() in [".nc"]):
+                file_uri = os.path.join(file_path, file_name)
+                if os.path.isfile(file_uri):
+                    pass
+                else:
+                    msg = "Files: " + file_name + " not found"
+                    messages["ERROR"].append(msg)
+            else:
+                msg = "Files: " + file_name + " doesn't end with .nc"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'in_filename' not in section"
+            messages["ERROR"].append(msg)
+        # check the output file type
+        if "out_filename" in cfg["Files"]:
+            file_name = cfg["Files"]["out_filename"]
+            file_parts = os.path.splitext(file_name)
+            if (file_parts[-1].lower() in [".nc"]):
+                pass
+            else:
+                msg = "Files: " + file_name + " doesn't end with .nc"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'out_filename' not in section"
+            messages["ERROR"].append(msg)
+        # check file_path is in the Files section
+        if "plot_path" in cfg["Files"]:
+            plot_path = cfg["Files"]["plot_path"]
+            # check file_path directory exists
+            if os.path.isdir(plot_path):
+                pass
+            else:
+                msg = "Files: " + plot_path + " is not a directory"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'plot_path' not in section"
+            messages["ERROR"].append(msg)
+    else:
+        msg = "'Files' section not in control file"
+        messages["ERROR"].append(msg)
+    return
+def l6_check_ecosystemrespiration(cfg, messages):
+    return
+def l6_check_grossprimaryproductivity(cfg, messages):
+    return
+def l6_check_netecosystemexchange(cfg, messages):
+    return
+def l6_check_options(cfg, messages):
+    if ("Options" in cfg):
+        if "Fsd_threshold" in cfg["Options"]:
+            opt = pfp_utils.strip_non_numeric(str(cfg["Options"]["Fsd_threshold"]))
+            if pfp_utils.is_number(opt):
+                pass
+            else:
+                msg = "Options: 'Fsd_threshold' is not a number"
+                messages["ERROR"].append(msg)
+        if "PlotRawData" in cfg["Options"]:
+            opt = cfg["Options"]["PlotRawData"]
+            if isinstance(opt, str):
+                if opt.lower() in ["yes", "no"]:
+                    pass
+                else:
+                    msg = "Options: 'PlotRawData' must be 'Yes' or 'No'"
+                    messages["ERROR"].append(msg)
+            else:
+                msg = "Options: 'PlotRawData' must be 'Yes' or 'No'"
+                messages["ERROR"].append(msg)
+    else:
+        # 'Options' section is optional
+        pass
+    return
 def l6_update_cfg_syntax(cfg):
     """
     Purpose:

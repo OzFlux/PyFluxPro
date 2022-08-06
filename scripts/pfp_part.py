@@ -12,10 +12,7 @@ import datetime as dt
 from lmfit import Model
 import matplotlib.pyplot as plt
 import numpy as np
-import operator
 import pandas as pd
-
-from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
@@ -45,35 +42,28 @@ class partition(object):
           e.g. choice of [3, 1] would cause weighting of 3:1 in favour of air
           temperature, or e.g. [1, 3] would result in the reverse.
     """
-    def __init__(self, dataframe, xl_writer, names_dict = None, fit_daytime_rb = False,
-                 weights_air_soil = 'air', noct_threshold = 10,
-                 convert_to_photons = True, time_step=30):
+    def __init__(self, dataframe, xl_writer, l6_info, names_dict = None):
+        self.interval = int(l6_info["Global"]["time_step"])
+        assert self.interval % 30 == 0
+        self.convert_to_photons = l6_info["Options"]["convert_to_photons"]
+        if self.convert_to_photons:
+            self.noct_threshold = l6_info["Options"]["noct_threshold"] * 0.46 * 4.6
+        else:
+            self.noct_threshold = l6_info["Options"]["noct_threshold"]
+        self._fit_daytime_rb = l6_info["Options"]["fit_daytime_rb"]
+        self.l6_info = l6_info
 
-        #interval = int(filter(lambda x: x.isdigit(),
-                              #pd.infer_freq(dataframe.index)))
-        # pandas.infer_freq() returns 'H' for hourly data causing pfp_utils.strip_non_numeric()
-        # to return an empty string causing the float() to fail.
-        #interval = int(float(pfp_utils.strip_non_numeric(pd.infer_freq(dataframe.index))))
-        # simplify by passing the time step as an argument
-        interval = int(time_step)
-        assert interval % 30 == 0
-        self.interval = interval
         if not names_dict:
             self.external_names = self._define_default_external_names()
         else:
             self.external_names = names_dict
         self.internal_names = self._define_default_internal_names()
-        self.convert_to_photons = convert_to_photons
-        self.weighting = _check_weights_format(weights_air_soil)
+
         self.df = self._make_formatted_df(dataframe)
         self.xl_writer = xl_writer
         self.results = {"E0": {}}
-        if convert_to_photons:
-            self.noct_threshold = noct_threshold * 0.46 * 4.6
-        else:
-            self.noct_threshold = noct_threshold
-        self._fit_daytime_rb = fit_daytime_rb
-#------------------------------------------------------------------------------
+        self.prior_parameter_estimates()
+    #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
     # Methods
@@ -94,6 +84,8 @@ class partition(object):
                                              priors_dict)['rb']
         beta_prior = priors_dict['beta']
         df = self.get_subset(date, size = window_size, mode = 'day')
+        if ((len(df) > 0) and (self.l6_info["Options"]["plot_raw_data"])):
+            self.plot_LL_data(df)
         try:
             if not len(df) > 4:
                 raise RuntimeError('insufficient data for fit')
@@ -148,8 +140,10 @@ class partition(object):
                 #'insolation': 'PPFD',
                 #'vapour_pressure_deficit': 'VPD'}
         # PRI 20220720 added Sws
-        return {'Cflux': 'NEE',
+        return {'ecosystem_respiration': 'ER',
+                'net_ecosystem_exchange': 'NEE',
                 'air_temperature': 'Ta',
+                'soil_temperature': 'Ts',
                 'insolation': 'PPFD',
                 'vapour_pressure_deficit': 'VPD',
                 'soil moisture': 'Sws'}
@@ -171,9 +165,11 @@ class partition(object):
                 #'air_temperature': 'Ta',
                 #'insolation': 'Fsd',
                 #'vapour_pressure_deficit': 'VPD'}
-        # PRI 20220720 added Sws
-        return {'Cflux': 'Fco2',
+        # PRI 20220720 added Sws, changed Fco2 to ER
+        return {'ecosystem_respiration': 'ER',
+                'net_ecosystem_exchange': 'Fco2',
                 'air_temperature': 'Ta',
+                'soil_temperature': 'Ts',
                 'insolation': 'Fsd',
                 'vapour_pressure_deficit': 'VPD',
                 'soil moisture': 'Sws'}
@@ -195,19 +191,19 @@ class partition(object):
             df = self.get_subset(date, size = window_size, mode = 'night')
             if len(df) == 0:
                 continue
-            self.plot_raw_data(df)
+            if self.l6_info["Options"]["plot_raw_data"]:
+                self.plot_E0_data(df)
             self.results["E0"][n]["start"] = df.index.values[0]
             self.results["E0"][n]["end"] = df.index.values[-1]
             self.results["E0"][n]["num"] = len(df)
             self.results["E0"][n]["T range"] = df.TC.max() - df.TC.min()
             if ((len(df) > 6) and (df.TC.max() - df.TC.min() >= 5)):
                 f = _Lloyd_and_Taylor
+                ER = df.ER.values
+                TC = df.TC.values
                 model = Model(f, independent_vars = ['t_series'])
-                params = model.make_params(rb = 1,
-                                           Eo = self.prior_parameter_estimates()['Eo'])
-                result = model.fit(df.NEE,
-                                   t_series = df.TC,
-                                   params = params)
+                params = model.make_params(rb = 1, Eo = self.priors['Eo'])
+                result = model.fit(ER, t_series=TC, params=params)
                 E0_se = (result.conf_interval()['Eo'][4][1] -
                          result.conf_interval()['Eo'][2][1]) / 2
                 rb_se = (result.conf_interval()['rb'][4][1] -
@@ -233,7 +229,7 @@ class partition(object):
             logger.error(msg)
             logger.error("!!!!!")
             raise RuntimeError(msg)
-        msg = " Found {} valid estimates of Eo".format(str(len(Eo_list)))
+        msg = " Found {} valid estimates of Eo (out of {} windows)".format(str(len(Eo_list)), str(n))
         logger.info(msg)
         Eo_array = np.array(Eo_list)
         Eo = ((Eo_array[:, 0] / (Eo_array[:, 1])).sum() /
@@ -292,7 +288,6 @@ class partition(object):
     def estimate_parameters(self, mode, Eo = None, window_size = 4,
                             window_step = 4):
 
-        priors_dict = self.prior_parameter_estimates()
         func = self._get_func()[mode]
         if not Eo:
             Eo = self.estimate_Eo()
@@ -304,9 +299,10 @@ class partition(object):
             #msg = str(date.date())
             #logger.info(msg)
             try:
-                result_list.append(func(date, Eo, window_size, priors_dict))
+                result_list.append(func(date, Eo, window_size, self.priors))
                 date_list.append(date)
             except RuntimeError as e:
+                # not sure we should let exceptions pass quietly ...
                 #msg = '- {}'.format(e)
                 #logger.error(msg)
                 continue
@@ -332,17 +328,22 @@ class partition(object):
     #--------------------------------------------------------------------------
     def get_subset(self, date, size, mode):
 
-        ops = {"day": operator.gt, "night": operator.lt}
+        #ops = {"day": operator.gt, "night": operator.lt}
         ref_date = date + dt.timedelta(0.5)
         date_tuple = (ref_date - dt.timedelta(size / 2.0 -
                                               self.interval / 1440.0),
                       ref_date + dt.timedelta(size / 2.0))
-        #sub_df = self.df.loc[date_tuple[0]: date_tuple[1],
-                             #['NEE', 'PPFD', 'TC', 'VPD']].dropna()
-        # PRI 20220720 added Sws
-        sub_df = self.df.loc[date_tuple[0]: date_tuple[1],
-                             ['NEE', 'PPFD', 'TC', 'VPD', 'Sws']].dropna()
-        return sub_df[ops[mode](sub_df.PPFD, self.noct_threshold)]
+        if mode == "day":
+            sub_labels = ["NEE", "PPFD", "VPD", "TC"]
+        elif mode == "night":
+            sub_labels = ["ER", "TC"]
+        else:
+            msg = " These are not the droids you're looking for ..."
+            logger.error(msg)
+            raise RuntimeError(msg)
+        sub_df = self.df.loc[date_tuple[0]: date_tuple[1], sub_labels].dropna()
+        #return sub_df[ops[mode](sub_df.PPFD, self.noct_threshold)]
+        return sub_df
     #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
@@ -357,18 +358,27 @@ class partition(object):
 
     #--------------------------------------------------------------------------
     def _make_formatted_df(self, df):
-
         """Update this to check for soil temperature - if not there, default
            to Ta"""
-
         sub_df = _rename_df(df, self.external_names, self.internal_names)
-        if self.convert_to_photons: sub_df['PPFD'] = sub_df['PPFD'] * 0.46 * 4.6
-        if self.weighting == 'air': s = sub_df['Ta'].copy()
-        if self.weighting == 'soil': s = sub_df['Ts'].copy()
-        if isinstance(self.weighting, list):
-            s = (sub_df['Ta'] * self.weighting[0] +
-                 sub_df['Ts'] * self.weighting[1]) / sum(self.weighting)
-        s.name = 'TC'
+        if self.convert_to_photons and "PPFD" in list(sub_df):
+            sub_df['PPFD'] = sub_df['PPFD'] * 0.46 * 4.6
+        called_by = self.l6_info["Options"]["called_by"]
+        output = self.l6_info["Options"]["output"]
+        # get a list of temperature drivers
+        drivers = [d for d in self.l6_info[called_by]["outputs"][output]["drivers"]
+                   if d[0:2] in ["Ta", "Ts"]]
+        if len(drivers) == 1:
+            s = sub_df[drivers[0]].copy()
+        elif len(drivers) == 2:
+            weighting = self.l6_info[called_by]["outputs"][output]["weighting"]
+            s = (sub_df[drivers[0]] * weighting[0] +
+                 sub_df[drivers[1]] * weighting[1]) / sum(weighting)
+        else:
+            msg = " More than 2 drivers specified (" + str(len(drivers)) + ")"
+            logger.error(msg)
+            raise RuntimeError(msg)
+        s.name = "TC"
         return sub_df.join(s)
     #--------------------------------------------------------------------------
 
@@ -378,15 +388,12 @@ class partition(object):
         df = self.get_subset(date, size = window_size, mode = 'night')
         if not len(df) > 2: raise RuntimeError('insufficient data for fit')
         f = _Lloyd_and_Taylor
-        model = Model(f, independent_vars = ['t_series'])
-        params = model.make_params(rb = priors_dict['rb'],
-                                   Eo = Eo)
+        model = Model(f, independent_vars=['t_series'])
+        params = model.make_params(rb=priors_dict['rb'], Eo=Eo)
         params['Eo'].vary = False
-        result = model.fit(df.NEE,
-                           t_series = df.TC,
-                           params = params)
-        if result.params['rb'].value < 0: raise RuntimeError('rb parameter '
-                                                             'out of range')
+        result = model.fit(df.ER, t_series=df.TC, params=params)
+        if result.params['rb'].value < 0:
+            raise RuntimeError('rb parameter out of range')
         return result.best_values
     #--------------------------------------------------------------------------
 
@@ -397,19 +404,15 @@ class partition(object):
         df = self.get_subset(date, size = window_size, mode = 'night')
         assert len(df) > 0
         if not Eo: Eo = self.estimate_Eo()
-        results_dict = {}
+        results = {}
         try:
-            results_dict['night'] = (
-                    self.nocturnal_params(date, Eo, window_size,
-                                          self.prior_parameter_estimates()))['rb']
+            results['night'] = self.nocturnal_params(date, Eo, window_size, self.priors)['rb']
         except RuntimeError as e:
             msg = "Fit of nocturnal rb failed with the following message {}".format(e)
             logger.error(msg)
         try:
             self._fit_daytime_rb = True
-            results_dict['day'] = (
-                    self.day_params(date, Eo, window_size,
-                                    self.prior_parameter_estimates()))['rb']
+            results['day'] = self.day_params(date, Eo, window_size, self.priors)['rb']
         except RuntimeError as e:
             msg = "Fit of daytime rb failed with the following message {}".format(e)
             logger.error(msg)
@@ -430,8 +433,8 @@ class partition(object):
                 mfc = 'grey', mec = 'black', ms = 8, alpha = 0.5,
                 label = 'Observations')
         df['TC_alt'] = np.linspace(df.TC.min(), df.TC.max(), len(df))
-        for key in results_dict.keys():
-            s = _Lloyd_and_Taylor(t_series = df.TC_alt, rb = results_dict[key],
+        for key in results.keys():
+            s = _Lloyd_and_Taylor(t_series = df.TC_alt, rb = results[key],
                                   Eo = Eo)
             ax.plot(df.TC_alt, s, color = 'black', ls = styles_dict[key],
                     label = labels_dict[key])
@@ -449,15 +452,13 @@ class partition(object):
         results_dict = {}
         try:
             self._fit_daytime_rb = False
-            results_dict['night'] = (self.day_params(date, Eo, window_size,
-                                     self.prior_parameter_estimates()))
+            results_dict['night'] = self.day_params(date, Eo, window_size, self.priors)
         except RuntimeError as e:
             msg ="Fit of daytime parameters and nocturnal rb failed with the following message {}".format(e)
             logger.error(msg)
         try:
             self._fit_daytime_rb = True
-            results_dict['day'] = (self.day_params(date, Eo, window_size,
-                                   self.prior_parameter_estimates()))
+            results_dict['day'] = self.day_params(date, Eo, window_size, self.priors)
         except RuntimeError as e:
             msg = "Fit of daytime parameters and rb failed with the following message {}".format(e)
             logger.error(msg)
@@ -494,33 +495,55 @@ class partition(object):
         return fig
     #--------------------------------------------------------------------------
 
-    def plot_raw_data(self, df):
+    #--------------------------------------------------------------------------
+    def plot_E0_data(self, df):
         title = np.datetime_as_string(df.index.values[0], unit='D') + " to "
         title += np.datetime_as_string(df.index.values[-1], unit='D')
         file_name = os.path.join("plots", "estimate_e0_" + title.replace(" ", "_") + ".png")
         fig, axs = plt.subplots()
-        sc = axs.scatter(df.TC.values, df.NEE.values, c=df.Sws.values, s=10)
+        if "Sws" in list(self.df):
+            ldf = self.df[self.df.index.isin(df.index)]
+            sc = axs.scatter(df.TC.values, df.ER.values, c=ldf.Sws.values, s=10)
+        else:
+            sc = axs.scatter(df.TC.values, df.ER.values, s=10)
         axs.set_title(title)
         axs.set_xlabel("Temperature (degC)")
-        axs.set_ylabel("NEE (umol/m^2/s)")
+        axs.set_ylabel("ER (umol/m^2/s)")
         clb = plt.colorbar(sc)
         clb.ax.set_title("Sws")
         fig.savefig(file_name, format="png")
-        plt.close()
+        plt.close(fig)
+        return
+    #--------------------------------------------------------------------------
+
+    #--------------------------------------------------------------------------
+    def plot_LL_data(self, df):
+        title = np.datetime_as_string(df.index.values[0], unit='D') + " to "
+        title += np.datetime_as_string(df.index.values[-1], unit='D')
+        file_name = os.path.join("plots", "LL_" + title.replace(" ", "_") + ".png")
+        fig, axs = plt.subplots()
+        sc = axs.scatter(df.PPFD.values, df.NEE.values, c=df.VPD.values, s=10)
+        axs.set_title(title)
+        axs.set_xlabel("PPFD (umol/m^2/s)")
+        axs.set_ylabel("NEE (umol/m^2/s)")
+        clb = plt.colorbar(sc)
+        clb.ax.set_title("VPD")
+        fig.savefig(file_name, format="png")
+        plt.close(fig)
+        return
+    #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
     def prior_parameter_estimates(self):
-
-        return {'rb': self.df.loc[self.df.PPFD < self.noct_threshold,
-                                  'NEE'].mean(),
-                'Eo': 100,
-                'alpha': -0.01,
-                'beta': (self.df.loc[self.df.PPFD > self.noct_threshold,
-                                     'NEE'].quantile(0.03)-
-                          self.df.loc[self.df.PPFD > 10,
-                                      'NEE'].quantile(0.97)),
-                'k': 0}
-    #--------------------------------------------------------------------------
+        self.priors = {"rb": self.df["ER"].mean(), "Eo": 100}
+        if self.l6_info["Options"]["called_by"] in ["ERUsingLasslop"]:
+            self.priors["alpha"] = -0.01
+            lwr = self.df.loc[self.df.PPFD > self.noct_threshold, 'NEE'].quantile(0.03)
+            upr = self.df.loc[self.df.PPFD > self.noct_threshold, 'NEE'].quantile(0.97)
+            self.priors["beta"] = (lwr - upr)
+            self.priors["k"] = 0
+        return
+#------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
 def _check_weights_format(weighting):
@@ -588,6 +611,9 @@ def _rename_df(df, external_names, internal_names):
     assert sorted(external_names.keys()) == sorted(internal_names.keys())
     swap_dict = {external_names[key]: internal_names[key]
                  for key in internal_names.keys()}
+    for label in list(swap_dict.keys()):
+        if label not in list(df):
+            swap_dict.pop(label)
     sub_df = df[swap_dict.keys()].copy()
     sub_df.columns = swap_dict.values()
     return sub_df
