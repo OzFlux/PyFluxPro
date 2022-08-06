@@ -84,7 +84,7 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
     # dictionary of utar thresold values
     if ustar_threshold == None:
         ustar_dict = pfp_rp.get_ustar_thresholds(cf, ds)
-        if ds.returncodes["value"] != 0:
+        if ds.info["returncodes"]["value"] != 0:
             return
     else:
         ustar_dict = pfp_rp.get_ustar_thresholds_annual(ldt, ustar_threshold)
@@ -158,7 +158,7 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
     iris["not_output"].append(indicators["final"]["Label"])
 
     # loop over the series to be filtered
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     for label in opt["filter_list"]:
         msg = " Applying " + opt["turbulence_filter"] + " filter to " + label
         logger.info(msg)
@@ -221,7 +221,7 @@ def ApplyTurbulenceFilter_checks(cf, ds):
     if opt["turbulence_filter"].lower() == "none":
         logger.warning("!!!")
         msg = "!!! Turbulence filter disabled in control file at "
-        msg += ds.globalattributes["processing_level"]
+        msg += ds.root["Attributes"]["processing_level"]
         logger.warning(msg)
         logger.warning("!!!")
         opt["OK"] = False
@@ -243,7 +243,7 @@ def ApplyTurbulenceFilter_checks(cf, ds):
             opt["filter_list"] = [filter_string]
     # check to see if the series are in the data structure
     for item in opt["filter_list"]:
-        if item not in list(ds.series.keys()):
+        if item not in list(ds.root["Variables"].keys()):
             msg = " Series "+item+" given in FilterList not found in data stucture"
             logger.warning(msg)
             opt["filter_list"].remove(item)
@@ -302,8 +302,8 @@ def do_SONICcheck(cf, ds, code=3):
         return
     msg = " Doing the SONIC check"
     logger.info(msg)
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    labels = list(ds.series.keys())
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    labels = list(ds.root["Variables"].keys())
     # list of variables to be modified by this QC check
     dependents = ["UxA", "UxC", "UxT", "UxUy", "UxUz",
                   "Ux_SONIC_Av", "Ux_SONIC_Sd", "Ux_SONIC_Vr",
@@ -412,41 +412,28 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
         source_list = source_string.split(",")
     else:
         source_list = [source_string]
-    # check to see if the "ignore_missing" flag is set
-    opt = pfp_utils.get_keyvaluefromcf(cf, [section,series,"DependencyCheck"], "ignore_missing", default="no")
-    ignore_missing = False
-    if opt.lower() in ["yes", "y", "true", "t"]:
-        ignore_missing = True
     # get the data
-    dependent_data,dependent_flag,dependent_attr = pfp_utils.GetSeries(ds, series)
+    dependent = pfp_utils.GetVariable(ds, series)
     # loop over the precursor source list
     for item in source_list:
         # check the precursor is in the data structure
-        if item not in list(ds.series.keys()):
-            msg = " DependencyCheck: "+series+" precursor series "+item+" not found, skipping ..."
+        if item not in list(ds.root["Variables"].keys()):
+            msg = " DependencyCheck: " + series + " precursor series "
+            msg += item + " not found, skipping ..."
             logger.warning(msg)
             continue
         # get the precursor data
-        precursor_data,precursor_flag,precursor_attr = pfp_utils.GetSeries(ds,item)
-        # check if the user wants to ignore missing precursor data
-        if ignore_missing:
-            # they do, so make an array of missing values
-            nRecs = int(ds.globalattributes["nc_nrecs"])
-            missing_array = numpy.ones(nRecs)*float(c.missing_value)
-            # and find the indicies of elements equal to the missing value
-            bool_array = numpy.isclose(precursor_data, missing_array)
-            idx = numpy.where(bool_array == True)[0]
-            # and set these flags to 0 so missing data is ignored
-            precursor_flag[idx] = numpy.int32(0)
+        precursor = pfp_utils.GetVariable(ds, item)
         # mask the dependent data where the precursor flag shows data not OK
-        dependent_data = numpy.ma.masked_where(numpy.mod(precursor_flag, 10)!=0, dependent_data)
+        dependent["Data"] = numpy.ma.masked_where(numpy.mod(precursor["Flag"], 10) != 0,
+                                                  dependent["Data"])
         # get an index where the precursor flag shows data not OK
-        idx = numpy.ma.where(numpy.mod(precursor_flag, 10)!=0)[0]
+        idx = numpy.ma.where(numpy.mod(precursor["Flag"], 10) != 0)[0]
         # set the dependent QC flag
-        dependent_flag[idx] = numpy.int32(code)
+        dependent["Flag"][idx] = numpy.int32(code)
     # put the data back into the data structure
-    dependent_attr["DependencyCheck"] = ",".join(source_list)
-    pfp_utils.CreateSeries(ds,series,dependent_data,dependent_flag,dependent_attr)
+    dependent["Attr"]["DependencyCheck"] = ",".join(source_list)
+    pfp_utils.CreateVariable(ds, dependent)
     # our work here is done
     return
 
@@ -471,7 +458,7 @@ def do_diurnalcheck(cf, ds, section, series, code=5):
         return
     if 'numsd' not in list(cf[section][series]["DiurnalCheck"].keys()):
         return
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     n = int((60./ts) + 0.5)             #Number of timesteps per hour
     nInts = int((1440.0/ts)+0.5)        #Number of timesteps per day
     Av = numpy.array([c.missing_value]*nInts, dtype=numpy.float64)
@@ -484,7 +471,7 @@ def do_diurnalcheck(cf, ds, section, series, code=5):
         mindex = numpy.where(month == m)[0]
         if len(mindex) != 0:
             lHdh = Hdh[mindex]
-            l2ds = ds.series[series]["Data"][mindex]
+            l2ds = ds.root["Variables"][series]["Data"][mindex]
             for i in range(nInts):
                 li = numpy.where((abs(lHdh-(float(i)/float(n)))<c.eps)&(l2ds!=float(c.missing_value)))
                 if numpy.size(li)!=0:
@@ -498,9 +485,9 @@ def do_diurnalcheck(cf, ds, section, series, code=5):
             hindex = numpy.array(n*lHdh,int)
             index = numpy.where(((l2ds!=float(c.missing_value))&(l2ds<Lwr[hindex]))|
                                 ((l2ds!=float(c.missing_value))&(l2ds>Upr[hindex])))[0] + mindex[0]
-            ds.series[series]["Data"][index] = numpy.float64(c.missing_value)
-            ds.series[series]["Flag"][index] = numpy.int32(code)
-            ds.series[series]["Attr"]["diurnalcheck_numsd"] = cf[section][series]["DiurnalCheck"]["numsd"]
+            ds.root["Variables"][series]["Data"][index] = numpy.float64(c.missing_value)
+            ds.root["Variables"][series]["Flag"][index] = numpy.int32(code)
+            ds.root["Variables"][series]["Attr"]["diurnalcheck_numsd"] = cf[section][series]["DiurnalCheck"]["numsd"]
     return
 
 def do_EC155check(cf, ds, code=4):
@@ -528,8 +515,8 @@ def do_EC155check(cf, ds, code=4):
     """
     msg = " Doing the IRGA (EC150/155) check"
     logger.info(msg)
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    labels = list(ds.series.keys())
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    labels = list(ds.root["Variables"].keys())
     # list of variables to be modified by this QC check
     dependents = ["UzA", "UxA", "UyA", "UzC", "UxC", "UyC",
                   "AH_IRGA_Av", "AH_IRGA_Sd", "AH_IRGA_Vr",
@@ -646,7 +633,7 @@ def do_EPQCFlagCheck(cf, ds, section, series, code=9):
         return
     # comma separated string to list
     reject_list = cf[section][series]["EPQCFlagCheck"]["reject"].split(",")
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     flag = numpy.zeros(nRecs, dtype=numpy.int32)
     source_list = pfp_utils.string_to_list(cf[section][series]['EPQCFlagCheck']["source"])
     reject_list = pfp_utils.string_to_list(cf[section][series]['EPQCFlagCheck']["reject"])
@@ -666,7 +653,7 @@ def do_EPQCFlagCheck(cf, ds, section, series, code=9):
 def do_excludedates(cf,ds,section,series,code=6):
     if 'ExcludeDates' not in list(cf[section][series].keys()):
         return
-    ldt = ds.series['DateTime']['Data']
+    ldt = ds.root["Variables"]['DateTime']['Data']
     ExcludeList = list(cf[section][series]['ExcludeDates'].keys())
     NumExclude = len(ExcludeList)
     for i in range(NumExclude):
@@ -697,14 +684,14 @@ def do_excludedates(cf,ds,section,series,code=6):
             msg = "ExcludeDates: bad date string ("+exclude_dates_string+"), skipping ..."
             logger.warning(msg)
             return
-        ds.series[series]['Data'][si:ei] = numpy.float64(c.missing_value)
-        ds.series[series]['Flag'][si:ei] = numpy.int32(code)
-        ds.series[series]['Attr']['ExcludeDates_'+str(i)] = cf[section][series]['ExcludeDates'][str(i)]
+        ds.root["Variables"][series]['Data'][si:ei] = numpy.float64(c.missing_value)
+        ds.root["Variables"][series]['Flag'][si:ei] = numpy.int32(code)
+        ds.root["Variables"][series]['Attr']['ExcludeDates_'+str(i)] = cf[section][series]['ExcludeDates'][str(i)]
     return
 
 def do_excludehours(cf,ds,section,series,code=7):
     if 'ExcludeHours' not in list(cf[section][series].keys()): return
-    ldt = ds.series['DateTime']['Data']
+    ldt = ds.root["Variables"]['DateTime']['Data']
     ExcludeList = list(cf[section][series]['ExcludeHours'].keys())
     NumExclude = len(ExcludeList)
     Hour = numpy.array([d.hour for d in ldt])
@@ -726,9 +713,9 @@ def do_excludehours(cf,ds,section,series,code=7):
             ExHr = datetime.datetime.strptime(ExcludeHourList[j],'%H:%M').hour
             ExMn = datetime.datetime.strptime(ExcludeHourList[j],'%H:%M').minute
             idx = numpy.where((Hour[si:ei] == ExHr) & (Minute[si:ei] == ExMn))[0] + si
-            ds.series[series]['Data'][idx] = numpy.float64(c.missing_value)
-            ds.series[series]['Flag'][idx] = numpy.int32(code)
-            ds.series[series]['Attr']['ExcludeHours_'+str(i)] = cf[section][series]['ExcludeHours'][str(i)]
+            ds.root["Variables"][series]['Data'][idx] = numpy.float64(c.missing_value)
+            ds.root["Variables"][series]['Flag'][idx] = numpy.int32(code)
+            ds.root["Variables"][series]['Attr']['ExcludeHours_'+str(i)] = cf[section][series]['ExcludeHours'][str(i)]
 
 def do_IRGAcheck(cf,ds):
     """
@@ -754,13 +741,13 @@ def do_IRGAcheck(cf,ds):
         irga_type = "Li-7500"
     # do the IRGA checks
     if irga_type in ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)"]:
-        ds.globalattributes["irga_type"] = irga_type
+        ds.root["Attributes"]["irga_type"] = irga_type
         do_li7500check(cf, ds)
     elif irga_type in ["Li-7500A (>=V6.5)", "Li-7500RS", "Li-7200", "Li-7200RS"]:
-        ds.globalattributes["irga_type"] = irga_type
+        ds.root["Attributes"]["irga_type"] = irga_type
         do_li7500acheck(cf, ds)
     elif irga_type in ["EC150", "EC155", "IRGASON"]:
-        ds.globalattributes["irga_type"] = irga_type
+        ds.root["Attributes"]["irga_type"] = irga_type
         do_EC155check(cf, ds)
     else:
         msg = " Unsupported IRGA type " + irga_type + ", contact the devloper ..."
@@ -793,8 +780,8 @@ def do_li7500check(cf, ds, code=4):
     """
     msg = " Doing the IRGA (Li-7500) check"
     logger.info(msg)
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    labels = list(ds.series.keys())
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    labels = list(ds.root["Variables"].keys())
     # list of variables to be modified by this QC check
     dependents = ["UzA", "UxA", "UyA", "UzC", "UxC", "UyC",
                   "AH_IRGA_Av", "AH_IRGA_Sd", "AH_IRGA_Vr",
@@ -904,8 +891,8 @@ def do_li7500acheck(cf, ds, code=4):
     """
     msg = " Doing the IRGA (Li-7500A) check"
     logger.info(msg)
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    labels = list(ds.series.keys())
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    labels = list(ds.root["Variables"].keys())
     # list of variables to be modified by this QC check
     dependents = ["UzA", "UxA", "UyA", "UzC", "UxC", "UyC",
                   "AH_IRGA_Av", "AH_IRGA_Sd", "AH_IRGA_Vr",
@@ -1063,26 +1050,26 @@ def do_rangecheck(cf, ds, section, series, code=2):
     valid_lower = numpy.min(lwr)
     lwr = lwr[month - 1]
     # get the data, flag and attributes
-    data, flag, attr = pfp_utils.GetSeriesasMA(ds, series)
+    var = pfp_utils.GetVariable(ds, series)
     # convert the data from a masked array to an ndarray so the range check works
-    data = numpy.ma.filled(data, fill_value=c.missing_value)
+    var["Data"] = numpy.ma.filled(var["Data"], fill_value=c.missing_value)
     # get the indices of elements outside this range
-    idx = numpy.where((data<lwr)|(data>upr))[0]
+    idx = numpy.where((var["Data"] < lwr)|(var["Data"] > upr))[0]
     # set elements outside range to missing and set the QC flag
-    data[idx] = numpy.float64(c.missing_value)
-    flag[idx] = numpy.int32(code)
+    var["Data"][idx] = numpy.float64(c.missing_value)
+    var["Flag"][idx] = numpy.int32(code)
     # update the variable attributes
-    attr["rangecheck_lower"] = cf[section][series]["RangeCheck"]["lower"]
-    attr["rangecheck_upper"] = cf[section][series]["RangeCheck"]["upper"]
-    attr["valid_range"] = repr(valid_lower) + "," + repr(valid_upper)
+    var["Attr"]["rangecheck_lower"] = cf[section][series]["RangeCheck"]["lower"]
+    var["Attr"]["rangecheck_upper"] = cf[section][series]["RangeCheck"]["upper"]
+    var["Attr"]["valid_range"] = repr(valid_lower) + "," + repr(valid_upper)
     # and now put the data back into the data structure
-    pfp_utils.CreateSeries(ds, series, data, Flag=flag, Attr=attr)
+    pfp_utils.CreateVariable(ds, var)
     # now we can return
     return
 
 def do_qcchecks(cf,ds,mode="verbose"):
-    if "processing_level" in ds.globalattributes:
-        level = str(ds.globalattributes["processing_level"])
+    if "processing_level" in ds.root["Attributes"]:
+        level = str(ds.root["Attributes"]["processing_level"])
         if mode!="quiet": logger.info(" Doing the QC checks at level "+str(level))
     else:
         if mode!="quiet": logger.info(" Doing the QC checks")
@@ -1100,7 +1087,7 @@ def do_qcchecks(cf,ds,mode="verbose"):
     # first time for general QC checks
     for series in series_list:
         # check the series is in the data structure
-        if series not in list(ds.series.keys()):
+        if series not in list(ds.root["Variables"].keys()):
             if mode!="quiet":
                 msg = " QC checks: series "+series+" not found in data structure, skipping ..."
                 logger.warning(msg)
@@ -1111,7 +1098,7 @@ def do_qcchecks(cf,ds,mode="verbose"):
     # second time for dependencies
     for series in series_list:
         # check the series is in the data structure
-        if series not in list(ds.series.keys()):
+        if series not in list(ds.root["Variables"].keys()):
             if mode!="quiet":
                 msg = " Dependencies: series "+series+" not found in data structure, skipping ..."
                 logger.warning(msg)
@@ -1184,15 +1171,15 @@ def do_lowercheck(cf,ds,section,series,code=2):
         logger.info(msg)
         return
 
-    ldt = ds.series["DateTime"]["Data"]
-    ts = int(float(ds.globalattributes["time_step"]))
-    data, flag, attr = pfp_utils.GetSeriesasMA(ds, series)
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    var = pfp_utils.GetVariable(ds, series)
 
     lc_list = list(cf[section][series]["LowerCheck"].keys())
     for n,item in enumerate(lc_list):
         # this should be a list and we should probably check for compliance
         lwr_string = cf[section][series]["LowerCheck"][item]
-        attr["lowercheck_"+str(n)] = lwr_string
+        var["Attr"]["lowercheck_"+str(n)] = lwr_string
         lwr_list = lwr_string.split(",")
         start_date = dateutil.parser.parse(lwr_list[0])
         sl = float(lwr_list[1])
@@ -1202,17 +1189,17 @@ def do_lowercheck(cf,ds,section,series,code=2):
         si = pfp_utils.GetDateIndex(ldt, start_date, ts=ts, default=0, match="exact")
         ei = pfp_utils.GetDateIndex(ldt, end_date, ts=ts, default=len(ldt)-1, match="exact")
         # get the segment of data between this start and end date
-        seg_data = data[si:ei+1]
-        seg_flag = flag[si:ei+1]
+        seg_data = var["Data"][si:ei+1]
+        seg_flag = var["Flag"][si:ei+1]
         x = numpy.arange(si, ei+1, 1)
         lower = numpy.interp(x, [si, ei], [sl, el])
         index = numpy.ma.where((seg_data < lower))[0]
         seg_data[index] = numpy.ma.masked
         seg_flag[index] = numpy.int32(code)
-        data[si:ei+1] = seg_data
-        flag[si:ei+1] = seg_flag
+        var["Data"][si:ei+1] = seg_data
+        var["Flag"][si:ei+1] = seg_flag
     # now put the data back into the data structure
-    pfp_utils.CreateSeries(ds, series, data, Flag=flag, Attr=attr)
+    pfp_utils.CreateVariable(ds, var)
     return
 
 def do_uppercheck(cf,ds,section,series,code=2):
@@ -1231,15 +1218,15 @@ def do_uppercheck(cf,ds,section,series,code=2):
         logger.info(msg)
         return
 
-    ldt = ds.series["DateTime"]["Data"]
-    ts = int(float(ds.globalattributes["time_step"]))
-    data, flag, attr = pfp_utils.GetSeriesasMA(ds, series)
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    var = pfp_utils.GetVariable(ds, series)
 
     uc_list = list(cf[section][series]["UpperCheck"].keys())
     for n,item in enumerate(uc_list):
         # this should be a list and we should probably check for compliance
         upr_string = cf[section][series]["UpperCheck"][item]
-        attr["uppercheck_"+str(n)] = str(upr_string)
+        var["Attr"]["uppercheck_"+str(n)] = str(upr_string)
         upr_list = upr_string.split(",")
         start_date = dateutil.parser.parse(upr_list[0])
         su = float(upr_list[1])
@@ -1248,17 +1235,17 @@ def do_uppercheck(cf,ds,section,series,code=2):
         # get the start and end indices
         si = pfp_utils.GetDateIndex(ldt, start_date, ts=ts, default=0, match="exact")
         ei = pfp_utils.GetDateIndex(ldt, end_date, ts=ts, default=len(ldt)-1, match="exact")
-        seg_data = data[si:ei+1]
-        seg_flag = flag[si:ei+1]
+        seg_data = var["Data"][si:ei+1]
+        seg_flag = var["Flag"][si:ei+1]
         x = numpy.arange(si, ei+1, 1)
         upper = numpy.interp(x, [si, ei], [su, eu])
         index = numpy.ma.where((seg_data > upper))[0]
         seg_data[index] = numpy.ma.masked
         seg_flag[index] = numpy.int32(code)
-        data[si:ei+1] = seg_data
-        flag[si:ei+1] = seg_flag
+        var["Data"][si:ei+1] = seg_data
+        var["Flag"][si:ei+1] = seg_flag
     # now put the data back into the data structure
-    pfp_utils.CreateSeries(ds, series, data, Flag=flag, Attr=attr)
+    pfp_utils.CreateVariable(ds, var)
     return
 
 def UpdateVariableAttributes_QC(cf, variable):

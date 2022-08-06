@@ -82,7 +82,7 @@ def write_data_1columnpermonth(xlSheet, data, ts, format_string=''):
             xlSheet.write(j+2,xlCol,data[j,m-1],d_xf)
         xlCol = xlCol + 1
 
-def write_data_1columnpertimestep(xlSheet, data, ts, startdate=None, format_string=''):
+def write_data_1columnpertimestep(xlSheet, data, ts, startdate, format_string):
     tmp = data.copy()
     if numpy.ma.isMA(tmp): tmp = numpy.ma.filled(tmp,float(c.missing_value))
     xlCol = 0
@@ -192,20 +192,21 @@ def climatology(cf):
         msg = " Unable to find netCDF file " + nc_filename
         logger.error(msg)
         return
-    xl_filename = nc_filename.replace(".nc","_Climatology.xls")
+    xl_filename = nc_filename.replace(".nc", "_Climatology.xls")
     xlFile = xlwt.Workbook()
     ds = pfp_io.NetCDFRead(nc_filename)
-    if ds.returncodes["value"] != 0: return
-    # calculate Fa if it is not in the data structure
-    if "Fa" not in list(ds.series.keys()):
-        if "Fn" in list(ds.series.keys()) and "Fg" in list(ds.series.keys()):
-            pfp_ts.CalculateAvailableEnergy(ds,Fa_out='Fa',Fn_in='Fn',Fg_in='Fg')
-        else:
-            logger.warning(" Fn or Fg not in data struicture")
+    if ds.info["returncodes"]["value"] != 0:
+        return
     # get the time step
-    ts = int(ds.globalattributes['time_step'])
+    ts = int(ds.root["Attributes"]['time_step'])
     # get the datetime series
-    dt = ds.series['DateTime']['Data']
+    dt = ds.root["Variables"]['DateTime']['Data']
+    ldt = dt - datetime.timedelta(minutes=ts)
+    start = datetime.datetime(ldt[0].year, ldt[0].month, ldt[0].day, 0, 0, 0)
+    start += datetime.timedelta(minutes=ts)
+    end = datetime.datetime(ldt[-1].year, ldt[-1].month, ldt[-1].day, 0, 0, 0)
+    end += datetime.timedelta(minutes=1440)
+
     Hdh = numpy.array([(d.hour + d.minute/float(60)) for d in dt])
     Month = numpy.array([d.month for d in dt])
     # get the initial start and end dates
@@ -216,70 +217,50 @@ def climatology(cf):
     # find the end index of the last whole day (time=00:00)
     ei = pfp_utils.GetDateIndex(dt,EndDate,ts=ts,default=-1,match='endpreviousday')
     # get local views of the datetime series
-    ldt = dt[si:ei+1]
     Hdh = Hdh[si:ei+1]
     Month = Month[si:ei+1]
     # get the number of time steps in a day and the number of days in the data
     ntsInDay = int(24.0*60.0/float(ts))
-    nDays = int(len(ldt))//ntsInDay
     # loop over the variables listed in the control file
-    for ThisOne in list(cf['Variables'].keys()):
+    cf_labels = sorted(list(cf['Variables'].keys()))
+    ds_labels = sorted(list(ds.root["Variables"].keys()))
+    for label in cf_labels:
         # check to see if an alternative variable name is given
-        if "AltVarName" in list(cf['Variables'][ThisOne].keys()):
-            # and get it if it was
-            ThisOne = cf['Variables'][ThisOne]["AltVarName"]
-        if ThisOne in list(ds.series.keys()):
-            logger.info(" Doing climatology for "+ThisOne)
-            data,f,a = pfp_utils.GetSeriesasMA(ds,ThisOne,si=si,ei=ei)
-            if numpy.ma.count(data)==0:
-                logger.warning(" No data for "+ThisOne+", skipping ...")
-                continue
-            fmt_str = get_formatstring(cf,ThisOne,fmt_def='')
-            xlSheet = xlFile.add_sheet(ThisOne)
-            Av_all = do_diurnalstats(Month,Hdh,data,xlSheet,format_string=fmt_str,ts=ts)
-            # now do it for each day
-            # we want to preserve any data that has been truncated by the use of the "startnextday"
-            # and "endpreviousday" match options used above.  Here we revisit the start and end indices
-            # and adjust these backwards and forwards respectively if data has been truncated.
-            nDays_daily = nDays
-            ei_daily = ei
-            si_daily = si
-            sdate = ldt[0]
-            # is there data after the current end date?
-            if dt[-1]>ldt[-1]:
-                # if so, push the end index back by 1 day so it is included
-                ei_daily = ei + ntsInDay
-                nDays_daily = nDays_daily + 1
-            # is there data before the current start date?
-            if dt[0]<ldt[0]:
-                # if so, push the start index back by 1 day so it is included
-                si_daily = si - ntsInDay
-                nDays_daily = nDays_daily + 1
-                sdate = ldt[0]-datetime.timedelta(days=1)
-            # get the data and use the "pad" option to add missing data if required to
-            # complete the extra days
-            data,f,a = pfp_utils.GetSeriesasMA(ds,ThisOne,si=si_daily,ei=ei_daily,mode="pad")
-            ldt2,f,a = pfp_utils.GetSeriesasMA(ds,"DateTime",si=si_daily,ei=ei_daily,mode="pad")
-            data_daily = data.reshape(nDays_daily, ntsInDay)
-            xlSheet = xlFile.add_sheet(ThisOne+'(day)')
-            write_data_1columnpertimestep(xlSheet, data_daily, ts, startdate=sdate, format_string=fmt_str)
+        label = pfp_utils.get_keyvaluefromcf(cf, ["Variables"], "name", default=label)
+        if label in ds_labels:
+            logger.info(" Doing climatology for " + label)
+            var = pfp_utils.GetVariable(ds, label, start=si, end=ei)
+            # do the diurnal by month statistics
+            fmt_str = get_formatstring(cf, label, fmt_def='')
+            xlSheet = xlFile.add_sheet(label)
+            Av_all = do_diurnalstats(Month, Hdh, var["Data"], xlSheet, format_string=fmt_str, ts=ts)
+            # do the daily statistics
+            var = pfp_utils.GetVariable(ds, label)
+            var = pfp_utils.PadVariable(var, start, end)
+            nDays = int(len(var["Data"]))//ntsInDay
+            data_daily = var["Data"].reshape(nDays, ntsInDay)
+            xlSheet = xlFile.add_sheet(label + '(day)')
+            write_data_1columnpertimestep(xlSheet, data_daily, ts, start, fmt_str)
             data_daily_i = do_2dinterpolation(data_daily)
             # check to see if the interpolation has left some data unfilled
-            # this can happen if there is missing data at the boundaries of the date x hour
-            # 2D array
+            # this can happen if there is missing data at the boundaries of
+            # the date x hour 2D array
             idx = numpy.where(numpy.ma.getmaskarray(data_daily_i) == True)
             # fill any missing data in the interpolated array with the monthly climatology
-            month = numpy.array([dt.month-1 for dt in ldt2])
-            month_daily = month.reshape(nDays_daily, ntsInDay)
-            hour = numpy.array([int(60/ts*(dt.hour+float(dt.minute)/float(60))) for dt in ldt2])
-            hour_daily = hour.reshape(nDays_daily,ntsInDay)
+            month = numpy.array([dt.month-1 for dt in var["DateTime"]])
+            month_daily = month.reshape(nDays, ntsInDay)
+            hour = numpy.array([int(60/ts*(dt.hour+float(dt.minute)/float(60)))
+                                for dt in var["DateTime"]])
+            hour_daily = hour.reshape(nDays, ntsInDay)
             data_daily_i[idx] = Av_all[hour_daily[idx], month_daily[idx]]
             # write the interpolated data to the Excel workbook
-            xlSheet = xlFile.add_sheet(ThisOne+'i(day)')
-            write_data_1columnpertimestep(xlSheet, data_daily_i, ts, startdate=sdate, format_string=fmt_str)
+            xlSheet = xlFile.add_sheet(label + 'i(day)')
+            write_data_1columnpertimestep(xlSheet, data_daily_i, ts, start, fmt_str)
         else:
-            logger.warning(" Requested variable "+ThisOne+" not in data structure")
+            msg = " Requested variable " + label + " not in data structure"
+            logger.warning(msg)
             continue
-    logger.info(" Saving Excel file "+os.path.split(xl_filename)[1])
+    msg = " Saving Excel file " + os.path.split(xl_filename)[1]
+    logger.info(msg)
     xlFile.save(xl_filename)
     return

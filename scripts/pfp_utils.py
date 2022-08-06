@@ -131,13 +131,13 @@ def CheckFco2Units(ds, new_units, convert_units=True):
     # list of supported CO2 flux units
     ok_units = ["mg/m^2/s", "mgCO2/m^2/s", "umol/m^2/s"]
     # list of CO2 flux variables ("Fco2") with allowed units
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     Fco2_list = [l for l in labels if l[0:4] == "Fco2"]
     for label in list(Fco2_list):
-        if "units" not in ds.series[label]["Attr"]:
+        if "units" not in ds.root["Variables"][label]["Attr"]:
             Fco2_list.remove(label)
             continue
-        if ds.series[label]["Attr"]["units"] not in ok_units:
+        if ds.root["Variables"][label]["Attr"]["units"] not in ok_units:
             Fco2_list.remove(label)
             continue
     # check the units of Fc and convert if necessary
@@ -155,7 +155,7 @@ def CheckQCFlags(ds):
     """
     msg = " Checking missing data and QC flags are consistent"
     logger.info(msg)
-    labels = [label for label in list(ds.series.keys()) if label not in ["DateTime"]]
+    labels = [label for label in list(ds.root["Variables"].keys()) if label not in ["DateTime"]]
     # force any values of -9999 with QC flags of 0 to have a QC flag of 8
     for label in labels:
         var = GetVariable(ds, label)
@@ -194,7 +194,7 @@ def CheckTimeStep(ds, mode="quiet"):
     has_gaps = False
     # get the time step
     try:
-        ts = int(float(ds.globalattributes["time_step"]))
+        ts = int(float(ds.root["Attributes"]["time_step"]))
     except:
         if mode != "quiet":
             msg = " CheckTimeStep: 'time_step' is not a number, skipping check ..."
@@ -235,7 +235,7 @@ def CheckUnits(ds, label, units, convert_units=False):
         logger.error(msg)
         return
     for label in label_list:
-        if label not in list(ds.series.keys()):
+        if label not in list(ds.root["Variables"].keys()):
             continue
         variable = GetVariable(ds, label)
         if variable["Attr"]["units"] != units and convert_units:
@@ -291,8 +291,8 @@ def ConvertCO2Units(cf, ds):
     # get the CO2 units requested by the user
     CO2_units_out = get_keyvaluefromcf(cf, ["Options"], "CO2Units", default="umol/mol")
     # get a list of CO2 series
-    labels = ds.series.keys()
-    CO2_labels = [l for l in labels if l[0:3] == "CO2" and ds.series[l]["Attr"]["units"] in units_list]
+    labels = ds.root["Variables"].keys()
+    CO2_labels = [l for l in labels if l[0:3] == "CO2" and ds.root["Variables"][l]["Attr"]["units"] in units_list]
     # do the units conversion
     # separate averages and standard deviations
     for label in CO2_labels:
@@ -349,19 +349,19 @@ def ConvertFco2Units(cf, ds):
     Author: PRI
     Date: Back in the day
     """
-    descr_level = "description_" + str(ds.globalattributes["processing_level"])
+    descr_level = "description_" + str(ds.root["Attributes"]["processing_level"])
     # list of supported CO2 flux units
     units_list = ["mg/m^2/s", "umol/m^2/s"]
     # get the Fco2 units requested by the user
     Fco2_units_out = get_keyvaluefromcf(cf, ['Options'], "Fco2Units", default="umol/m^2/s")
     # get a list of Fco2 series
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     Fco2_list = [l for l in labels if l[0:4] == "Fco2"]
     for label in list(Fco2_list):
-        if "units" not in ds.series[label]["Attr"]:
+        if "units" not in ds.root["Variables"][label]["Attr"]:
             Fco2_list.remove(label)
             continue
-        if ds.series[label]["Attr"]["units"] not in units_list:
+        if ds.root["Variables"][label]["Attr"]["units"] not in units_list:
             Fco2_list.remove(label)
             continue
     # convert units of Fco2 as required
@@ -509,7 +509,7 @@ def convert_units_co2(ds, variable, new_units, co2_info):
     """
     # get the current units and the timestep
     old_units = variable["Attr"]["units"]
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     # now check the units and see what we have to convert
     if old_units == "umol/m^2/s" and new_units == "gC/m^2":
         # convert the data
@@ -714,11 +714,11 @@ def convert_units_h2o(ds, variable, new_units, h2o_info):
     Author: PRI
     Date: January 2016
     """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    series_list = list(ds.series.keys())
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    series_list = list(ds.root["Variables"].keys())
     ok_units = h2o_info["units"]
     old_units = variable["Attr"]["units"]
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     if ((old_units not in ok_units) or (new_units not in ok_units)):
         msg = " Unrecognised conversion from " + old_units + " to " + new_units
         logger.error(msg)
@@ -1226,55 +1226,6 @@ def convert_UVtoWSWD(U, V):
         WD["DateTime"] = copy.deepcopy(V["DateTime"])
     return WS, WD
 
-def CreateSeries(ds, Label, Data, Flag, Attr):
-    """
-    Purpose:
-     Create a series (1d array) of data in the data structure.
-     If the series already exists in the data structure, data values and QC flags will be
-     overwritten but attributes will be preserved.  However, the long_name and units attributes
-     are treated differently.  The existing long_name will have long_name appended to it.  The
-     existing units will be overwritten with units.
-     This utility is the prefered method for creating or updating a data series because
-     it implements a consistent method for creating series in the data structure.  Direct
-     writes to the contents of the data structure are discouraged (unless PRI wrote the code:=P).
-    Usage:
-     Fsd,flag,attr = pfp_utils.GetSeriesasMA(ds,"Fsd")
-      ... do something to Fsd here ...
-     pfp_utils.CreateSeries(ds,"Fsd",Fsd,flag,attr)
-    Author: PRI
-    Date: Back in the day
-    """
-    # create a temporary series to avoid premature overwrites
-    ds.series['_tmp_'] = {}
-    # put the data into the temporary series
-    if numpy.ma.isMA(Data):
-        ds.series['_tmp_']['Data'] = numpy.ma.filled(Data, float(c.missing_value))
-    else:
-        ds.series['_tmp_']['Data'] = numpy.array(Data)
-    # copy or make the QC flag
-    ds.series['_tmp_']['Flag'] = Flag.astype(numpy.int32)
-    # do the attributes
-    ds.series['_tmp_']['Attr'] = {}
-    # check to see if the series already exists
-    if Label in list(ds.series.keys()):
-        # if it does, copy the existing attributes
-        for attr in ds.series[Label]['Attr']:
-            if attr in Attr and ds.series[Label]['Attr'][attr] != Attr[attr]:
-                ds.series['_tmp_']['Attr'][attr] = Attr[attr]
-            else:
-                ds.series['_tmp_']['Attr'][attr] = ds.series[Label]['Attr'][attr]
-        for attr in Attr:
-            if attr not in list(ds.series['_tmp_']['Attr'].keys()):
-                ds.series['_tmp_']['Attr'][attr] = Attr[attr]
-    else:
-        for item in Attr:
-            ds.series['_tmp_']['Attr'][item] = Attr[item]
-    # copy temporary series to new series
-    ds.series[str(Label)] = ds.series['_tmp_']
-    # delete the temporary series
-    del ds.series['_tmp_']
-    return
-
 def CopyVariable(var_in):
     """
     Purpose:
@@ -1316,7 +1267,7 @@ def CreateDatetimeRange(start,stop,step=datetime.timedelta(minutes=30)):
      Create a series of datetimes between the "start" and "stop" datetimes
      and with a time step of "step".
     Useage:
-     dt = ds.series['DateTime']['Data']
+     dt = ds.root["Variables"]['DateTime']['Data']
      ts = ds.globaleattributes['time_step']
      dt_evenlyspaced = CreateDatetimeRange(dt[0],dt[-1],step=datetime.timedelta(minutes=ts))]
     Author: PRI
@@ -1359,7 +1310,7 @@ def CreateEmptyVariable(label, nrecs, datetime=None, out_type="ma", attr=None):
         logger.warning(msg)
     return variable
 
-def CreateVariable(ds, var_in, over_write=True):
+def CreateVariable(ds, var_in, group="root", over_write=True):
     """
     Purpose:
      Create a variable in the data structure.
@@ -1376,24 +1327,20 @@ def CreateVariable(ds, var_in, over_write=True):
      pfp_utils.CreateVariable(ds,Fsd)
     Author: PRI
     Date: September 2016
-          June 2021 - copy the variable before adding to the data structure otherwise
-                      the contents of the input variable will be changed
+    Modifications:
+     June 2021 - copy the variable before adding to the data structure otherwise
+                 the contents of the input variable will be changed
+     July 2022 - added ability to handle groups
     """
+    group = getattr(ds, group)
+    gvars = group["Variables"]
     variable = CopyVariable(var_in)
     label = variable["Label"]
-    if label in list(ds.series.keys()) and not over_write:
+    labels = sorted(list(group["Variables"]))
+    if label in labels and not over_write:
         msg = " Variable " + label + " already exists in data structure, not over written"
         logger.warning(msg)
         return
-    # check the series length
-    if len(variable["Data"]) != int(ds.globalattributes["nc_nrecs"]):
-        msg = " Variable " + label + " length incorrect, skipping ..."
-        logger.error(msg)
-        return
-    ## coerce data and flag to numpy ndarray
-    #for item in ["Data", "Flag"]:
-        #if not isinstance(variable[item], numpy.ndarray):
-            #variable[item] = numpy.array(variable[item])
     # convert masked array to ndarray
     if numpy.ma.isMA(variable["Data"]):
         variable["Data"] = numpy.ma.filled(variable["Data"], float(c.missing_value))
@@ -1414,14 +1361,92 @@ def CreateVariable(ds, var_in, over_write=True):
         logger.error(msg)
         return
     # create the series
-    ds.series[label] = {}
-    # put the data into the series
-    ds.series[label]["Data"] = variable["Data"]
-    # copy or make the QC flag
-    ds.series[label]["Flag"] = variable["Flag"]
-    # do the attributes
-    ds.series[label]["Attr"] = variable["Attr"]
+    gvars[label] = {"Data": variable["Data"],
+                    "Flag": variable["Flag"],
+                    "Attr": variable["Attr"]}
     return
+
+#def CreateVariable(ds, var_in, group="Variables", over_write=True):
+    #"""
+    #Purpose:
+     #Create a variable in the data structure.
+     #If the variable already exists in the data structure, data values, QC flags and
+     #attributes will be overwritten.
+     #This utility is the prefered method for creating or updating a data series because
+     #it implements a consistent method for creating series in the data structure.  Direct
+     #writes to the contents of the data structure are discouraged (unless PRI wrote the code:=P).
+    #Usage:
+     #Fsd = pfp_utils.GetVariable(ds,"Fsd")
+      #... do something to Fsd here ...
+      #... and don't forget to update the QC flag ...
+      #... and the attributes ...
+     #pfp_utils.CreateVariable(ds,Fsd)
+    #Author: PRI
+    #Date: September 2016
+    #Modifications:
+     #June 2021 - copy the variable before adding to the data structure otherwise
+                 #the contents of the input variable will be changed
+     #July 2022 - added ability to handle groups
+    #"""
+    ## sanity checks
+    #if hasattr(ds, "groups"):
+        #if group is None:
+            #msg = " No group specified for group data structure"
+            #logger.error(msg)
+            #raise RuntimeError(msg)
+        #elif group not in ds.groups.keys():
+            #msg = " Group " + group + " not in data structure"
+            #logger.error(msg)
+            #raise RuntimeError(msg)
+        #else:
+            #dsobj = ds.groups[group]
+    ##elif hasattr(ds, "series"):
+        ##dsobj = ds.series
+    #else:
+        #msg = " Unrecognised attribute in data structure"
+        #logger.error(msg)
+        #raise RuntimeError(msg)
+
+    #variable = CopyVariable(var_in)
+    #label = variable["Label"]
+    #if label in list(dsobj.keys()) and not over_write:
+        #msg = " Variable " + label + " already exists in data structure, not over written"
+        #logger.warning(msg)
+        #return
+    ### check the series length
+    ##if len(variable["Data"]) != int(ds.root["Attributes"]["nc_nrecs"]):
+        ##msg = " Variable " + label + " length incorrect, skipping ..."
+        ##logger.error(msg)
+        ##return
+    ## convert masked array to ndarray
+    #if numpy.ma.isMA(variable["Data"]):
+        #variable["Data"] = numpy.ma.filled(variable["Data"], float(c.missing_value))
+    ## coerce to numpy.float64
+    #if numpy.issubdtype(variable["Data"].dtype, numpy.float64):
+        ## already float64
+        #pass
+    #elif numpy.issubdtype(variable["Data"].dtype, 'O'):
+        ## datetime series have a dtype of object
+        #pass
+    #elif ((numpy.issubdtype(variable["Data"].dtype, numpy.integer)) or
+          #(numpy.issubdtype(variable["Data"].dtype, numpy.float32))):
+        ## coerce to float64
+        #variable["Data"] = numpy.array(variable["Data"], dtype=numpy.float64)
+    #else:
+        #msg = " Variable " + label + " has unrecognised dtype " + variable["Data"].dtype
+        #msg += ", skipping ..."
+        #logger.error(msg)
+        #return
+
+    ## create the series
+    #dsobj[label] = {}
+    ## put the data into the series
+    #dsobj[label]["Data"] = variable["Data"]
+    ## copy or make the QC flag
+    #dsobj[label]["Flag"] = variable["Flag"]
+    ## do the attributes
+    #dsobj[label]["Attr"] = variable["Attr"]
+    #return
 
 def csv_string_to_list(input_string):
     """ Convert a string containing items separated by commas into a list."""
@@ -1449,8 +1474,8 @@ def DeleteVariable(ds, variable):
         msg = " DeleteVariable: argument must be a variable dictionary or label"
         logger.warning(msg)
         return
-    if label in list(ds.series.keys()):
-        del ds.series[label]
+    if label in list(ds.root["Variables"].keys()):
+        del ds.root["Variables"][label]
     else:
         msg = " DeleteVariable: variable (" + label + ") not found in data structure"
         logger.warning(msg)
@@ -1503,27 +1528,27 @@ def FindMatchingIndices(a, b):
 
 def RemoveDuplicateRecords(ds):
     """ Remove duplicate records."""
-    # the ds.series["DateTime"]["Data"] series is actually a list
+    # the ds.root["Variables"]["DateTime"]["Data"] series is actually a list
     for item in ["DateTime","DateTime_UTC"]:
-        if item in list(ds.series.keys()):
-            ldt,ldt_flag,ldt_attr = GetSeries(ds,item)
+        if item in list(ds.root["Variables"].keys()):
+            ldt = GetVariable(ds, item)
             # ldt_nodups is returned as an ndarray
-            ldt_nodups,idx_nodups = numpy.unique(ldt,return_index=True)
+            ldt_nodups, idx_nodups = numpy.unique(ldt["Data"], return_index=True)
             # and put it back into the data structure
-            ds.series[item]["Data"] = ldt_nodups
-            ds.series[item]["Flag"] = ldt_flag[idx_nodups]
+            ds.root["Variables"][item]["Data"] = ldt_nodups
+            ds.root["Variables"][item]["Flag"] = ldt["Flag"][idx_nodups]
     # get a list of the series in the data structure
-    series_list = [item for item in list(ds.series.keys()) if '_QCFlag' not in item]
+    series_list = [item for item in list(ds.root["Variables"].keys()) if '_QCFlag' not in item]
     # remove the DateTime
     for item in ["DateTime","DateTime_UTC"]:
         if item in series_list: series_list.remove(item)
     # loop over the series in the data structure
     for ThisOne in series_list:
-        data_dups,flag_dups,attr = GetSeriesasMA(ds,ThisOne)
-        data_nodups = data_dups[idx_nodups]
-        flag_nodups = flag_dups[idx_nodups]
-        CreateSeries(ds,ThisOne,data_nodups,flag_nodups,attr)
-    ds.globalattributes['nc_nrecs'] = len(ds.series["DateTime"]["Data"])
+        var = GetVariable(ds, ThisOne)
+        var["Data"] = var["Data"][idx_nodups]
+        var["Flag"] = var["Flag"][idx_nodups]
+        CreateVariable(ds, var)
+    ds.root["Attributes"]["nc_nrecs"] = len(ds.root["Variables"]["DateTime"]["Data"])
 
 def FixNonIntegralTimeSteps(ds,fixtimestepmethod=""):
     """
@@ -1541,8 +1566,8 @@ def FixNonIntegralTimeSteps(ds,fixtimestepmethod=""):
     To do:
      Implement [I]nterpolate
     """
-    ts = int(float(ds.globalattributes["time_step"]))
-    ldt = ds.series["DateTime"]["Data"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     dt_diffs = numpy.array([(ldt[i]-rounddttots(ldt[i],ts=ts)).total_seconds() for i in range(1,len(ldt))])
     logger.info(" Maximum drift is "+str(numpy.max(dt_diffs))+" seconds, minimum drift is "+str(numpy.min(dt_diffs))+" seconds")
     ans = fixtimestepmethod
@@ -1561,8 +1586,8 @@ def FixNonIntegralTimeSteps(ds,fixtimestepmethod=""):
         rdt = numpy.array([(ldt_rounded[i]-ldt_rounded[i-1]).total_seconds() for i in range(1,len(ldt))])
         logger.info(" Maximum time step is now "+str(numpy.max(rdt))+" seconds, minimum time step is now "+str(numpy.min(rdt)))
         # replace the existing datetime series with the datetime series rounded to the nearest time step
-        ds.series["DateTime"]["Data"] = ldt_rounded
-    ds.globalattributes['nc_nrecs'] = len(ds.series["DateTime"]["Data"])
+        ds.root["Variables"]["DateTime"]["Data"] = ldt_rounded
+    ds.root["Attributes"]['nc_nrecs'] = len(ds.root["Variables"]["DateTime"]["Data"])
 
 def FixTimeGaps(ds):
     """
@@ -1580,9 +1605,8 @@ def FixTimeGaps(ds):
      July 2021 - rewrite to use GetVariable, CreateEmptyVariable, CreateVariable
                  and FindMatchingIndices
     """
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     delta = datetime.timedelta(minutes=ts)
-    #ldt_gaps,ldt_flag,ldt_attr = GetSeries(ds,"DateTime")
     ldt_gaps = GetVariable(ds, "DateTime")
     # generate a datetime list from the start datetime to the end datetime
     ldt_start = ldt_gaps["Data"][0]
@@ -1590,7 +1614,7 @@ def FixTimeGaps(ds):
     nogaps = numpy.array([dt for dt in perdelta(ldt_start, ldt_end, delta)])
     nRecs = len(nogaps)
     # update the global attribute containing the number of records
-    ds.globalattributes['nc_nrecs'] = nRecs
+    ds.root["Attributes"]['nc_nrecs'] = nRecs
     # create a new (empty) datetime variable
     ldt_nogaps = CreateEmptyVariable("DateTime", nRecs)
     ldt_nogaps["Data"] = nogaps
@@ -1600,7 +1624,7 @@ def FixTimeGaps(ds):
     # find the indices of the no-gap data in the original data
     idx_ainb, idx_bina = FindMatchingIndices(ldt_nogaps["Data"], ldt_gaps["Data"])
     # get a list of series in the data structure
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     # remove the datetime-related series from data structure
     for label in ["DateTime", "DateTime_UTC"]:
         if label in labels:
@@ -1628,9 +1652,9 @@ def FixTimeStep(ds,fixtimestepmethod="round"):
      July 2021 - tidy up the syntax
     """
     # get the number of records
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     # get the time step
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     # time step between records in seconds
     dt = get_timestep(ds)
     dtmin = numpy.min(dt)
@@ -1781,10 +1805,7 @@ def GetDateIndex(ldt, date, ts=30, default=0, match='exact'):
         default = len(ldt)-1
     # is the input date a string?
     if (isinstance(date, numbers.Number)):
-        if date >= 0 and date <= len(ldt):
-            i = date
-        else:
-            i = default
+        i = date
     elif isinstance(date, str):
         # if so, is it an empty string?
         if len(date) != 0:
@@ -1856,13 +1877,13 @@ def GetDateIndex(ldt, date, ts=30, default=0, match='exact'):
     return i
 
 def GetGlobalAttributeValue(cf,ds,ThisOne):
-    if ThisOne not in list(ds.globalattributes.keys()):
+    if ThisOne not in list(ds.root["Attributes"].keys()):
         if ThisOne in list(cf['General'].keys()):
-            ds.globalattributes[ThisOne] = cf['General'][ThisOne]
+            ds.root["Attributes"][ThisOne] = cf['General'][ThisOne]
         else:
             logger.error('  GetGlobalAttributeValue: global attribute '+ThisOne+' was not found in the netCDF file or in the control file')
-            ds.globalattributes[ThisOne] = None
-    return ds.globalattributes[ThisOne]
+            ds.root["Attributes"][ThisOne] = None
+    return ds.root["Attributes"][ThisOne]
 
 def GetMergeSeriesKeys(cf, ThisOne, section="Variables"):
     """
@@ -1922,164 +1943,184 @@ def GetPlotVariableNamesFromCF(cf, n):
         logger.warning(msg)
     return SeriesList
 
-def GetSeries(ds,ThisOne,si=0,ei=-1,mode="truncate"):
-    """ Returns the data, QC flag and attributes of a series from the data structure."""
-    # number of records
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+def GetSeries(ds, label, group="root", out_type="ma"):
+    """
+    Purpose:
+     Return the data, flag and attributes of a variable in the data structure.
+     This is a rewrite of the original to handle data structures with groups.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: July 2022
+    Modifications:
+    """
+    gvars = getattr(ds, group)["Variables"]
+    gattr = getattr(ds, group)["Attributes"]
+    nrecs = int(float(gattr["nc_nrecs"]))
     # check the series requested is in the data structure
-    if ThisOne in list(ds.series.keys()):
-        # series is in the data structure
-        if isinstance(ds.series[ThisOne]["Data"], list):
-            # return a list if the series is a list
-            Series = list(ds.series[ThisOne]["Data"])
-        elif isinstance(ds.series[ThisOne]["Data"], numpy.ndarray):
-            # return a numpy array if series is an array
-            Series = ds.series[ThisOne]["Data"].copy()
-        # now get the QC flag
-        if 'Flag' in list(ds.series[ThisOne].keys()):
-            # return the QC flag if it exists
-            Flag = ds.series[ThisOne]["Flag"].copy()
-        else:
-            # create a QC flag if one does not exist
-            Flag = numpy.zeros(nRecs, dtype=numpy.int32)
-        # now get the attribute dictionary
-        if "Attr" in list(ds.series[ThisOne].keys()):
-            Attr = copy.deepcopy(ds.series[ThisOne]["Attr"])
-        else:
-            Attr = make_attribute_dictionary()
+    labels = sorted(list(gvars.keys()))
+    if label in labels:
+        data = gvars[label]["Data"].copy()
+        flag = gvars[label]["Flag"].copy()
+        attr = copy.deepcopy(gvars[label]["Attr"])
     else:
         # tell the user we can't find the series
-        msg = " GetSeries: " + ThisOne + " not found, creating empty series ..."
-        logger.warning(msg)
-        Series,Flag,Attr = MakeEmptySeries(ds,ThisOne)
-    # tidy up
-    if ei==-1: ei = nRecs - 1
-    if mode=="truncate":
-        # truncate to the requested start and end indices
-        si = max(0,si)                  # clip start index at 0
-        ei = min(nRecs,ei)              # clip end index to nRecs
-        Series = Series[si:ei+1]        # truncate the data
-        Flag = Flag[si:ei+1]            # truncate the QC flag
-    elif mode=="pad":
-        # we treat the DateTime series differently and pad with real datetimes
-        if ThisOne == "DateTime":
-            ts = int(ds.globalattributes["time_step"])
-            dts = datetime.timedelta(minutes=ts)
-            #start_date = datetime.datetime(Series[0].year, Series[0].month, Series[0].day, 0, 0, 0)
-            start_date = datetime.datetime((Series[0]-dts).year,
-                                           (Series[0]-dts).month,
-                                           (Series[0]-dts).day, 0, 0, 0)
-            start_date = start_date + dts
-            end_date = datetime.datetime(Series[-1].year, Series[-1].month, Series[-1].day, 0, 0, 0)
-            if not ((Series[-1].hour == 0) and
-                    (Series[-1].minute == 0) and
-                    (Series[-1].second == 0)):
-                end_date = end_date + datetime.timedelta(days=1)
-            data_start = numpy.array([dt for dt in perdelta(start_date, Series[0]-dts, dts)])
-            flag_start = numpy.zeros(abs(si),dtype=numpy.int32)
-            data_end = numpy.array([dt for dt in perdelta(Series[-1]+dts, end_date, dts)])
-            flag_end = numpy.zeros((ei-(nRecs-1)),dtype=numpy.int32)
-        else:
-            data_start = float(c.missing_value)*numpy.ones(abs(si),dtype=numpy.float64)
-            flag_start = numpy.ones(abs(si),dtype=numpy.int32)
-            data_end = float(c.missing_value)*numpy.ones((ei-(nRecs-1)),dtype=numpy.float64)
-            flag_end = numpy.ones((ei-(nRecs-1)),dtype=numpy.int32)
-        # pad with missing data at the start and/or the end of the series
-        if si<0 and ei>nRecs-1:
-            # pad at the start
-            Series = numpy.append(data_start, Series)
-            Flag = numpy.append(flag_start, Flag)
-            # pad at the end
-            Series = numpy.append(Series, data_end)
-            Flag = numpy.append(Flag, flag_end)
-        elif si<0 and ei<=nRecs-1:
-            # pad at the start, truncate the end
-            Series = numpy.append(data_start, Series[:ei+1])
-            Flag = numpy.append(flag_start, Flag[:ei+1])
-        elif si>=0 and ei>nRecs-1:
-            # truncate at the start, pad at the end
-            Series = numpy.append(Series[si:], data_end)
-            Flag = numpy.append(Flag[si:], flag_end)
-        elif si>=0 and ei<=nRecs-1:
-            # truncate at the start and end
-            Series = Series[si:ei+1]
-            Flag = Flag[si:ei+1]
-        else:
-            msg = 'GetSeries: unrecognised combination of si ('+str(si)+') and ei ('+str(ei)+')'
-            raise ValueError(msg)
-    elif mode=="mirror":
-        # reflect data about end boundaries if si or ei are out of bounds
-        if si<0 and ei>nRecs-1:
-            # mirror at the start
-            Series = numpy.append(numpy.fliplr([Series[1:abs(si)+1]])[0],Series)
-            Flag = numpy.append(numpy.fliplr([Flag[1:abs(si)+1]])[0],Flag)
-            # mirror at the end
-            sim = 2*nRecs-1-ei
-            eim = nRecs-1
-            Series = numpy.append(Series,numpy.fliplr([Series[sim:eim]])[0])
-            Flag = numpy.append(Flag,numpy.fliplr([Flag[sim:eim]])[0])
-        elif si<0 and ei<=nRecs-1:
-            # mirror at start, truncate at end
-            Series = numpy.append(numpy.fliplr([Series[1:abs(si)+1]])[0],Series[:ei+1])
-            Flag = numpy.append(numpy.fliplr([Flag[1:abs(si)+1]])[0],Flag[:ei+1])
-        elif si>=0 and ei>nRecs-1:
-            # truncate at start, mirror at end
-            sim = 2*nRecs-1-ei
-            eim = nRecs
-            Series = numpy.append(Series[si:],numpy.fliplr([Series[sim:eim]])[0])
-            Flag = numpy.append(Flag[si:],numpy.fliplr([Flag[sim:eim]])[0])
-        elif si>=0 and ei<=nRecs-1:
-            # truncate at the start and end
-            Series = Series[si:ei+1]
-            Flag = Flag[si:ei+1]
-        else:
-            msg = 'GetSeries: unrecognised combination of si ('+str(si)+') and ei ('+str(ei)+')'
-            raise ValueError(msg)
+        msg = " GetSeries: " + label + " not found, creating empty series ..."
+        logger.error(msg)
+        data = numpy.full(nrecs, c.missing_value, dtype=numpy.float64)
+        flag = numpy.ones(nrecs, dtype=numpy.int32)
+        attr = {"long_name": "", "units": "", "statistic_type": "average"}
+    # check to see what kind of output the user wants
+    if isinstance(data, numpy.ndarray) and out_type == "ma":
+        # convert to a masked array
+        data = numpy.ma.masked_values(data, c.missing_value)
+    elif isinstance(data, numpy.ndarray) and out_type == "nan":
+        # leave as ndarray, convert c.missing_value to NaN
+        data = numpy.where(data == c.missing_value, numpy.nan, data)
+    elif isinstance(data, numpy.ndarray) and int(float(out_type)) == c.missing_value:
+        # leave as ndarray, leave c.missing_value
+        pass
+    elif isinstance(data, numpy.ndarray) and numpy.isfinite(float(out_type)):
+        # user specified missing data code
+        data = numpy.where(data == c.missing_value, float(out_type), data)
     else:
-        raise ValueError("GetSeries: unrecognised mode option "+str(mode))
-    return Series, Flag, Attr
+        # default is masked array
+        data = numpy.ma.masked_values(data, c.missing_value)
+    return data, flag, attr
+
+#def GetSeries(ds, ThisOne, si=0, ei=-1, mode="truncate"):
+    #""" Returns the data, QC flag and attributes of a series from the data structure."""
+    ## number of records
+    #nRecs = int(ds.root["Attributes"]["nc_nrecs"])
+    #ts = int(ds.root["Attributes"]["time_step"])
+
+    ## check the series requested is in the data structure
+    #if ThisOne in list(ds.root["Variables"].keys()):
+        ## series is in the data structure
+        #if isinstance(ds.root["Variables"][ThisOne]["Data"], list):
+            ## return a list if the series is a list
+            #Series = list(ds.root["Variables"][ThisOne]["Data"])
+        #elif isinstance(ds.root["Variables"][ThisOne]["Data"], numpy.ndarray):
+            ## return a numpy array if series is an array
+            #Series = ds.root["Variables"][ThisOne]["Data"].copy()
+        ## now get the QC flag
+        #if 'Flag' in list(ds.root["Variables"][ThisOne].keys()):
+            ## return the QC flag if it exists
+            #Flag = ds.root["Variables"][ThisOne]["Flag"].copy()
+        #else:
+            ## create a QC flag if one does not exist
+            #Flag = numpy.zeros(nRecs, dtype=numpy.int32)
+        ## now get the attribute dictionary
+        #if "Attr" in list(ds.root["Variables"][ThisOne].keys()):
+            #Attr = copy.deepcopy(ds.root["Variables"][ThisOne]["Attr"])
+        #else:
+            #Attr = make_attribute_dictionary()
+    #else:
+        ## tell the user we can't find the series
+        #msg = " GetSeries: " + ThisOne + " not found, creating empty series ..."
+        #logger.warning(msg)
+        #Series,Flag,Attr = MakeEmptySeries(ds,ThisOne)
+
+    ## tidy up
+    #if ei==-1: ei = nRecs - 1
+    #if mode=="truncate":
+        ## truncate to the requested start and end indices
+        #si = max(0,si)                  # clip start index at 0
+        #ei = min(nRecs,ei)              # clip end index to nRecs
+        #Series = Series[si:ei+1]        # truncate the data
+        #Flag = Flag[si:ei+1]            # truncate the QC flag
+    #elif mode=="pad":
+        ## we treat the DateTime series differently and pad with real datetimes
+        #if ThisOne == "DateTime":
+            #dts = datetime.timedelta(minutes=ts)
+            ##start_date = datetime.datetime(Series[0].year, Series[0].month, Series[0].day, 0, 0, 0)
+            #start_date = datetime.datetime((Series[0]-dts).year,
+                                           #(Series[0]-dts).month,
+                                           #(Series[0]-dts).day, 0, 0, 0)
+            #start_date = start_date + dts
+            #end_date = datetime.datetime(Series[-1].year, Series[-1].month, Series[-1].day, 0, 0, 0)
+            #if not ((Series[-1].hour == 0) and
+                    #(Series[-1].minute == 0) and
+                    #(Series[-1].second == 0)):
+                #end_date = end_date + datetime.timedelta(days=1)
+            #data_start = numpy.array([dt for dt in perdelta(start_date, Series[0]-dts, dts)])
+            #flag_start = numpy.zeros(abs(si),dtype=numpy.int32)
+            #data_end = numpy.array([dt for dt in perdelta(Series[-1]+dts, end_date, dts)])
+            #flag_end = numpy.zeros((ei-(nRecs-1)),dtype=numpy.int32)
+        #else:
+            #data_start = float(c.missing_value)*numpy.ones(abs(si),dtype=numpy.float64)
+            #flag_start = numpy.ones(abs(si),dtype=numpy.int32)
+            #data_end = float(c.missing_value)*numpy.ones((ei-(nRecs-1)),dtype=numpy.float64)
+            #flag_end = numpy.ones((ei-(nRecs-1)),dtype=numpy.int32)
+        ## pad with missing data at the start and/or the end of the series
+        #if si<0 and ei>nRecs-1:
+            ## pad at the start
+            #Series = numpy.append(data_start, Series)
+            #Flag = numpy.append(flag_start, Flag)
+            ## pad at the end
+            #Series = numpy.append(Series, data_end)
+            #Flag = numpy.append(Flag, flag_end)
+        #elif si<0 and ei<=nRecs-1:
+            ## pad at the start, truncate the end
+            #Series = numpy.append(data_start, Series[:ei+1])
+            #Flag = numpy.append(flag_start, Flag[:ei+1])
+        #elif si>=0 and ei>nRecs-1:
+            ## truncate at the start, pad at the end
+            #Series = numpy.append(Series[si:], data_end)
+            #Flag = numpy.append(Flag[si:], flag_end)
+        #elif si>=0 and ei<=nRecs-1:
+            ## truncate at the start and end
+            #Series = Series[si:ei+1]
+            #Flag = Flag[si:ei+1]
+        #else:
+            #msg = 'GetSeries: unrecognised combination of si ('+str(si)+') and ei ('+str(ei)+')'
+            #raise ValueError(msg)
+    #elif mode=="mirror":
+        ## reflect data about end boundaries if si or ei are out of bounds
+        #if si<0 and ei>nRecs-1:
+            ## mirror at the start
+            #Series = numpy.append(numpy.fliplr([Series[1:abs(si)+1]])[0],Series)
+            #Flag = numpy.append(numpy.fliplr([Flag[1:abs(si)+1]])[0],Flag)
+            ## mirror at the end
+            #sim = 2*nRecs-1-ei
+            #eim = nRecs-1
+            #Series = numpy.append(Series,numpy.fliplr([Series[sim:eim]])[0])
+            #Flag = numpy.append(Flag,numpy.fliplr([Flag[sim:eim]])[0])
+        #elif si<0 and ei<=nRecs-1:
+            ## mirror at start, truncate at end
+            #Series = numpy.append(numpy.fliplr([Series[1:abs(si)+1]])[0],Series[:ei+1])
+            #Flag = numpy.append(numpy.fliplr([Flag[1:abs(si)+1]])[0],Flag[:ei+1])
+        #elif si>=0 and ei>nRecs-1:
+            ## truncate at start, mirror at end
+            #sim = 2*nRecs-1-ei
+            #eim = nRecs
+            #Series = numpy.append(Series[si:],numpy.fliplr([Series[sim:eim]])[0])
+            #Flag = numpy.append(Flag[si:],numpy.fliplr([Flag[sim:eim]])[0])
+        #elif si>=0 and ei<=nRecs-1:
+            ## truncate at the start and end
+            #Series = Series[si:ei+1]
+            #Flag = Flag[si:ei+1]
+        #else:
+            #msg = 'GetSeries: unrecognised combination of si ('+str(si)+') and ei ('+str(ei)+')'
+            #raise ValueError(msg)
+    #else:
+        #raise ValueError("GetSeries: unrecognised mode option "+str(mode))
+    #return Series, Flag, Attr
 
 def MakeEmptySeries(ds, ThisOne):
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     Series = float(c.missing_value)*numpy.ones(nRecs, dtype=numpy.float64)
     Flag = numpy.ones(nRecs, dtype=numpy.int32)
     Attr = make_attribute_dictionary()
     return Series, Flag, Attr
 
-def GetSeriesasMA(ds,ThisOne,si=0,ei=-1,mode="truncate"):
-    """
-    Purpose:
-     Returns a data series and the QC flag series from the data structure.
-    Usage:
-     data,flag,attr = pfp_utils.GetSeriesasMA(ds,label,si=0,ei=-1)
-    where the arguments are;
-      ds    - the data structure (dict)
-      label - label of the data series in ds (string)
-      si    - start index (integer), default 0
-      ei    - end index (integer), default -1
-    and the returned values are;
-      data - values for the requested series in ds
-             (numpy masked array, float64)
-      flag - QC flag for the requested series in ds
-             (numpy masked array, int32)
-      attr - attribute dictionary for series
-    Example:
-     The code snippet below will return the incoming shortwave data values
-     (Fsd) and the associated QC flag (f) as numpy masked arrays;
-      ds = pfp_io.nc_read_series("HowardSprings_2011_L3.nc")
-      Fsd,f,a = pfp_utils.GetSeriesasMA(ds,"Fsd")
-    Author: PRI
-    """
-    Series,Flag,Attr = GetSeries(ds,ThisOne,si=si,ei=ei,mode=mode)
-    Series,WasND = SeriestoMA(Series)
-    return Series,Flag,Attr
-
-def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", match="exact"):
+def GetVariable(ds, label, group="root", start=0, end=-1, mode="truncate", out_type="ma", match="exact"):
     """
     Purpose:
      Returns a data variable from the data structure as a dictionary.
+     This is a rewrite of the original to handle data structures with groups.
     Usage:
-     variable = pfp_utils.GetSeriesasMA(ds, label)
+     variable = pfp_utils.GetVariable(ds, label)
     Required arguments are;
       ds    - the data structure (class)
       label - label of the data variable in ds (string)
@@ -2101,7 +2142,7 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
       variable["Data"] - numpy float64 masked array containing data
       variable["Flag"] - numpy int32 array containing QC flags
       variable["Attr"] - dictionary of variable attributes
-      variable["DateTime] - datetimes of the data
+      variable["DateTime"] - datetimes of the data
     Example:
      The code snippet below will return the incoming shortwave data values
      (Fsd), the associated QC flag and the variable attributes;
@@ -2109,40 +2150,127 @@ def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", matc
       Fsd = pfp_utils.GetVariable(ds, "Fsd")
     Author: PRI
     """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    ldt = ds.series["DateTime"]["Data"]
-    # get the start and end indices
-    match_options = {"start": {"exact": "exact", "wholehours": "startnexthour",
-                               "wholedays": "startnextday", "wholemonths": "startnextmonth"},
-                     "end": {"exact": "exact", "wholehours": "endprevioushour",
-                             "wholedays": "endpreviousday", "wholemonths": "endpreviousmonth"}}
-    time_step = ds.globalattributes["time_step"]
-    try:
-        ts = int(float(time_step))
-        si = GetDateIndex(ldt, start, ts=ts, default=0, match=match_options["start"][match])
-        ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match=match_options["end"][match])
-    except:
-        si = 0
-        ei = nrecs - 1
-    dt = ldt[si: ei+1]
-    data, flag, attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
-    # check to see what kind of output the user wants
-    if isinstance(data, numpy.ndarray) and out_type == "ma":
-        # convert to a masked array
-        data, WasND = SeriestoMA(data)
-    elif isinstance(data, numpy.ndarray) and out_type == "nan":
-        # leave as ndarray, convert c.missing_value to NaN
-        data = numpy.where(data == c.missing_value, numpy.nan, data)
+    gvars = getattr(ds, group)["Variables"]
+    gattr = getattr(ds, group)["Attributes"]
+    dt = gvars["DateTime"]["Data"]
+    # get the data, flag and attributes for this variable from the data structure
+    data, flag, attr = GetSeries(ds, label, group=group, out_type=out_type)
+
+    nrecs = int(float(gattr["nc_nrecs"]))
+    ts = gattr["time_step"]
+    if ts in ["daily", "monthly", "annual"]:
+        pass
+    else:
+        ts = int(float(ts))
+        match_options = {"start": {"exact": "exact",
+                                   "wholehours": "startnexthour",
+                                   "wholedays": "startnextday",
+                                   "wholemonths": "startnextmonth"},
+                         "end": {"exact": "exact",
+                                 "wholehours": "endprevioushour",
+                                 "wholedays": "endpreviousday",
+                                 "wholemonths": "endpreviousmonth"}}
+        si = GetDateIndex(dt, start, ts=ts, default=0, match=match_options["start"][match])
+        if end == -1: end = nrecs-1
+        ei = GetDateIndex(dt, end, ts=ts, default=nrecs-1, match=match_options["end"][match])
+        if mode == "truncate":
+            # truncate to the requested start and end indices
+            data = get_variable_truncate(data, nrecs, si, ei)
+            flag = get_variable_truncate(flag, nrecs, si, ei)
+            dt = get_variable_truncate(dt, nrecs, si, ei)
+        elif mode == "mirror":
+            data = get_variable_mirror(data, nrecs, si, ei)
+            flag = get_variable_mirror(flag, nrecs, si, ei)
+            start = dt[0] + datetime.timedelta(minutes=int(si*ts))
+            end = dt[0] + datetime.timedelta(minutes=int((ei-1)*ts))
+            ts_delta = datetime.timedelta(minutes=ts)
+            dt = numpy.array([d for d in perdelta(start, end, ts_delta)])
+        else:
+            msg = "  Unsupported mode (" + str(mode) + "), must be 'truncate' or 'mirror'"
+            logger.error(msg)
     # assemble the variable dictionary
     variable = {"Label": label, "Data": data, "Flag": flag, "Attr": attr,
-                "DateTime": dt, "time_step": time_step}
+                "DateTime": dt, "time_step": ts}
     # make sure there is a value for the long_name attribute
     if "long_name" not in variable["Attr"]:
         variable["Attr"]["long_name"] = label
     return variable
 
+#def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", match="exact"):
+    #"""
+    #Purpose:
+     #Returns a data variable from the data structure as a dictionary.
+    #Usage:
+     #variable = pfp_utils.GetVariable(ds, label)
+    #Required arguments are;
+      #ds    - the data structure (class)
+      #label - label of the data variable in ds (string)
+    #Optional arguments are;
+      #start - start date or index (integer), default 0
+      #end   - end date or index (integer), default -1
+      #mode  - truncate or pad the data
+      #out_type - masked array or ndarray
+      #match    - type of datetime match options are:
+                #"exact" - finds the specified datetime and returns the index
+                #"wholehours" - finds the start of the first whole hour and end of
+                               #the last whole hour
+                #"wholedays" - finds the start of the first whole day and end of
+                               #the last whole day
+                #"wholemonths" - finds the start of the first whole month and end of
+                               #the last whole month
+     #This function returns a variable as a dictionary;
+      #variable["Label"] - variable label in data structure
+      #variable["Data"] - numpy float64 masked array containing data
+      #variable["Flag"] - numpy int32 array containing QC flags
+      #variable["Attr"] - dictionary of variable attributes
+      #variable["DateTime"] - datetimes of the data
+    #Example:
+     #The code snippet below will return the incoming shortwave data values
+     #(Fsd), the associated QC flag and the variable attributes;
+      #ds = pfp_io.nc_read_series("HowardSprings_2011_L3.nc")
+      #Fsd = pfp_utils.GetVariable(ds, "Fsd")
+    #Author: PRI
+    #"""
+    #nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    #if end == -1:
+        #end = nrecs-1
+    #ldt = ds.root["Variables"]["DateTime"]["Data"]
+    ## get the start and end indices
+    #match_options = {"start": {"exact": "exact", "wholehours": "startnexthour",
+                               #"wholedays": "startnextday", "wholemonths": "startnextmonth"},
+                     #"end": {"exact": "exact", "wholehours": "endprevioushour",
+                             #"wholedays": "endpreviousday", "wholemonths": "endpreviousmonth"}}
+    #ts = int(float(ds.root["Attributes"]["time_step"]))
+    #si = GetDateIndex(ldt, start, ts=ts, default=0, match=match_options["start"][match])
+    #ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match=match_options["end"][match])
+    #dt = ldt[si: ei+1]
+    #data, flag, attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
+    ## check to see what kind of output the user wants
+    #if isinstance(data, numpy.ndarray) and out_type == "ma":
+        ## convert to a masked array
+        #data, WasND = SeriestoMA(data)
+    #elif isinstance(data, numpy.ndarray) and out_type == "nan":
+        ## leave as ndarray, convert c.missing_value to NaN
+        #data = numpy.where(data == c.missing_value, numpy.nan, data)
+    #elif isinstance(data, numpy.ndarray) and int(float(out_type)) == c.missing_value:
+        ## leave as ndarray, leave c.missing_value
+        #pass
+    #elif isinstance(data, numpy.ndarray) and numpy.isfinite(float(out_type)):
+        ## user specified missing data code
+        #data = numpy.where(data == c.missing_value, float(out_type), data)
+    #else:
+        ## default is masked array
+        #data, WasND = SeriestoMA(data)
+    ## assemble the variable dictionary
+    #variable = {"Label": label, "Data": data, "Flag": flag, "Attr": attr,
+                #"DateTime": dt, "time_step": ts}
+    ## make sure there is a value for the long_name attribute
+    #if "long_name" not in variable["Attr"]:
+        #variable["Attr"]["long_name"] = label
+    #return variable
+
 def GetUnitsFromds(ds, ThisOne):
-    units = ds.series[ThisOne]['Attr']['units']
+    units = ds.root["Variables"][ThisOne]['Attr']['units']
     return units
 
 def get_base_path():
@@ -2189,8 +2317,8 @@ def get_cfsection(cf, label, mode='quiet'):
 
 def get_coverage_groups(ds,rad=None,met=None,flux=None,soil=None):
     level = "L1"
-    if "processing_level" in ds.globalattributes:
-        level = str(ds.globalattributes["processing_level"])
+    if "processing_level" in ds.root["Attributes"]:
+        level = str(ds.root["Attributes"]["processing_level"])
     rad = ['Fsd','Fsu','Fld','Flu','Fn']
     met = ['AH','CO2','Precip','ps','Ta','Ws','Wd']
     flux = ['Fm','ustar','Fh','Fe','Fco2']
@@ -2198,27 +2326,27 @@ def get_coverage_groups(ds,rad=None,met=None,flux=None,soil=None):
     for ThisGroup, ThisLabel in zip([rad,met,flux,soil],['radiation','meteorology','flux','soil']):
         sum_coverage = float(0); count = float(0)
         for ThisOne in ThisGroup:
-            if ThisOne in list(ds.series.keys()):
-                coverage_level = strip_non_numeric(ds.series[ThisOne]['Attr']['coverage_'+level])
+            if ThisOne in list(ds.root["Variables"].keys()):
+                coverage_level = strip_non_numeric(ds.root["Variables"][ThisOne]['Attr']['coverage_'+level])
                 sum_coverage = sum_coverage + float(coverage_level)
                 count = count + 1
         if count!=0:
             coverage_group = sum_coverage/count
         else:
             coverage_group = 0
-        ds.globalattributes['coverage_'+ThisLabel+'_'+level] = str('%d'%coverage_group) + "%"
+        ds.root["Attributes"]['coverage_'+ThisLabel+'_'+level] = str('%d'%coverage_group) + "%"
 
 def get_coverage_individual(ds):
     level = "L1"
-    if "processing_level" in ds.globalattributes:
-        level = str(ds.globalattributes["processing_level"])
-    SeriesList = list(ds.series.keys())
+    if "processing_level" in ds.root["Attributes"]:
+        level = str(ds.root["Attributes"]["processing_level"])
+    SeriesList = list(ds.root["Variables"].keys())
     for ThisOne in ["DateTime","DateTime_UTC"]:
         if ThisOne in SeriesList: SeriesList.remove(ThisOne)
     for ThisOne in SeriesList:
-        num_good = len(numpy.where(abs(ds.series[ThisOne]['Data']-float(c.missing_value))>c.eps)[0])
-        coverage = 100*float(num_good)/float(ds.globalattributes['nc_nrecs'])
-        ds.series[ThisOne]['Attr']['coverage_'+level] = str('%d'%coverage) + "%"
+        num_good = len(numpy.where(abs(ds.root["Variables"][ThisOne]['Data']-float(c.missing_value))>c.eps)[0])
+        coverage = 100*float(num_good)/float(ds.root["Attributes"]['nc_nrecs'])
+        ds.root["Variables"][ThisOne]['Attr']['coverage_'+level] = str('%d'%coverage) + "%"
 
 def get_datetime_from_nctime(ds):
     """
@@ -2231,13 +2359,13 @@ def get_datetime_from_nctime(ds):
     Author: PRI
     Date: September 2014
     """
-    if "nc_nrecs" in list(ds.globalattributes.keys()):
-        nRecs = int(ds.globalattributes["nc_nrecs"])
+    if "nc_nrecs" in list(ds.root["Attributes"].keys()):
+        nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     else:
-        nRecs = len(ds.series["time"]["Data"])
-        ds.globalattributes["nc_nrecs"] = nRecs
-    nc_time_data = ds.series["time"]["Data"]
-    nc_time_units = ds.series["time"]["Attr"]["units"]
+        nRecs = len(ds.root["Variables"]["time"]["Data"])
+        ds.root["Attributes"]["nc_nrecs"] = nRecs
+    nc_time_data = ds.root["Variables"]["time"]["Data"]
+    nc_time_units = ds.root["Variables"]["time"]["Attr"]["units"]
     # we only handle time units in days, hours or seconds
     got_units_period = False
     for units_period in ["days", "hours", "seconds"]:
@@ -2262,15 +2390,15 @@ def get_datetime_from_nctime(ds):
         msg = " Unhandled option (" + str(units_period) + ") for time units period"
         logger.error(msg)
         raise RuntimeError
-    time_step = ds.globalattributes["time_step"]
+    time_step = ds.root["Attributes"]["time_step"]
     if time_step in ["daily", "monthly", "annual"]:
         dt = numpy.array(dt)
     else:
         time_step = int(float(time_step))
         dt = numpy.array([rounddttots(ldt, time_step) for ldt in dt])
     calendar = "gregorian"
-    if "calendar" in ds.series["time"]["Attr"]:
-        calendar = ds.series["time"]["Attr"]["calendar"]
+    if "calendar" in ds.root["Variables"]["time"]["Attr"]:
+        calendar = ds.root["Variables"]["time"]["Attr"]["calendar"]
     pydt = {"Label": "DateTime", "Data": dt, "Flag": numpy.zeros(nRecs),
             "Attr": {"long_name": "Datetime in local timezone", "units": "",
                      "calendar": calendar}}
@@ -2290,46 +2418,46 @@ def get_datetime_from_xldatetime(ds):
          see http://stackoverflow.com/questions/1108428/how-do-i-read-a-date-in-excel-format-in-python'''
 
     logger.info(' Getting the Python datetime series from the Excel datetime')
-    xldate = ds.series['xlDateTime']['Data']
-    nRecs = len(ds.series['xlDateTime']['Data'])
-    datemode = int(ds.globalattributes['xl_datemode'])
-    ds.series[str('DateTime')] = {}
+    xldate = ds.root["Variables"]['xlDateTime']['Data']
+    nRecs = len(ds.root["Variables"]['xlDateTime']['Data'])
+    datemode = int(ds.root["Attributes"]['xl_datemode'])
+    ds.root["Variables"][str('DateTime')] = {}
     basedate = datetime.datetime(1899, 12, 30)
     dt = [None]*nRecs
     for i in range(nRecs):
         dt[i] = basedate + datetime.timedelta(days=xldate[i] + 1462 * datemode)
-    ds.series['DateTime']['Data'] = numpy.array(dt)
-    ds.series['DateTime']['Flag'] = numpy.zeros(nRecs)
-    ds.series['DateTime']['Attr'] = {}
-    ds.series['DateTime']['Attr']['long_name'] = 'Datetime in local timezone'
-    ds.series['DateTime']['Attr']['units'] = 'None'
-    ds.series['DateTime']['Attr']['calendar'] = 'gregorian'
+    ds.root["Variables"]['DateTime']['Data'] = numpy.array(dt)
+    ds.root["Variables"]['DateTime']['Flag'] = numpy.zeros(nRecs)
+    ds.root["Variables"]['DateTime']['Attr'] = {}
+    ds.root["Variables"]['DateTime']['Attr']['long_name'] = 'Datetime in local timezone'
+    ds.root["Variables"]['DateTime']['Attr']['units'] = 'None'
+    ds.root["Variables"]['DateTime']['Attr']['calendar'] = 'gregorian'
     return
 
 def get_datetime_from_ymdhms(ds):
     ''' Creates a series of Python datetime objects from the year, month,
     day, hour, minute and second series stored in the netCDF file.'''
-    SeriesList = list(ds.series.keys())
+    SeriesList = list(ds.root["Variables"].keys())
     if ('Year' not in SeriesList or 'Month' not in SeriesList or 'Day' not in SeriesList or
         'Hour' not in SeriesList or 'Minute' not in SeriesList or 'Second' not in SeriesList):
         logger.info(' get_datetime_from_ymdhms: unable to find all datetime fields required')
         return
     logger.info(' Getting the date and time series')
     #pdb.set_trace()
-    year = ds.series["Year"]["Data"].astype('int')
-    month = ds.series["Month"]["Data"].astype('int')
-    day = ds.series["Day"]["Data"].astype('int')
-    hour = ds.series["Hour"]["Data"].astype('int')
-    minute = ds.series["Minute"]["Data"].astype('int')
-    second = ds.series["Second"]["Data"].astype('int')
+    year = ds.root["Variables"]["Year"]["Data"].astype('int')
+    month = ds.root["Variables"]["Month"]["Data"].astype('int')
+    day = ds.root["Variables"]["Day"]["Data"].astype('int')
+    hour = ds.root["Variables"]["Hour"]["Data"].astype('int')
+    minute = ds.root["Variables"]["Minute"]["Data"].astype('int')
+    second = ds.root["Variables"]["Second"]["Data"].astype('int')
     dt = [datetime.datetime(yr,mn,dy,hr,mi,se) for yr,mn,dy,hr,mi,se in zip(year,month,day,hour,minute,second)]
-    ds.series["DateTime"] = {}
-    ds.series["DateTime"]["Data"] = numpy.array(dt)
-    ds.series["DateTime"]["Flag"] = numpy.zeros(len(dt))
-    ds.series["DateTime"]["Attr"] = {}
-    ds.series["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
-    ds.series["DateTime"]["Attr"]["units"] = "None"
-    ds.series['DateTime']['Attr']['calendar'] = "gregorian"
+    ds.root["Variables"]["DateTime"] = {}
+    ds.root["Variables"]["DateTime"]["Data"] = numpy.array(dt)
+    ds.root["Variables"]["DateTime"]["Flag"] = numpy.zeros(len(dt))
+    ds.root["Variables"]["DateTime"]["Attr"] = {}
+    ds.root["Variables"]["DateTime"]["Attr"]["long_name"] = "Datetime in local timezone"
+    ds.root["Variables"]["DateTime"]["Attr"]["units"] = "None"
+    ds.root["Variables"]['DateTime']['Attr']['calendar'] = "gregorian"
     return
 
 def get_ddoy_from_datetime(dt):
@@ -2517,9 +2645,9 @@ def get_missingingapfilledseries(ds, l4_info):
     # loop over the series to be checked
     gap_found = False
     for series in gf_list:
-        if series not in list(ds.series.keys()): continue
-        data,flag,attr = GetSeriesasMA(ds,series)
-        idx = numpy.ma.where(data.mask == True)[0]
+        if series not in list(ds.root["Variables"].keys()): continue
+        var = GetVariable(ds, series)
+        idx = numpy.ma.where(var["Data"].mask == True)[0]
         if len(idx) != 0:
             gap_found = True
             msg = " Missing points ("+str(len(idx))+") found in "+series
@@ -2527,6 +2655,7 @@ def get_missingingapfilledseries(ds, l4_info):
     if not gap_found:
         msg = " No missing values found in gap filled series"
         logger.info(msg)
+    return
 
 def get_number_from_heightstring(height):
     z = str(height)
@@ -2550,7 +2679,7 @@ def get_nctime_from_datetime(ds):
     Date: October 2017
     """
     # 20210913 PRI - replace netCDF4.date2num() to fix SegFaults
-    #ldt = ds.series["DateTime"]["Data"]
+    #ldt = ds.root["Variables"]["DateTime"]["Data"]
     #data = netCDF4.date2num(ldt, time_units, calendar=calendar)
     nc_time_units = "days since 1800-01-01 00:00:00.0"
     epoch_start = dateutil.parser.parse(nc_time_units, fuzzy=True)
@@ -2585,13 +2714,13 @@ def get_nctime_from_datetime_data(dt, nc_time_units="days since 1800-01-01 00:00
     return numpy.array(data)
 
 def get_nrecs(ds):
-    if 'nc_nrecs' in list(ds.globalattributes.keys()):
-        nRecs = int(ds.globalattributes['nc_nrecs'])
-    elif 'NumRecs' in list(ds.globalattributes.keys()):
-        nRecs = int(ds.globalattributes['NumRecs'])
+    if 'nc_nrecs' in list(ds.root["Attributes"].keys()):
+        nRecs = int(ds.root["Attributes"]['nc_nrecs'])
+    elif 'NumRecs' in list(ds.root["Attributes"].keys()):
+        nRecs = int(ds.root["Attributes"]['NumRecs'])
     else:
-        series_list = list(ds.series.keys())
-        nRecs = len(ds.series[series_list[0]]['Data'])
+        series_list = list(ds.root["Variables"].keys())
+        nRecs = len(ds.root["Variables"][series_list[0]]['Data'])
     return nRecs
 
 def get_start_index(ldt, start, default=None, mode="quiet"):
@@ -2643,7 +2772,7 @@ def get_timestep(ds):
     Date: February 2015
     """
     # local pointer to the Python datetime series
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     # time step between records in seconds
     dt = numpy.array([(ldt[i]-ldt[i-1]).total_seconds() for i in range(1,len(ldt))])
     return dt
@@ -2672,10 +2801,10 @@ def get_UTCfromlocaltime(ds):
     Author: PRI
     '''
     # check the time_zone global attribute is set, we cant continue without it
-    if "time_zone" not in list(ds.globalattributes.keys()):
+    if "time_zone" not in list(ds.root["Attributes"].keys()):
         logger.warning("get_UTCfromlocaltime: time_zone not in global attributes, checking elsewhere ...")
-        if "site_name" in list(ds.globalattributes.keys()):
-            site_name = ds.globalattributes["site_name"]
+        if "site_name" in list(ds.root["Attributes"].keys()):
+            site_name = ds.root["Attributes"]["site_name"]
         else:
             logger.warning("get_UTCfromlocaltime: site_name not in global attributes, skipping UTC calculation ...")
             return
@@ -2685,14 +2814,14 @@ def get_UTCfromlocaltime(ds):
             return
         else:
             logger.info("get_UTCfromlocaltime: time_zone found in time zone dictionary")
-            ds.globalattributes["time_zone"] = time_zone
+            ds.root["Attributes"]["time_zone"] = time_zone
     logger.info(' Getting the UTC datetime from the local datetime')
     # get the time zone
-    tz = ds.globalattributes["time_zone"]
+    tz = ds.root["Attributes"]["time_zone"]
     # create a timezone object
     loc_tz = pytz.timezone(tz)
     # local pointer to the datetime series in ds
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     # localise the datetime by assigning a time zone
     ldt_loc = [loc_tz.localize(dt) for dt in ldt]
     # remove any daylight saving time
@@ -2700,6 +2829,40 @@ def get_UTCfromlocaltime(ds):
     # convert to UTC
     ldt_utc = [dt.astimezone(pytz.utc) for dt in ldt_loc_nodst]
     return ldt_utc
+
+def get_variable_mirror(data, nrecs, si, ei):
+    was_ma = False
+    if numpy.ma.isMA(data):
+        was_ma = True
+        data = numpy.ma.filled(data, fill_value=c.missing_value)
+    # reflect data about end boundaries if si or ei are out of bounds
+    if si < 0 and ei > nrecs-1:
+        # mirror at the start
+        data = numpy.append(numpy.fliplr([data[1:abs(si)+1]])[0], data)
+        # mirror at the end
+        sim = 2*nrecs-1-ei
+        eim = nrecs-1
+        data = numpy.append(data, numpy.fliplr([data[sim:eim]])[0])
+    elif si < 0 and ei <= nrecs-1:
+        # mirror at start, truncate at end
+        data = numpy.append(numpy.fliplr([data[1:abs(si)+1]])[0], data[:ei+1])
+    elif si >= 0 and ei > nrecs-1:
+        # truncate at start, mirror at end
+        sim = 2*nrecs-1-ei
+        eim = nrecs
+        data = numpy.append(data[si:], numpy.fliplr([data[sim:eim]])[0])
+    elif si >= 0 and ei <= nrecs-1:
+        # truncate at the start and end
+        data = data[si:ei+1]
+    else:
+        msg = 'GetSeries: unrecognised combination of si ('+str(si)+') and ei ('+str(ei)+')'
+        raise ValueError(msg)
+    if was_ma:
+        data = numpy.ma.masked_values(data, c.missing_value)
+    return data
+
+def get_variable_truncate(data, nrecs, si, ei):
+    return data[max(0, si): min(nrecs-1, ei)+1]
 
 def get_xldatefromdatetime(ds):
     '''
@@ -2713,15 +2876,15 @@ def get_xldatefromdatetime(ds):
     Author: PRI
     '''
     # get the datemode of the original Excel spreadsheet
-    if "xl_datemode" in list(ds.globalattributes.keys()):
-        datemode = int(ds.globalattributes["xl_datemode"])
+    if "xl_datemode" in list(ds.root["Attributes"].keys()):
+        datemode = int(ds.root["Attributes"]["xl_datemode"])
     else:
         datemode = int(0)
     # get the Excel datetime attributes
     xldt_attr = {"long_name": "Date/time in Excel format", "units": "days since 1899-12-31 00:00:00"}
     # get a local pointer to the Python DateTime series in ds
-    ldt = ds.series["DateTime"]["Data"]
-    flag = ds.series["DateTime"]["Flag"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
+    flag = ds.root["Variables"]["DateTime"]["Flag"]
     # get a list of Excel datetimes from the Python datetime objects
     xldate = [xlrd.xldate.xldate_from_datetime_tuple((ldt[i].year,
                                                       ldt[i].month,
@@ -2732,7 +2895,9 @@ def get_xldatefromdatetime(ds):
                                                       datemode) for i in range(0,len(ldt))]
     xldt_new = numpy.ma.array(xldate, dtype=numpy.float64)
     # create the Excel datetime series
-    CreateSeries(ds,"xlDateTime",xldt_new,flag,xldt_attr)
+    var = {"Label": "xlDateTime", "Data": xldt_new, "Flag": flag, "Attr": xldt_attr}
+    CreateVariable(ds, var)
+    return
 
 def get_yearfractionfromdatetime(dt):
     """
@@ -2764,8 +2929,8 @@ def get_ymdhmsfromdatetime(ds):
      None
     Author: PRI
     '''
-    nRecs = int(ds.globalattributes["nc_nrecs"])
-    dt = ds.series["DateTime"]["Data"]
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
+    dt = ds.root["Variables"]["DateTime"]["Data"]
     flag = numpy.zeros(nRecs,dtype=numpy.int32)
     Year = numpy.array([dt[i].year for i in range(0,nRecs)]).astype(numpy.int32)
     Month = numpy.array([dt[i].month for i in range(0,nRecs)]).astype(numpy.int32)
@@ -2775,14 +2940,23 @@ def get_ymdhmsfromdatetime(ds):
     Second = numpy.array([dt[i].second for i in range(0,nRecs)]).astype(numpy.int32)
     Hdh = numpy.array([float(Hour[i])+float(Minute[i])/60. for i in range(0,nRecs)]).astype(numpy.float64)
     Ddd = numpy.array([(dt[i] - datetime.datetime(Year[i],1,1)).days+1+Hdh[i]/24. for i in range(0,nRecs)]).astype(numpy.float64)
-    CreateSeries(ds, "Year", Year, flag,{"long_name": "Year"})
-    CreateSeries(ds, "Month", Month, flag, {"long_name": "Month"})
-    CreateSeries(ds, "Day", Day, flag, {"long_name": "Day"})
-    CreateSeries(ds, "Hour", Hour, flag, {"long_name": "Hour"})
-    CreateSeries(ds, "Minute", Minute, flag, {"long_name": "Minute"})
-    CreateSeries(ds, "Second", Second, flag, {"long_name": "Second"})
-    CreateSeries(ds, "Hdh", Hdh, flag, {"long_name": "Decimal hour of the day"})
-    CreateSeries(ds, 'Ddd', Ddd, flag, {"long_name": "Decimal day of the year"})
+    var = {"Label": "Year", "Data": Year, "Flag": flag, "Attr": {"long_name": "Year"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Month", "Data": Month, "Flag": flag, "Attr": {"long_name": "Month"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Day", "Data": Day, "Flag": flag, "Attr": {"long_name": "Day"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Hour", "Data": Hour, "Flag": flag, "Attr": {"long_name": "Hour"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Minute", "Data": Minute, "Flag": flag, "Attr": {"long_name": "Minute"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Second", "Data": Second, "Flag": flag, "Attr": {"long_name": "Second"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Hdh", "Data": Hdh, "Flag": flag, "Attr": {"long_name": "Decimal hour of the day"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Ddd", "Data": Ddd, "Flag": flag, "Attr": {"long_name": "Decimal day of the year"}}
+    CreateVariable(ds, var)
+    return
 
 def get_ymdhmsfromxldate(ds):
     """
@@ -2795,8 +2969,8 @@ def get_ymdhmsfromxldate(ds):
         """
     logger.info(' Getting date and time variables')
     # get the date mode of the original Excel datetime
-    datemode = int(ds.globalattributes['xl_datemode'])
-    nRecs = len(ds.series['xlDateTime']['Data'])
+    datemode = int(ds.root["Attributes"]['xl_datemode'])
+    nRecs = len(ds.root["Variables"]['xlDateTime']['Data'])
     Year = numpy.array([c.missing_value]*nRecs,numpy.int32)
     Month = numpy.array([c.missing_value]*nRecs,numpy.int32)
     Day = numpy.array([c.missing_value]*nRecs,numpy.int32)
@@ -2807,7 +2981,7 @@ def get_ymdhmsfromxldate(ds):
     Ddd = numpy.array([c.missing_value]*nRecs,numpy.float64)
     flag = numpy.zeros(nRecs)
     for i in range(nRecs):
-        DateTuple = xlrd.xldate_as_tuple(ds.series['xlDateTime']['Data'][i],datemode)
+        DateTuple = xlrd.xldate_as_tuple(ds.root["Variables"]['xlDateTime']['Data'][i],datemode)
         Year[i] = int(DateTuple[0])
         Month[i] = int(DateTuple[1])
         Day[i] = int(DateTuple[2])
@@ -2815,15 +2989,23 @@ def get_ymdhmsfromxldate(ds):
         Minute[i] = int(DateTuple[4])
         Second[i] = int(DateTuple[5])
         Hdh[i] = float(DateTuple[3])+float(DateTuple[4])/60.
-        Ddd[i] = ds.series['xlDateTime']['Data'][i] - xlrd.xldate.xldate_from_date_tuple((Year[i],1,1),datemode) + 1
-    CreateSeries(ds, "Year", Year, flag,{"long_name": "Year"})
-    CreateSeries(ds, "Month", Month, flag, {"long_name": "Month"})
-    CreateSeries(ds, "Day", Day, flag, {"long_name": "Day"})
-    CreateSeries(ds, "Hour", Hour, flag, {"long_name": "Hour"})
-    CreateSeries(ds, "Minute", Minute, flag, {"long_name": "Minute"})
-    CreateSeries(ds, "Second", Second, flag, {"long_name": "Second"})
-    CreateSeries(ds, "Hdh", Hdh, flag, {"long_name": "Decimal hour of the day"})
-    CreateSeries(ds, 'Ddd', Ddd, flag, {"long_name": "Decimal day of the year"})
+        Ddd[i] = ds.root["Variables"]['xlDateTime']['Data'][i] - xlrd.xldate.xldate_from_date_tuple((Year[i],1,1),datemode) + 1
+    var = {"Label": "Year", "Data": Year, "Flag": flag, "Attr": {"long_name": "Year"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Month", "Data": Month, "Flag": flag, "Attr": {"long_name": "Month"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Day", "Data": Day, "Flag": flag, "Attr": {"long_name": "Day"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Hour", "Data": Hour, "Flag": flag, "Attr": {"long_name": "Hour"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Minute", "Data": Minute, "Flag": flag, "Attr": {"long_name": "Minute"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Second", "Data": Second, "Flag": flag, "Attr": {"long_name": "Second"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Hdh", "Data": Hdh, "Flag": flag, "Attr": {"long_name": "Decimal hour of the day"}}
+    CreateVariable(ds, var)
+    var = {"Label": "Ddd", "Data": Ddd, "Flag": flag, "Attr": {"long_name": "Decimal day of the year"}}
+    CreateVariable(ds, var)
     return
 
 def haskey(cf,ThisOne,key):
@@ -2924,7 +3106,7 @@ def MergeVariables(ds, out_label, in_labels):
     Author: PRI
     Date: October 2018
     """
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     var_in = GetVariable(ds, in_labels[0])
     var_out = CopyVariable(var_in)
     if len(in_labels) == 1:
@@ -2955,7 +3137,7 @@ def nxMom_nxScalar_alpha(zoL):
     alpha[stable] = 1
     return nxMom, nxScalar, alpha
 
-def PadVariable(var_in, start, end, out_type="nan"):
+def PadVariable(var_in, start, end, out_type="ma"):
     """
     Purpose:
      Pad a variable to the specified start and end dates.
@@ -3107,16 +3289,16 @@ def round_datetime(ds, mode="nearest_timestep"):
     Date: February 2015
     """
     # local pointer to the datetime series
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     # check which rounding option has been chosen
     if mode.lower() == "nearest_timestep":
         # get the time step
-        if "time_step" in ds.globalattributes:
-            ts = int(float(ds.globalattributes["time_step"]))
+        if "time_step" in ds.root["Attributes"]:
+            ts = int(float(ds.root["Attributes"]["time_step"]))
         else:
             ts = numpy.mean(get_timestep(ds)/60)
             ts = roundtobase(ts, base=30)
-            ds.globalattributes["time_step"] = str(int(float(ts)))
+            ds.root["Attributes"]["time_step"] = str(int(float(ts)))
         # round to the nearest time step
         rldt = [rounddttots(dt, ts=ts) for dt in ldt]
     elif mode.lower() == "nearest_second":
@@ -3126,9 +3308,9 @@ def round_datetime(ds, mode="nearest_timestep"):
         # unrecognised option for mode, return original datetime series
         msg = " Unrecognised mode (" + str(mode) + ")" + " ,returning original time series"
         logger.error(msg)
-        rldt = ds.series["DateTime"]["Data"]
+        rldt = ds.root["Variables"]["DateTime"]["Data"]
     # replace the original datetime series with the rounded one
-    ds.series["DateTime"]["Data"] = numpy.array(rldt)
+    ds.root["Variables"]["DateTime"]["Data"] = numpy.array(rldt)
     return
 
 def roundtobase(x,base=5):
@@ -3180,7 +3362,7 @@ def SeriestoMA(Series):
     return Series, WasND
 
 def SetUnitsInds(ds, ThisOne, units):
-    ds.series[ThisOne]['Attr']['units'] = units
+    ds.root["Variables"][ThisOne]['Attr']['units'] = units
 
 def startlog(loggername,loggerfile):
     logger = logging.getLogger(loggername)
@@ -3212,14 +3394,14 @@ def UpdateGlobalAttributes(cfg, ds, level):
     Author: PRI
     Date: Back in the day
     """
-    ds.globalattributes["processing_level"] = str(level)
-    ds.globalattributes["python_version"] = sys.version
+    ds.root["Attributes"]["processing_level"] = str(level)
+    ds.root["Attributes"]["python_version"] = sys.version
     # put the control file name into the global attributes
-    ds.globalattributes["controlfile_name"] = cfg.filename
+    ds.root["Attributes"]["controlfile_name"] = cfg.filename
     if "Global" in cfg:
         for item in list(cfg["Global"].keys()):
-            if item not in list(ds.globalattributes.keys()):
-                ds.globalattributes[item] = cfg["Global"][item].replace("\n"," ").replace("\r","")
+            if item not in list(ds.root["Attributes"].keys()):
+                ds.root["Attributes"][item] = cfg["Global"][item].replace("\n"," ").replace("\r","")
 
 def update_progress(progress):
     barLength = 50 # Modify this to change the length of the progress bar

@@ -34,15 +34,18 @@ def CalculateET(ds):
     Author: PRI
     Date: June 2015
     """
-    series_list = list(ds.series.keys())
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+    series_list = list(ds.root["Variables"].keys())
     Fe_list = [item for item in series_list if "Fe" in item[0:2]]
     for label in Fe_list:
-        Fe, flag, attr = pfp_utils.GetSeriesasMA(ds, label)
-        ET = Fe/c.Lv
-        attr["long_name"] = "Evapo-transpiration"
-        attr["standard_name"] = "water_evapotranspiration_flux"
-        attr["units"] = "kg/m^2/s"
-        pfp_utils.CreateSeries(ds, label.replace("Fe","ET"), ET, flag, attr)
+        Fe = pfp_utils.GetVariable(ds, label)
+        ET = pfp_utils.CreateEmptyVariable(label.replace("Fe","ET"), nrecs)
+        ET["Data"] = Fe["Data"]/c.Lv
+        ET["Attr"]["long_name"] = "Evapo-transpiration"
+        ET["Attr"]["standard_name"] = "water_evapotranspiration_flux"
+        ET["Attr"]["units"] = "kg/m^2/s"
+        pfp_utils.CreateVariable(ds, ET)
+    return
 
 def CalculateNEE(ds, l6_info):
     """
@@ -61,41 +64,41 @@ def CalculateNEE(ds, l6_info):
     if "NetEcosystemExchange" not in l6_info:
         return
     # make the L6 "description" attribute for the target variable
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     # get the Fsd threshold
     Fsd_threshold = float(pfp_utils.get_keyvaluefromcf(l6_info, ["Options"], "Fsd_threshold",
                                                        default=10))
     # get the incoming shortwave radiation
-    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
+    Fsd = pfp_utils.GetVariable(ds, "Fsd")
     for label in list(l6_info["NetEcosystemExchange"].keys()):
         if (("Fco2" not in l6_info["NetEcosystemExchange"][label]) and
             ("ER" not in l6_info["NetEcosystemExchange"][label])):
             continue
-        Fc_label = l6_info["NetEcosystemExchange"][label]["Fco2"]
+        Fco2_label = l6_info["NetEcosystemExchange"][label]["Fco2"]
         ER_label = l6_info["NetEcosystemExchange"][label]["ER"]
         output_label = l6_info["NetEcosystemExchange"][label]["output"]
-        if Fc_label not in list(ds.series.keys()):
+        if Fco2_label not in list(ds.root["Variables"].keys()):
             continue
-        Fc, Fc_flag, Fc_attr = pfp_utils.GetSeriesasMA(ds, Fc_label)
-        if ER_label not in list(ds.series.keys()):
+        Fco2 = pfp_utils.GetVariable(ds, Fco2_label)
+        if ER_label not in list(ds.root["Variables"].keys()):
             continue
-        ER, ER_flag, _ = pfp_utils.GetSeriesasMA(ds, ER_label)
+        ER = pfp_utils.GetVariable(ds, ER_label)
         # put the day time Fc into the NEE series
-        index = numpy.ma.where(Fsd >= Fsd_threshold)[0]
-        ds.series[output_label]["Data"][index] = Fc[index]
-        ds.series[output_label]["Flag"][index] = Fc_flag[index]
+        index = numpy.ma.where(Fsd["Data"] >= Fsd_threshold)[0]
+        ds.root["Variables"][output_label]["Data"][index] = Fco2["Data"][index]
+        ds.root["Variables"][output_label]["Flag"][index] = Fco2["Flag"][index]
         # put the night time ER into the NEE series
-        index = numpy.ma.where(Fsd < Fsd_threshold)[0]
-        ds.series[output_label]["Data"][index] = ER[index]
-        ds.series[output_label]["Flag"][index] = ER_flag[index]
+        index = numpy.ma.where(Fsd["Data"] < Fsd_threshold)[0]
+        ds.root["Variables"][output_label]["Data"][index] = ER["Data"][index]
+        ds.root["Variables"][output_label]["Flag"][index] = ER["Flag"][index]
         # update the attributes
-        attr = ds.series[output_label]["Attr"]
-        attr["units"] = Fc_attr["units"]
+        attr = copy.deepcopy(ds.root["Variables"][output_label]["Attr"])
+        attr["units"] = Fco2["Attr"]["units"]
         attr["long_name"] = "Net Ecosystem Exchange"
-        tmp = " Calculated from " + Fc_label + " and " + ER_label
+        tmp = " Calculated from " + Fco2_label + " and " + ER_label
         pfp_utils.append_to_attribute(attr, {descr_level: tmp})
         attr["comment1"] = "Fsd threshold used was " + str(Fsd_threshold)
-        ds.series[output_label]["Attr"] = attr
+        ds.root["Variables"][output_label]["Attr"] = attr
         l6_info["Summary"]["NetEcosystemExchange"].append(label)
     return
 
@@ -112,15 +115,17 @@ def CalculateNEP(ds, l6_info):
     Author: PRI
     Date: May 2015
     """
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     # make the L6 "description" attribute for the target variable
-    descr_level = "description_" + ds.globalattributes["processing_level"]
-    for nee_name in list(l6_info["NetEcosystemExchange"].keys()):
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
+    for nee_name in list(cf["NetEcosystemExchange"].keys()):
         nep_name = nee_name.replace("NEE", "NEP")
-        nee, flag, attr = pfp_utils.GetSeriesasMA(ds, nee_name)
-        nep = float(-1)*nee
-        attr["long_name"] = "Net Ecosystem Productivity"
-        pfp_utils.append_to_attribute(attr, {descr_level: "calculated as -1*" + nee_name})
-        pfp_utils.CreateSeries(ds, nep_name, nep, flag, attr)
+        NEE = pfp_utils.GetVariable(ds, nee_name)
+        NEP = pfp_utils.CreateEmptyVariable(nep_name, nrecs, attr=NEE["Attr"])
+        NEP["Data"] = float(-1)*NEE["Data"]
+        NEP["Attr"]["long_name"] = "Net Ecosystem Productivity"
+        pfp_utils.append_to_attribute(NEP["Attr"], {descr_level: "calculated as -1*" + nee_name})
+        pfp_utils.CreateVariable(ds, NEP)
     return
 
 def ERUsingLasslop(ds, l6_info, xl_writer):
@@ -195,8 +200,10 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
     Author: IMcH, PRI
     Date: August 2019
     """
-    # get the time step
-    ts = int(float(ds.globalattributes["time_step"]))
+    # get the time step and number of records
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+    site_name = ds.root["Attributes"]["site_name"]
     # Get required configs dict
     iel = l6_info[called_by]
     outputs = iel["outputs"].keys()
@@ -211,11 +218,9 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
     # Set attributes for ER and plotting
     descr = {"ERUsingLasslop": "Ecosystem respiration modelled by Lasslop",
              "ERUsingLloydTaylor": "Ecosystem respiration modelled by Lloyd-Taylor"}
-    descr_level = "description_" + ds.globalattributes["processing_level"]
-    ER_attr = {"units": "umol/m^2/s", "long_name": "Ecosystem respiration",
-               descr_level: descr[called_by], "statistic_type": "average"}
-    ER_attr = pfp_utils.make_attribute_dictionary(attr=ER_attr)
-    site_name = ds.globalattributes["site_name"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
+    attr = {"units": "umol/m^2/s", "long_name": "Ecosystem respiration",
+            descr_level: descr[called_by], "statistic_type": "average"}
     # set the figure number
     if len(plt.get_fignums()) == 0:
         fig_num = 0
@@ -223,12 +228,15 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         fig_num = plt.get_fignums()[-1]
     # loop over the series of outputs (usually one only)
     for output in outputs:
+        # make an empty variable for the ecosystem respiration
+        ER = pfp_utils.CreateEmptyVariable(output, nrecs, attr=attr)
+
         l6_info["Options"]["output"] = output
         # get a list of drivers specified in the control file
         drivers = [l for l in l6_info[called_by]["outputs"][output]["drivers"]]
         # check to see if the drivers are in the data structure
         for driver in drivers:
-            if driver not in ds.series.keys():
+            if driver not in ds.root["Variables"].keys():
                 # throw an exception if a driver is not in the data structre
                 msg = " Requested driver " + driver + " not found in data"
                 logger.error("!!!!!")
@@ -236,46 +244,46 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
                 logger.error("!!!!!")
                 raise RuntimeError(msg)
         # add soil moisture as a driver (for plotting purposes only)
-        if "Sws" in ds.series.keys():
+        if "Sws" in ds.root["Variables"].keys():
             drivers.append("Sws")
         # get the target label
         target = l6_info[called_by]["outputs"][output]["target"]
         targets = pfp_utils.string_to_list(target)
-        if called_by == "ERUsingLasslop" and "Fco2" in ds.series.keys():
+        if called_by == "ERUsingLasslop" and "Fco2" in ds.root["Variables"].keys():
             targets.append("Fco2")
         # list of variables required for this partitioning method
         labels = drivers + targets
         # get the required variables as a data frame
-        df = pandas.DataFrame({label: ds.series[label]["Data"] for label in labels},
-                              index = ds.series["DateTime"]["Data"])
+        df = pandas.DataFrame({label: ds.root["Variables"][label]["Data"] for label in labels},
+                              index = ds.root["Variables"]["DateTime"]["Data"])
         # get a boolean array
-        is_valid = numpy.tile(True, int(ds.globalattributes["nc_nrecs"]))
+        is_valid = numpy.tile(True, int(ds.root["Attributes"]["nc_nrecs"]))
         # loop over the drivers
         for driver in drivers:
             # allow gap filled drivers
-            is_valid *= numpy.mod(ds.series[driver]["Flag"], 10) == 0
+            is_valid *= numpy.mod(ds.root["Variables"][driver]["Flag"], 10) == 0
         # set records with missing drivers to NaN
         for target in targets:
             df.loc[~is_valid, target] = numpy.nan
         # loop over targets
         for target in targets:
             # only allow observed (not gap filled) targets (ER, NEE)
-            df.loc[ds.series[target]["Flag"] != 0, target] = numpy.nan
+            df.loc[ds.root["Variables"][target]["Flag"] != 0, target] = numpy.nan
         # Pass the dataframe to the respiration class and get the results
         ptc = pfp_part.partition(df, xl_writer, l6_info)
         params_df = ptc.estimate_parameters(mode = er_mode)
-        ER = ptc.estimate_er_time_series(params_df)
-        ER_flag = numpy.tile(30, len(ER))
-        # Write to series
+        ER["Data"] = numpy.ma.array(ptc.estimate_er_time_series(params_df))
+        ER["Flag"] = numpy.tile(30, len(ER["Data"]))
+        # Write ER to data structure
         drivers = iel["outputs"][output]["drivers"]
-        ER_attr["comment1"] = "Drivers were {}".format(str(drivers))
-        pfp_utils.CreateSeries(ds, output, ER, ER_flag, ER_attr)
+        ER["Attr"]["comment1"] = "Drivers were {}".format(str(drivers))
+        pfp_utils.CreateVariable(ds, ER)
         # Write to excel
         params_df.to_excel(xl_writer, output)
         xl_writer.save()
         # Do plotting
-        startdate = str(ds.series["DateTime"]["Data"][0])
-        enddate = str(ds.series["DateTime"]["Data"][-1])
+        startdate = str(ds.root["Variables"]["DateTime"]["Data"][0])
+        enddate = str(ds.root["Variables"]["DateTime"]["Data"][-1])
         target = iel["outputs"][output]["target"]
         fig_num = fig_num + 1
         #title_snippet = (" ").join(descr[called_by].split(" ")[2:])
@@ -345,7 +353,7 @@ def GetERFromFco2(ds, l6_info):
     Author: PRI
     Date: October 2015
     """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     ER = {"Label": "ER"}
     # get the CO2 flux
     Fco2 = pfp_utils.GetVariable(ds, "Fco2")
@@ -359,7 +367,7 @@ def GetERFromFco2(ds, l6_info):
     # get a copy of the Fco2 flag and make the attribute dictionary
     ER["Flag"] = numpy.array(Fco2["Flag"])
     # make the ER attribute dictionary
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     ER["Attr"] = {"long_name": "Ecosystem respiration", "units": Fco2["Attr"]["units"],
                   descr_level: "Ecosystem respiration as nocturnal, ustar-filtered Fco2",
                   "statistic_type": "average"}
@@ -697,13 +705,13 @@ def L6_summary_createseriesdict(ds, l6_info):
     series_dict = {"daily":{},"annual":{},"cumulative":{},"lists":{}}
     sdl = series_dict["lists"]
     sdl["nee"] = [item for item in l6is["NetEcosystemExchange"]
-                  if "NEE" in item[0:3] and item in list(ds.series.keys())]
+                  if "NEE" in item[0:3] and item in list(ds.root["Variables"].keys())]
     sdl["gpp"] = [item for item in l6is["GrossPrimaryProductivity"]
-                  if "GPP" in item[0:3] and item in list(ds.series.keys())]
+                  if "GPP" in item[0:3] and item in list(ds.root["Variables"].keys())]
     sdl["er"] = [item for item in l6is["EcosystemRespiration"]
-                  if "ER" in item[0:2] and item in list(ds.series.keys())]
+                  if "ER" in item[0:2] and item in list(ds.root["Variables"].keys())]
     sdl["nep"] = [item.replace("NEE","NEP") for item in sdl["nee"]]
-    sdl["nep"] = [item for item in sdl["nep"] if item in list(ds.series.keys())]
+    sdl["nep"] = [item for item in sdl["nep"] if item in list(ds.root["Variables"].keys())]
     sdl["co2"] = sdl["nee"]+sdl["nep"]+sdl["gpp"]+sdl["er"]
     for item in sdl["co2"]:
         series_dict["daily"][item] = {}
@@ -712,51 +720,51 @@ def L6_summary_createseriesdict(ds, l6_info):
         series_dict["daily"][item]["format"] = "0.00"
         series_dict["cumulative"][item]["operator"] = "sum"
         series_dict["cumulative"][item]["format"] = "0.00"
-    sdl["ET"] = [item for item in list(ds.series.keys()) if "ET" in item[0:2]]
-    sdl["Precip"] = [item for item in list(ds.series.keys()) if "Precip" in item[0:6]]
+    sdl["ET"] = [item for item in list(ds.root["Variables"].keys()) if "ET" in item[0:2]]
+    sdl["Precip"] = [item for item in list(ds.root["Variables"].keys()) if "Precip" in item[0:6]]
     sdl["h2o"] = sdl["ET"]+sdl["Precip"]
     for item in sdl["h2o"]:
         series_dict["daily"][item] = {"operator":"sum","format":"0.00"}
         series_dict["cumulative"][item] = {"operator":"sum","format":"0.00"}
-    if "AH" in list(ds.series.keys()):
+    if "AH" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["AH"] = {"operator":"average","format":"0.00"}
-    if "CO2" in list(ds.series.keys()):
+    if "CO2" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["CO2"] = {"operator":"average","format":"0.0"}
-    if "Fco2" in list(ds.series.keys()):
+    if "Fco2" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Fco2"] = {"operator":"average","format":"0.00"}
-    if "Fe" in list(ds.series.keys()):
+    if "Fe" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Fe"] = {"operator":"average","format":"0.0"}
-    if "Fh" in list(ds.series.keys()):
+    if "Fh" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Fh"] = {"operator":"average","format":"0.0"}
-    if "Fg" in list(ds.series.keys()):
+    if "Fg" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Fg"] = {"operator":"average","format":"0.0"}
-    if "Fn" in list(ds.series.keys()):
+    if "Fn" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Fn"] = {"operator":"average","format":"0.0"}
-    if "Fsd" in list(ds.series.keys()):
+    if "Fsd" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Fsd"] = {"operator":"average","format":"0.0"}
-    if "Fsu" in list(ds.series.keys()):
+    if "Fsu" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Fsu"] = {"operator":"average","format":"0.0"}
-    if "Fld" in list(ds.series.keys()):
+    if "Fld" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Fld"] = {"operator":"average","format":"0.0"}
-    if "Flu" in list(ds.series.keys()):
+    if "Flu" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Flu"] = {"operator":"average","format":"0.0"}
-    if "ps" in list(ds.series.keys()):
+    if "ps" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["ps"] = {"operator":"average","format":"0.00"}
-    if "RH" in list(ds.series.keys()):
+    if "RH" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["RH"] = {"operator":"average","format":"0"}
-    if "SH" in list(ds.series.keys()):
+    if "SH" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["SH"] = {"operator":"average","format":"0.0000"}
-    if "Sws" in list(ds.series.keys()):
+    if "Sws" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Sws"] = {"operator":"average","format":"0.000"}
-    if "Ta" in list(ds.series.keys()):
+    if "Ta" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Ta"] = {"operator":"average","format":"0.00"}
-    if "Ts" in list(ds.series.keys()):
+    if "Ts" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Ts"] = {"operator":"average","format":"0.00"}
-    if "ustar" in list(ds.series.keys()):
+    if "ustar" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["ustar"] = {"operator":"average","format":"0.00"}
-    if "VP" in list(ds.series.keys()):
+    if "VP" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["VP"] = {"operator":"average","format":"0.000"}
-    if "Ws" in list(ds.series.keys()):
+    if "Ws" in list(ds.root["Variables"].keys()):
         series_dict["daily"]["Ws"] = {"operator":"average","format":"0.00"}
     series_dict["annual"] = series_dict["daily"]
     series_dict["monthly"] = series_dict["daily"]
@@ -775,8 +783,8 @@ def L6_summary_daily(ds, series_dict):
     Date: June 2015
     """
     logger.info(" Doing the daily summary (data) at L6")
-    dt = ds.series["DateTime"]["Data"]
-    ts = int(float(ds.globalattributes["time_step"]))
+    dt = ds.root["Variables"]["DateTime"]["Data"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     si = pfp_utils.GetDateIndex(dt,str(dt[0]),ts=ts,default=0,match="startnextday")
     ei = pfp_utils.GetDateIndex(dt,str(dt[-1]),ts=ts,default=len(dt)-1,match="endpreviousday")
     ldt = dt[si:ei+1]
@@ -786,7 +794,7 @@ def L6_summary_daily(ds, series_dict):
     f0 = numpy.zeros(nDays, dtype=numpy.int32)
     ldt_daily = [ldt[0]+datetime.timedelta(days=i) for i in range(0,nDays)]
     # create a dictionary to hold the daily statistics
-    daily_dict = {"globalattributes": copy.deepcopy(ds.globalattributes),
+    daily_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]),
                   "variables":{}}
     ddg = daily_dict["globalattributes"]
     ddv = daily_dict["variables"]
@@ -798,7 +806,7 @@ def L6_summary_daily(ds, series_dict):
     series_list = list(series_dict["daily"].keys())
     series_list.sort()
     for item in series_list:
-        if item not in list(ds.series.keys()):
+        if item not in list(ds.root["Variables"].keys()):
             continue
         ddv[item] = {"Data": [], "Attr": {}}
         variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
@@ -872,6 +880,9 @@ def L6_summary_write_ncfile(nc_obj, data_dict):
     # write the data to the group
     dt = data_dict["variables"]["DateTime"]["Data"]
     nrecs = len(dt)
+    # set the group attributes
+    setattr(nc_obj, "time_step", data_dict["globalattributes"]["time_step"])
+    setattr(nc_obj, "nc_nrecs", data_dict["globalattributes"]["nc_nrecs"])
     # and give it dimensions of time, latitude and longitude
     nc_obj.createDimension("time", nrecs)
     nc_obj.createDimension("latitude", 1)
@@ -926,11 +937,11 @@ def L6_summary_monthly(ds,series_dict):
     Date: July 2015
     """
     logger.info(" Doing the monthly summaries at L6")
-    dt = ds.series["DateTime"]["Data"]
-    ts = int(float(ds.globalattributes["time_step"]))
+    dt = ds.root["Variables"]["DateTime"]["Data"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     si = pfp_utils.GetDateIndex(dt, str(dt[0]), ts=ts, default=0, match="startnextmonth")
     ldt = dt[si:]
-    monthly_dict = {"globalattributes": copy.deepcopy(ds.globalattributes),
+    monthly_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]),
                     "variables": {}}
     mdg = monthly_dict["globalattributes"]
     mdv = monthly_dict["variables"]
@@ -957,7 +968,7 @@ def L6_summary_monthly(ds,series_dict):
         ei = pfp_utils.GetDateIndex(dt, str(end_date), ts=ts, default=len(dt)-1)
         mdv["DateTime"]["Data"] = numpy.append(mdv["DateTime"]["Data"], dt[si])
         for item in series_list:
-            if item not in list(ds.series.keys()): continue
+            if item not in list(ds.root["Variables"].keys()): continue
             variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
             if item in series_dict["lists"]["co2"]:
                 variable = pfp_utils.convert_units_func(ds, variable, "gC/m^2")
@@ -1004,8 +1015,8 @@ def L6_summary_annual(ds, series_dict):
     Date: June 2015
     """
     logger.info(" Doing the annual summaries at L6")
-    dt = ds.series["DateTime"]["Data"]
-    ts = int(float(ds.globalattributes["time_step"]))
+    dt = ds.root["Variables"]["DateTime"]["Data"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     nperDay = int(24/(float(ts)/60.0)+0.5)
     si = pfp_utils.GetDateIndex(dt, str(dt[0]), ts=ts, default=0, match="startnextday")
     ei = pfp_utils.GetDateIndex(dt, str(dt[-1]), ts=ts, default=len(dt)-1, match="endpreviousday")
@@ -1014,7 +1025,7 @@ def L6_summary_annual(ds, series_dict):
     end_year = ldt[-1].year
     year_list = list(range(start_year, end_year+1, 1))
     nYears = len(year_list)
-    annual_dict = {"globalattributes": copy.deepcopy(ds.globalattributes), "variables": {}}
+    annual_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]), "variables": {}}
     adg = annual_dict["globalattributes"]
     adv = annual_dict["variables"]
     adg["time_step"] = "annual"
@@ -1043,7 +1054,7 @@ def L6_summary_annual(ds, series_dict):
         nDays = int((ei-si+1)/nperDay+0.5)
         adv["nDays"]["Data"][i] = nDays
         for item in series_list:
-            if item not in list(ds.series.keys()):
+            if item not in list(ds.root["Variables"].keys()):
                 continue
             variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
             if item in series_dict["lists"]["co2"]:
@@ -1089,8 +1100,8 @@ def L6_summary_cumulative(ds, series_dict):
     logger.info(" Doing the cumulative summaries at L6")
     # get the datetime series and the time step
     dt = pfp_utils.GetVariable(ds, "DateTime")
-    ts = int(float(ds.globalattributes["time_step"]))
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # subtract 1 time step from the datetime to avoid orphan years
     cdt = dt["Data"] - datetime.timedelta(minutes=ts)
     years = sorted(list(set([ldt.year for ldt in cdt])))
@@ -1099,12 +1110,13 @@ def L6_summary_cumulative(ds, series_dict):
     for year in years:
         cumulative_dict[str(year)] = cdyr = {"globalattributes":{}, "variables":{}}
         # copy the global attributes
-        cdyr["globalattributes"] = copy.deepcopy(ds.globalattributes)
+        cdyr["globalattributes"] = copy.deepcopy(ds.root["Attributes"])
         start_date = datetime.datetime(year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
         end_date = datetime.datetime(year+1, 1, 1, 0, 0, 0)
         si = pfp_utils.GetDateIndex(dt["Data"], start_date, ts=ts, default=0)
         ei = pfp_utils.GetDateIndex(dt["Data"], end_date, ts=ts, default=nrecs-1)
         ldt = dt["Data"][si:ei+1]
+        cdyr["globalattributes"]["nc_nrecs"] = len(ldt)
         f0 = numpy.zeros(len(ldt), dtype=numpy.int32)
         cdyr["variables"]["DateTime"] = {"Data":ldt, "Flag":f0,
                                          "Attr":{"units":"Year", "format":"dd/mm/yyyy HH:MM",
@@ -1132,7 +1144,7 @@ def L6_summary_cumulative(ds, series_dict):
                     cdyr["variables"][item]["Attr"][attr] = variable["Attr"][attr]
     # cumulative total over all data
     cdyr = cumulative_dict["all"] = {"globalattributes":{}, "variables":{}}
-    cdyr["globalattributes"] = copy.deepcopy(ds.globalattributes)
+    cdyr["globalattributes"] = copy.deepcopy(ds.root["Attributes"])
     cdyr["variables"]["DateTime"] = {"Data":dt["Data"], "Flag":dt["Flag"], "Attr":dt["Attr"]}
     cdyr["variables"]["DateTime"]["Attr"]["format"] = "dd/mm/yyyy HH:MM"
     for item in series_list:
@@ -1228,8 +1240,9 @@ def PartitionNEE(ds, l6_info):
     """
     if "GrossPrimaryProductivity" not in l6_info:
         return
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     # make the L6 "description" attribute for the target variable
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     # calculate GPP from NEE and ER
     for label in list(l6_info["GrossPrimaryProductivity"].keys()):
         if ("NEE" not in l6_info["GrossPrimaryProductivity"][label] and
@@ -1238,25 +1251,25 @@ def PartitionNEE(ds, l6_info):
         NEE_label = l6_info["GrossPrimaryProductivity"][label]["NEE"]
         ER_label = l6_info["GrossPrimaryProductivity"][label]["ER"]
         output_label = l6_info["GrossPrimaryProductivity"][label]["output"]
-        if NEE_label not in list(ds.series.keys()):
+        if NEE_label not in list(ds.root["Variables"].keys()):
             continue
-        NEE, NEE_flag, NEE_attr = pfp_utils.GetSeriesasMA(ds, NEE_label)
-        if ER_label not in list(ds.series.keys()):
+        NEE = pfp_utils.GetVariable(ds, NEE_label)
+        if ER_label not in list(ds.root["Variables"].keys()):
             continue
-        ER, _, _ = pfp_utils.GetSeriesasMA(ds, ER_label)
+        ER = pfp_utils.GetVariable(ds, ER_label)
+        GPP = pfp_utils.CreateEmptyVariable(output_label, nrecs)
         # calculate GPP
         # here we use the conventions from Chapin et al (2006)
         #  NEP = -1*NEE
         #  GPP = NEP + ER ==> GPP = -1*NEE + ER
-        GPP = float(-1)*NEE + ER
-        ds.series[output_label]["Data"] = GPP
-        ds.series[output_label]["Flag"] = NEE_flag
+        GPP["Data"] = float(-1)*NEE["Data"] + ER["Data"]
+        GPP["Flag"] = NEE["Flag"]
         # copy the attributes
-        attr = ds.series[output_label]["Attr"]
-        attr["units"] = NEE_attr["units"]
-        attr["long_name"] = "Gross Primary Productivity"
-        attr[descr_level] = "Calculated as -1*" + NEE_label + " + " + ER_label
-        ds.series[output_label]["Attr"] = attr
+        GPP["Attr"]["units"] = NEE["Attr"]["units"]
+        GPP["Attr"]["long_name"] = "Gross Primary Productivity"
+        GPP["Attr"][descr_level] = "Calculated as -1*" + NEE_label + " + " + ER_label
+        GPP["Attr"]["statistic_type"] = "average"
+        pfp_utils.CreateVariable(ds, GPP)
         l6_info["Summary"]["GrossPrimaryProductivity"].append(label)
     return
 
@@ -1271,7 +1284,7 @@ def cleanup_ustar_dict(ds, ustar_in):
     Date: September 2015
     """
     dt = pfp_utils.GetVariable(ds, "DateTime")
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     cdt = dt["Data"] - datetime.timedelta(minutes=ts)
     data_years = sorted(list(set([ldt.year for ldt in cdt])))
     # get the years for which we have u* thresholds in ustar_in
@@ -1339,7 +1352,7 @@ def get_ustar_thresholds(cf, ds):
                 msg = " MPT results file not found (" + results_name + ")"
                 logger.warning(msg)
         if "ustar_threshold" in cf:
-            ts = int(float(ds.globalattributes["time_step"]))
+            ts = int(float(ds.root["Attributes"]["time_step"]))
             ustar_dict["cf"] = get_ustarthreshold_from_cf(cf, ts)
         else:
             msg = " No source for ustar threshold found in " + os.path.basename(cf.filename)
@@ -1347,14 +1360,14 @@ def get_ustar_thresholds(cf, ds):
     except Exception:
         msg = " An error occured getting the ustar threshold"
         logger.error(msg)
-        ds.returncodes["value"] = 1
-        ds.returncodes["message"] = msg
+        ds.info["returncodes"]["value"] = 1
+        ds.info["returncodes"]["message"] = msg
     return ustar_out
 
-def get_daynight_indicator(ds, l6_info):
-    Fsd, _, _ = pfp_utils.GetSeriesasMA(ds, "Fsd")
+def get_daynight_indicator(cf, ds):
+    Fsd = pfp_utils.GetVariable(ds, "Fsd")
     # get the day/night indicator
-    daynight_indicator = {"values":numpy.zeros(len(Fsd), dtype=numpy.int32), "attr":{}}
+    daynight_indicator = {"values":numpy.zeros(len(Fsd["Data"]), dtype=numpy.int32), "attr":{}}
     inds = daynight_indicator["values"]
     attr = daynight_indicator["attr"]
     # get the filter type
@@ -1371,7 +1384,7 @@ def get_daynight_indicator(ds, l6_info):
                                                          default=10))
         attr["Fsd_threshold"] = str(Fsd_threshold)
         # we are using Fsd only to define day/night
-        idx = numpy.ma.where(Fsd <= Fsd_threshold)[0]
+        idx = numpy.ma.where(Fsd["Data"] <= Fsd_threshold)[0]
         inds[idx] = numpy.int32(1)
     elif filter_type.lower() == "sa":
         # get the solar altitude threshold
@@ -1379,10 +1392,10 @@ def get_daynight_indicator(ds, l6_info):
                                                         default="-5"))
         attr["sa_threshold"] = str(sa_threshold)
         # we are using solar altitude to define day/night
-        if "solar_altitude" not in list(ds.series.keys()):
+        if "solar_altitude" not in list(ds.root["Variables"].keys()):
             pfp_ts.get_synthetic_fsd(ds)
-        sa, _, _ = pfp_utils.GetSeriesasMA(ds, "solar_altitude")
-        idx = numpy.ma.where(sa < sa_threshold)[0]
+        sa = pfp_utils.GetVariable(ds, "solar_altitude")
+        idx = numpy.ma.where(sa["Data"] < sa_threshold)[0]
         inds[idx] = numpy.int32(1)
     else:
         msg = "Unrecognised DayNightFilter option in L6 control file"
@@ -1409,7 +1422,7 @@ def get_day_indicator(cf, ds):
     Mods:
      PRI 6/12/2018 - removed calculation of Fsd_syn by default
     """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     Fsd = pfp_utils.GetVariable(ds, "Fsd")
     # indicator = 1 ==> day, indicator = 0 ==> night
     long_name = "Day time indicator, 1 ==> day, 0 ==> night"
@@ -1437,7 +1450,7 @@ def get_day_indicator(cf, ds):
         sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
         attr["sa_threshold"] = str(sa_threshold)
         # we are using solar altitude to define day/night
-        if "solar_altitude" not in ds.series.keys():
+        if "solar_altitude" not in ds.root["Variables"].keys():
             pfp_ts.get_synthetic_fsd(ds)
         sa = pfp_utils.GetVariable(ds, "solar_altitude")
         index = numpy.ma.where(sa["Data"] < sa_threshold)[0]
@@ -1467,8 +1480,8 @@ def get_evening_indicator(cf, ds):
     Author: PRI
     Date: March 2016
     """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    ts = int(float(ds.globalattributes["time_step"]))
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     # indicator series, 1 ==> evening
     long_name = "Evening indicator, 1 ==> evening hours (after sunset)"
     indicator_evening = {"Label": "indicator_evening",
@@ -1512,7 +1525,7 @@ def get_night_indicator(cf, ds):
     Author: PRI
     Date: March 2016
     """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     Fsd = pfp_utils.GetVariable(ds, "Fsd")
     # indicator = 1 ==> night, indicator = 0 ==> day
     long_name = "Night time indicator, 1 ==> night, 0 ==> day"
@@ -1540,7 +1553,7 @@ def get_night_indicator(cf, ds):
         sa_threshold = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "sa_threshold", default="-5"))
         attr["sa_threshold"] = str(sa_threshold)
         # we are using solar altitude to define day/night
-        if "solar_altitude" not in ds.series.keys():
+        if "solar_altitude" not in ds.root["Variables"].keys():
             pfp_ts.get_synthetic_fsd(ds)
         sa = pfp_utils.GetVariable(ds, "solar_altitude")
         index = numpy.ma.where(sa["Data"] < sa_threshold)[0]
@@ -1814,6 +1827,7 @@ def get_ustar_thresholds_annual(ldt,ustar_threshold):
 
 def rpGPP_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about calculating GPP."""
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     # create the dictionary keys for this series
     info[label] = {}
     # output series name
@@ -1827,15 +1841,15 @@ def rpGPP_createdict(cf, ds, info, label):
     opt = pfp_utils.get_keyvaluefromcf(cf, ["GrossPrimaryProductivity", label], "ER", default=default)
     info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
-    if info[label]["output"] not in list(ds.series.keys()):
-        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
-        pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
+    if info[label]["output"] not in list(ds.root["Variables"].keys()):
+        var = pfp_utils.CreateEmptyVariable(info[label]["output"], nrecs)
+        pfp_utils.CreateVariable(ds, var)
     return
 
 def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
     """ Creates a dictionary in ds to hold information about the merging of gap filled
         and tower data."""
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # create the merge directory in the info dictionary
     if called_by not in l6_info:
         l6_info[called_by] = {}
@@ -1849,13 +1863,14 @@ def rpMergeSeries_createdict(cf, ds, l6_info, label, called_by):
     sources = pfp_utils.GetMergeSeriesKeys(cf, label, section="EcosystemRespiration")
     l6_info[called_by]["standard"][label]["source"] = sources
     # create an empty series in ds if the output series doesn't exist yet
-    if l6_info[called_by]["standard"][label]["output"] not in list(ds.series.keys()):
+    if l6_info[called_by]["standard"][label]["output"] not in list(ds.root["Variables"].keys()):
         variable = pfp_utils.CreateEmptyVariable(label, nrecs)
         pfp_utils.CreateVariable(ds, variable)
     return
 
 def rpNEE_createdict(cf, ds, info, label):
     """ Creates a dictionary in ds to hold information about calculating NEE."""
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     # create the dictionary keys for this series
     info[label] = {}
     # output series name
@@ -1869,9 +1884,9 @@ def rpNEE_createdict(cf, ds, info, label):
     opt = pfp_utils.get_keyvaluefromcf(cf, sl, "ER", default=default)
     info[label]["ER"] = opt
     # create an empty series in ds if the output series doesn't exist yet
-    if info[label]["output"] not in list(ds.series.keys()):
-        data, flag, attr = pfp_utils.MakeEmptySeries(ds, info[label]["output"])
-        pfp_utils.CreateSeries(ds, info[label]["output"], data, flag, attr)
+    if info[label]["output"] not in list(ds.root["Variables"].keys()):
+        var = pfp_utils.CreateEmptyVariable(info[label]["output"], nrecs)
+        pfp_utils.CreateVariable(ds, var)
     return
 
 def rpSOLO_createdict(cf, ds, l6_info, output, called_by, flag_code):
@@ -1884,15 +1899,15 @@ def rpSOLO_createdict(cf, ds, l6_info, output, called_by, flag_code):
     Author: PRI
     Date: Back in the day
     """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # make the L6 "description" attrubute for the target variable
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     # create the dictionary keys for this series
     if called_by not in list(l6_info.keys()):
         l6_info[called_by] = {"outputs": {}, "info": {"source": "Fco2", "target": "ER"}, "gui": {}}
         # only need to create the ["info"] dictionary on the first pass
         pfp_gf.gfSOLO_createdict_info(cf, ds, l6_info, called_by)
-        if ds.returncodes["value"] != 0:
+        if ds.info["returncodes"]["value"] != 0:
             return
         # only need to create the ["gui"] dictionary on the first pass
         pfp_gf.gfSOLO_createdict_gui(cf, ds, l6_info, called_by)
@@ -1902,7 +1917,7 @@ def rpSOLO_createdict(cf, ds, l6_info, output, called_by, flag_code):
     Fco2 = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
     model_outputs = list(cf["EcosystemRespiration"][output][called_by].keys())
     for model_output in model_outputs:
-        if model_output not in list(ds.series.keys()):
+        if model_output not in list(ds.root["Variables"].keys()):
             # create an empty variable
             variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
             variable["Attr"]["long_name"] = "Ecosystem respiration"
@@ -1928,13 +1943,13 @@ def rp_createdict(cf, ds, l6_info, output, called_by, flag_code):
     # Create a dict to set the description_l6 attribute
     description_dict = {'ERUsingLasslop': "Modeled by Lasslop et al. (2010)",
                         'ERUsingLloydTaylor': "Modeled by Lloyd-Taylor (1994)"}
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # create the settings directory
     if called_by not in l6_info.keys():
         l6_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
     # get the info section
     rp_createdict_info(cf, ds, l6_info[called_by], called_by)
-    if ds.returncodes["value"] != 0:
+    if ds.info["returncodes"]["value"] != 0:
         return
     # get the outputs section
     rp_createdict_outputs(cf, l6_info[called_by], output, called_by, flag_code)
@@ -1942,7 +1957,7 @@ def rp_createdict(cf, ds, l6_info, output, called_by, flag_code):
     Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
     model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
     for model_output in model_outputs:
-        if model_output not in ds.series.keys():
+        if model_output not in ds.root["Variables"].keys():
             # create an empty variable
             variable = pfp_utils.CreateEmptyVariable(model_output, nrecs)
             variable["Attr"]["long_name"] = "Ecosystem respiration"
@@ -1967,14 +1982,14 @@ def rp_createdict_info(cf, ds, erl, called_by):
     suffix_dict = {'ERUsingLasslop': "_Lasslop.xlsx",
                    'ERUsingLloydTaylor': "_LloydTaylor.xlsx"}
     # reset the return message and code
-    ds.returncodes["message"] = "OK"
-    ds.returncodes["value"] = 0
+    ds.info["returncodes"]["message"] = "OK"
+    ds.info["returncodes"]["value"] = 0
     # time step
-    time_step = int(ds.globalattributes["time_step"])
+    time_step = int(ds.root["Attributes"]["time_step"])
     # get the level of processing
-    level = ds.globalattributes["processing_level"]
+    level = ds.root["Attributes"]["processing_level"]
     # local pointer to the datetime series
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     # add an info section to the info["solo"] dictionary
     erl["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
     erl["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
@@ -2017,8 +2032,8 @@ def rp_createdict_info(cf, ds, erl, called_by):
                 # user wants to edit the control file
                 msg = " Quitting L6 to edit control file"
                 logger.warning(msg)
-                ds.returncodes["message"] = msg
-                ds.returncodes["value"] = 1
+                ds.info["returncodes"]["message"] = msg
+                ds.info["returncodes"]["value"] = 1
             else:
                 plot_path = "./plots/"
                 cf["Files"]["plot_path"] = "./plots/"
@@ -2102,13 +2117,13 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     ielo = iel["outputs"]
     # get a local copy of the datetime series
     if ei == -1:
-        dt = ds.series['DateTime']['Data'][si:]
+        dt = ds.root["Variables"]['DateTime']['Data'][si:]
     else:
-        dt = ds.series['DateTime']['Data'][si:ei+1]
+        dt = ds.root["Variables"]['DateTime']['Data'][si:ei+1]
     xdt = numpy.array(dt)
     # get the observed and modelled values
-    obs, f, a = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
-    mod, f, a = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
+    obs = pfp_utils.GetVariable(ds, target, start=si, end=ei)
+    mod = pfp_utils.GetVariable(ds, output, start=si, end=ei)
     # make the figure
     if iel["gui"]["show_plots"]:
         plt.ion()
@@ -2123,14 +2138,14 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
-    mask = numpy.ma.mask_or(obs.mask, mod.mask)
-    obs_mor = numpy.ma.array(obs, mask=mask)
+    mask = numpy.ma.mask_or(obs["Data"].mask, mod["Data"].mask)
+    obs_mor = numpy.ma.array(obs["Data"], mask=mask)
     dstats = pfp_utils.get_diurnalstats(dt, obs_mor, ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'b-', label="Obs")
     # get the diurnal stats of all predictions
-    dstats = pfp_utils.get_diurnalstats(dt, mod, ieli)
+    dstats = pfp_utils.get_diurnalstats(dt, mod["Data"], ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'r-', label=mode + "(all)")
-    mod_mor = numpy.ma.masked_where(numpy.ma.getmaskarray(obs) == True, mod, copy=True)
+    mod_mor = numpy.ma.masked_where(numpy.ma.getmaskarray(obs["Data"]) == True, mod["Data"], copy=True)
     dstats = pfp_utils.get_diurnalstats(dt, mod_mor, ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'g-', label=mode + "(obs)")
     plt.xlim(0, 24)
@@ -2141,24 +2156,25 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     # XY plot of the 30 minute data
     rect2 = [0.40, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax2 = plt.axes(rect2)
-    ax2.plot(mod, obs, 'b.')
+    ax2.plot(mod["Data"], obs["Data"], 'b.')
     ax2.set_ylabel(target + '_obs')
     ax2.set_xlabel(target + '_' + mode)
     # plot the best fit line
-    coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
-    xfit = numpy.ma.array([numpy.ma.minimum.reduce(mod), numpy.ma.maximum.reduce(mod)])
+    coefs = numpy.ma.polyfit(numpy.ma.copy(mod["Data"]), numpy.ma.copy(obs["Data"]), 1)
+    xfit = numpy.ma.array([numpy.ma.minimum.reduce(mod["Data"]),
+                           numpy.ma.maximum.reduce(mod["Data"])])
     yfit = numpy.polyval(coefs, xfit)
-    r = numpy.ma.corrcoef(mod, obs)
+    r = numpy.ma.corrcoef(mod["Data"], obs["Data"])
     ax2.plot(xfit, yfit, 'r--', linewidth=3)
     eqnstr = 'y = %.3fx + %.3f, r = %.3f'%(coefs[0], coefs[1], r[0][1])
     ax2.text(0.5, 0.875, eqnstr, fontsize=8, horizontalalignment='center', transform=ax2.transAxes)
     # write the fit statistics to the plot
-    numpoints = numpy.ma.count(obs)
-    numfilled = numpy.ma.count(mod)-numpy.ma.count(obs)
-    diff = mod - obs
+    numpoints = numpy.ma.count(obs["Data"])
+    numfilled = numpy.ma.count(mod["Data"])-numpy.ma.count(obs["Data"])
+    diff = mod["Data"] - obs["Data"]
     bias = numpy.ma.average(diff)
     ielo[output]["results"]["Bias"].append(bias)
-    rmse = numpy.ma.sqrt(numpy.ma.mean((obs-mod)*(obs-mod)))
+    rmse = numpy.ma.sqrt(numpy.ma.mean((obs["Data"]-mod["Data"])*(obs["Data"]-mod["Data"])))
     plt.figtext(0.725, 0.225, 'No. points')
     plt.figtext(0.825, 0.225, str(numpoints))
     ielo[output]["results"]["No. points"].append(numpoints)
@@ -2176,38 +2192,41 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     plt.figtext(0.725, 0.100, 'RMSE')
     plt.figtext(0.825, 0.100, str(pfp_utils.round2significant(rmse, 4)))
     ielo[output]["results"]["RMSE"].append(rmse)
-    var_obs = numpy.ma.var(obs)
+    var_obs = numpy.ma.var(obs["Data"])
     ielo[output]["results"]["Var (obs)"].append(var_obs)
-    var_mod = numpy.ma.var(mod)
+    var_mod = numpy.ma.var(mod["Data"])
     ielo[output]["results"]["Var (" + mode + ")"].append(var_mod)
     ielo[output]["results"]["Var ratio"].append(var_obs/var_mod)
-    ielo[output]["results"]["Avg (obs)"].append(numpy.ma.average(obs))
-    ielo[output]["results"]["Avg (" + mode + ")"].append(numpy.ma.average(mod))
+    ielo[output]["results"]["Avg (obs)"].append(numpy.ma.average(obs["Data"]))
+    ielo[output]["results"]["Avg (" + mode + ")"].append(numpy.ma.average(mod["Data"]))
     # time series of drivers and target
     ts_axes = []
     rect = [pd["margin_left"], pd["ts_bottom"], pd["ts_width"], pd["ts_height"]]
     ts_axes.append(plt.axes(rect))
-    ts_axes[0].plot(xdt, obs, 'b.')
-    ts_axes[0].scatter(xdt, obs)
-    ts_axes[0].plot(xdt, mod, 'r-')
+    ts_axes[0].plot(xdt, obs["Data"], 'b.')
+    ts_axes[0].scatter(xdt, obs["Data"])
+    ts_axes[0].plot(xdt, mod["Data"], 'r-')
     plt.axhline(0)
     ts_axes[0].set_xlim(xdt[0], xdt[-1])
-    TextStr = target + '_obs (' + ds.series[target]['Attr']['units'] + ')'
-    ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
-    TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
-    ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
+    TextStr = target + '_obs (' + ds.root["Variables"][target]['Attr']['units'] + ')'
+    ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left',
+                    transform=ts_axes[0].transAxes)
+    TextStr = output + '(' + ds.root["Variables"][output]['Attr']['units'] + ')'
+    ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right',
+                    transform=ts_axes[0].transAxes)
     for ThisOne, i in zip(drivers, range(1, pd["nDrivers"] + 1)):
         this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
         rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
         ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
-        data, flag, attr = pfp_utils.GetSeriesasMA(ds, ThisOne, si=si, ei=ei)
-        data_notgf = numpy.ma.masked_where(flag != 0, data)
-        data_gf = numpy.ma.masked_where(flag == 0, data)
+        driver = pfp_utils.GetVariable(ds, ThisOne, start=si, end=ei)
+        data_notgf = numpy.ma.masked_where(driver["Flag"] != 0, driver["Data"])
+        data_gf = numpy.ma.masked_where(driver["Flag"] == 0, driver["Data"])
         ts_axes[i].plot(xdt, data_notgf, 'b-')
         ts_axes[i].plot(xdt, data_gf, 'r-')
         plt.setp(ts_axes[i].get_xticklabels(), visible=False)
-        TextStr = ThisOne + '(' + ds.series[ThisOne]['Attr']['units'] + ')'
-        ts_axes[i].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[i].transAxes)
+        TextStr = ThisOne + '(' + driver['Attr']['units'] + ')'
+        ts_axes[i].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left',
+                        transform=ts_axes[i].transAxes)
     # save a hard copy of the plot
     sdt = xdt[0].strftime("%Y%m%d")
     edt = xdt[-1].strftime("%Y%m%d")

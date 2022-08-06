@@ -3,7 +3,6 @@ import csv
 import datetime
 import logging
 import os
-import platform
 import subprocess
 import tempfile
 # 3rd party modules
@@ -31,11 +30,11 @@ def GapFillUsingSOLO(main_gui, ds, l5_info, called_by):
     writes the gap filled data to file.
     '''
     # set the default return code
-    ds.returncodes["value"] = 0
-    ds.returncodes["message"] = "normal"
+    ds.info["returncodes"]["value"] = 0
+    ds.info["returncodes"]["message"] = "normal"
     # check the SOLO drivers for missing data
     #pfp_gf.CheckDrivers(ds, l5_info, called_by)
-    #if ds.returncodes["value"] != 0:
+    #if ds.info["returncodes"]["value"] != 0:
         #return ds
     if l5_info[called_by]["info"]["call_mode"].lower() == "interactive":
         l5_info["GapFillUsingSOLO"]["gui"]["show_plots"] = True
@@ -55,8 +54,8 @@ def  gfSOLO_gui(main_gui, ds, l5_info, called_by):
     main_gui.solo_gui.called_by = called_by
     main_gui.solo_gui.edit_cfg = main_gui.tabs.tab_dict[main_gui.tabs.tab_index_running]
     # put up the start and end dates
-    start_date = ds.series["DateTime"]["Data"][0].strftime("%Y-%m-%d %H:%M")
-    end_date = ds.series["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
+    start_date = ds.root["Variables"]["DateTime"]["Data"][0].strftime("%Y-%m-%d %H:%M")
+    end_date = ds.root["Variables"]["DateTime"]["Data"][-1].strftime("%Y-%m-%d %H:%M")
     main_gui.solo_gui.label_DataStartDate_value.setText(start_date)
     main_gui.solo_gui.label_DataEndDate_value.setText(end_date)
     # set the default period and auto-complete state
@@ -99,21 +98,21 @@ def gfSOLO_autocomplete(ds, l5_info, called_by):
     l5s = l5_info[called_by]
     if not l5s["gui"]["auto_complete"]:
         return
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     nRecs = len(ldt)
     use_all_data = []
     for output in list(l5s["outputs"].keys()):
         not_enough_points = False
         target = l5s["outputs"][output]["target"]
-        data_solo, _, _ = pfp_utils.GetSeriesasMA(ds, output)
-        if numpy.ma.count(data_solo) == 0:
+        solo = pfp_utils.GetVariable(ds, output)
+        if numpy.ma.count(solo["Data"]) == 0:
             continue
-        mask_solo = numpy.ma.getmaskarray(data_solo)
+        mask_solo = numpy.ma.getmaskarray(solo["Data"])
         gapstartend = pfp_utils.contiguous_regions(mask_solo)
-        data_obs, _, _ = pfp_utils.GetSeriesasMA(ds, target)
+        obs = pfp_utils.GetVariable(ds, target)
         for si_gap, ei_gap in gapstartend:
             min_points = int((ei_gap-si_gap)*l5s["gui"]["min_percent"]/100)
-            num_good_points = numpy.ma.count(data_obs[si_gap: ei_gap])
+            num_good_points = numpy.ma.count(obs["Data"][si_gap: ei_gap])
             while num_good_points < min_points:
                 si_gap = max([0, si_gap - l5s["info"]["nperday"]])
                 ei_gap = min([nRecs-1, ei_gap + l5s["info"]["nperday"]])
@@ -126,7 +125,7 @@ def gfSOLO_autocomplete(ds, l5_info, called_by):
                 if not_enough_points:
                     break
                 min_points = int((ei_gap-si_gap)*l5s["gui"]["min_percent"]/100)
-                num_good_points = numpy.ma.count(data_obs[si_gap: ei_gap])
+                num_good_points = numpy.ma.count(obs["Data"][si_gap: ei_gap])
             if not_enough_points:
                 break
             si = max([0, si_gap])
@@ -222,8 +221,8 @@ def gfSOLO_done(solo_gui):
     # destroy the SOLO GUI
     solo_gui.close()
     # set the return codes
-    ds.returncodes["value"] = 0
-    ds.returncodes["message"] = "normal"
+    ds.info["returncodes"]["value"] = 0
+    ds.info["returncodes"]["message"] = "normal"
 
 def gfSOLO_getserieslist(cf):
     series_list = []
@@ -259,12 +258,12 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
     This is the main routine for running SOLO, an artifical neural network for gap filling fluxes.
     '''
     l5s = l5_info[called_by]
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     startdate = l5s["run"]["startdate"]
     enddate = l5s["run"]["enddate"]
     logger.info(" Gap filling using SOLO: " + startdate + " to " + enddate)
     # get some useful things
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     # get the start and end datetime indices
     si = pfp_utils.GetDateIndex(ldt, startdate, ts=ts, default=0, match="exact")
     ei = pfp_utils.GetDateIndex(ldt, enddate, ts=ts, default=len(ldt)-1, match="exact")
@@ -284,9 +283,9 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
         l5s["outputs"][output]["results"]["startdate"].append(ldt[si])
         l5s["outputs"][output]["results"]["enddate"].append(ldt[ei])
         # get the target data and check there is enough to continue
-        d, _, _ = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
-        nRecs = len(d)
-        if numpy.ma.count(d) < l5s["gui"]["min_points"]:
+        var = pfp_utils.GetVariable(ds, target, start=si, end=ei)
+        nRecs = len(var["Data"])
+        if numpy.ma.count(var["Data"]) < l5s["gui"]["min_points"]:
             msg = " Less than " + str(l5s["gui"]["min_percent"]) + " % good data available for " + target
             logger.warning(msg)
             l5s["outputs"][output]["results"]["No. points"].append(float(0))
@@ -336,13 +335,13 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
 def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     """ Plot the results of the SOLO run. """
     # get the time step
-    ts = int(ds.globalattributes['time_step'])
+    ts = int(ds.root["Attributes"]['time_step'])
     # get a local copy of the datetime series
-    xdt = ds.series["DateTime"]["Data"][si:ei+1]
+    xdt = ds.root["Variables"]["DateTime"]["Data"][si:ei+1]
     Hdh = numpy.array([dt.hour+(dt.minute+dt.second/float(60))/float(60) for dt in xdt])
     # get the observed and modelled values
-    obs, _, _ = pfp_utils.GetSeriesasMA(ds, target, si=si, ei=ei)
-    mod, _, _ = pfp_utils.GetSeriesasMA(ds, output, si=si, ei=ei)
+    obs = pfp_utils.GetVariable(ds, target, start=si, end=ei)
+    mod = pfp_utils.GetVariable(ds, output, start=si, end=ei)
     # make the figure
     if l5s["gui"]["show_plots"]:
         plt.ion()
@@ -362,17 +361,17 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
-    mask = numpy.ma.mask_or(obs.mask, mod.mask)
-    obs_mor = numpy.ma.array(obs, mask=mask)
+    mask = numpy.ma.mask_or(obs["Data"].mask, mod["Data"].mask)
+    obs_mor = numpy.ma.array(obs["Data"], mask=mask)
     _, Hr1, Av1, _, _, _ = gf_getdiurnalstats(Hdh, obs_mor, ts)
     ax1.plot(Hr1, Av1, 'b-', label="Obs")
     # get the diurnal stats of all SOLO predictions
-    _, Hr2, Av2, _, _, _ = gf_getdiurnalstats(Hdh, mod, ts)
+    _, Hr2, Av2, _, _, _ = gf_getdiurnalstats(Hdh, mod["Data"], ts)
     ax1.plot(Hr2, Av2, 'r-', label="SOLO(all)")
     # get the diurnal stats of SOLO predictions when the obs are present
-    mod_mor = numpy.ma.array(mod, mask=mask)
-    if numpy.ma.count_masked(obs) != 0:
-        index = numpy.where(numpy.ma.getmaskarray(obs) == False)[0]
+    mod_mor = numpy.ma.array(mod["Data"], mask=mask)
+    if numpy.ma.count_masked(obs["Data"]) != 0:
+        index = numpy.where(numpy.ma.getmaskarray(obs["Data"]) == False)[0]
         # get the diurnal stats of SOLO predictions when observations are present
         _, Hr3, Av3, _, _, _ = gf_getdiurnalstats(Hdh[index], mod_mor[index], ts)
         ax1.plot(Hr3, Av3, 'g-', label="SOLO(obs)")
@@ -384,27 +383,27 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     # XY plot of the 30 minute data
     rect2 = [0.40, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax2 = plt.axes(rect2)
-    ax2.plot(mod, obs, 'b.')
+    ax2.plot(mod["Data"], obs["Data"], 'b.')
     ax2.set_ylabel(target + '_obs')
     ax2.set_xlabel(target + '_SOLO')
     # plot the best fit line
-    coefs = numpy.ma.polyfit(numpy.ma.copy(mod), numpy.ma.copy(obs), 1)
-    xfit = numpy.ma.array([numpy.ma.min(mod), numpy.ma.max(mod)])
+    coefs = numpy.ma.polyfit(numpy.ma.copy(mod["Data"]), numpy.ma.copy(obs["Data"]), 1)
+    xfit = numpy.ma.array([numpy.ma.min(mod["Data"]), numpy.ma.max(mod["Data"])])
     yfit = numpy.polyval(coefs, xfit)
-    r = numpy.ma.corrcoef(mod, obs)
+    r = numpy.ma.corrcoef(mod["Data"], obs["Data"])
     ax2.plot(xfit, yfit, 'r--', linewidth=3)
     eqnstr = 'y = %.3fx + %.3f, r = %.3f'%(coefs[0], coefs[1], r[0][1])
     ax2.text(0.5, 0.875, eqnstr, fontsize=8, horizontalalignment='center', transform=ax2.transAxes)
     # write the fit statistics to the plot
-    numpoints = trap_masked_constant(numpy.ma.count(obs))
-    numfilled = trap_masked_constant(numpy.ma.count(mod)-numpy.ma.count(obs))
-    diff = mod - obs
+    numpoints = trap_masked_constant(numpy.ma.count(obs["Data"]))
+    numfilled = trap_masked_constant(numpy.ma.count(mod["Data"])-numpy.ma.count(obs["Data"]))
+    diff = mod["Data"] - obs["Data"]
     bias = trap_masked_constant(numpy.ma.average(diff))
-    fractional_bias = trap_masked_constant(bias/(0.5*(numpy.ma.average(obs+mod))))
+    fractional_bias = trap_masked_constant(bias/(0.5*(numpy.ma.average(obs["Data"]+mod["Data"]))))
     l5s["outputs"][output]["results"]["Bias"].append(bias)
     l5s["outputs"][output]["results"]["Frac Bias"].append(fractional_bias)
-    rmse = numpy.ma.sqrt(numpy.ma.mean((obs-mod)*(obs-mod)))
-    data_range = numpy.ma.max(obs)-numpy.ma.min(obs)
+    rmse = numpy.ma.sqrt(numpy.ma.mean((obs["Data"]-mod["Data"])*(obs["Data"]-mod["Data"])))
+    data_range = numpy.ma.max(obs["Data"])-numpy.ma.min(obs["Data"])
     nmse = rmse/data_range
     plt.figtext(0.65, 0.225, 'No. points')
     plt.figtext(0.75, 0.225, str(numpoints))
@@ -434,40 +433,40 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     plt.figtext(0.915, 0.150, str(pfp_utils.round2significant(rmse, 4)))
     l5s["outputs"][output]["results"]["RMSE"].append(trap_masked_constant(rmse))
     l5s["outputs"][output]["results"]["NMSE"].append(trap_masked_constant(nmse))
-    var_obs = numpy.ma.var(obs)
+    var_obs = numpy.ma.var(obs["Data"])
     plt.figtext(0.815, 0.125, 'Var (obs)')
     plt.figtext(0.915, 0.125, '%.4g'%(var_obs))
     l5s["outputs"][output]["results"]["Var (obs)"].append(trap_masked_constant(var_obs))
-    var_mod = numpy.ma.var(mod)
+    var_mod = numpy.ma.var(mod["Data"])
     plt.figtext(0.815, 0.100, 'Var (SOLO)')
     plt.figtext(0.915, 0.100, '%.4g'%(var_mod))
     l5s["outputs"][output]["results"]["Var (SOLO)"].append(trap_masked_constant(var_mod))
     l5s["outputs"][output]["results"]["Var ratio"].append(trap_masked_constant(var_obs/var_mod))
-    l5s["outputs"][output]["results"]["Avg (obs)"].append(trap_masked_constant(numpy.ma.average(obs)))
-    l5s["outputs"][output]["results"]["Avg (SOLO)"].append(trap_masked_constant(numpy.ma.average(mod)))
+    l5s["outputs"][output]["results"]["Avg (obs)"].append(trap_masked_constant(numpy.ma.average(obs["Data"])))
+    l5s["outputs"][output]["results"]["Avg (SOLO)"].append(trap_masked_constant(numpy.ma.average(mod["Data"])))
     # time series of drivers and target
     ts_axes = []
     rect = [pd["margin_left"], pd["ts_bottom"], pd["ts_width"], pd["ts_height"]]
     ts_axes.append(plt.axes(rect))
-    ts_axes[0].plot(xdt, obs, 'b.')
-    ts_axes[0].plot(xdt, mod, 'r-')
+    ts_axes[0].plot(xdt, obs["Data"], 'b.')
+    ts_axes[0].plot(xdt, mod["Data"], 'r-')
     #plt.axhline(0)
     ts_axes[0].set_xlim(xdt[0], xdt[-1])
-    TextStr = target + '_obs (' + ds.series[target]['Attr']['units'] + ')'
+    TextStr = target + '_obs (' + ds.root["Variables"][target]['Attr']['units'] + ')'
     ts_axes[0].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[0].transAxes)
-    TextStr = output + '(' + ds.series[output]['Attr']['units'] + ')'
+    TextStr = output + '(' + ds.root["Variables"][output]['Attr']['units'] + ')'
     ts_axes[0].text(0.85, 0.85, TextStr, color='r', horizontalalignment='right', transform=ts_axes[0].transAxes)
     for label, i in zip(drivers, list(range(1, len(drivers) + 1))):
         this_bottom = pd["ts_bottom"] + i*pd["ts_height"]
         rect = [pd["margin_left"], this_bottom, pd["ts_width"], pd["ts_height"]]
         ts_axes.append(plt.axes(rect, sharex=ts_axes[0]))
-        data, flag, attr = pfp_utils.GetSeriesasMA(ds, label, si=si, ei=ei)
-        data_notgf = numpy.ma.masked_where(flag != 0, data)
-        data_gf = numpy.ma.masked_where(flag == 0, data)
+        var = pfp_utils.GetVariable(ds, label, start=si, end=ei)
+        data_notgf = numpy.ma.masked_where(var["Flag"] != 0, var["Data"])
+        data_gf = numpy.ma.masked_where(var["Flag"] == 0, var["Data"])
         ts_axes[i].plot(xdt, data_notgf, 'b-')
         ts_axes[i].plot(xdt, data_gf, 'r-', linewidth=2)
         plt.setp(ts_axes[i].get_xticklabels(), visible=False)
-        TextStr = label + '(' + attr['units'] + ')'
+        TextStr = label + '(' + var["Attr"]['units'] + ')'
         ts_axes[i].text(0.05, 0.85, TextStr, color='b', horizontalalignment='left', transform=ts_axes[i].transAxes)
     # save a hard copy of the plot
     sdt = xdt[0].strftime("%Y%m%d")
@@ -485,6 +484,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
         plt.close()
         plt.switch_backend(current_backend)
         plt.ion()
+    return
 
 def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
     """
@@ -496,9 +496,9 @@ def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
     """
     l5s = l5_info[called_by]
     # local pointer to datetime
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     # get the site name and the start and end datetimes
-    site_name = ds.globalattributes["site_name"]
+    site_name = ds.root["Attributes"]["site_name"]
     start_date = ldt[0].strftime("%Y-%m-%d")
     end_date = ldt[-1].strftime("%Y-%m-%d")
     # list of outputs to plot
@@ -561,7 +561,7 @@ def gfSOLO_plotsummary(ds, solo):
     # get a list of variables for which SOLO data is available
     outputs = list(solo["outputs"].keys())
     # site name for titles
-    site_name = ds.globalattributes["site_name"]
+    site_name = ds.root["Attributes"]["site_name"]
     # get the start and end dates of the SOLO windows
     dt_start = []
     for ldt in solo["outputs"][outputs[0]]["results"]["startdate"]:
@@ -673,8 +673,8 @@ def gfSOLO_qcchecks(cfg, dsa, dsb):
 def gfSOLO_quit(solo_gui):
     """ Quit the SOLO GUI."""
     # put the return code into ds.returncodes
-    solo_gui.ds.returncodes["message"] = "quit"
-    solo_gui.ds.returncodes["value"] = 1
+    solo_gui.ds.info["returncodes"]["message"] = "quit"
+    solo_gui.ds.info["returncodes"]["value"] = 1
     # destroy the GUI
     solo_gui.close()
 
@@ -696,7 +696,7 @@ def gfSOLO_run_interactive(solo_gui):
     l5_info = solo_gui.l5_info
     l5s = l5_info[called_by]
     # populate the solo dictionary with more useful things
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     l5s["gui"]["nperhr"] = int(float(60)/ts + 0.5)
     l5s["gui"]["nperday"] = int(float(24)*l5s["gui"]["nperhr"] + 0.5)
     # window period length
@@ -832,19 +832,19 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,
     # now fill the driver data array
     i = 0
     for label in drivers:
-        driver, _, _ = pfp_utils.GetSeries(dsb, label, si=si, ei=ei)
-        seqsoloinputdata[:, i] = driver[:]
+        driver = pfp_utils.GetVariable(dsb, label, start=si, end=ei)
+        seqsoloinputdata[:, i] = numpy.ma.filled(driver["Data"][:], c.missing_value)
         i = i + 1
     # get the target data
-    target, _, _ = pfp_utils.GetSeries(dsb, targetlabel, si=si, ei=ei)
+    target = pfp_utils.GetVariable(dsb, targetlabel, start=si, end=ei)
     # now load the target data into the data array
-    seqsoloinputdata[:, ndrivers] = target[:]
+    seqsoloinputdata[:, ndrivers] = numpy.ma.filled(target["Data"][:], c.missing_value)
     # now strip out the bad data
     cind = numpy.zeros(nRecs)
     iind = numpy.arange(nRecs)
     # do only the drivers not the target
     for i in range(ndrivers):
-        index = numpy.where(seqsoloinputdata[:, i] == c.missing_value)[0]
+        index = numpy.where(abs(seqsoloinputdata[:, i]-c.missing_value)<c.eps)[0]
         if len(index) != 0:
             cind[index] = 1
     # index of good data
@@ -882,11 +882,11 @@ def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,
         seqdata = numpy.genfromtxt(seqsolo_seqOut2_output)
         # put the SOLO modelled data back into the data series
         if ei == -1:
-            dsb.series[outputlabel]['Data'][si:][goodindex] = seqdata[:, 1]
-            dsb.series[outputlabel]['Flag'][si:][goodindex] = numpy.int32(flag_code)
+            dsb.root["Variables"][outputlabel]['Data'][si:][goodindex] = seqdata[:, 1]
+            dsb.root["Variables"][outputlabel]['Flag'][si:][goodindex] = numpy.int32(flag_code)
         else:
-            dsb.series[outputlabel]['Data'][si:ei+1][goodindex] = seqdata[:, 1]
-            dsb.series[outputlabel]['Flag'][si:ei+1][goodindex] = numpy.int32(flag_code)
+            dsb.root["Variables"][outputlabel]['Data'][si:ei+1][goodindex] = seqdata[:, 1]
+            dsb.root["Variables"][outputlabel]['Flag'][si:ei+1][goodindex] = numpy.int32(flag_code)
         return 1
     else:
         msg = " SEQSOLO did not run correctly, check the GUI and the log files"
@@ -909,20 +909,21 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     baddates = []
     badvalues = []
     for label in drivers:
-        driver, _, _ = pfp_utils.GetSeries(dsb, label, si=si, ei=ei)
-        index = numpy.where(abs(driver-float(c.missing_value)) < c.eps)[0]
+        driver = pfp_utils.GetVariable(dsb, label, start=si, end=ei)
+        driver["Data"] = numpy.ma.filled(driver["Data"], c.missing_value)
+        index = numpy.where(abs(driver["Data"]-c.missing_value)<c.eps)[0]
         if len(index) != 0:
-            msg = " GapFillUsingSOLO: c.missing_value found in driver " + label + " at lines " + str(index)
+            msg = " GapFillUsingSOLO: missing value found in driver " + label + " at lines " + str(index)
             logger.error(msg)
             badlines = badlines + index.tolist()
             for n in index:
-                baddates.append(dsb.series["DateTime"]["Data"][n])
-                badvalues.append(dsb.series[label]["Data"][n])
+                baddates.append(dsb.root["Variables"]["DateTime"]["Data"][n])
+                badvalues.append(dsb.root["Variables"][label]["Data"][n])
             msg = " GapFillUsingSOLO: driver values: " + str(badvalues)
             logger.error(msg)
             msg = " GapFillUsingSOLO: datetimes: " + str(baddates)
             logger.error(msg)
-        sofminputdata[:, i] = driver[:]
+        sofminputdata[:, i] = driver["Data"][:]
         i = i + 1
     if len(badlines) != 0:
         nBad = len(badlines)
@@ -971,17 +972,17 @@ def gfSOLO_runsolo(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     # now fill the driver data array, drivers come from the modified ds
     i = 0
     for label in drivers:
-        driver, _, _ = pfp_utils.GetSeries(dsb, label, si=si, ei=ei)
-        soloinputdata[:, i] = driver[:]
+        driver = pfp_utils.GetVariable(dsb, label, start=si, end=ei)
+        soloinputdata[:, i] = numpy.ma.filled(driver["Data"][:], c.missing_value)
         i = i + 1
     # get the target data
-    target, _, _ = pfp_utils.GetSeries(dsb, targetlabel, si=si, ei=ei)
+    target = pfp_utils.GetVariable(dsb, targetlabel, start=si, end=ei)
     # now load the target data into the data array
-    soloinputdata[:, ndrivers] = target[:]
+    soloinputdata[:, ndrivers] = numpy.ma.filled(target["Data"][:], c.missing_value)
     # now strip out the bad data
     cind = numpy.zeros(nRecs)
     for i in range(ndrivers + 1):
-        index = numpy.where(soloinputdata[:, i] == c.missing_value)[0]
+        index = numpy.where(abs(soloinputdata[:, i]-c.missing_value)<c.eps)[0]
         if len(index) != 0:
             cind[index] = 1
     index = numpy.where(cind == 0)[0]

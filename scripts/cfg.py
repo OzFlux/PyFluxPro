@@ -1,7 +1,15 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.4"
+version_number = "V3.4.5"
+# V3.4.5 - July 2022
+#        - implement the ability to read L6 summary files
+#          - needed a major rewrite of pfp_io.DataStructure(), all of
+#            the associated routines for dealing with data structures
+#            and a global search and replace to change ds.series to
+#            ds.root so that netCDF V3 files have a group called
+#            'root'.
+#          - this is a major, MAJOR change!
 # V3.4.4 - July 2022
-#        - check control file exists ib pfp_batch.py and exit
+#        - check control file specified in pfp_batch.py exists and exit
 #          gracefully if it doesn't
 # V3.4.3 - June 2022
 #        - bug fixes at L1

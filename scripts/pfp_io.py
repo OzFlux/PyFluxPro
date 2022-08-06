@@ -12,6 +12,7 @@ import time
 import traceback
 # 3rd party modules
 from configobj import ConfigObj
+import cftime
 import dateutil
 import netCDF4
 import numpy
@@ -42,7 +43,7 @@ class DataStructure(object):
       ds = pfp_io.Datastructure()
 
     Attributes of a data structure:
-     ds.globalattributes - a dictionary containing the global attributes read from
+     ds.root["Attributes"] - a dictionary containing the global attributes read from
                            or written to a netCDF file.
      ds.series - a dictionary containing the variables read from or written to a
                  netCDF file.
@@ -52,10 +53,10 @@ class DataStructure(object):
      contains the data, the quality control flag and the attributes.
      For example, the air temperature variable (Ta) is stored in the data
      structure as follows;
-      ds.series["Ta"]["Data"] - a 1D numpy array containing the data values
-      ds.series["Ta"]["Flag"] - a 1D numpy array containing the quality
+      ds.root["Variables"]["Ta"]["Data"] - a 1D numpy array containing the data values
+      ds.root["Variables"]["Ta"]["Flag"] - a 1D numpy array containing the quality
                                 control flag values
-      ds.series["Ta"]["Attr"] - a dictionary containing the variable attributes
+      ds.root["Variables"]["Ta"]["Attr"] - a dictionary containing the variable attributes
 
     Reading a data structure from file:
      A data structure is returned when a netCDF file is read e.g.;
@@ -84,14 +85,19 @@ class DataStructure(object):
     Date: Way back in the day
     Author: PRI
     """
-    def __init__(self):
-        self.series = {}
-        self.globalattributes = {}
-        self.mergeserieslist = []
-        self.averageserieslist = []
-        self.intermediate = []
-        self.returncodes = {"value":0,"message":"OK"}
-        self.filepath = ""
+    def __init__(self, groups=[], global_attributes={}):
+        assert isinstance(groups, list), "groups must be list"
+        assert isinstance(global_attributes, dict), "global_attributes must be dict"
+        self.info = {"returncodes": {"value": 0,"message": "OK"},
+                      "filepath": "", "groups": ["root"],
+                      "mergeserieslist": [],
+                      "averageserieslist": [],
+                      "intermediate": []}
+        self.root = {"Attributes": copy.deepcopy(global_attributes), "Variables": {}}
+        if len(groups) != 0:
+            for group in groups:
+                setattr(self, group, {"Attributes": {}, "Variables": {}})
+                self.info["groups"].append(group)
 
 def coerce_to_numeric(value):
     if isinstance(value, numbers.Number):
@@ -136,40 +142,40 @@ def copy_datastructure(cf,ds_in):
             outfilename = get_outfilenamefromcf(cf)
             # read the netCDF file at the "input" level
             ds_file = NetCDFRead(outfilename)
-            if ds_file.returncodes["value"] != 0: return
-            dt_file = ds_file.series['DateTime']['Data']
+            if ds_file.info["returncodes"]["value"] != 0: return
+            dt_file = ds_file.root["Variables"]['DateTime']['Data']
             sd_file = str(dt_file[0])
             ed_file = str(dt_file[-1])
             # create a copy of the data
             ds_out = copy.deepcopy(ds_in)
-            dt_out = ds_out.series['DateTime']['Data']
-            ts = ds_out.globalattributes['time_step']
+            dt_out = ds_out.root["Variables"]['DateTime']['Data']
+            ts = ds_out.root["Attributes"]['time_step']
             # get the start and end indices based on the start and end dates
             si = pfp_utils.GetDateIndex(dt_out,sd_file,ts=ts,default=0,match='exact')
             ei = pfp_utils.GetDateIndex(dt_out,ed_file,ts=ts,default=-1,match='exact')
             # now replace parts of ds_out with the data read from file
-            for ThisOne in list(ds_file.series.keys()):
+            for ThisOne in list(ds_file.root["Variables"].keys()):
                 # check to see if the L4 series exists in the L3 data
-                if ThisOne in list(ds_out.series.keys()):
+                if ThisOne in list(ds_out.root["Variables"].keys()):
                     # ds_out is the copy of the L3 data, now fill it with the L4 data read from file
-                    ds_out.series[ThisOne]['Data'][si:ei+1] = ds_file.series[ThisOne]['Data']
-                    ds_out.series[ThisOne]['Flag'][si:ei+1] = ds_file.series[ThisOne]['Flag']
+                    ds_out.root["Variables"][ThisOne]['Data'][si:ei+1] = ds_file.root["Variables"][ThisOne]['Data']
+                    ds_out.root["Variables"][ThisOne]['Flag'][si:ei+1] = ds_file.root["Variables"][ThisOne]['Flag']
                 else:
                     # if it doesn't, create the series and put the data into it
-                    ds_out.series[ThisOne] = {}
-                    ds_out.series[ThisOne] = ds_file.series[ThisOne].copy()
+                    ds_out.root["Variables"][ThisOne] = {}
+                    ds_out.root["Variables"][ThisOne] = ds_file.root["Variables"][ThisOne].copy()
                     # check to see if we have to append data to make the copy of the L4 data now
                     # in the L3 data structure the same length as the existing L3 data
-                    nRecs_file = int(ds_file.globalattributes['nc_nrecs'])
-                    nRecs_out = int(ds_out.globalattributes['nc_nrecs'])
+                    nRecs_file = int(ds_file.root["Attributes"]['nc_nrecs'])
+                    nRecs_out = int(ds_out.root["Attributes"]['nc_nrecs'])
                     if nRecs_file < nRecs_out:
                         # there is more data at L3 than at L4
                         # append missing data to make the series the same length
                         nRecs_append = nRecs_out - nRecs_file
                         data = numpy.array([c.missing_value]*nRecs_append,dtype=numpy.float64)
                         flag = numpy.ones(nRecs_append,dtype=numpy.int32)
-                        ds_out.series[ThisOne]['Data'] = numpy.concatenate((ds_out.series[ThisOne]['Data'],data))
-                        ds_out.series[ThisOne]['Flag'] = numpy.concatenate((ds_out.series[ThisOne]['Flag'],flag))
+                        ds_out.root["Variables"][ThisOne]['Data'] = numpy.concatenate((ds_out.root["Variables"][ThisOne]['Data'],data))
+                        ds_out.root["Variables"][ThisOne]['Flag'] = numpy.concatenate((ds_out.root["Variables"][ThisOne]['Flag'],flag))
                     elif nRecs_file > nRecs_out:
                         # tell the user something is wrong
                         logger.error('copy_datastructure: L3 file contains less data than L4 file')
@@ -286,7 +292,7 @@ def csv_read_series(cf):
     ds = DataStructure()
     # add the global atributes
     for gattr in list(cf['Global'].keys()):
-        ds.globalattributes[gattr] = cf['Global'][gattr]
+        ds.root["Attributes"][gattr] = cf['Global'][gattr]
     # parse the control file
     info = csv_read_parse_cf(cf)
     # return with an empty data structure if parsing failed
@@ -339,12 +345,12 @@ def csv_read_series(cf):
     #function_args = function_string.split("(")[1].replace(")","").split(",")
     #result = getattr(pfp_func_units,function_name)(ds, *function_args)
     # set some global attributes
-    ds.globalattributes['featureType'] = 'timeseries'
-    ds.globalattributes['csv_filename'] = info["csv_filename"]
-    ds.globalattributes['xl_datemode'] = str(0)
+    ds.root["Attributes"]['featureType'] = 'timeseries'
+    ds.root["Attributes"]['csv_filename'] = info["csv_filename"]
+    ds.root["Attributes"]['xl_datemode'] = str(0)
     s = os.stat(info["csv_filename"])
     t = time.localtime(s.st_mtime)
-    ds.globalattributes['csv_moddatetime'] = str(datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]))
+    ds.root["Attributes"]['csv_moddatetime'] = str(datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]))
     ds.returncodes = {"value":0,"message":"OK"}
     return ds
 
@@ -360,12 +366,12 @@ def DataFrameToDataStructure(df, l1_info):
     # create a data structure
     ds = DataStructure()
     # add the global attributes to the data structure
-    ds.globalattributes = copy.deepcopy(l1ire["Global"])
+    ds.root["Attributes"] = copy.deepcopy(l1ire["Global"])
     # get the number of records in the data frame
     nrecs = len(df.index.values)
     zeros = numpy.zeros(nrecs, dtype=numpy.int32)
     ones = numpy.ones(nrecs, dtype=numpy.int32)
-    ds.globalattributes["nc_nrecs"] = nrecs
+    ds.root["Attributes"]["nc_nrecs"] = nrecs
     # put the datetime index into the data structure
     var = pfp_utils.CreateEmptyVariable("DateTime", nrecs)
     # convert from numpy.datetime[ns] to Python datetime
@@ -394,9 +400,9 @@ def DataFrameToDataStructure(df, l1_info):
 def nc_2xls(ncfilename, outputlist=None):
     # read the netCDF file
     ds = NetCDFRead(ncfilename,checktimestep=False)
-    if ds.returncodes["value"] != 0: return
-    nRecs = int(ds.globalattributes["nc_nrecs"])
-    nCols = len(list(ds.series.keys()))
+    if ds.info["returncodes"]["value"] != 0: return
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
+    nCols = len(list(ds.root["Variables"].keys()))
     if outputlist!=None: nCols = len(outputlist)
     # xlwt seems to only handle 225 columns
     if nRecs<65535 and nCols<220:
@@ -429,7 +435,7 @@ def PadDataStructure(ds_original, pad_to="whole_years"):
     Date: May 2022
     """
     # get the time step as a time delta object
-    ts = int(ds_original.globalattributes["time_step"])
+    ts = int(ds_original.root["Attributes"]["time_step"])
     dts = datetime.timedelta(minutes=ts)
     # get the original datetime and the start and end year
     ldt_original = pfp_utils.GetVariable(ds_original, "DateTime")
@@ -448,17 +454,17 @@ def PadDataStructure(ds_original, pad_to="whole_years"):
     # create the padded data structure
     ds_padded = DataStructure()
     # copy over the global attributes
-    for gattr in list(ds_original.globalattributes.keys()):
-        ds_padded.globalattributes[gattr] = ds_original.globalattributes[gattr]
+    for gattr in list(ds_original.root["Attributes"].keys()):
+        ds_padded.root["Attributes"][gattr] = ds_original.root["Attributes"][gattr]
     # update the start and end datetime global attributes
-    ds_padded.globalattributes["time_coverage_start"] = start_date.strftime("%Y-%m-%d %H:%M")
-    ds_padded.globalattributes["time_coverage_end"] = end_date.strftime("%Y-%m-%d %H:%M")
+    ds_padded.root["Attributes"]["time_coverage_start"] = start_date.strftime("%Y-%m-%d %H:%M")
+    ds_padded.root["Attributes"]["time_coverage_end"] = end_date.strftime("%Y-%m-%d %H:%M")
     # greate a datetime series between the padded start and end datetimes
     dt_padded = numpy.array([d for d in pfp_utils.perdelta(start_date, end_date, dts)])
     # get the number of records
     nrecs_padded = len(dt_padded)
     # update the number of records global attribute
-    ds_padded.globalattributes["nc_nrecs"] = nrecs_padded
+    ds_padded.root["Attributes"]["nc_nrecs"] = nrecs_padded
     # create the padded datetime variable
     ldt_padded = {"Label": "DateTime",
                   "Data": dt_padded,
@@ -474,7 +480,7 @@ def PadDataStructure(ds_original, pad_to="whole_years"):
     idx_original, idx_padded = pfp_utils.FindMatchingIndices(ldt_original["Data"],
                                                              ldt_padded["Data"])
     # get the variable labels in the original datastructure
-    labels_original = list(ds_original.series.keys())
+    labels_original = list(ds_original.root["Variables"].keys())
     # remove DateTime and time labels, these are done separately
     for label in ["DateTime", "time"]:
         if label in labels_original:
@@ -743,9 +749,9 @@ def read_eddypro_full(csvname):
             Fc_flag_list.append(float(row[Fc_flag_col]))
         n = n + 1
     nRecs = len(adatetime)
-    ds.globalattributes["nc_nrecs"] = nRecs
-    ds.series['DateTime'] = {}
-    ds.series['DateTime']['Data'] = adatetime
+    ds.root["Attributes"]["nc_nrecs"] = nRecs
+    ds.root["Variables"]['DateTime'] = {}
+    ds.root["Variables"]['DateTime']['Data'] = adatetime
     pfp_utils.round_datetime(ds,mode="nearest_timestep")
     pfp_utils.get_ymdhmsfromdatetime(ds)
 
@@ -806,10 +812,10 @@ def write_tsv_reddyproc(cf):
     writer = csv.writer(csvfile,dialect='excel-tab')
     # read the netCDF file
     ds = NetCDFRead(ncFileName)
-    if ds.returncodes["value"] != 0: return
+    if ds.info["returncodes"]["value"] != 0: return
     # get the datetime series
-    dt = ds.series["DateTime"]["Data"]
-    ts = int(float(ds.globalattributes["time_step"]))
+    dt = ds.root["Variables"]["DateTime"]["Data"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     # get the start and end indices for whole days
     start_date = dt[0]
     end_date = dt[-1]
@@ -828,15 +834,12 @@ def write_tsv_reddyproc(cf):
     series_list = list(data.keys())
     for series in series_list:
         ncname = data[series]["name"]
-        if ncname not in list(ds.series.keys()):
+        if ncname not in list(ds.root["Variables"].keys()):
             msg = "Series " + ncname + " not in netCDF file, skipping ..."
             logger.error(msg)
             series_list.remove(series)
             continue
-        d, f, a = pfp_utils.GetSeries(ds, ncname, si=si, ei=ei)
-        data[series]["Data"] = d
-        data[series]["Flag"] = f
-        data[series]["Attr"] = a
+        data[series] = pfp_utils.GetVariable(ds, ncname, start=si, end=ei, out_type="-9999")
         fmt = data[series]["format"]
         if "." in fmt:
             numdec = len(fmt) - (fmt.index(".") + 1)
@@ -896,17 +899,17 @@ def write_tsv_reddyproc(cf):
     csvfile.close()
     return 1
 
-def smap_datetodatadictionary(ds,data_dict,nperday,ndays,si,ei):
-    ldt = ds.series["DateTime"]["Data"][si:ei+1]
+def smap_datetodatadictionary(ds, data_dict, nperday, ndays, si, ei):
+    ldt = ds.root["Variables"]["DateTime"]["Data"][si:ei+1]
     # do the months
-    month_1d,f,a = pfp_utils.GetSeries(ds,"Month",si=si,ei=ei)
+    month_1d = pfp_utils.GetVariable(ds, "Month", start=si, end=ei)
     data_dict["Mo"] = {}
-    data_dict["Mo"]["data"] = numpy.reshape(month_1d,[ndays,nperday])[:,0]
+    data_dict["Mo"]["data"] = numpy.reshape(month_1d["Data"], [ndays, nperday])[:,0]
     data_dict["Mo"]["fmt"] = "0"
     # do the days
     data_dict["Day"] = {}
-    day_1d,f,a = pfp_utils.GetSeries(ds,"Day",si=si,ei=ei)
-    data_dict["Day"]["data"] = numpy.reshape(day_1d,[ndays,nperday])[:,0]
+    day_1d = pfp_utils.GetVariable(ds, "Day", start=si, end=ei)
+    data_dict["Day"]["data"] = numpy.reshape(day_1d["Data"], [ndays, nperday])[:,0]
     data_dict["Day"]["fmt"] = "0"
     # day of the year
     data_dict["DOY"] = {}
@@ -914,37 +917,45 @@ def smap_datetodatadictionary(ds,data_dict,nperday,ndays,si,ei):
     data_dict["DOY"]["data"] = numpy.reshape(doy_1d,[ndays,nperday])[:,0]
     data_dict["DOY"]["fmt"] = "0"
 
-def smap_docarbonfluxes(cf,ds,smap_label,si,ei):
+def smap_docarbonfluxes(cf, ds, smap_label, si, ei):
     ncname = cf["Variables"][smap_label]["name"]
-    data,flag,attr = pfp_utils.GetSeriesasMA(ds,ncname,si=si,ei=ei)
-    data = data*12.01*1800/1E6
-    data = numpy.ma.filled(data,float(-9999))
-    return data,flag
+    var = pfp_utils.GetVariable(ds, ncname, start=si, end=ei)
+    var["Data"] = var["Data"]*12.01*1800/1E6
+    var["Data"] = numpy.ma.filled(var["Data"], float(-9999))
+    return var
 
-def smap_donetshortwave(ds,smap_label,si,ei):
-    ts = int(float(ds.globalattributes["time_step"]))
+def smap_donetshortwave(ds, smap_label, si, ei):
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     # do the net shortwave radiation
-    Fsd,Fsd_flag,a = pfp_utils.GetSeriesasMA(ds,"Fsd",si=si,ei=ei)
-    Fsu,Fsu_flag,a = pfp_utils.GetSeriesasMA(ds,"Fsu",si=si,ei=ei)
+    Fsd = pfp_utils.GetVariable(ds, "Fsd", start=si, end=ei)
+    Fsu = pfp_utils.GetVariable(ds, "Fsu", start=si, end=ei)
     # get the net shortwave radiation and convert to MJ/m2/day at the same time
-    Fnsw = ((Fsd - Fsu)*ts*60)/1E6
+    Fnsw = pfp_utils.CreateEmptyVariable("Fnsw", nrecs)
+    Fnsw = ((Fsd["Data"] - Fsu["Data"])*ts*60)/1E6
     # now get the QC flag
-    Fnsw_flag = Fsd_flag+Fsu_flag
-    Fnsw = numpy.ma.filled(Fnsw,float(-9999))
-    return Fnsw,Fnsw_flag
+    Fnsw["Flag"] = Fsd["Flag"] + Fsu["Flag"]
+    Fnsw["Data"] = numpy.ma.filled(Fnsw["Data"], float(-9999))
+    Fnsw["Attr"] = {"long_name": "Net shortwave radiation",
+                    "units": "W/m^2",
+                    "statistic_type": "average"}
+    return Fnsw
 
-def smap_dopressure(ds,smap_label,si,ei):
-    ps,ps_flag,attr = pfp_utils.GetSeriesasMA(ds,"ps",si=si,ei=ei)
-    ps = ps/float(1000)
-    ps = numpy.ma.filled(ps,float(-9999))
-    return ps,ps_flag
+def smap_dopressure(ds, smap_label, si, ei):
+    ps = pfp_utils.GetVariable(ds, "ps", start=si, end=ei)
+    ps["Data"] = ps["Data"]/float(1000)
+    ps["Data"] = numpy.ma.filled(ps["Data"], float(-9999))
+    return ps
 
-def smap_doshortwave(ds,smap_label,si,ei):
-    ts = int(float(ds.globalattributes["time_step"]))
-    Fsd,Fsd_flag,a = pfp_utils.GetSeriesasMA(ds,"Fsd",si=si,ei=ei)
-    Fsd = (Fsd*ts*60)/1E6
-    Fsd = numpy.ma.filled(Fsd,float(-9999))
-    return Fsd,Fsd_flag
+def smap_doshortwave(ds, smap_label, si, ei):
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    Fsd = pfp_utils.GetVariable(ds, "Fsd", start=si, end=ei)
+    Fsd["Data"] = (Fsd["Data"]*ts*60)/1E6
+    Fsd["Data"] = numpy.ma.filled(Fsd["Data"], float(-9999))
+    Fsd["Attr"] = {"long_name": "Shortwave radiation",
+                    "units": "W/m^2",
+                    "statistic_type": "average"}
+    return Fsd
 
 def smap_parseformat(fmt):
     if "." in fmt:
@@ -961,26 +972,30 @@ def smap_qclabel(smap_label):
         smap_qc_label=smap_label+"_qc"
     return smap_qc_label
 
-def smap_updatedatadictionary(cfvars,data_dict,data,flag,smap_label,nperday,ndays):
+def smap_updatedatadictionary(cfvars, data_dict, var, smap_label, nperday, ndays):
     data_dict[smap_label] = {}
-    if cfvars[smap_label]["daily"].lower()=="sum":
-        data_dict[smap_label]["data"] = numpy.ma.sum(numpy.ma.reshape(data,[ndays,nperday]),axis=1)
-    elif cfvars[smap_label]["daily"].lower()=="average":
-        data_dict[smap_label]["data"] = numpy.ma.average(numpy.ma.reshape(data,[ndays,nperday]),axis=1)
-    elif cfvars[smap_label]["daily"].lower()=="skip":
-        data_dict[smap_label]["data"] = numpy.reshape(data,[ndays,nperday])[:,0]
+    if cfvars[smap_label]["daily"].lower() == "sum":
+        data = numpy.ma.reshape(var["Data"], [ndays, nperday])
+        data_dict[smap_label]["data"] = numpy.ma.sum(data, axis=1)
+    elif cfvars[smap_label]["daily"].lower() == "average":
+        data = numpy.ma.reshape(var["Data"], [ndays, nperday])
+        data_dict[smap_label]["data"] = numpy.ma.average(data, axis=1)
+    elif cfvars[smap_label]["daily"].lower() == "skip":
+        data = numpy.reshape(var["Data"], [ndays, nperday])[:,0]
+        data_dict[smap_label]["data"] = data
     else:
-        msg = "smap_updatedatadictionary: unrecognised option for daily ("+str(cfvars[smap_label]["daily"])+")"
+        msg = "  unrecognised option for daily (" + str(cfvars[smap_label]["daily"]) + ")"
         logger.warning(msg)
     data_dict[smap_label]["fmt"] = cfvars[smap_label]["format"]
-    if cfvars[smap_label]["genqc"]=="True":
+    if cfvars[smap_label]["genqc"] == "True":
         smap_qc_label = smap_qclabel(smap_label)
         data_dict[smap_qc_label] = {}
-        index_0 = numpy.where(flag==0)[0]
-        index_not0 = numpy.where(flag>0)[0]
-        flag[index_0] = numpy.int32(1)
-        flag[index_not0] = numpy.int32(0)
-        data_dict[smap_qc_label]["data"] = numpy.ma.sum(numpy.ma.reshape(flag,[ndays,nperday]),axis=1)/float(nperday)
+        index_0 = numpy.where(var["Flag"] == 0)[0]
+        index_not0 = numpy.where(var["Flag"] > 0)[0]
+        var["Flag"][index_0] = numpy.int32(1)
+        var["Flag"][index_not0] = numpy.int32(0)
+        flag = numpy.ma.reshape(var["Flag"], [ndays, nperday])
+        data_dict[smap_qc_label]["data"] = numpy.ma.sum(flag, axis=1)/float(nperday)
         data_dict[smap_qc_label]["fmt"] = "0.00"
 
 def smap_write_csv(cf):
@@ -990,12 +1005,12 @@ def smap_write_csv(cf):
     csvFileName_base = get_outfilenamefromcf(cf)
     # read the netCDF file
     ds = NetCDFRead(ncFileName)
-    if ds.returncodes["value"] != 0: return
-    ts = int(float(ds.globalattributes["time_step"]))
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    if ds.info["returncodes"]["value"] != 0: return
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     nperhr = int(float(60)/ts+0.5)
     nperday = int(float(24)*nperhr+0.5)
-    dt = ds.series["DateTime"]["Data"]
+    dt = ds.root["Variables"]["DateTime"]["Data"]
     # get a list of years in the data file
     year_list = list(range(dt[0].year,dt[-1].year+1))
     years = numpy.array([item.year for item in dt])
@@ -1025,22 +1040,23 @@ def smap_write_csv(cf):
         # loop over the data required, massage units if necessary and put the data into a dictionary for later use
         smap_list = ["Rn_f","Rs_f","PAR_f","Ta","VPD","Ts_f","PREC","SWC","NEE","GPP","Reco","PRESS","SNOWD"]
         for smap_label in smap_list:
-            if smap_label in ["Mo","Day","DOY"]: continue
-            if smap_label=="Rn_f":
-                data,flag = smap_donetshortwave(ds,smap_label,si,ei)
-            elif smap_label=="Rs_f":
-                data,flag = smap_doshortwave(ds,smap_label,si,ei)
-            elif smap_label=="PAR_f" or smap_label=="SNOWD":
-                data = numpy.array([-9999]*len(data_dict["DateTime"]))
-                flag = numpy.array([1]*len(data_dict["DateTime"]))
+            if smap_label in ["Mo", "Day", "DOY"]:
+                continue
+            if smap_label == "Rn_f":
+                var = smap_donetshortwave(ds, smap_label, si, ei)
+            elif smap_label == "Rs_f":
+                var = smap_doshortwave(ds, smap_label, si, ei)
+            elif smap_label == "PAR_f" or smap_label == "SNOWD":
+                var = pfp_utils.CreateEmptyVariable(smap_label, len(data_dict["DateTime"]))
+                var["Attr"] = {"long_name": smap_label, "units": "", "statistic_type": "average"}
                 cfvars[smap_label]["daily"] = "skip"
-            elif smap_label=="PRESS":
-                data,flag = smap_dopressure(ds,smap_label,si,ei)
-            elif smap_label in ["GPP","NEE","Reco"]:
-                data,flag = smap_docarbonfluxes(cf,ds,smap_label,si,ei)
+            elif smap_label == "PRESS":
+                var = smap_dopressure(ds, smap_label, si, ei)
+            elif smap_label in ["GPP", "NEE", "Reco"]:
+                var = smap_docarbonfluxes(cf, ds, smap_label, si, ei)
             else:
-                data,flag,attr = pfp_utils.GetSeries(ds,cfvars[smap_label]["name"],si=si,ei=ei)
-            smap_updatedatadictionary(cfvars,data_dict,data,flag,smap_label,nperday,ndays)
+                var = pfp_utils.GetVariable(ds, cfvars[smap_label]["name"], start=si, end=ei)
+            smap_updatedatadictionary(cfvars, data_dict, var, smap_label, nperday, ndays)
         # now loop over the days and write the data out
         for i in range(ndays):
             data_list = []
@@ -1107,20 +1123,20 @@ def write_csv_ecostress(cf):
     csv_writer = csv.writer(csv_file)
     # read the netCDF file
     ds = NetCDFRead(nc_file_name)
-    if ds.returncodes["value"] != 0: return 0
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    if ds.info["returncodes"]["value"] != 0: return 0
+    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     # get the datetime series
-    dt = ds.series["DateTime"]["Data"]
+    dt = ds.root["Variables"]["DateTime"]["Data"]
     # get the data
     data = {}
     labels = cf["Variables"].keys()
     qc_labels = ["LHF", "SHF", "GHF", "GPP", "Ta", "T2", "VPD", "Rn"]
     for label in list(labels):
         ncname = cf["Variables"][label]["name"]
-        if ncname not in list(ds.series.keys()):
+        if ncname not in list(ds.root["Variables"].keys()):
             # skip variable if name not in the data structure
             msg = " Variable for " + label + " (" + ncname
             msg += ") not found in data structure, skipping ..."
@@ -1222,8 +1238,8 @@ def write_csv_ep_biomet(cf):
     writer = csv.writer(csvfile)
     # read the netCDF file
     ds = NetCDFRead(ncFileName)
-    if ds.returncodes["value"] != 0: return 0
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    if ds.info["returncodes"]["value"] != 0: return 0
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # get the date and time data
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     Minute = numpy.array([dt.minute for dt in ldt["Data"]])
@@ -1245,7 +1261,7 @@ def write_csv_ep_biomet(cf):
             logger.warning(msg)
             continue
         if (data[ep_series]["Attr"]["units"] not in c.units_synonyms[in_name] and
-            ds.series[in_name]["Attr"]["units"] not in c.units_synonyms[in_name]):
+            ds.root["Variables"][in_name]["Attr"]["units"] not in c.units_synonyms[in_name]):
             msg = "Inconsistent units found for series " + ep_series + " and " + in_name
             logger.warning(msg)
     # write the variable names to the csv file
@@ -1279,11 +1295,11 @@ def ep_biomet_get_data(cfg, ds):
     ep_series_list = cfg["Variables"].keys()
     for ep_series in ep_series_list:
         in_name = cfg["Variables"][ep_series]["name"]
-        if in_name not in ds.series.keys():
+        if in_name not in ds.root["Variables"].keys():
             logger.error("Series " + in_name + " not in netCDF file, skipping ...")
             ep_series_list.remove(ep_series)
             continue
-        data[ep_series] = copy.deepcopy(ds.series[in_name])
+        data[ep_series] = copy.deepcopy(ds.root["Variables"][in_name])
         data[ep_series]["name"] = in_name
         data[ep_series]["units"] = cfg["Variables"][ep_series]["units"]
         fmt = cfg["Variables"][ep_series]["format"]
@@ -1304,21 +1320,21 @@ def write_csv_fluxnet(cf):
     writer = csv.writer(csvfile)
     # read the netCDF file
     ds = NetCDFRead(ncFileName)
-    if ds.returncodes["value"] != 0: return 0
-    ts = int(float(ds.globalattributes["time_step"]))
+    if ds.info["returncodes"]["value"] != 0: return 0
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     ts_delta = datetime.timedelta(minutes=ts)
     # get the datetime series
-    dt = ds.series["DateTime"]["Data"]
+    dt = ds.root["Variables"]["DateTime"]["Data"]
     # check the start datetime of the series and adjust if necessary
     start_datetime = dateutil.parser.parse(str(cf["General"]["start_datetime"]))
     if dt[0]<start_datetime:
         # requested start_datetime is after the start of the file
         logger.info(" Truncating start of file")
         si = pfp_utils.GetDateIndex(dt,str(start_datetime),ts=ts,match="exact")
-        for thisone in list(ds.series.keys()):
-            ds.series[thisone]["Data"] = ds.series[thisone]["Data"][si:]
-            ds.series[thisone]["Flag"] = ds.series[thisone]["Flag"][si:]
-        ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
+        for thisone in list(ds.root["Variables"].keys()):
+            ds.root["Variables"][thisone]["Data"] = ds.root["Variables"][thisone]["Data"][si:]
+            ds.root["Variables"][thisone]["Flag"] = ds.root["Variables"][thisone]["Flag"][si:]
+        ds.root["Attributes"]["nc_nrecs"] = str(len(ds.root["Variables"]["DateTime"]["Data"]))
     elif dt[0]>start_datetime:
         # requested start_datetime is before the start of the file
         logger.info(" Padding start of file")
@@ -1326,15 +1342,15 @@ def write_csv_fluxnet(cf):
         data_patched = numpy.ones(len(dt_patched))*float(c.missing_value)
         flag_patched = numpy.ones(len(dt_patched))
         # list of series in the data structure
-        series_list = list(ds.series.keys())
-        # ds.series["DateTime"]["Data"] is a list not a numpy array so we must treat it differently
-        ds.series["DateTime"]["Data"] = dt_patched+ds.series["DateTime"]["Data"]
-        ds.series["DateTime"]["Flag"] = numpy.concatenate((flag_patched,ds.series["DateTime"]["Flag"]))
+        series_list = list(ds.root["Variables"].keys())
+        # ds.root["Variables"]["DateTime"]["Data"] is a list not a numpy array so we must treat it differently
+        ds.root["Variables"]["DateTime"]["Data"] = dt_patched+ds.root["Variables"]["DateTime"]["Data"]
+        ds.root["Variables"]["DateTime"]["Flag"] = numpy.concatenate((flag_patched,ds.root["Variables"]["DateTime"]["Flag"]))
         series_list.remove("DateTime")
         for thisone in series_list:
-            ds.series[thisone]["Data"] = numpy.concatenate((data_patched,ds.series[thisone]["Data"]))
-            ds.series[thisone]["Flag"] = numpy.concatenate((flag_patched,ds.series[thisone]["Flag"]))
-        ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
+            ds.root["Variables"][thisone]["Data"] = numpy.concatenate((data_patched,ds.root["Variables"][thisone]["Data"]))
+            ds.root["Variables"][thisone]["Flag"] = numpy.concatenate((flag_patched,ds.root["Variables"][thisone]["Flag"]))
+        ds.root["Attributes"]["nc_nrecs"] = str(len(ds.root["Variables"]["DateTime"]["Data"]))
         # refresh the year, month, day etc arrays now that we have padded the datetime series
         #pfp_utils.get_ymdhmsfromdatetime(ds)
     # now check the end datetime of the file
@@ -1344,10 +1360,10 @@ def write_csv_fluxnet(cf):
         msg = " Truncating end of file "+dt[-1].strftime("%Y-%m-%d %H:%M")+" "+end_datetime.strftime("%Y-%m-%d %H:%M")
         logger.info(msg)
         ei = pfp_utils.GetDateIndex(dt,str(end_datetime),ts=ts,match="exact")
-        for thisone in list(ds.series.keys()):
-            ds.series[thisone]["Data"] = ds.series[thisone]["Data"][:ei+1]
-            ds.series[thisone]["Flag"] = ds.series[thisone]["Flag"][:ei+1]
-        ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
+        for thisone in list(ds.root["Variables"].keys()):
+            ds.root["Variables"][thisone]["Data"] = ds.root["Variables"][thisone]["Data"][:ei+1]
+            ds.root["Variables"][thisone]["Flag"] = ds.root["Variables"][thisone]["Flag"][:ei+1]
+        ds.root["Attributes"]["nc_nrecs"] = str(len(ds.root["Variables"]["DateTime"]["Data"]))
     elif dt[-1]<end_datetime:
         # requested end_datetime is before the requested end date
         msg = " Padding end of file "+dt[-1].strftime("%Y-%m-%d %H:%M")+" "+end_datetime.strftime("%Y-%m-%d %H:%M")
@@ -1356,15 +1372,15 @@ def write_csv_fluxnet(cf):
         data_patched = numpy.ones(len(dt_patched))*float(c.missing_value)
         flag_patched = numpy.ones(len(dt_patched))
         # list of series in the data structure
-        series_list = list(ds.series.keys())
-        # ds.series["DateTime"]["Data"] is a list not a numpy array so we must treat it differently
-        ds.series["DateTime"]["Data"] = ds.series["DateTime"]["Data"]+dt_patched
-        ds.series["DateTime"]["Flag"] = numpy.concatenate((ds.series["DateTime"]["Flag"],flag_patched))
+        series_list = list(ds.root["Variables"].keys())
+        # ds.root["Variables"]["DateTime"]["Data"] is a list not a numpy array so we must treat it differently
+        ds.root["Variables"]["DateTime"]["Data"] = ds.root["Variables"]["DateTime"]["Data"]+dt_patched
+        ds.root["Variables"]["DateTime"]["Flag"] = numpy.concatenate((ds.root["Variables"]["DateTime"]["Flag"],flag_patched))
         series_list.remove("DateTime")
         for thisone in series_list:
-            ds.series[thisone]["Data"] = numpy.concatenate((ds.series[thisone]["Data"],data_patched))
-            ds.series[thisone]["Flag"] = numpy.concatenate((ds.series[thisone]["Flag"],flag_patched))
-        ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
+            ds.root["Variables"][thisone]["Data"] = numpy.concatenate((ds.root["Variables"][thisone]["Data"],data_patched))
+            ds.root["Variables"][thisone]["Flag"] = numpy.concatenate((ds.root["Variables"][thisone]["Flag"],flag_patched))
+        ds.root["Attributes"]["nc_nrecs"] = str(len(ds.root["Variables"]["DateTime"]["Data"]))
         # refresh the year, month, day etc arrays now that we have padded the datetime series
         #pfp_utils.get_ymdhmsfromdatetime(ds)
     if ts==30:
@@ -1376,14 +1392,14 @@ def write_csv_fluxnet(cf):
     else:
         logger.error(" Unrecognised time step ("+str(ts)+")")
         return 0
-    if (int(ds.globalattributes["nc_nrecs"])!=nRecs_year) & (int(ds.globalattributes["nc_nrecs"])!=nRecs_leapyear):
+    if (int(ds.root["Attributes"]["nc_nrecs"])!=nRecs_year) & (int(ds.root["Attributes"]["nc_nrecs"])!=nRecs_leapyear):
         logger.error(" Number of records in file does not equal "+str(nRecs_year)+" or "+str(nRecs_leapyear))
-        msg = str(len(ds.series["DateTime"]["Data"]))+" "+str(ds.series["DateTime"]["Data"][0])
-        msg = msg+" "+str(ds.series["DateTime"]["Data"][-1])
+        msg = str(len(ds.root["Variables"]["DateTime"]["Data"]))+" "+str(ds.root["Variables"]["DateTime"]["Data"][0])
+        msg = msg+" "+str(ds.root["Variables"]["DateTime"]["Data"][-1])
         logger.error(msg)
         return 0
     # get the date and time data
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     Day = numpy.array([dt.day for dt in ldt])
     Month = numpy.array([dt.month for dt in ldt])
     Year = numpy.array([dt.year for dt in ldt])
@@ -1394,11 +1410,11 @@ def write_csv_fluxnet(cf):
     series_list = list(cf["Variables"].keys())
     for series in series_list:
         ncname = cf["Variables"][series]["name"]
-        if ncname not in list(ds.series.keys()):
+        if ncname not in list(ds.root["Variables"].keys()):
             logger.error("Series "+ncname+" not in netCDF file, skipping ...")
             series_list.remove(series)
             continue
-        data[series] = ds.series[ncname]
+        data[series] = ds.root["Variables"][ncname]
         fmt = cf["Variables"][series]["format"]
         if "." in fmt:
             numdec = len(fmt) - (fmt.index(".") + 1)
@@ -1526,28 +1542,28 @@ def get_outfilenamefromcf(cfg):
 def get_seriesstats(cf,ds):
     # open an Excel file for the flag statistics
     out_filename = get_outfilenamefromcf(cf)
-    xl_filename = out_filename.replace('.nc','_FlagStats.xls')
+    xl_filename = out_filename.replace(".nc", "_FlagStats.xls")
     file_name = os.path.split(xl_filename)
-    logger.info(' Writing flag stats to '+file_name[1])
+    logger.info(" Writing flag stats to " + file_name[1])
     xlFile = xlwt.Workbook()
-    xlFlagSheet = xlFile.add_sheet('Flag')
+    xlFlagSheet = xlFile.add_sheet("Flag")
     # get the flag statistics
-    bins = numpy.arange(-0.5,23.5)
+    bins = numpy.arange(-0.5, 23.5)
     xlRow = 5
     xlCol = 1
     for Value in bins[:len(bins)-1]:
-        xlFlagSheet.write(xlRow,xlCol,int(Value+0.5))
+        xlFlagSheet.write(xlRow, xlCol, int(Value+0.5))
         xlCol = xlCol + 1
     xlRow = xlRow + 1
     xlCol = 0
-    dsVarNames = sorted(ds.series.keys())
+    dsVarNames = sorted(ds.root["Variables"].keys())
     for ThisOne in dsVarNames:
-        data,flag,attr = pfp_utils.GetSeries(ds, ThisOne)
-        hist, bin_edges = numpy.histogram(flag, bins=bins)
-        xlFlagSheet.write(xlRow,xlCol,ThisOne)
+        var = pfp_utils.GetVariable(ds, ThisOne)
+        hist, bin_edges = numpy.histogram(var["Flag"], bins=bins)
+        xlFlagSheet.write(xlRow, xlCol, ThisOne)
         xlCol = xlCol + 1
         for Value in hist:
-            xlFlagSheet.write(xlRow,xlCol,float(Value))
+            xlFlagSheet.write(xlRow, xlCol, float(Value))
             xlCol = xlCol + 1
         xlCol = 0
         xlRow = xlRow + 1
@@ -1596,7 +1612,7 @@ def NetCDFConcatenate(info):
         dt = pfp_utils.GetVariable(data[file_name], "DateTime")
         inc["time_coverage_start"].append(dt["Data"][0])
         inc["time_coverage_end"].append(dt["Data"][-1])
-        inc["labels"] = inc["labels"] + list(data[file_name].series.keys())
+        inc["labels"] = inc["labels"] + list(data[file_name].root["Variables"].keys())
     # get a list of unique variable names and remove unwanted labels
     inc["labels"] = list(set(inc["labels"]))
     # get a list of files with start times in chronological order
@@ -1648,8 +1664,8 @@ def netcdf_concatenate_rename_output(data, out_file_name):
     file_names = list(data.keys())
     if out_file_name in file_names:
         ds = data[out_file_name]
-        start = ds.series["DateTime"]["Data"][0].strftime("%Y%m%d")
-        end = ds.series["DateTime"]["Data"][-1].strftime("%Y%m%d")
+        start = ds.root["Variables"]["DateTime"]["Data"][0].strftime("%Y%m%d")
+        end = ds.root["Variables"]["DateTime"]["Data"][-1].strftime("%Y%m%d")
         rename_part = "_" + start + "_" + end + ".nc"
         output_file_rename = out_file_name.replace(".nc", rename_part)
         msg = " Renaming " + os.path.split(out_file_name)[1] + " to "
@@ -1684,13 +1700,13 @@ def netcdf_concatenate_check_units_standard_name(data, info):
         units = []
         standard_name = []
         for f in inc["chrono_files"]:
-            if label not in list(data[f].series.keys()):
+            if label not in list(data[f].root["Variables"].keys()):
                 continue
-            if "units" in list(data[f].series[label]["Attr"].keys()):
-                u = data[f].series[label]["Attr"]["units"]
+            if "units" in list(data[f].root["Variables"][label]["Attr"].keys()):
+                u = data[f].root["Variables"][label]["Attr"]["units"]
                 units.append(u)
-            if standard_name in list(data[f].series[label]["Attr"].keys()):
-                s = data[f].series[label]["Attr"]["standard_name"]
+            if standard_name in list(data[f].root["Variables"][label]["Attr"].keys()):
+                s = data[f].root["Variables"][label]["Attr"]["standard_name"]
                 standard_name.append(s)
         units_set = list(set(units))
         standard_name_set = list(set(standard_name))
@@ -1699,9 +1715,9 @@ def netcdf_concatenate_check_units_standard_name(data, info):
             msg += str(units_set)
             logger.warning(msg)
             for f in inc["chrono_files"]:
-                if label in list(data[f].series.keys()):
+                if label in list(data[f].root["Variables"].keys()):
                     msg = os.path.basename(f) + ": "
-                    msg += data[f].series[label]["Attr"]["units"]
+                    msg += data[f].root["Variables"][label]["Attr"]["units"]
                 else:
                     msg = os.path.basename(f) + ": " + label + " not found"
                 logger.warning(msg)
@@ -1713,9 +1729,9 @@ def netcdf_concatenate_check_units_standard_name(data, info):
             msg += str(standard_name_set)
             logger.warning(msg)
             for f in inc["chrono_files"]:
-                if label in list(data[f].series.keys()):
+                if label in list(data[f].root["Variables"].keys()):
                     msg = os.path.basename(f) + ": "
-                    msg += data[f].series[label]["Attr"]["standard_name"]
+                    msg += data[f].root["Variables"][label]["Attr"]["standard_name"]
                 else:
                     msg = os.path.basename(f) + ": " + label + " not found"
                 logger.warning(msg)
@@ -1735,9 +1751,9 @@ def netcdf_concatenate_check_valid_range(data, info):
         valid_min = []
         valid_max = []
         for f in inc["chrono_files"]:
-            if label not in list(data[f].series.keys()):
+            if label not in list(data[f].root["Variables"].keys()):
                 continue
-            valid_range = pfp_utils.string_to_list(data[f].series[label]["Attr"]["valid_range"])
+            valid_range = pfp_utils.string_to_list(data[f].root["Variables"][label]["Attr"]["valid_range"])
             valid_min.append(valid_range[0])
             valid_max.append(valid_range[1])
     return
@@ -1760,9 +1776,9 @@ def netcdf_concatenate_create_ds_out(data, info):
     # get the time step
     # get the file names in data
     file_names = list(data.keys())
-    ts = int(float(data[file_names[0]].globalattributes["time_step"]))
+    ts = int(float(data[file_names[0]].root["Attributes"]["time_step"]))
     tsd = datetime.timedelta(minutes=ts)
-    level = data[file_names[0]].globalattributes["processing_level"]
+    level = data[file_names[0]].root["Attributes"]["processing_level"]
     # get a continuous time variable
     nsd = min(inc["time_coverage_start"])
     xed = max(inc["time_coverage_end"])
@@ -1771,9 +1787,9 @@ def netcdf_concatenate_create_ds_out(data, info):
     zeros = numpy.zeros(nrecs, dtype=numpy.int32)
     # get the output data structure
     ds_out = DataStructure()
-    ds_out.globalattributes["nc_nrecs"] = nrecs
-    ds_out.globalattributes["time_step"] = ts
-    ds_out.globalattributes["processing_level"] = level
+    ds_out.root["Attributes"]["nc_nrecs"] = nrecs
+    ds_out.root["Attributes"]["time_step"] = ts
+    ds_out.root["Attributes"]["processing_level"] = level
     # create the DateTime variable
     dt = {"Data": dt_out, "Flag": zeros,
           "Attr": {"long_name": "Datetime in local timezone", "units": "None"},
@@ -1785,22 +1801,22 @@ def netcdf_concatenate_create_ds_out(data, info):
     # make the empty variables
     attr_out = {}
     for label in inc["labels"]:
-        ds_out.series[label] = pfp_utils.CreateEmptyVariable(label, nrecs, out_type="ndarray")
+        ds_out.root["Variables"][label] = pfp_utils.CreateEmptyVariable(label, nrecs, out_type="ndarray")
         attr_out[label] = []
     # now loop over the files in chronological order
     for n, file_name in enumerate(inc["chrono_files"]):
         # copy the global attributes
-        for gattr in data[file_name].globalattributes:
-            ds_out.globalattributes[gattr] = data[file_name].globalattributes[gattr]
+        for gattr in data[file_name].root["Attributes"]:
+            ds_out.root["Attributes"][gattr] = data[file_name].root["Attributes"][gattr]
         # get the time from the input file
         time_in = pfp_utils.GetVariable(data[file_name], "time")
         # find the indices of matching times
         indsa, indsb = pfp_utils.FindMatchingIndices(time_out["Data"], time_in["Data"])
         # loop over the variables
         for label in inc["labels"]:
-            dout = ds_out.series[label]
-            if label in list(data[file_name].series.keys()):
-                din = data[file_name].series[label]
+            dout = ds_out.root["Variables"][label]
+            if label in list(data[file_name].root["Variables"].keys()):
+                din = data[file_name].root["Variables"][label]
                 # copy input data to output variable
                 # NOTE: using direct read from and write to the data structures here,
                 #       not recommended but 10x faster than pfp_utils.GetVariable().
@@ -1818,7 +1834,7 @@ def netcdf_concatenate_create_ds_out(data, info):
     # copy the variable attributes but only if they don't already exist
     netcdf_concatenate_variable_attributes(ds_out, attr_out, info)
     # update the global attributes
-    ds_out.globalattributes["nc_nrecs"] = nrecs
+    ds_out.root["Attributes"]["nc_nrecs"] = nrecs
     return ds_out
 
 def netcdf_concatenate_variable_attributes(ds_out, attr_out, info):
@@ -1894,7 +1910,7 @@ def netcdf_concatenate_variable_attributes(ds_out, attr_out, info):
                     valid_min = min(attr_final[label]["valid_min"])
                     valid_max = max(attr_final[label]["valid_max"])
                     valid_range = valid_min + "," + valid_max
-                    ds_out.series[label]["Attr"]["valid_range"] = valid_range
+                    ds_out.root["Variables"][label]["Attr"]["valid_range"] = valid_range
             else:
                 # get a list of unique values for this variable attribute across all files
                 attrs = list(set(attr_final[label][attr]))
@@ -1909,7 +1925,7 @@ def netcdf_concatenate_variable_attributes(ds_out, attr_out, info):
                 else:
                     pass
                 # update the variable attribute in the data structure
-                ds_out.series[label]["Attr"][attr] = ",".join(attrs)
+                ds_out.root["Variables"][label]["Attr"][attr] = ",".join(attrs)
     return
 
 def netcdf_concatenate_read_input_files(info):
@@ -1932,16 +1948,16 @@ def netcdf_concatenate_read_input_files(info):
     data = OrderedDict()
     file_name = info["NetCDFConcatenate"]["in_file_names"][0]
     data[file_name] = NetCDFRead(file_name)
-    if data[file_name].returncodes["value"] != 0:
+    if data[file_name].info["returncodes"]["value"] != 0:
         return data
-    ts0 = int(float(data[file_name].globalattributes["time_step"]))
-    level0 = data[file_name].globalattributes["processing_level"]
+    ts0 = int(float(data[file_name].root["Attributes"]["time_step"]))
+    level0 = data[file_name].root["Attributes"]["processing_level"]
     for file_name in info["NetCDFConcatenate"]["in_file_names"][1:]:
         ds = NetCDFRead(file_name)
-        if ds.returncodes["value"] != 0:
+        if ds.info["returncodes"]["value"] != 0:
             return data
-        tsn = int(float(ds.globalattributes["time_step"]))
-        leveln = ds.globalattributes["processing_level"]
+        tsn = int(float(ds.root["Attributes"]["time_step"]))
+        leveln = ds.root["Attributes"]["processing_level"]
         if ((tsn == ts0) and (leveln == level0)):
             data[file_name] = ds
         else:
@@ -1977,12 +1993,12 @@ def netcdf_concatenate_truncate(ds_in, info):
     ds_out = copy.deepcopy(ds_in)
     # get the datetime
     ldt = pfp_utils.GetVariable(ds_out, "DateTime")
-    nrecs = int(ds_out.globalattributes["nc_nrecs"])
+    nrecs = int(ds_out.root["Attributes"]["nc_nrecs"])
     cidx = numpy.zeros(nrecs)
     if inc["SeriesToCheck"][0].lower() == "all":
-        inc["SeriesToCheck"] = sorted(list(ds_out.series.keys()))
+        inc["SeriesToCheck"] = sorted(list(ds_out.root["Variables"].keys()))
     for item in list(inc["SeriesToCheck"]):
-        if item not in list(ds_out.series.keys()):
+        if item not in list(ds_out.root["Variables"].keys()):
             inc["SeriesToCheck"].remove(item)
             continue
         var = pfp_utils.GetVariable(ds_out, item)
@@ -2001,13 +2017,13 @@ def netcdf_concatenate_truncate(ds_in, info):
         msg = " End date truncated from " + str(ldt["Data"][-1]) + " to " + str(ldt["Data"][ei])
         logger.info(msg)
     # now loop over the data series and truncate
-    for item in list(ds_out.series.keys()):
-        ds_out.series[item]["Data"] = ds_out.series[item]["Data"][si:ei+1]
-        ds_out.series[item]["Flag"] = ds_out.series[item]["Flag"][si:ei+1]
+    for item in list(ds_out.root["Variables"].keys()):
+        ds_out.root["Variables"][item]["Data"] = ds_out.root["Variables"][item]["Data"][si:ei+1]
+        ds_out.root["Variables"][item]["Flag"] = ds_out.root["Variables"][item]["Flag"][si:ei+1]
     # update the relevent global attributes
-    ds_out.globalattributes["time_coverage_start"] = ldt["Data"][si]
-    ds_out.globalattributes["time_coverage_end"] = ldt["Data"][ei]
-    ds_out.globalattributes["nc_nrecs"] = len(ds_out.series["DateTime"]["Data"])
+    ds_out.root["Attributes"]["time_coverage_start"] = ldt["Data"][si]
+    ds_out.root["Attributes"]["time_coverage_end"] = ldt["Data"][ei]
+    ds_out.root["Attributes"]["nc_nrecs"] = len(ds_out.root["Variables"]["DateTime"]["Data"])
     return ds_out
 
 def MergeDataFrames(dfs, l1_info):
@@ -2080,17 +2096,17 @@ def MergeDataStructures(ds_dict, l1_info):
     l1ire = l1_info["read_excel"]
     # data structure to hold all data
     ds = DataStructure()
-    ds.globalattributes = copy.deepcopy(l1ire["Global"])
+    ds.root["Attributes"] = copy.deepcopy(l1ire["Global"])
     # get the earliest start datetime and the latest datetime
     start = []
     end = []
     for item in list(ds_dict.keys()):
-        start.append(ds_dict[item].series["DateTime"]["Data"][0])
-        end.append(ds_dict[item].series["DateTime"]["Data"][-1])
+        start.append(ds_dict[item].root["Variables"]["DateTime"]["Data"][0])
+        end.append(ds_dict[item].root["Variables"]["DateTime"]["Data"][-1])
     start = min(start)
     end = max(end)
     # put the datetime into the data structure
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     dts = datetime.timedelta(minutes=ts)
     # generate an aray of datetime from start to end with spacing of ts
     dt = numpy.array([d for d in pfp_utils.perdelta(start, end, dts)])
@@ -2104,9 +2120,9 @@ def MergeDataStructures(ds_dict, l1_info):
                    "units": "days since 1899-12-31 00:00:00"}
     pfp_utils.CreateVariable(ds, var)
     # update the global attributes
-    ds.globalattributes["time_coverage_start"] = str(dt[0])
-    ds.globalattributes["time_coverage_end"] = str(dt[-1])
-    ds.globalattributes["nc_nrecs"] = len(dt)
+    ds.root["Attributes"]["time_coverage_start"] = str(dt[0])
+    ds.root["Attributes"]["time_coverage_end"] = str(dt[-1])
+    ds.root["Attributes"]["nc_nrecs"] = len(dt)
     # put the data into the data structure
     dt1 = pfp_utils.GetVariable(ds, "DateTime")
     for item in list(ds_dict.keys()):
@@ -2129,7 +2145,7 @@ def MergeDataStructures(ds_dict, l1_info):
             no_match = 100*(len(dtn_sorted) - len(idxa))//len(dtn_sorted)
             msg = str(no_match) + "% of time stamps for " + item + " do not match"
             logger.warning(msg)
-        labels = list(ds_dict[item].series.keys())
+        labels = list(ds_dict[item].root["Variables"].keys())
         if "DateTime" in labels:
             labels.remove("DateTime")
         for label in labels:
@@ -2154,61 +2170,126 @@ def ncsplit_run(split_gui):
     # read the input file into the input data structure
     #ds_in = split_gui.ds
     ds_in = NetCDFRead(infilename)
-    if ds_in.returncodes["value"] != 0: return
-    ts = int(float(ds_in.globalattributes["time_step"]))
-    ldt_in = ds_in.series["DateTime"]["Data"]
-    ldt_in_flag = ds_in.series["DateTime"]["Flag"]
+    if ds_in.info["returncodes"]["value"] != 0: return
+    ts = int(float(ds_in.root["Attributes"]["time_step"]))
+    ldt_in = ds_in.root["Variables"]["DateTime"]["Data"]
+    ldt_in_flag = ds_in.root["Variables"]["DateTime"]["Flag"]
     # create the output data structure
     ds_out = DataStructure()
     # copy the global attributes
-    for item in list(ds_in.globalattributes.keys()):
-        ds_out.globalattributes[item] = ds_in.globalattributes[item]
+    for item in list(ds_in.root["Attributes"].keys()):
+        ds_out.root["Attributes"][item] = ds_in.root["Attributes"][item]
     # get the indices of the start and end datetimes
     si = pfp_utils.GetDateIndex(ldt_in,startdate,ts=ts,default=0,match="exact")
     ei = pfp_utils.GetDateIndex(ldt_in,enddate,ts=ts,default=len(ldt_in),match="exact")
     # get a list of the series in ds_in
-    series_list = [item for item in list(ds_in.series.keys()) if "_QCFlag" not in item]
+    series_list = [item for item in list(ds_in.root["Variables"].keys()) if "_QCFlag" not in item]
     # remove the Python datetime series
     for item in ["DateTime","DateTime_UTC"]:
         if item in series_list: series_list.remove(item)
     # loop over the series
     for item in series_list:
-        data,flag,attr = pfp_utils.GetSeriesasMA(ds_in,item,si=si,ei=ei)
-        pfp_utils.CreateSeries(ds_out,item,data,flag,attr)
+        var = pfp_utils.GetVariable(ds_in, item, start=si, end=ei)
+        pfp_utils.CreateVariable(ds_out, var)
     # deal with the Python datetime series
     ldt_out = ldt_in[si:ei+1]
     ldt_out_flag = ldt_in_flag[si:ei+1]
-    ds_out.series["DateTime"] = {}
-    ds_out.series["DateTime"]["Data"] = ldt_out
-    ds_out.series["DateTime"]["Flag"] = ldt_out_flag
-    ds_out.series["DateTime"]["Attr"]= ds_in.series["DateTime"]["Attr"]
+    ds_out.root["Variables"]["DateTime"] = {}
+    ds_out.root["Variables"]["DateTime"]["Data"] = ldt_out
+    ds_out.root["Variables"]["DateTime"]["Flag"] = ldt_out_flag
+    ds_out.root["Variables"]["DateTime"]["Attr"]= ds_in.root["Variables"]["DateTime"]["Attr"]
     # update the number of records global attribute
-    ds_out.globalattributes["nc_nrecs"] = len(ldt_out)
+    ds_out.root["Attributes"]["nc_nrecs"] = len(ldt_out)
     # update the start and end datetime global attribute
-    ds_out.globalattributes["time_coverage_start"] = str(ldt_out[0])
-    ds_out.globalattributes["time_coverage_end"] = str(ldt_out[-1])
+    ds_out.root["Attributes"]["time_coverage_start"] = str(ldt_out[0])
+    ds_out.root["Attributes"]["time_coverage_end"] = str(ldt_out[-1])
     # write the output data structure to a netCDF file
     NetCDFWrite(outfilename, ds_out)
     msg = " Finished splitting " + os.path.basename(infilename)
     logger.info(msg)
 
-def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
+def nc_read_groups(nc_file):
+    """
+    Purpose:
+     Read a netCDF4 file that contains groups and return a data structure with
+     the same groups.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: July 2022
+    """
+    groups = list(nc_file.groups.keys())
+    msg = " Reading netCDF file with groups"
+    logger.info(msg)
+    # disable automatic masking of data when valid_range specified
+    nc_file.set_auto_mask(False)
+    ds = DataStructure(groups=groups)
+    ds.info["filepath"] = nc_file.filepath()
+    # now deal with the global attributes
+    gattrs = nc_file.ncattrs()
+    if len(gattrs) != 0:
+        for gattr in gattrs:
+            ds.root["Attributes"][gattr] = getattr(nc_file, gattr)
+    for grp in groups:
+        group = getattr(ds, grp)
+        labels = sorted(list(nc_file[grp].variables.keys()))
+        for item in ["latitude", "longitude"]:
+            if item in labels:
+                labels.remove(item)
+        for label in labels:
+            data, flag, attr = nc_read_var(nc_file[grp], label)
+            var = {"Label": label, "Data": data, "Flag": flag, "Attr": attr}
+            pfp_utils.CreateVariable(ds, var, group=grp)
+        # get the Python datetime from the netCDF time
+        nrecs = len(group["Variables"]["time"]["Data"])
+        dt = cftime.num2date(group["Variables"]["time"]["Data"],
+                             group["Variables"]["time"]["Attr"]["units"],
+                             only_use_cftime_datetimes=False,
+                             only_use_python_datetimes=True)
+        calendar = "gregorian"
+        if "calendar" in group["Variables"]["time"]["Attr"]:
+            calendar = group["Variables"]["time"]["Attr"]["calendar"]
+        var = {"Label": "DateTime", "Data": dt, "Flag": numpy.zeros(nrecs),
+               "Attr": {"long_name": "Datetime in local timezone", "units": "",
+                        "calendar": calendar}}
+        pfp_utils.CreateVariable(ds, var, group=grp)
+        # get the group attributes
+        gattrs = nc_file[grp].ncattrs()
+        # trap legacy L6 summary files with no group attributes
+        if len(gattrs) > 0:
+            # group attributes present
+            for gattr in gattrs:
+                group["Attributes"][gattr] = getattr(nc_file[grp], gattr)
+        else:
+            # group attributes not present so we deduce them from ncfile
+            group["Attributes"]["nc_nrecs"] = nrecs
+            if grp.lower() in ["daily", "monthly", "annual"]:
+                ts = grp.lower()
+            else:
+                ts = ds.root["Attributes"]["time_step"]
+            group["Attributes"]["time_step"] = ts
+    nc_file.close()
+    ds.info["returncodes"]["value"] = 0
+    ds.info["returncodes"]["message"] = "netCDF file read OK"
+    return ds
+
+def nc_read_series(nc_file, checktimestep=True, fixtimestepmethod="round"):
     """
     Purpose:
      Reads a netCDF file and returns the meta-data and data in a DataStructure.
      The returned data structure is an instance of pfp_io.DataStructure().
      The data structure consists of:
-      1) ds.globalattributes
+      1) ds.root["Attributes"]
          A dictionary containing the global attributes of the netCDF file.
       2) ds.series
          A dictionary containing the variable data, meta-data and QC flag
          Each variable dictionary in ds.series contains;
-         a) ds.series[variable]["Data"]
+         a) ds.root["Variables"][variable]["Data"]
             A 1D numpy float64 array containing the variable data, missing
             data value is -9999.
-         b) ds.series[variable]["Flag"]
+         b) ds.root["Variables"][variable]["Flag"]
             A 1D numpy int32 array containing the QC flag data for this variable.
-         c) ds.series[variable]["Attr"]
+         c) ds.root["Variables"][variable]["Attr"]
             A dictionary containing the variable attributes.
     Usage:
      nc_name = pfp_io.get_filename_dialog(path="../Sites/Whroo/Data/Processed/")
@@ -2229,34 +2310,32 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
     Author: PRI
     Date: Back in the day
     """
-    logger.info(" Reading netCDF file " + os.path.basename(ncFullName))
-    # file probably exists, so let's read it
-    ncFile = netCDF4.Dataset(ncFullName, "r")
+    logger.info(" Reading netCDF file " + os.path.basename(nc_file.filepath()))
     # disable automatic masking of data when valid_range specified
-    ncFile.set_auto_mask(False)
+    nc_file.set_auto_mask(False)
     # get an instance of a PFP data structure
     ds = DataStructure()
-    ds.filepath = ncFullName
+    ds.info["filepath"] = nc_file.filepath()
     # now deal with the global attributes
-    gattrlist = ncFile.ncattrs()
+    gattrlist = nc_file.ncattrs()
     if len(gattrlist) != 0:
         for gattr in gattrlist:
-            ds.globalattributes[gattr] = getattr(ncFile, gattr)
+            ds.root["Attributes"][gattr] = getattr(nc_file, gattr)
     # get a list of the variables in the netCDF file (not their QC flags)
-    varlist = [x for x in list(ncFile.variables.keys()) if "_QCFlag" not in x]
+    varlist = [x for x in list(nc_file.variables.keys()) if "_QCFlag" not in x]
     for ThisOne in varlist:
         # skip variables that do not have time as a dimension
-        dimlist = [x.lower() for x in ncFile.variables[ThisOne].dimensions]
+        dimlist = [x.lower() for x in nc_file.variables[ThisOne].dimensions]
         if "time" not in dimlist: continue
         # create the series in the data structure
-        ds.series[str(ThisOne)] = {}
+        ds.root["Variables"][str(ThisOne)] = {}
         # get the data and the QC flag
-        data, flag, attr = nc_read_var(ncFile, ThisOne)
-        ds.series[ThisOne]["Data"] = data
-        ds.series[ThisOne]["Flag"] = flag
-        ds.series[ThisOne]["Attr"] = attr
+        data, flag, attr = nc_read_var(nc_file, ThisOne)
+        ds.root["Variables"][ThisOne]["Data"] = data
+        ds.root["Variables"][ThisOne]["Flag"] = flag
+        ds.root["Variables"][ThisOne]["Attr"] = attr
     # get a series of Python datetime objects
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     if "time" in labels:
         pfp_utils.get_datetime_from_nctime(ds)
     elif (("Year" in labels) and ("Month" in labels) and ("Day" in labels) and
@@ -2268,10 +2347,10 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
         msg = "Unable to find any datetime data in netCDF file"
         logger.error(msg)
         raise RuntimeError(msg)
-    ncFile.close()
+    nc_file.close()
     # check to see if we have the "nc_nrecs" global attribute
-    if "nc_nrecs" not in list(ds.globalattributes.keys()):
-        ds.globalattributes["nc_nrecs"] = str(len(ds.series["DateTime"]["Data"]))
+    if "nc_nrecs" not in list(ds.root["Attributes"].keys()):
+        ds.root["Attributes"]["nc_nrecs"] = str(len(ds.root["Variables"]["DateTime"]["Data"]))
     # round the Python datetime to the nearest second
     pfp_utils.round_datetime(ds, mode="nearest_second")
     # check the time step and fix it required
@@ -2279,12 +2358,12 @@ def nc_read_series(ncFullName,checktimestep=True,fixtimestepmethod="round"):
         if pfp_utils.CheckTimeStep(ds):
             pfp_utils.FixTimeStep(ds, fixtimestepmethod=fixtimestepmethod)
     # tell the user when the data starts and ends
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     msg = " Got data from " + ldt[0].strftime("%Y-%m-%d %H:%M:%S")
     msg += " to " + ldt[-1].strftime("%Y-%m-%d %H:%M:%S")
     logger.info(msg)
-    ds.returncodes["value"] = 0
-    ds.returncodes["message"] = "netCDF file read OK"
+    ds.info["returncodes"]["value"] = 0
+    ds.info["returncodes"]["message"] = "netCDF file read OK"
     return ds
 
 def nc_read_var(ncFile,ThisOne):
@@ -2398,11 +2477,11 @@ def ds_update(ds):
     ds_changed = False
     # update global attributes
     # trap old files using nc_level and rename to processing_level
-    if "nc_level" in ds.globalattributes:
-        ds.globalattributes["processing_level"] = ds.globalattributes["nc_level"]
+    if "nc_level" in ds.root["Attributes"]:
+        ds.root["Attributes"]["processing_level"] = ds.root["Attributes"]["nc_level"]
         ds_changed = True
     # get a list of the variables in the data structure
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     # loop over the variables in the data structure
     for label in labels:
         # get the variable
@@ -2417,10 +2496,10 @@ def ds_update(ds):
     # check to see if the data structure has changed
     if ds_changed:
         # write the changed data structure to file
-        file_name = os.path.basename(ds.filepath)
+        file_name = os.path.basename(ds.info["filepath"])
         msg = "  Saving updated file " + file_name
         logger.info(msg)
-        NetCDFWrite(ds.filepath, ds)
+        NetCDFWrite(ds.info["filepath"], ds)
     return ds
 
 def ds_update_statistic_type(variable):
@@ -2453,7 +2532,7 @@ def ds_update_statistic_type(variable):
         pass
     return variable_changed
 
-def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", update=True):
+def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", update=False):
     """
     Purpose:
      Wrapper for the pfp_io.nc_read_series() routine so we have a nice name
@@ -2466,9 +2545,18 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", updat
     Author: PRI
     Date: June 2021
     """
-    ds = nc_read_series(nc_file_uri,
-                        checktimestep=checktimestep,
-                        fixtimestepmethod=fixtimestepmethod)
+    if not os.path.isfile(nc_file_uri):
+        msg = nc_file_uri + " not found"
+        logger.error(msg)
+        raise RuntimeError(msg)
+    # file probably exists, so let's read it
+    nc_file = netCDF4.Dataset(nc_file_uri, "r")
+    if len(nc_file.groups.keys()) == 0:
+        ds = nc_read_series(nc_file,
+                            checktimestep=checktimestep,
+                            fixtimestepmethod=fixtimestepmethod)
+    else:
+        ds = nc_read_groups(nc_file)
     if update:
         ds = ds_update(ds)
     return ds
@@ -2536,8 +2624,8 @@ def nc_write_globalattributes(nc_file, ds, flag_defs=True):
     # check to see if we have a DataStructure or a dictionary
     if isinstance(ds, DataStructure):
         # get a local dictionary from a DataStructure
-        lds = {"globalattributes": ds.globalattributes,
-               "variables": ds.series}
+        lds = {"globalattributes": ds.root["Attributes"],
+               "variables": ds.root["Variables"]}
     elif isinstance(ds, dict):
         # check to see if 'globalattributes' and 'variables' in dictionary
         if (("globalattributes" in ds) and ("variables" in ds)):
@@ -2598,7 +2686,7 @@ def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
     nc_write_globalattributes(ncFile, ds)
     # we specify the size of the Time dimension because netCDF4 is slow to write files
     # when the Time dimension is unlimited
-    nRecs = int(ds.globalattributes['nc_nrecs'])
+    nRecs = int(ds.root["Attributes"]['nc_nrecs'])
     ncFile.createDimension("time",nRecs)
     if ndims==3:
         ncFile.createDimension("latitude",1)
@@ -2607,13 +2695,13 @@ def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
     else:
         dims = ("time",)
     if outputlist is None:
-        outputlist = list(ds.series.keys())
+        outputlist = list(ds.root["Variables"].keys())
     else:
         for ThisOne in outputlist:
-            if ThisOne not in list(ds.series.keys()):
+            if ThisOne not in list(ds.root["Variables"].keys()):
                 logger.warning(" Requested series "+ThisOne+" not found in data structure")
                 outputlist.remove(ThisOne)
-        if len(outputlist)==0: outputlist = list(ds.series.keys())
+        if len(outputlist)==0: outputlist = list(ds.root["Variables"].keys())
     # can't write an array of Python datetime objects to a netCDF file
     # actually, this could be written as characters
     for ThisOne in ["DateTime","DateTime_UTC"]:
@@ -2627,18 +2715,18 @@ def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
         setattr(ncVar, item, ldt["Attr"][item])
     if "time" in outputlist: outputlist.remove("time")
     # now write the latitude and longitude variables
-    if "latitude" not in ds.globalattributes: ndims = 1
-    if "longitude" not in ds.globalattributes: ndims = 1
+    if "latitude" not in ds.root["Attributes"]: ndims = 1
+    if "longitude" not in ds.root["Attributes"]: ndims = 1
     if ndims==3:
         if "latitude" not in outputlist:
             ncVar = ncFile.createVariable("latitude","d",("latitude",))
-            ncVar[:] = pfp_utils.convert_anglestring(str(ds.globalattributes["latitude"]))
+            ncVar[:] = pfp_utils.convert_anglestring(str(ds.root["Attributes"]["latitude"]))
             setattr(ncVar,'long_name','latitude')
             setattr(ncVar,'standard_name','latitude')
             setattr(ncVar,'units','degree_north')
         if "longitude" not in outputlist:
             ncVar = ncFile.createVariable("longitude","d",("longitude",))
-            ncVar[:] = pfp_utils.convert_anglestring(str(ds.globalattributes["longitude"]))
+            ncVar[:] = pfp_utils.convert_anglestring(str(ds.root["Attributes"]["longitude"]))
             setattr(ncVar,'long_name','longitude')
             setattr(ncVar,'standard_name','longitude')
             setattr(ncVar,'units','degree_east')
@@ -2659,7 +2747,7 @@ def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
         setattr(ncVar,"semi_major_axis","6378137.0")
         setattr(ncVar,"inverse_flattening","298.257223563")
     # write the station_name variable
-    site_name = ds.globalattributes["site_name"]
+    site_name = ds.root["Attributes"]["site_name"]
     site_name = site_name.rstrip().lstrip().replace(" ", "")
     ncFile.createDimension("name_strlen", len(site_name))
     ncVar = ncFile.createVariable("station_name", "c", ("name_strlen",))
@@ -2682,7 +2770,7 @@ def nc_write_var(ncFile, ds, ThisOne, dim):
     Date: August 2014
     """
     # get the data type of the series in ds
-    dt = get_ncdtype(ds.series[ThisOne]["Data"])
+    dt = get_ncdtype(ds.root["Variables"][ThisOne]["Data"])
     # create the netCDF variable
     try:
         ncVar = ncFile.createVariable(ThisOne, dt, dim)
@@ -2691,46 +2779,46 @@ def nc_write_var(ncFile, ds, ThisOne, dim):
         raise Exception(msg)
     # different writes to the variable depending on whether it is 1D or 3D
     if len(dim) == 1:
-        ncVar[:] = ds.series[ThisOne]["Data"].tolist()
+        ncVar[:] = ds.root["Variables"][ThisOne]["Data"].tolist()
     elif len(dim) == 3:
-        ncVar[:, 0, 0] = ds.series[ThisOne]["Data"].tolist()
+        ncVar[:, 0, 0] = ds.root["Variables"][ThisOne]["Data"].tolist()
     else:
         msg = "Unrecognised dimension request for netCDF variable: "+ThisOne
         raise RuntimeError(msg)
     # write the attributes
-    vattrs = sorted(list(ds.series[ThisOne]["Attr"].keys()))
+    vattrs = sorted(list(ds.root["Variables"][ThisOne]["Attr"].keys()))
     for item in vattrs:
         if item not in ["_FillValue", "missing_value", "valid_max", "vaild_min", "valid_range"]:
-            attr = str(ds.series[ThisOne]["Attr"][item])
+            attr = str(ds.root["Variables"][ThisOne]["Attr"][item])
             ncVar.setncattr(item, attr)
     # write the valid_range attribute
     if dt == "d":
-        if "valid_range" in ds.series[ThisOne]["Attr"]:
+        if "valid_range" in ds.root["Variables"][ThisOne]["Attr"]:
             try:
-                valid_range = [float(l) for l in ds.series[ThisOne]["Attr"]["valid_range"].split(",")]
+                valid_range = [float(l) for l in ds.root["Variables"][ThisOne]["Attr"]["valid_range"].split(",")]
                 ncVar.setncattr("valid_range", valid_range)
             except Exception:
                 msg = " Unable to write valid_range attribute for " + ThisOne
                 msg+= ", skipping ..."
                 logger.warning(msg)
     else:
-        if "valid_range" in ds.series[ThisOne]["Attr"]:
+        if "valid_range" in ds.root["Variables"][ThisOne]["Attr"]:
             try:
-                valid_range = [int(l) for l in ds.series[ThisOne]["Attr"]["valid_range"].split(",")]
+                valid_range = [int(l) for l in ds.root["Variables"][ThisOne]["Attr"]["valid_range"].split(",")]
                 ncVar.setncattr("valid_range", valid_range)
             except Exception:
                 msg = " Unable to write valid_range attribute for " + ThisOne
                 msg+= ", skipping ..."
                 logger.warning(msg)
     # get the data type of the QC flag
-    dt = get_ncdtype(ds.series[ThisOne]["Flag"])
+    dt = get_ncdtype(ds.root["Variables"][ThisOne]["Flag"])
     # create the variable
     ncVar = ncFile.createVariable(ThisOne+"_QCFlag", dt, dim)
     # write 1D or 3D
     if len(dim)==1:
-        ncVar[:] = ds.series[ThisOne]["Flag"].tolist()
+        ncVar[:] = ds.root["Variables"][ThisOne]["Flag"].tolist()
     elif len(dim)==3:
-        ncVar[:, 0, 0] = ds.series[ThisOne]["Flag"].tolist()
+        ncVar[:, 0, 0] = ds.root["Variables"][ThisOne]["Flag"].tolist()
     else:
         msg = "Unrecognised dimension request for netCDF variable: "+ThisOne
         raise RuntimeError(msg)
@@ -2953,22 +3041,22 @@ def xl_write_data(xl_sheet, data, xlCol=0):
     return
 
 def xl_write_series(ds, xlfullname, outputlist=None):
-    if "nc_nrecs" in list(ds.globalattributes.keys()):
-        nRecs = int(ds.globalattributes["nc_nrecs"])
+    if "nc_nrecs" in list(ds.root["Attributes"].keys()):
+        nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     else:
-        variablelist = list(ds.series.keys())
-        nRecs = len(ds.series[variablelist[0]]["Data"])
+        variablelist = list(ds.root["Variables"].keys())
+        nRecs = len(ds.root["Variables"][variablelist[0]]["Data"])
     # open the Excel file
     msg = " Opening and writing Excel file " + os.path.basename(xlfullname)
     logger.info(msg)
     xlfile = xlwt.Workbook(encoding="latin-1")
     # set the datemode
-    if "xl_datemode" not in ds.globalattributes:
+    if "xl_datemode" not in ds.root["Attributes"]:
         if platform.system() == "darwin":
-            ds.globalattributes["xl_datemode"] = 0
+            ds.root["Attributes"]["xl_datemode"] = 0
         else:
-            ds.globalattributes["xl_datemode"] = 1
-    xlfile.dates_1904 = int(ds.globalattributes["xl_datemode"])
+            ds.root["Attributes"]["xl_datemode"] = 1
+    xlfile.dates_1904 = int(ds.root["Attributes"]["xl_datemode"])
     # add sheets to the Excel file
     xlAttrSheet = xlfile.add_sheet("Attr")
     xlDataSheet = xlfile.add_sheet("Data")
@@ -2980,15 +3068,15 @@ def xl_write_series(ds, xlfullname, outputlist=None):
     xlrow = 0
     xlAttrSheet.write(xlrow, xlcol, "Global attributes")
     xlrow = xlrow + 1
-    globalattrlist = list(ds.globalattributes.keys())
+    globalattrlist = list(ds.root["Attributes"].keys())
     globalattrlist.sort()
     for ThisOne in sorted([x for x in globalattrlist if "Flag" not in x]):
         xlAttrSheet.write(xlrow, xlcol, ThisOne)
-        xlAttrSheet.write(xlrow, xlcol+1, str(str(ds.globalattributes[ThisOne]).encode("ascii", "ignore")))
+        xlAttrSheet.write(xlrow, xlcol+1, str(str(ds.root["Attributes"][ThisOne]).encode("ascii", "ignore")))
         xlrow = xlrow + 1
     for ThisOne in sorted([x for x in globalattrlist if "Flag" in x]):
         xlAttrSheet.write(xlrow, xlcol, ThisOne)
-        xlAttrSheet.write(xlrow, xlcol+1, str(str(ds.globalattributes[ThisOne]).encode("ascii", "ignore")))
+        xlAttrSheet.write(xlrow, xlcol+1, str(str(ds.root["Attributes"][ThisOne]).encode("ascii", "ignore")))
         xlrow = xlrow + 1
     # write the variable attributes
     logger.info(" Writing the variable attributes to the Excel file")
@@ -2998,7 +3086,7 @@ def xl_write_series(ds, xlfullname, outputlist=None):
     xlcol_varname = 0
     xlcol_attrname = 1
     xlcol_attrvalue = 2
-    variablelist = list(ds.series.keys())
+    variablelist = list(ds.root["Variables"].keys())
     if outputlist is None:
         outputlist = variablelist
     else:
@@ -3013,24 +3101,25 @@ def xl_write_series(ds, xlfullname, outputlist=None):
         if ThisOne in outputlist: outputlist.remove(ThisOne)
     for ThisOne in outputlist:
         xlAttrSheet.write(xlrow, xlcol_varname, ThisOne)
-        attributelist = list(ds.series[ThisOne]["Attr"].keys())
+        attributelist = list(ds.root["Variables"][ThisOne]["Attr"].keys())
         attributelist.sort()
         for Attr in attributelist:
             xlAttrSheet.write(xlrow, xlcol_attrname, Attr)
-            xlAttrSheet.write(xlrow, xlcol_attrvalue, str(ds.series[ThisOne]["Attr"][Attr]))
+            xlAttrSheet.write(xlrow, xlcol_attrvalue, str(ds.root["Variables"][ThisOne]["Attr"][Attr]))
             xlrow = xlrow + 1
     # write the Excel date/time to the data and the QC flags as the first column
-    if "xlDateTime" not in ds.series:
+    if "xlDateTime" not in ds.root["Variables"]:
         pfp_utils.get_xldatefromdatetime(ds)
-    xlDateTime, f, a = pfp_utils.GetSeries(ds, "xlDateTime")
+    xlDateTime = pfp_utils.GetVariable(ds, "xlDateTime", out_type="-9999")
     logger.info(" Writing the datetime to the Excel file")
-    d_xf = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
-    xlDataSheet.write(2,xlcol,'xlDateTime')
+    d_xf = xlwt.easyxf(num_format_str="dd/mm/yyyy hh:mm")
+    xlDataSheet.write(2, xlcol, "xlDateTime")
     for j in range(nRecs):
-        xlDataSheet.write(j+3,xlcol,xlDateTime[j],d_xf)
-        xlFlagSheet.write(j+3,xlcol,xlDateTime[j],d_xf)
+        xlDataSheet.write(j+3, xlcol, xlDateTime["Data"][j], d_xf)
+        xlFlagSheet.write(j+3, xlcol, xlDateTime["Data"][j], d_xf)
     # remove xlDateTime from the list of variables to be written to the Excel file
-    if "xlDateTime" in outputlist: outputlist.remove("xlDateTime")
+    if "xlDateTime" in outputlist:
+        outputlist.remove("xlDateTime")
     # now start looping over the other variables in the xl file
     xlcol = xlcol + 1
     # loop over variables to be output to xl file
@@ -3039,17 +3128,17 @@ def xl_write_series(ds, xlfullname, outputlist=None):
         msg = " Writing " + ThisOne + " into column " + str(xlcol) + " of the Excel file"
         logger.info(msg)
         # write the units and the variable name to the header rows in the xl file
-        attrlist = list(ds.series[ThisOne]["Attr"].keys())
+        attrlist = list(ds.root["Variables"][ThisOne]["Attr"].keys())
         if "long_name" in attrlist:
-            longname = ds.series[ThisOne]["Attr"]["long_name"]
+            longname = ds.root["Variables"][ThisOne]["Attr"]["long_name"]
         elif "Description" in attrlist:
-            longname = ds.series[ThisOne]["Attr"]["Description"]
+            longname = ds.root["Variables"][ThisOne]["Attr"]["Description"]
         else:
             longname = None
         if "units" in attrlist:
-            units = ds.series[ThisOne]["Attr"]["units"]
+            units = ds.root["Variables"][ThisOne]["Attr"]["units"]
         elif "Units" in attrlist:
-            units = ds.series[ThisOne]["Attr"]["Units"]
+            units = ds.root["Variables"][ThisOne]["Attr"]["Units"]
         else:
             units = None
         xlDataSheet.write(0, xlcol, longname)
@@ -3057,35 +3146,35 @@ def xl_write_series(ds, xlfullname, outputlist=None):
         xlDataSheet.write(2, xlcol, ThisOne)
         # loop over the values in the variable series (array writes don't seem to work)
         for j in range(nRecs):
-            xlDataSheet.write(j+3, xlcol, float(ds.series[ThisOne]["Data"][j]))
+            xlDataSheet.write(j+3, xlcol, float(ds.root["Variables"][ThisOne]["Data"][j]))
         # check to see if this variable has a quality control flag
-        if "Flag" in list(ds.series[ThisOne].keys()):
+        if "Flag" in list(ds.root["Variables"][ThisOne].keys()):
             # write the QC flag name to the xls file
             xlFlagSheet.write(2, xlcol, ThisOne)
             # specify the format of the QC flag (integer)
             d_xf = xlwt.easyxf(num_format_str="0")
             # loop over QC flag values and write to xls file
             for j in range(nRecs):
-                xlFlagSheet.write(j+3, xlcol, int(ds.series[ThisOne]['Flag'][j]), d_xf)
+                xlFlagSheet.write(j+3, xlcol, int(ds.root["Variables"][ThisOne]['Flag'][j]), d_xf)
         # increment the column pointer
         xlcol = xlcol + 1
     xlfile.save(xlfullname)
 
 def xlsx_write_series(ds, xlsxfullname, outputlist=None):
-    if "nc_nrecs" in list(ds.globalattributes.keys()):
-        nRecs = int(ds.globalattributes["nc_nrecs"])
+    if "nc_nrecs" in list(ds.root["Attributes"].keys()):
+        nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     else:
-        variablelist = list(ds.series.keys())
-        nRecs = len(ds.series[variablelist[0]]["Data"])
+        variablelist = list(ds.root["Variables"].keys())
+        nRecs = len(ds.root["Variables"][variablelist[0]]["Data"])
     # open the Excel file
     msg = " Opening and writing Excel file " + os.path.basename(xlsxfullname)
     logger.info(msg)
-    if "xl_datemode" not in ds.globalattributes:
+    if "xl_datemode" not in ds.root["Attributes"]:
         if platform.system() == "darwin":
-            ds.globalattributes["xl_datemode"] = 0
+            ds.root["Attributes"]["xl_datemode"] = 0
         else:
-            ds.globalattributes["xl_datemode"] = 1
-    if int(ds.globalattributes["xl_datemode"]) == 1:
+            ds.root["Attributes"]["xl_datemode"] = 1
+    if int(ds.root["Attributes"]["xl_datemode"]) == 1:
         xlfile = xlsxwriter.Workbook(xlsxfullname, {"date_1904": True, "nan_inf_to_errors": True})
     else:
         xlfile = xlsxwriter.Workbook(xlsxfullname, {"date_1904": False, "nan_inf_to_errors": True})
@@ -3099,15 +3188,15 @@ def xlsx_write_series(ds, xlsxfullname, outputlist=None):
     xlrow = 0
     xlAttrSheet.write(xlrow, xlcol, "Global attributes")
     xlrow = xlrow + 1
-    globalattrlist = list(ds.globalattributes.keys())
+    globalattrlist = list(ds.root["Attributes"].keys())
     globalattrlist.sort()
     for ThisOne in sorted([x for x in globalattrlist if "Flag" not in x]):
         xlAttrSheet.write(xlrow, xlcol, ThisOne)
-        xlAttrSheet.write(xlrow, xlcol+1, str(ds.globalattributes[ThisOne]))
+        xlAttrSheet.write(xlrow, xlcol+1, str(ds.root["Attributes"][ThisOne]))
         xlrow = xlrow + 1
     for ThisOne in sorted([x for x in globalattrlist if "Flag" in x]):
         xlAttrSheet.write(xlrow, xlcol, ThisOne)
-        xlAttrSheet.write(xlrow, xlcol+1, str(ds.globalattributes[ThisOne]))
+        xlAttrSheet.write(xlrow, xlcol+1, str(ds.root["Attributes"][ThisOne]))
         xlrow = xlrow + 1
     # write the variable attributes
     logger.info(" Writing the variable attributes to the Excel file")
@@ -3117,7 +3206,7 @@ def xlsx_write_series(ds, xlsxfullname, outputlist=None):
     xlcol_varname = 0
     xlcol_attrname = 1
     xlcol_attrvalue = 2
-    variablelist = list(ds.series.keys())
+    variablelist = list(ds.root["Variables"].keys())
     if outputlist is None:
         outputlist = variablelist
     else:
@@ -3132,14 +3221,14 @@ def xlsx_write_series(ds, xlsxfullname, outputlist=None):
         if ThisOne in outputlist: outputlist.remove(ThisOne)
     for ThisOne in outputlist:
         xlAttrSheet.write(xlrow, xlcol_varname, ThisOne)
-        attributelist = list(ds.series[ThisOne]["Attr"].keys())
+        attributelist = list(ds.root["Variables"][ThisOne]["Attr"].keys())
         attributelist.sort()
         for Attr in attributelist:
             xlAttrSheet.write(xlrow, xlcol_attrname, Attr)
-            xlAttrSheet.write(xlrow, xlcol_attrvalue, str(ds.series[ThisOne]["Attr"][Attr]))
+            xlAttrSheet.write(xlrow, xlcol_attrvalue, str(ds.root["Variables"][ThisOne]["Attr"][Attr]))
             xlrow = xlrow + 1
     # write the Excel date/time to the data and the QC flags as the first column
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     logger.info(" Writing the datetime to the Excel file")
     dt_format = xlfile.add_format({"num_format": "dd/mm/yyyy hh:mm"})
     xlDataSheet.write(2, xlcol, "xlDateTime")
@@ -3156,17 +3245,17 @@ def xlsx_write_series(ds, xlsxfullname, outputlist=None):
         # put up a progress message
         logger.info(" Writing " + ThisOne + " into column " + str(xlcol) + " of the Excel file")
         # write the units and the variable name to the header rows in the xl file
-        attrlist = list(ds.series[ThisOne]["Attr"].keys())
+        attrlist = list(ds.root["Variables"][ThisOne]["Attr"].keys())
         if "long_name" in attrlist:
-            longname = ds.series[ThisOne]["Attr"]["long_name"]
+            longname = ds.root["Variables"][ThisOne]["Attr"]["long_name"]
         elif "Description" in attrlist:
-            longname = ds.series[ThisOne]["Attr"]["Description"]
+            longname = ds.root["Variables"][ThisOne]["Attr"]["Description"]
         else:
             longname = None
         if "units" in attrlist:
-            units = ds.series[ThisOne]["Attr"]["units"]
+            units = ds.root["Variables"][ThisOne]["Attr"]["units"]
         elif "Units" in attrlist:
-            units = ds.series[ThisOne]["Attr"]["Units"]
+            units = ds.root["Variables"][ThisOne]["Attr"]["Units"]
         else:
             units = None
         xlDataSheet.write(0, xlcol, longname)
@@ -3174,16 +3263,16 @@ def xlsx_write_series(ds, xlsxfullname, outputlist=None):
         xlDataSheet.write(2, xlcol, ThisOne)
         # loop over the values in the variable series (array writes don't seem to work)
         for j in range(nRecs):
-            xlDataSheet.write(j+3, xlcol, float(ds.series[ThisOne]["Data"][j]))
+            xlDataSheet.write(j+3, xlcol, float(ds.root["Variables"][ThisOne]["Data"][j]))
         # check to see if this variable has a quality control flag
-        if "Flag" in list(ds.series[ThisOne].keys()):
+        if "Flag" in list(ds.root["Variables"][ThisOne].keys()):
             # write the QC flag name to the Excel file
             xlFlagSheet.write(2, xlcol, ThisOne)
             # specify the format of the QC flag (integer)
             flag_format = xlfile.add_format({"num_format": "0"})
             # loop over QC flag values and write to xl file
             for j in range(nRecs):
-                xlFlagSheet.write(j+3, xlcol, int(ds.series[ThisOne]["Flag"][j]), flag_format)
+                xlFlagSheet.write(j+3, xlcol, int(ds.root["Variables"][ThisOne]["Flag"][j]), flag_format)
         # increment the column pointer
         xlcol = xlcol + 1
 

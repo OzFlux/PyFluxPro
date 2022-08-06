@@ -32,9 +32,9 @@ def GapFillUsingMDS(ds, l5_info, called_by):
     nc_full_path = os.path.join(file_path, file_name)
     nc_name = os.path.split(nc_full_path)[1]
     # get some useful metadata
-    ts = int(float(ds.globalattributes["time_step"]))
-    site_name = ds.globalattributes["site_name"]
-    level = ds.globalattributes["processing_level"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    site_name = ds.root["Attributes"]["site_name"]
+    level = ds.root["Attributes"]["processing_level"]
     # get a temporary directory for the log, input and output filoes
     tmp_dir = tempfile.TemporaryDirectory(prefix="pfp_mds_")
     td = tmp_dir.name
@@ -116,12 +116,12 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by):
     Date: May 2018
     """
     # get the MDS flag value from the processing level
-    processing_level = ds.globalattributes["processing_level"]
+    processing_level = ds.root["Attributes"]["processing_level"]
     level_number = pfp_utils.strip_non_numeric(processing_level)
     # MDS flag will be 470 at L4, 570 and L5
     mds_flag_value = int(level_number)*100 + 70
     # get the name for the description variable attribute
-    descr_level = "description_" + str(ds.globalattributes["processing_level"])
+    descr_level = "description_" + str(ds.root["Attributes"]["processing_level"])
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     first_date = ldt["Data"][0]
     last_date = ldt["Data"][-1]
@@ -237,10 +237,10 @@ def gfMDS_make_data_array(ds, current_year, info):
     Date: May 2018
     """
     ldt = pfp_utils.GetVariable(ds, "DateTime")
-    nrecs = int(ds.globalattributes["nc_nrecs"])
-    ts = int(float(ds.globalattributes["time_step"]))
-    start = datetime.datetime(current_year,1,1,0,30,0)
-    end = datetime.datetime(current_year+1,1,1,0,0,0)
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    start = datetime.datetime(current_year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+    end = datetime.datetime(current_year+1, 1, 1, 0, 0, 0)
     cdt = numpy.array([dt for dt in pfp_utils.perdelta(start, end, datetime.timedelta(minutes=ts))])
     mt = numpy.ones(len(cdt))*float(-9999)
     # need entry for the timestamp and the target ...
@@ -306,14 +306,14 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     Date: Back in the day
     """
     # get the MDS flag value from the processing level
-    processing_level = ds.globalattributes["processing_level"]
+    processing_level = ds.root["Attributes"]["processing_level"]
     level_number = pfp_utils.strip_non_numeric(processing_level)
     # MDS flag will be 470 at L4, 570 and L5
     mds_flag_value = int(level_number)*100 + 70
     # get the timestep
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     # get a local copy of the datetime series
-    xdt = ds.series["DateTime"]["Data"]
+    xdt = ds.root["Variables"]["DateTime"]["Data"]
     Hdh = numpy.array([d.hour+(d.minute+d.second/float(60))/float(60) for d in xdt])
     # get the observed and modelled values
     drivers = l5_info[called_by]["outputs"][mds_label]["drivers"]

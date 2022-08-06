@@ -1,4 +1,5 @@
 # standard modules
+import copy
 import datetime
 import os
 import logging
@@ -29,11 +30,11 @@ def CheckL5Drivers(ds, l5_info):
     logger.info(msg)
     drivers_with_missing = []
     for label in list(l5_info["CheckL5Drivers"]["drivers"]):
-        if label not in ds.series.keys():
+        if label not in ds.root["Variables"].keys():
             msg = "  Requested driver (" + label + ") not found in data structure"
             logger.error(msg)
-            ds.returncodes["message"] = msg
-            ds.returncodes["value"] = 1
+            ds.info["returncodes"]["message"] = msg
+            ds.info["returncodes"]["value"] = 1
             return
         var = pfp_utils.GetVariable(ds, label)
         if numpy.any(numpy.ma.getmaskarray(var["Data"])):
@@ -63,13 +64,13 @@ def CheckGapLengths(cf, ds, l5_info):
     Author: PRI
     Date: June 2019
     """
-    ds.returncodes["value"] = 0
+    ds.info["returncodes"]["value"] = 0
     l5_info["CheckGapLengths"] = {}
     # get the maximum length for "short" gaps in days
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxShortGapLength", default=14)
     max_short_gap_days = int(opt)
     # maximum length in records
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     nperday = 24 * 60//ts
     max_short_gap_records = max_short_gap_days * nperday
     # get a list of variables being gap filled
@@ -125,8 +126,8 @@ def CheckGapLengths(cf, ds, l5_info):
                 # user wants to edit the control file
                 msg = " Quitting L5 to edit control file"
                 logger.warning(msg)
-                ds.returncodes["message"] = msg
-                ds.returncodes["value"] = 1
+                ds.info["returncodes"]["message"] = msg
+                ds.info["returncodes"]["value"] = 1
             else:
                 # user wants to continue, turn on auto-complete for SOLO ...
                 if "GapFillUsingSOLO" in l5_info:
@@ -184,8 +185,8 @@ def ParseL4ControlFile(cf, ds):
     Author: PRI
     Date: Back in the day
     """
-    ds.returncodes["message"] = "OK"
-    ds.returncodes["value"] = 0
+    ds.info["returncodes"]["message"] = "OK"
+    ds.info["returncodes"]["value"] = 0
     l4_info = {}
     # add key for suppressing output of intermediate variables e.g. Ta_aws
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
@@ -195,12 +196,12 @@ def ParseL4ControlFile(cf, ds):
         if "GapFillFromAlternate" in list(cf["Drivers"][target].keys()):
             gfalternate_createdict(cf, ds, l4_info, target, "GapFillFromAlternate")
             # check to see if something went wrong
-            if ds.returncodes["value"] != 0:
+            if ds.info["returncodes"]["value"] != 0:
                 # if it has, return to calling routine
                 return l4_info
         if "GapFillFromClimatology" in list(cf["Drivers"][target].keys()):
             gfClimatology_createdict(cf, ds, l4_info, target, "GapFillFromClimatology")
-            if ds.returncodes["value"] != 0:
+            if ds.info["returncodes"]["value"] != 0:
                 return l4_info
         if "MergeSeries" in list(cf["Drivers"][target].keys()):
             gfMergeSeries_createdict(cf, ds, l4_info, target, "MergeSeries")
@@ -212,8 +213,8 @@ def ParseL4ControlFile(cf, ds):
     if len(outputs) == 0:
         msg = " No output variables defined, quitting L4 ..."
         logger.error(msg)
-        ds.returncodes["message"] = msg
-        ds.returncodes["value"] = 1
+        ds.info["returncodes"]["message"] = msg
+        ds.info["returncodes"]["value"] = 1
     return l4_info
 
 def ParseL5ControlFile(cf, ds):
@@ -225,8 +226,8 @@ def ParseL5ControlFile(cf, ds):
     Author: PRI
     Date: Back in the day
     """
-    ds.returncodes["message"] = "OK"
-    ds.returncodes["value"] = 0
+    ds.info["returncodes"]["message"] = "OK"
+    ds.info["returncodes"]["value"] = 0
     l5_info = {}
     # add key for suppressing output of intermediate variables e.g. Ta_aws
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
@@ -238,16 +239,16 @@ def ParseL5ControlFile(cf, ds):
         if "GapFillUsingSOLO" in list(cf["Fluxes"][target].keys()):
             gfSOLO_createdict(cf, ds, l5_info, target, "GapFillUsingSOLO", 510)
             # check to see if something went wrong
-            if ds.returncodes["value"] != 0:
+            if ds.info["returncodes"]["value"] != 0:
                 # if it has, return to calling routine
                 return l5_info
         if "GapFillLongSOLO" in list(cf["Fluxes"][target].keys()):
             gfSOLO_createdict(cf, ds, l5_info, target, "GapFillLongSOLO", 520)
-            if ds.returncodes["value"] != 0:
+            if ds.info["returncodes"]["value"] != 0:
                 return l5_info
         if "GapFillUsingMDS" in list(cf["Fluxes"][target].keys()):
             gfMDS_createdict(cf, ds, l5_info, target, "GapFillUsingMDS", 530)
-            if ds.returncodes["value"] != 0:
+            if ds.info["returncodes"]["value"] != 0:
                 return l5_info
         if "MergeSeries" in list(cf["Fluxes"][target].keys()):
             gfMergeSeries_createdict(cf, ds, l5_info, target, "MergeSeries")
@@ -264,9 +265,8 @@ def ReadAlternateFiles(ds, l4_info):
         # if the file has not already been read, do it now
         if f not in ds_alt:
             ds_alternate = pfp_io.NetCDFRead(f, fixtimestepmethod="round")
-            if ds_alternate.returncodes["value"] != 0: return ds_alt
-            gfalternate_matchstartendtimes(ds, ds_alternate)
-            ds_alt[f] = ds_alternate
+            if ds_alternate.info["returncodes"]["value"] != 0: return ds_alt
+            ds_alt[f] = gfalternate_matchstartendtimes(ds, ds_alternate)
     return ds_alt
 
 def gfalternate_createdict(cf, ds, l4_info, label, called_by):
@@ -279,16 +279,16 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     Author: PRI
     Date: August 2014
     """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # make the L4 "description" attrubute for the target variable
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     # create the alternate data settings directory
     if called_by not in list(l4_info.keys()):
         # create the GapFillFromAlternate dictionary
         l4_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
         # only need to create the ["info"] dictionary on the first pass
         gfalternate_createdict_info(cf, ds, l4_info, called_by)
-        if ds.returncodes["value"] != 0:
+        if ds.info["returncodes"]["value"] != 0:
             return
         # only need to create the ["gui"] dictionary on the first pass
         gfalternate_createdict_gui(cf, ds, l4_info, called_by)
@@ -297,7 +297,7 @@ def gfalternate_createdict(cf, ds, l4_info, label, called_by):
     # create an empty series in ds if the alternate output series doesn't exist yet
     outputs = list(l4_info[called_by]["outputs"].keys())
     for output in outputs:
-        if output not in list(ds.series.keys()):
+        if output not in list(ds.root["Variables"].keys()):
             l4_info["RemoveIntermediateSeries"]["not_output"].append(output)
             variable = pfp_utils.CreateEmptyVariable(output, nrecs)
             variable["Attr"][descr_level] = l4_info[called_by]["outputs"][output]["source"]
@@ -319,10 +319,10 @@ def gfalternate_createdict_info(cf, ds, l4_info, called_by):
           June 2019 - modified for new l4_info structure
     """
     # reset the return message and code
-    ds.returncodes["message"] = "OK"
-    ds.returncodes["value"] = 0
+    ds.info["returncodes"]["message"] = "OK"
+    ds.info["returncodes"]["value"] = 0
     # get a local pointer to the tower datetime series
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
     plot_path = os.path.join(plot_path, "L4", "")
     if not os.path.exists(plot_path):
@@ -337,8 +337,8 @@ def gfalternate_createdict_info(cf, ds, l4_info, called_by):
                 # user wants to edit the control file
                 msg = " Quitting L4 to edit control file"
                 logger.warning(msg)
-                ds.returncodes["message"] = msg
-                ds.returncodes["value"] = 1
+                ds.info["returncodes"]["message"] = msg
+                ds.info["returncodes"]["value"] = 1
             else:
                 plot_path = "./plots/"
                 cf["Files"]["plot_path"] = "./plots/"
@@ -351,8 +351,8 @@ def gfalternate_createdict_info(cf, ds, l4_info, called_by):
                    "called_by": called_by,
                    "plot_path": plot_path,
                    "call_mode": call_mode,
-                   "time_step": int(float(ds.globalattributes["time_step"])),
-                   "site_name": ds.globalattributes["site_name"]}
+                   "time_step": int(float(ds.root["Attributes"]["time_step"])),
+                   "site_name": ds.root["Attributes"]["site_name"]}
     out_filename = pfp_io.get_outfilenamefromcf(cf)
     xl_file_name = out_filename.replace('.nc', '_AlternateStats.xls')
     l4a["info"]["xl_file_name"] = xl_file_name
@@ -447,7 +447,7 @@ def gfalternate_createdict_gui(cf, ds, l4_info, called_by):
     # local pointer to datetime
     ldt_tower = pfp_utils.GetVariable(ds, "DateTime")
     # populate the l4_info["gui"] dictionary with things that will be useful
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     l4a["gui"]["nperhr"] = int(float(60)/ts + 0.5)
     l4a["gui"]["nperday"] = int(float(24)*l4a["gui"]["nperhr"] + 0.5)
     l4a["gui"]["max_lags"] = int(float(12)*l4a["gui"]["nperhr"] + 0.5)
@@ -504,7 +504,7 @@ def gfalternate_createdict_gui(cf, ds, l4_info, called_by):
     l4a["gui"]["enddate"] = ed
     return
 
-def gfalternate_matchstartendtimes(ds,ds_alternate):
+def gfalternate_matchstartendtimes(ds, ds_alternate):
     """
     Purpose:
      Match the start and end times of the alternate and tower data.
@@ -521,22 +521,40 @@ def gfalternate_matchstartendtimes(ds,ds_alternate):
            ds_alternate is the data structure containing the alternate data
     Author: PRI
     Date: July 2015
+    Modifications:
+     June 2022 - rewrote to use pfp_utils.GetVariable() and pfp_utils.CreateVariable()
+                 and to return a new data structure instead of modify ds_alternate
+                 in place.
     """
     # check the time steps are the same
-    ts_tower = int(float(ds.globalattributes["time_step"]))
-    ts_alternate = int(float(ds_alternate.globalattributes["time_step"]))
-    if ts_tower!=ts_alternate:
+    ts_tower = int(float(ds.root["Attributes"]["time_step"]))
+    ts_alternate = int(float(ds_alternate.root["Attributes"]["time_step"]))
+    if ts_tower != ts_alternate:
         msg = " GapFillFromAlternate: time step for tower and alternate data are different, returning ..."
         logger.error(msg)
-        ds.returncodes["GapFillFromAlternate"] = "error"
+        ds.info["returncodes"]["GapFillFromAlternate"] = "error"
         return
+    # get a list of alternate series
+    labels_alternate = [item for item in list(ds_alternate.root["Variables"].keys()) if "_QCFlag" not in item]
+    for label in ["DateTime", "DateTime_UTC"]:
+        if label in labels_alternate:
+            labels_alternate.remove(label)
+    # number of records in truncated or padded alternate data
+    nRecs_tower = int(ds.root["Attributes"]["nc_nrecs"])
+    # create new data strucure to hold alternate data spanning period of tower data
+    gattrs = ds_alternate.root["Attributes"]
+    ds_matched = pfp_io.DataStructure(global_attributes=gattrs)
+    # force the matched datetime to be the tower datetime
+    ds_matched.root["Variables"]["DateTime"] = copy.deepcopy(ds.root["Variables"]["DateTime"])
+    # update the number of records in the file
+    ds_matched.root["Attributes"]["nc_nrecs"] = nRecs_tower
     # get the start and end times of the tower and the alternate data and see if they overlap
-    ldt_alternate = ds_alternate.series["DateTime"]["Data"]
+    ldt_alternate = ds_alternate.root["Variables"]["DateTime"]["Data"]
     start_alternate = ldt_alternate[0]
-    ldt_tower = ds.series["DateTime"]["Data"]
+    ldt_tower = ds.root["Variables"]["DateTime"]["Data"]
     end_tower = ldt_tower[-1]
     # since the datetime is monotonically increasing we need only check the start datetime
-    overlap = start_alternate<=end_tower
+    overlap = start_alternate <= end_tower
     # do the alternate and tower data overlap?
     if overlap:
         # index of alternate datetimes that are also in tower datetimes
@@ -544,46 +562,36 @@ def gfalternate_matchstartendtimes(ds,ds_alternate):
         # check that the indices point to the same times
         ldta = [ldt_alternate[i] for i in alternate_index]
         ldtt = [ldt_tower[i] for i in tower_index]
-        if ldta!=ldtt:
+        if ldta != ldtt:
             # and exit with a helpful message if they dont
-            logger.error(" Something went badly wrong and I'm giving up")
-            sys.exit()
-        # get a list of alternate series
-        alternate_series_list = [item for item in list(ds_alternate.series.keys()) if "_QCFlag" not in item]
-        # number of records in truncated or padded alternate data
-        nRecs_tower = len(ldt_tower)
-        # force the alternate dattime to be the tower date time
-        ds_alternate.series["DateTime"] = ds.series["DateTime"]
+            msg = " Something went badly wrong at L4 and I'm giving up"
+            logger.error(msg)
+            raise RuntimeError(msg)
         # loop over the alternate series and truncate or pad as required
         # truncation or padding is handled by the indices
-        for series in alternate_series_list:
-            if series in ["DateTime","DateTime_UTC"]: continue
+        for label in labels_alternate:
             # get the alternate data
-            data,flag,attr = pfp_utils.GetSeriesasMA(ds_alternate,series)
-            # create an array of missing data of the required length
-            data_overlap = numpy.full(nRecs_tower,c.missing_value,dtype=numpy.float64)
-            flag_overlap = numpy.ones(nRecs_tower,dtype=numpy.int32)
+            var_alternate = pfp_utils.GetVariable(ds_alternate, label)
+            # create an empty variable of the required length
+            attr = copy.deepcopy(var_alternate["Attr"])
+            var_overlap = pfp_utils.CreateEmptyVariable(label, nRecs_tower, attr=attr)
             # replace missing data with alternate data where times match
-            data_overlap[tower_index] = data[alternate_index]
-            flag_overlap[tower_index] = flag[alternate_index]
-            # write the truncated or padded series back into the alternate data structure
-            pfp_utils.CreateSeries(ds_alternate,series,data_overlap,flag_overlap,attr)
-        # update the number of records in the file
-        ds_alternate.globalattributes["nc_nrecs"] = nRecs_tower
+            var_overlap["Data"][tower_index] = var_alternate["Data"][alternate_index]
+            var_overlap["Flag"][tower_index] = var_alternate["Flag"][alternate_index]
+            # write the truncated or padded series back into the matched data structure
+            pfp_utils.CreateVariable(ds_matched, var_overlap)
     else:
         # there is no overlap between the alternate and tower data, create dummy series
-        nRecs = len(ldt_tower)
-        ds_alternate.globalattributes["nc_nrecs"] = nRecs
-        ds_alternate.series["DateTime"] = ds.series["DateTime"]
-        alternate_series_list = [item for item in list(ds_alternate.series.keys()) if "_QCFlag" not in item]
-        for series in alternate_series_list:
-            if series in ["DateTime","DateTime_UTC"]:
-                continue
-            _,  _, attr = pfp_utils.GetSeriesasMA(ds_alternate, series)
-            data = numpy.full(nRecs, c.missing_value, dtype=numpy.float64)
-            flag = numpy.ones(nRecs, dtype=numpy.int32)
-            pfp_utils.CreateSeries(ds_alternate, series, data, flag, attr)
-    ds.returncodes["GapFillFromAlternate"] = "normal"
+        for label in labels_alternate:
+            # get the alternate data
+            var_alternate = pfp_utils.GetVariable(ds_alternate, label)
+            # create an empty variable of the required length
+            attr = copy.deepcopy(var_alternate["Attr"])
+            var_overlap = pfp_utils.CreateEmptyVariable(label, nRecs_tower, attr=attr)
+            # write the truncated or padded series back into the matched data structure
+            pfp_utils.CreateVariable(ds_matched, var_overlap)
+    ds.info["returncodes"]["GapFillFromAlternate"] = "normal"
+    return ds_matched
 
 def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     """
@@ -596,7 +604,7 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
     Date: August 2014
     """
     # make the L4 "description" attrubute for the target variable
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     # flag codes
     flag_codes = {"interpolated daily": 450, "monthly": 460}
     # create the climatology directory in the data structure
@@ -650,10 +658,12 @@ def gfClimatology_createdict(cf, ds, l4_info, label, called_by):
         # get the flag code
         l4co[output]["flag_code"] = flag_codes[l4co[output]["method"]]
         # create an empty series in ds if the climatology output series doesn't exist yet
-        if output not in list(ds.series.keys()):
-            data, flag, attr = pfp_utils.MakeEmptySeries(ds, output)
-            attr[descr_level] = "climatology"
-            pfp_utils.CreateSeries(ds, output, data, flag, attr)
+        if output not in list(ds.root["Variables"].keys()):
+            nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+            var = pfp_utils.CreateEmptyVariable(output, nrecs)
+            var["Attr"][descr_level] = "climatology"
+            pfp_utils.CreateVariable(ds, var)
+    return
 
 def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
     """
@@ -688,8 +698,8 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
                 # user wants to edit the control file
                 msg = " Quitting L5 to edit control file"
                 logger.warning(msg)
-                ds.returncodes["message"] = msg
-                ds.returncodes["value"] = 1
+                ds.info["returncodes"]["message"] = msg
+                ds.info["returncodes"]["value"] = 1
             else:
                 plot_path = "./plots/"
                 cf["Files"]["plot_path"] = "./plots/"
@@ -699,7 +709,7 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
     max_short_gap_days = int(opt)
     l5_info[called_by]["info"]["MaxShortGapDays"] = max_short_gap_days
     # maximum length in records
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     nperday = 24 * 60//ts
     l5_info[called_by]["info"]["MaxShortGapRecords"] = max_short_gap_days * nperday
     # name of MDS output series in ds
@@ -811,9 +821,11 @@ def gfMergeSeries_createdict(cf, ds, info, label, called_by):
     src_list = pfp_utils.GetMergeSeriesKeys(cf, label, section=section)
     info[called_by][merge_order][label]["source"] = src_list
     # create an empty series in ds if the output series doesn't exist yet
-    if label not in list(ds.series.keys()):
-        data, flag, attr = pfp_utils.MakeEmptySeries(ds, label)
-        pfp_utils.CreateSeries(ds, label, data, flag, attr)
+    if label not in list(ds.root["Variables"].keys()):
+        nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+        var = pfp_utils.CreateEmptyVariable(label, nrecs)
+        pfp_utils.CreateVariable(ds, var)
+    return
 
 def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by, flag_code):
     """
@@ -825,17 +837,17 @@ def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by, flag_code):
     Author: PRI
     Date: August 2014
     """
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # make the L5 "description" attrubute for the target variable
-    descr_level = "description_" + ds.globalattributes["processing_level"]
-    ds.series[target_label]["Attr"][descr_level] = ""
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
+    ds.root["Variables"][target_label]["Attr"][descr_level] = ""
     # create the solo settings directory
     if called_by not in list(l5_info.keys()):
         # create the GapFillUsingSOLO dictionary
         l5_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
         # only need to create the ["info"] dictionary on the first pass
         gfSOLO_createdict_info(cf, ds, l5_info, called_by)
-        if ds.returncodes["value"] != 0:
+        if ds.info["returncodes"]["value"] != 0:
             return
         # only need to create the ["gui"] dictionary on the first pass
         gfSOLO_createdict_gui(cf, ds, l5_info, called_by)
@@ -848,7 +860,7 @@ def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by, flag_code):
     outputs = list(cf["Fluxes"][target_label][called_by].keys())
     for output in outputs:
         l5_info["CheckL5Drivers"]["drivers"] += l5_info[called_by]["outputs"][output]["drivers"]
-        if output not in list(ds.series.keys()):
+        if output not in list(ds.root["Variables"].keys()):
             # disable output to netCDF file for this variable
             l5_info["RemoveIntermediateSeries"]["not_output"].append(output)
             # create an empty variable
@@ -858,7 +870,7 @@ def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by, flag_code):
             for vattr in ["long_name", "valid_range", "units", "standard_name"]:
                 if vattr in target_variable["Attr"]:
                     variable["Attr"][vattr] = target_variable["Attr"][vattr]
-            # create L5 specific vards.series[label]iable attributes
+            # create L5 specific vards.root["Variables"][label]iable attributes
             variable["Attr"]["drivers"] = l5_info[called_by]["outputs"][output]["drivers"]
             variable["Attr"]["target"] = target_label
             pfp_utils.append_to_attribute(variable["Attr"], {descr_level: "SOLO"})
@@ -880,7 +892,7 @@ def gfSOLO_createdict_gui(cf, ds, l5_info, called_by):
     # local pointer to datetime
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     # populate the l5_info["gui"] dictionary with things that will be useful
-    ts = int(float(ds.globalattributes["time_step"]))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
     # number of records per hour and per day
     l5s["gui"]["nperhr"] = int(float(60)/ts + 0.5)
     l5s["gui"]["nperday"] = int(float(24)*l5s["gui"]["nperhr"] + 0.5)
@@ -963,14 +975,14 @@ def gfSOLO_createdict_info(cf, ds, l5_info, called_by):
     """
     l5s = l5_info[called_by]
     # reset the return message and code
-    ds.returncodes["message"] = "OK"
-    ds.returncodes["value"] = 0
+    ds.info["returncodes"]["message"] = "OK"
+    ds.info["returncodes"]["value"] = 0
     # time step
-    time_step = int(float(ds.globalattributes["time_step"]))
+    time_step = int(float(ds.root["Attributes"]["time_step"]))
     # get the level of processing
-    level = ds.globalattributes["processing_level"]
+    level = ds.root["Attributes"]["processing_level"]
     # local pointer to the datetime series
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     # add an info section to the l5_info[called_by] dictionary
     l5s["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
     l5s["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
@@ -978,7 +990,7 @@ def gfSOLO_createdict_info(cf, ds, l5_info, called_by):
     l5s["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
     l5s["info"]["called_by"] = called_by
     l5s["info"]["time_step"] = time_step
-    l5s["info"]["site_name"] = ds.globalattributes["site_name"]
+    l5s["info"]["site_name"] = ds.root["Attributes"]["site_name"]
     l5s["info"]["executable_suffix"] = pfp_utils.get_executable_suffix()
     # check to see if this is a batch or an interactive run
     call_mode = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "call_mode", default="interactive")
@@ -1006,8 +1018,8 @@ def gfSOLO_createdict_info(cf, ds, l5_info, called_by):
                 # user wants to edit the control file
                 msg = " Quitting " + level + " to edit control file"
                 logger.warning(msg)
-                ds.returncodes["message"] = msg
-                ds.returncodes["value"] = 1
+                ds.info["returncodes"]["message"] = msg
+                ds.info["returncodes"]["value"] = 1
             else:
                 plot_path = "./plots/"
                 cf["Files"]["plot_path"] = "./plots/"
@@ -1090,7 +1102,7 @@ def GapFillFromClimatology(ds, l4_info, called_by):
     cli_xlbooks = {}
     for output in list(l4co.keys()):
         # check to see if there are any gaps in "series"
-        #index = numpy.where(abs(ds.series[label]['Data']-float(c.missing_value))<c.eps)[0]
+        #index = numpy.where(abs(ds.root["Variables"][label]['Data']-float(c.missing_value))<c.eps)[0]
         #if len(index)==0: continue                      # no gaps found in "series"
         cli_filename = l4co[output]["file_name"]
         if not os.path.exists(cli_filename):
@@ -1116,13 +1128,15 @@ def gfClimatology_interpolateddaily(ds, series, output, xlbook, flag_code):
     Gap fill using data interpolated over a 2D array where the days are
     the rows and the time of day is the columns.
     """
+    # description string for this level of processing
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     # gap fill from interpolated 30 minute data
     sheet_name = series + 'i(day)'
     if sheet_name not in xlbook.sheet_names():
         msg = " gfClimatology: sheet " + sheet_name + " not found, skipping ..."
         logger.warning(msg)
         return
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     thissheet = xlbook.sheet_by_name(sheet_name)
     datemode = xlbook.datemode
     basedate = datetime.datetime(1899, 12, 30)
@@ -1145,9 +1159,9 @@ def gfClimatology_interpolateddaily(ds, series, output, xlbook, flag_code):
         # fill the climatological value array
         val1d[xlRow*nts:(xlRow+1)*nts] = thissheet.row_values(xlRow+2, start_colx=1, end_colx=nts+1)
     # get the data to be filled with climatological values
-    data, flag, attr = pfp_utils.GetSeriesasMA(ds, series)
+    var = pfp_utils.GetVariable(ds, series)
     # get an index of missing values
-    idx = numpy.where(numpy.ma.getmaskarray(data) == True)[0]
+    idx = numpy.where(numpy.ma.getmaskarray(var["Data"]) == True)[0]
     # there must be a better way to do this ...
     # simply using the index (idx) to set a slice of the data array to the gap filled values in val1d
     # does not seem to work (mask stays true on replaced values in data), the work around is to
@@ -1159,16 +1173,15 @@ def gfClimatology_interpolateddaily(ds, series, output, xlbook, flag_code):
     for ii in idx:
         try:
             jj = pfp_utils.find_nearest_value(cdt, ldt[ii])
-            data[ii] = val1d[jj]
-            flag[ii] = numpy.int32(flag_code)
+            var["Data"][ii] = val1d[jj]
+            var["Flag"][ii] = numpy.int32(flag_code)
         except ValueError:
-            data[ii] = numpy.float64(c.missing_value)
-            flag[ii] = numpy.int32(flag_code+1)
+            var["Data"][ii] = numpy.float64(c.missing_value)
+            var["Flag"][ii] = numpy.int32(flag_code+1)
     # put the gap filled data back into the data structure
-    pfp_utils.CreateSeries(ds, output, data, flag, attr)
-    # PRI_Check - make sure climatology variable is OK
-    #ds.series[output]["Data"] = data
-    #ds.series[output]["Flag"] = flag
+    var["Label"] = output
+    var["Attr"][descr_level] = "climatology"
+    pfp_utils.CreateVariable(ds, var)
     return
 
 def gfClimatology_monthly(ds, series, output, xlbook):
@@ -1177,19 +1190,19 @@ def gfClimatology_monthly(ds, series, output, xlbook):
     Hdh = numpy.array([(d.hour + d.minute/float(60)) for d in ldt["Data"]])
     Month = numpy.array([d.month for d in ldt["Data"]])
     thissheet = xlbook.sheet_by_name(series)
-    val1d = numpy.zeros_like(ds.series[series]["Data"])
+    val1d = numpy.zeros_like(ds.root["Variables"][series]["Data"])
     values = numpy.zeros([48, 12])
     for month in range(1, 13):
         m = (month - 1)
         xlCol = m*5 + 2
         values[:, m] = thissheet.col_values(xlCol)[2:50]
-    for i in range(len(ds.series[series]["Data"])):
+    for i in range(len(ds.root["Variables"][series]["Data"])):
         h = numpy.int(2*Hdh[i])
         m = numpy.int(Month[i])
         val1d[i] = values[h, m-1]
-    index = numpy.where(abs(ds.series[output]["Data"] - c.missing_value) < c.eps)[0]
-    ds.series[output]["Data"][index] = val1d[index]
-    ds.series[output]["Flag"][index] = numpy.int32(460)
+    index = numpy.where(abs(ds.root["Variables"][output]["Data"] - c.missing_value) < c.eps)[0]
+    ds.root["Variables"][output]["Data"][index] = val1d[index]
+    ds.root["Variables"][output]["Flag"][index] = numpy.int32(460)
 
 # functions for GapFillUsingInterpolation
 def GapFillUsingInterpolation(cf, ds):
@@ -1244,14 +1257,14 @@ def gf_getdiurnalstats(DecHour,Data,ts):
                 Mn[i] = numpy.ma.min(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn
 
-def ImportSeries(cf,ds):
+def ImportSeries(cf, ds):
     # check to see if there is an Imports section
     if "Imports" not in list(cf.keys()):
         return
     # number of records
-    nRecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # get the start and end datetime
-    ldt = ds.series["DateTime"]["Data"]
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
     start_date = ldt[0]
     end_date = ldt[-1]
     # loop over the series in the Imports section
@@ -1267,19 +1280,19 @@ def ImportSeries(cf,ds):
             logger.warning(msg)
             continue
         ds_import = pfp_io.NetCDFRead(import_filename)
-        if ds_import.returncodes["value"] != 0: return
-        ts_import = int(float(ds_import.globalattributes["time_step"]))
-        ldt_import = ds_import.series["DateTime"]["Data"]
-        si = pfp_utils.GetDateIndex(ldt_import, str(start_date), ts=ts_import, default=0, match="exact")
-        ei = pfp_utils.GetDateIndex(ldt_import, str(end_date), ts=ts_import, default=len(ldt_import)-1, match="exact")
-        data = numpy.ma.ones(nRecs)*float(c.missing_value)
-        flag = numpy.ma.ones(nRecs)
-        data_import, flag_import, attr_import = pfp_utils.GetSeriesasMA(ds_import, var_name, si=si, ei=ei)
-        attr_import["time_coverage_start"] = ldt_import[0].strftime("%Y-%m-%d %H:%M")
-        attr_import["time_coverage_end"] = ldt_import[-1].strftime("%Y-%m-%d %H:%M")
+        if ds_import.info["returncodes"]["value"] != 0:
+            return
+        ts_import = int(float(ds_import.root["Attributes"]["time_step"]))
+        ldt_import = ds_import.root["Variables"]["DateTime"]["Data"]
+        si = pfp_utils.GetDateIndex(ldt_import, start_date, ts=ts_import, default=0, match="exact")
+        ei = pfp_utils.GetDateIndex(ldt_import, end_date, ts=ts_import, default=len(ldt_import)-1, match="exact")
+        var_import = pfp_utils.GetVariable(ds_import, var_name, start=si, end=ei)
+        var_import["Attr"]["time_coverage_start"] = ldt_import[0].strftime("%Y-%m-%d %H:%M")
+        var_import["Attr"]["time_coverage_end"] = ldt_import[-1].strftime("%Y-%m-%d %H:%M")
         ldt_import = ldt_import[si:ei+1]
         indainb, indbina = pfp_utils.FindMatchingIndices(ldt_import, ldt)
-        data[indbina] = data_import[indainb]
-        flag[indbina] = flag_import[indainb]
-        pfp_utils.CreateSeries(ds, label, data, flag, attr_import)
+        var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=var_import["Attr"])
+        var["Data"][indbina] = var_import["Data"][indainb]
+        var["Flag"][indbina] = var_import["Flag"][indainb]
+        pfp_utils.CreateVariable(ds, var)
     return

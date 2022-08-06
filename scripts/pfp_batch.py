@@ -88,7 +88,7 @@ def do_L2_batch(main_ui, cf_level):
             cf_l2["Options"]["show_plots"] = "No"
             infilename = pfp_io.get_infilenamefromcf(cf_l2)
             ds1 = pfp_io.NetCDFRead(infilename)
-            if ds1.returncodes["value"] != 0: return
+            if ds1.info["returncodes"]["value"] != 0: return
             ds2 = pfp_levels.l2qc(cf_l2, ds1)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l2)
             pfp_io.NetCDFWrite(outfilename, ds2)
@@ -137,7 +137,7 @@ def do_L3_batch(main_ui, cf_level):
             cf_l3["Options"]["show_plots"] = "No"
             infilename = pfp_io.get_infilenamefromcf(cf_l3)
             ds2 = pfp_io.NetCDFRead(infilename)
-            if ds2.returncodes["value"] != 0: return
+            if ds2.info["returncodes"]["value"] != 0: return
             ds3 = pfp_levels.l3qc(cf_l3, ds2)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l3)
             pfp_io.NetCDFWrite(outfilename, ds3)
@@ -427,7 +427,7 @@ def do_L4_batch(main_ui, cf_level):
             cf_l4["Options"]["show_plots"] = "No"
             infilename = pfp_io.get_infilenamefromcf(cf_l4)
             ds3 = pfp_io.NetCDFRead(infilename)
-            if ds3.returncodes["value"] != 0: return
+            if ds3.info["returncodes"]["value"] != 0: return
             ds4 = pfp_levels.l4qc(None, cf_l4, ds3)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l4)
             pfp_io.NetCDFWrite(outfilename, ds4)
@@ -467,7 +467,7 @@ def do_L5_batch(main_ui, cf_level):
             cf_l5["Options"]["show_plots"] = "No"
             infilename = pfp_io.get_infilenamefromcf(cf_l5)
             ds4 = pfp_io.NetCDFRead(infilename)
-            if ds4.returncodes["value"] != 0: return
+            if ds4.info["returncodes"]["value"] != 0: return
             ds5 = pfp_levels.l5qc(None, cf_l5, ds4)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l5)
             pfp_io.NetCDFWrite(outfilename, ds5)
@@ -506,7 +506,7 @@ def do_L6_batch(main_ui, cf_level):
             cf_l6["Options"]["show_plots"] = "No"
             infilename = pfp_io.get_infilenamefromcf(cf_l6)
             ds5 = pfp_io.NetCDFRead(infilename)
-            if ds5.returncodes["value"] != 0: return
+            if ds5.info["returncodes"]["value"] != 0: return
             ds6 = pfp_levels.l6qc(None, cf_l6, ds5)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l6)
             pfp_io.NetCDFWrite(outfilename, ds6)

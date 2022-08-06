@@ -224,7 +224,7 @@ class file_explore(QtWidgets.QWidget):
         # expand the "Variables" section
         for row in range(self.model.rowCount()):
             section = self.model.item(row)
-            if section.text() in ["Variables"]:
+            if section.text() not in ["Global attributes", "Group attributes"]:
                 idx = self.model.index(row, 0)
                 self.view.expand(idx)
 
@@ -240,16 +240,26 @@ class file_explore(QtWidgets.QWidget):
             # trap right click when nothing is selected
             return
         idx = self.view.selectedIndexes()
-        selected_text = sorted([i.data() for i in idx])
+        #groups = list(set([i.parent().parent().data() for i in idx]))
+        groups = list(set([i.parent().data() for i in idx]))
+        selections = {}
+        for group in groups:
+            selections[group] = []
+        for i in idx:
+            selections[i.parent().data()].append(i.data())
+        for key in selections.keys():
+            if key is None or key == "Variables":
+                selections["root"] = selections.pop(key)
+                break
         # plot time series, separate axes or grouped
         menuPlotTimeSeries = QtWidgets.QMenu(self)
         menuPlotTimeSeries.setTitle("Plot time series")
         actionPlotTimeSeriesSeparate = QtWidgets.QAction(self)
         actionPlotTimeSeriesSeparate.setText("Separate")
-        actionPlotTimeSeriesSeparate.triggered.connect(lambda: self.plot_timeseries(selected_text))
+        actionPlotTimeSeriesSeparate.triggered.connect(lambda: self.plot_timeseries(selections))
         actionPlotTimeSeriesGrouped = QtWidgets.QAction(self)
         actionPlotTimeSeriesGrouped.setText("Grouped")
-        actionPlotTimeSeriesGrouped.triggered.connect(lambda: self.plot_timeseries_grouped(selected_text))
+        actionPlotTimeSeriesGrouped.triggered.connect(lambda: self.plot_timeseries_grouped(selections))
         menuPlotTimeSeries.addAction(actionPlotTimeSeriesSeparate)
         menuPlotTimeSeries.addAction(actionPlotTimeSeriesGrouped)
         self.context_menu.addMenu(menuPlotTimeSeries)
@@ -257,13 +267,19 @@ class file_explore(QtWidgets.QWidget):
         self.context_menu.actionPlotPercentiles = QtWidgets.QAction(self)
         self.context_menu.actionPlotPercentiles.setText("Plot percentiles")
         self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
-        self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selected_text))
+        self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selections))
         # plot fingerprints
-        if self.ds.globalattributes["time_step"] not in ["daily", "monthly", "annual"]:
+        # check the time steps for all groups containing selected variables
+        groups = list(selections.keys())
+        time_steps = []
+        for group in groups:
+            time_steps.append(str(getattr(self.ds, group)["Attributes"]["time_step"]))
+        # all time steps for selected variables must be 30 or 60 to plot fingerprints
+        if all([True if ts in ["30", "60"] else False for ts in time_steps]):
             self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
             self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
             self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
-            self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selected_text))
+            self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selections))
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
@@ -278,7 +294,7 @@ class file_explore(QtWidgets.QWidget):
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    self.ds.globalattributes[key2] = val2
+                    self.ds.root["Attributes"][key2] = val2
             elif key1 in ["Variables"]:
                 for j in range(section.rowCount()):
                     variable_section = section.child(j)
@@ -286,7 +302,7 @@ class file_explore(QtWidgets.QWidget):
                     for k in range(variable_section.rowCount()):
                         key2 = str(variable_section.child(k, 0).text())
                         val2 = str(variable_section.child(k, 1).text())
-                        self.ds.series[label]["Attr"][key2] = val2
+                        self.ds.root["Variables"][label]["Attr"][key2] = val2
             else:
                 msg = " Unrecognised object (" + key1 + ") in netCDF file"
                 msg += ", skipping ..."
@@ -294,35 +310,53 @@ class file_explore(QtWidgets.QWidget):
         return self.ds
 
     def get_model_from_data(self):
-        self.model.setHorizontalHeaderLabels(['Variable', 'long_name'])
+        self.model.setHorizontalHeaderLabels(["Variable", "long_name"])
         self.model.itemChanged.connect(self.handleItemChanged)
-        gattrs = sorted(list(self.ds.globalattributes.keys()))
+        gattrs = sorted(list(self.ds.root["Attributes"].keys()))
         long_name = QtGui.QStandardItem("")
         section = QtGui.QStandardItem("Global attributes")
         section.setEditable(False)
         for gattr in gattrs:
-            value = str(self.ds.globalattributes[gattr])
+            value = str(self.ds.root["Attributes"][gattr])
             child0 = QtGui.QStandardItem(gattr)
             child1 = QtGui.QStandardItem(value)
             section.appendRow([child0, child1])
         self.model.appendRow([section, long_name])
-        labels = sorted(list(self.ds.series.keys()))
-        variables_section = QtGui.QStandardItem("Variables")
-        variables_section.setEditable(False)
-        for label in labels:
-            var = pfp_utils.GetVariable(self.ds, label)
-            long_name = QtGui.QStandardItem(var["Attr"]["long_name"])
-            variable_section = QtGui.QStandardItem(label)
-            # some variable names are not editable
-            if label in ["DateTime", "time"]:
-                variable_section.setEditable(False)
-            for attr in var["Attr"]:
-                value = str(var["Attr"][attr])
-                child0 = QtGui.QStandardItem(attr)
-                child1 = QtGui.QStandardItem(value)
-                variable_section.appendRow([child0, child1])
-            variables_section.appendRow([variable_section, long_name])
-        self.model.appendRow([variables_section, QtGui.QStandardItem("")])
+        groups = list(vars(self.ds).keys())
+        if "info" in groups:
+            groups.remove("info")
+        for group in groups:
+            gvars = getattr(self.ds, group)["Variables"]
+            if group == "root":
+                group_section = QtGui.QStandardItem("Variables")
+            else:
+                group_section = QtGui.QStandardItem(group)
+                attr_section = QtGui.QStandardItem("Group attributes")
+                gattrs = getattr(self.ds, group)["Attributes"]
+                for gattr in gattrs:
+                    value = str(gattrs[gattr])
+                    child0 = QtGui.QStandardItem(gattr)
+                    child1 = QtGui.QStandardItem(value)
+                    attr_section.appendRow([child0, child1])
+                group_section.appendRow([attr_section, QtGui.QStandardItem("")])
+            group_section.setEditable(False)
+            labels = sorted(list(gvars.keys()))
+            if len(labels) == 0:
+                continue
+            for label in labels:
+                var = pfp_utils.GetVariable(self.ds, label, group=group)
+                long_name = QtGui.QStandardItem(var["Attr"]["long_name"])
+                variable_section = QtGui.QStandardItem(label)
+                # some variable names are not editable
+                if label in ["DateTime", "time"]:
+                    variable_section.setEditable(False)
+                for attr in var["Attr"]:
+                    value = str(var["Attr"][attr])
+                    child0 = QtGui.QStandardItem(attr)
+                    child1 = QtGui.QStandardItem(value)
+                    variable_section.appendRow([child0, child1])
+                group_section.appendRow([variable_section, long_name])
+            self.model.appendRow([group_section, QtGui.QStandardItem("")])
         return
 
     def handleItemChanged(self, item):
@@ -335,18 +369,19 @@ class file_explore(QtWidgets.QWidget):
           Change the value of a global or variable attribute
         """
         # get a list of variables in the data structure
-        labels = list(self.ds.series.keys())
+        labels = list(self.ds.root["Variables"].keys())
         # check to see if the selected text before the change was a variable name
-        if self.double_click_selected_text in labels:
-            # if it was, rename the variable in the data structure
-            idx = self.view.selectedIndexes()
-            new_label = idx[0].data()
-            old_label = self.double_click_selected_text
-            self.ds.series[new_label] = self.ds.series.pop(old_label)
-        else:
-            # renaming attributes or changing their value is handled when the data is
-            # read back from the model by self.get_data_from_model()
-            pass
+        if hasattr(self, "double_click_selected_text"):
+            if self.double_click_selected_text in labels:
+                # if it was, rename the variable in the data structure
+                idx = self.view.selectedIndexes()
+                new_label = idx[0].data()
+                old_label = self.double_click_selected_text
+                self.ds.root["Variables"][new_label] = self.ds.root["Variables"].pop(old_label)
+            else:
+                # renaming attributes or changing their value is handled when the data is
+                # read back from the model by self.get_data_from_model()
+                pass
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
         return
@@ -355,7 +390,7 @@ class file_explore(QtWidgets.QWidget):
         """ Wrapper for plot histograms function."""
         # remove anything that is not the label of a variable in self.ds
         for label in list(labels):
-            if label not in list(self.ds.series.keys()):
+            if label not in list(self.ds.root["Variables"].keys()):
                 labels.remove(label)
         # check to make sure there is something left to plot
         if len(labels) == 0:
@@ -368,20 +403,28 @@ class file_explore(QtWidgets.QWidget):
         self.figure_number += 1
         return
 
-    def plot_fingerprints(self, labels):
+    def plot_fingerprints(self, selections):
         """ Wrapper for plot fingerprints function."""
         # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.ds.series.keys()):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
+        groups = sorted(list(selections.keys()))
+        for group in groups:
+            gvars = getattr(self.ds, group)
+            labels = sorted(selections[group])
+            for label in labels:
+                if label not in list(gvars["Variables"].keys()):
+                    selections[group].remove(label)
+            # check to make sure there is something left to plot
+            if len(selections[group]) == 0:
+                msg = " No variables in group " + group + " to plot"
+                logger.warning(msg)
+                selections.pop(group)
+        if len(selections.keys()) == 0:
+            msg = " Nothing to plot"
             logger.warning(msg)
             return
         # go ahead and plot
         try:
-            pfp_plot.plot_explore_fingerprints(self.ds, labels)
+            pfp_plot.plot_explore_fingerprints(self.ds, selections)
             # increment the figure number
             self.figure_number += 1
         except Exception:
@@ -391,20 +434,28 @@ class file_explore(QtWidgets.QWidget):
             logger.error(error_message)
         return
 
-    def plot_percentiles(self, labels):
+    def plot_percentiles(self, selections):
         """ Wrapper for plot percentiles function."""
         # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.ds.series.keys()):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
+        groups = sorted(list(selections.keys()))
+        for group in groups:
+            gvars = getattr(self.ds, group)
+            labels = sorted(selections[group])
+            for label in labels:
+                if label not in list(gvars["Variables"].keys()):
+                    selections[group].remove(label)
+            # check to make sure there is something left to plot
+            if len(selections[group]) == 0:
+                msg = " No variables in group " + group + " to plot"
+                logger.warning(msg)
+                selections.pop(group)
+        if len(selections.keys()) == 0:
+            msg = " Nothing to plot"
             logger.warning(msg)
             return
         # go ahead and plot
         try:
-            pfp_plot.plot_explore_percentiles(self.ds, labels)
+            pfp_plot.plot_explore_percentiles(self.ds, selections)
             # increment the figure number
             self.figure_number += 1
         except Exception:
@@ -414,20 +465,28 @@ class file_explore(QtWidgets.QWidget):
             logger.error(error_message)
         return
 
-    def plot_timeseries(self, labels):
+    def plot_timeseries(self, selections):
         """ Wrapper for plot time series function."""
         # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.ds.series.keys()):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
+        groups = sorted(list(selections.keys()))
+        for group in groups:
+            gvars = getattr(self.ds, group)
+            labels = sorted(selections[group])
+            for label in labels:
+                if label not in list(gvars["Variables"].keys()):
+                    selections[group].remove(label)
+            # check to make sure there is something left to plot
+            if len(selections[group]) == 0:
+                msg = " No variables in group " + group + " to plot"
+                logger.warning(msg)
+                selections.pop(group)
+        if len(selections.keys()) == 0:
+            msg = " Nothing to plot"
             logger.warning(msg)
             return
         # go ahead and plot
         try:
-            pfp_plot.plot_explore_timeseries(self.ds, labels)
+            pfp_plot.plot_explore_timeseries(self.ds, selections)
             # increment the figure number
             self.figure_number += 1
         except Exception:
@@ -437,20 +496,28 @@ class file_explore(QtWidgets.QWidget):
             logger.error(error_message)
         return
 
-    def plot_timeseries_grouped(self, labels):
+    def plot_timeseries_grouped(self, selections):
         """ Wrapper for plot time series function."""
         # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.ds.series.keys()):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
+        groups = sorted(list(selections.keys()))
+        for group in groups:
+            gvars = getattr(self.ds, group)
+            labels = sorted(selections[group])
+            for label in labels:
+                if label not in list(gvars["Variables"].keys()):
+                    selections[group].remove(label)
+            # check to make sure there is something left to plot
+            if len(selections[group]) == 0:
+                msg = " No variables in group " + group + " to plot"
+                logger.warning(msg)
+                selections.pop(group)
+        if len(selections.keys()) == 0:
+            msg = " Nothing to plot"
             logger.warning(msg)
             return
         # go ahead and plot
         try:
-            pfp_plot.plot_explore_timeseries_grouped(self.ds, labels)
+            pfp_plot.plot_explore_timeseries_grouped(self.ds, selections)
             # increment the figure number
             self.figure_number += 1
         except Exception:
