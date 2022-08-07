@@ -500,6 +500,9 @@ class partition(object):
         title = np.datetime_as_string(df.index.values[0], unit='D') + " to "
         title += np.datetime_as_string(df.index.values[-1], unit='D')
         file_name = os.path.join("plots", "estimate_e0_" + title.replace(" ", "_") + ".png")
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
+        plt.ioff()
         fig, axs = plt.subplots()
         if "Sws" in list(self.df):
             ldf = self.df[self.df.index.isin(df.index)]
@@ -513,6 +516,8 @@ class partition(object):
         clb.ax.set_title("Sws")
         fig.savefig(file_name, format="png")
         plt.close(fig)
+        plt.switch_backend(current_backend)
+        plt.ion()
         return
     #--------------------------------------------------------------------------
 
@@ -521,6 +526,9 @@ class partition(object):
         title = np.datetime_as_string(df.index.values[0], unit='D') + " to "
         title += np.datetime_as_string(df.index.values[-1], unit='D')
         file_name = os.path.join("plots", "LL_" + title.replace(" ", "_") + ".png")
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
+        plt.ioff()
         fig, axs = plt.subplots()
         sc = axs.scatter(df.PPFD.values, df.NEE.values, c=df.VPD.values, s=10)
         axs.set_title(title)
@@ -530,6 +538,8 @@ class partition(object):
         clb.ax.set_title("VPD")
         fig.savefig(file_name, format="png")
         plt.close(fig)
+        plt.switch_backend(current_backend)
+        plt.ion()
         return
     #--------------------------------------------------------------------------
 
