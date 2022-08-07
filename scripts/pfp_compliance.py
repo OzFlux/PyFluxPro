@@ -2,7 +2,6 @@
 import copy
 import inspect
 import logging
-import numbers
 import os
 import platform
 import traceback
@@ -128,7 +127,7 @@ def check_executables():
         msg = msg + "If you are running on Windows, clone the repository again.\n"
         msg = msg + "If you are running on OSX or Linux, use the make_nix script\n"
         msg = msg + "to compile the executables."
-        result = pfp_gui.MsgBox_Quit(msg, title="Critical")
+        pfp_gui.MsgBox_Quit(msg, title="Critical")
     return
 
 def climatology_update_controlfile(cfg):

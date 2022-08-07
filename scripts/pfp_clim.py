@@ -10,7 +10,6 @@ import xlwt
 # PFP modules
 from scripts import constants as c
 from scripts import pfp_io
-from scripts import pfp_ts
 from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")

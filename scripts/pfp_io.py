@@ -45,11 +45,11 @@ class DataStructure(object):
     Attributes of a data structure:
      ds.root["Attributes"] - a dictionary containing the global attributes read from
                            or written to a netCDF file.
-     ds.series - a dictionary containing the variables read from or written to a
-                 netCDF file.
+     ds.root["Variables"] - a dictionary containing the variables read from or written to a
+                            netCDF file.
 
     Variables in a data structure:
-     Each variable in the ds.series dictionary is another dictionary that
+     Each variable in the ds.root["Variables"] dictionary is another dictionary that
      contains the data, the quality control flag and the attributes.
      For example, the air temperature variable (Ta) is stored in the data
      structure as follows;
@@ -2281,9 +2281,9 @@ def nc_read_series(nc_file, checktimestep=True, fixtimestepmethod="round"):
      The data structure consists of:
       1) ds.root["Attributes"]
          A dictionary containing the global attributes of the netCDF file.
-      2) ds.series
+      2) ds.root["Variables"]
          A dictionary containing the variable data, meta-data and QC flag
-         Each variable dictionary in ds.series contains;
+         Each variable dictionary in ds.root["Variables"] contains;
          a) ds.root["Variables"][variable]["Data"]
             A 1D numpy float64 array containing the variable data, missing
             data value is -9999.
@@ -2380,7 +2380,7 @@ def nc_read_var(ncFile,ThisOne):
         # single dimension
         data = ncFile.variables[ThisOne][:]
         # netCDF4 returns a masked array if the "missing_variable" attribute has been set
-        # for the variable, here we trap this and force the array in ds.series to be ndarray
+        # for the variable, here we trap this and force the array in ds.root["Variables"] to be ndarray
         if numpy.ma.isMA(data): data,dummy = pfp_utils.MAtoSeries(data)
         # check for a QC flag
         if ThisOne+'_QCFlag' in list(ncFile.variables.keys()):
@@ -2400,7 +2400,7 @@ def nc_read_var(ncFile,ThisOne):
         # 3 dimensions
         data = ncFile.variables[ThisOne][:,0,0]
         # netCDF4 returns a masked array if the "missing_variable" attribute has been set
-        # for the variable, here we trap this and force the array in ds.series to be ndarray
+        # for the variable, here we trap this and force the array in ds.root["Variables"] to be ndarray
         # may not be needed after adding ncFile.set_auto_mask(False) in nc_read_series().
         if numpy.ma.isMA(data): data,dummy = pfp_utils.MAtoSeries(data)
         # check for a QC flag
@@ -2423,7 +2423,7 @@ def nc_read_var(ncFile,ThisOne):
         data1 = ncFile.variables[ThisOne][:,1,0,0]
         data = numpy.ma.where(data0.mask == False,data0,data1)
         # netCDF4 returns a masked array if the "missing_variable" attribute has been set
-        # for the variable, here we trap this and force the array in ds.series to be ndarray
+        # for the variable, here we trap this and force the array in ds.root["Variables"] to be ndarray
         # may not be needed after adding ncFile.set_auto_mask(False) in nc_read_series().
         if numpy.ma.isMA(data): data,dummy = pfp_utils.MAtoSeries(data)
         # check for a QC flag
