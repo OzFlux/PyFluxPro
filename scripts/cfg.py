@@ -1,6 +1,6 @@
 version_name = "PyFluxPro"
 version_number = "V3.4.5"
-# V3.4.5 - July 2022
+# V3.4.5 - July/August 2022
 #        - implement the ability to read L6 summary files
 #          - needed a major rewrite of pfp_io.DataStructure(), all of
 #            the associated routines for dealing with data structures
@@ -8,6 +8,12 @@ version_number = "V3.4.5"
 #            ds.root so that netCDF V3 files have a group called
 #            'root'.
 #          - this is a major, MAJOR change!
+#        - rework parts of respiration code
+#          - pfp_rp.Ecoresp() now uses ER calculated in pfp_rp.GetERFromFco2()
+#          - data read for night time and day time methods now different
+#          - implemented plotting of raw data for each window for both night
+#            time and day time methods
+#          - output of parameters for each window to Excel spreadsheets
 # V3.4.4 - July 2022
 #        - check control file specified in pfp_batch.py exists and exit
 #          gracefully if it doesn't
