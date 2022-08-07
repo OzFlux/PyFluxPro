@@ -118,7 +118,7 @@ def CalculateNEP(ds, l6_info):
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     # make the L6 "description" attribute for the target variable
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
-    for nee_name in list(cf["NetEcosystemExchange"].keys()):
+    for nee_name in list(l6_info["NetEcosystemExchange"].keys()):
         nep_name = nee_name.replace("NEE", "NEP")
         NEE = pfp_utils.GetVariable(ds, nee_name)
         NEP = pfp_utils.CreateEmptyVariable(nep_name, nrecs, attr=NEE["Attr"])
@@ -143,7 +143,7 @@ def ERUsingLasslop(ds, l6_info, xl_writer):
     l6_info["Options"]["called_by"] = "ERUsingLasslop"
     EcoResp(ds, l6_info, "ERUsingLasslop", xl_writer)
     for output in l6_info["ERUsingLasslop"]["outputs"]:
-        if output in list(ds.series.keys()):
+        if output in list(ds.root["Variables"].keys()):
             source = l6_info["ERUsingLasslop"]["outputs"][output]["source"]
             l6_info["Summary"]["EcosystemRespiration"].append(source)
             merge = l6_info["EcosystemRespiration"][source]["MergeSeries"]["source"].split(",")
@@ -171,7 +171,7 @@ def ERUsingLloydTaylor(ds, l6_info, xl_writer):
     l6_info["Options"]["called_by"] = "ERUsingLloydTaylor"
     EcoResp(ds, l6_info, "ERUsingLloydTaylor", xl_writer)
     for output in l6_info["ERUsingLloydTaylor"]["outputs"]:
-        if output in list(ds.series.keys()):
+        if output in list(ds.root["Variables"].keys()):
             source = l6_info["ERUsingLloydTaylor"]["outputs"][output]["source"]
             l6_info["Summary"]["EcosystemRespiration"].append(source)
             merge = l6_info["EcosystemRespiration"][source]["MergeSeries"]["source"].split(",")
@@ -201,7 +201,6 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
     Date: August 2019
     """
     # get the time step and number of records
-    ts = int(float(ds.root["Attributes"]["time_step"]))
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     site_name = ds.root["Attributes"]["site_name"]
     # Get required configs dict
@@ -319,7 +318,7 @@ def ERUsingSOLO(main_gui, ds, l6_info, called_by):
         # ["gui"] settings dictionary done in pfp_rp.ParseL6ControlFile()
         pfp_gfSOLO.gfSOLO_run(ds, l6_info, called_by)
     for output in l6_info[called_by]["outputs"]:
-        if output in list(ds.series.keys()):
+        if output in list(ds.root["Variables"].keys()):
             source = l6_info[called_by]["outputs"][output]["source"]
             l6_info["Summary"]["EcosystemRespiration"].append(source)
             merge = l6_info["EcosystemRespiration"][source]["MergeSeries"]["source"].split(",")
@@ -1200,8 +1199,8 @@ def ParseL6ControlFile(cf, ds):
     if opt.lower() == "yes":
         l6_info["Options"]["plot_raw_data"] = True
     # some useful global attributes
-    l6_info["Global"] = {"site_name": ds.globalattributes["site_name"],
-                         "time_step": int(float(ds.globalattributes["time_step"]))}
+    l6_info["Global"] = {"site_name": ds.root["Attributes"]["site_name"],
+                         "time_step": int(float(ds.root["Attributes"]["time_step"]))}
     # add key for suppressing output of intermediate variables e.g. Ta_aws
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     l6_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
@@ -1364,7 +1363,7 @@ def get_ustar_thresholds(cf, ds):
         ds.info["returncodes"]["message"] = msg
     return ustar_out
 
-def get_daynight_indicator(cf, ds):
+def get_daynight_indicator(ds, l6_info):
     Fsd = pfp_utils.GetVariable(ds, "Fsd")
     # get the day/night indicator
     daynight_indicator = {"values":numpy.zeros(len(Fsd["Data"]), dtype=numpy.int32), "attr":{}}

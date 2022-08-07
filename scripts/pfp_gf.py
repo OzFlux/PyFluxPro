@@ -3,7 +3,6 @@ import copy
 import datetime
 import os
 import logging
-import sys
 # 3rd party modules
 import dateutil
 import numpy

@@ -1268,7 +1268,7 @@ def CreateDatetimeRange(start,stop,step=datetime.timedelta(minutes=30)):
      and with a time step of "step".
     Useage:
      dt = ds.root["Variables"]['DateTime']['Data']
-     ts = ds.globaleattributes['time_step']
+     ts = ds.root["Attributes"]['time_step']
      dt_evenlyspaced = CreateDatetimeRange(dt[0],dt[-1],step=datetime.timedelta(minutes=ts))]
     Author: PRI
     Date: December 2013
@@ -1365,88 +1365,6 @@ def CreateVariable(ds, var_in, group="root", over_write=True):
                     "Flag": variable["Flag"],
                     "Attr": variable["Attr"]}
     return
-
-#def CreateVariable(ds, var_in, group="Variables", over_write=True):
-    #"""
-    #Purpose:
-     #Create a variable in the data structure.
-     #If the variable already exists in the data structure, data values, QC flags and
-     #attributes will be overwritten.
-     #This utility is the prefered method for creating or updating a data series because
-     #it implements a consistent method for creating series in the data structure.  Direct
-     #writes to the contents of the data structure are discouraged (unless PRI wrote the code:=P).
-    #Usage:
-     #Fsd = pfp_utils.GetVariable(ds,"Fsd")
-      #... do something to Fsd here ...
-      #... and don't forget to update the QC flag ...
-      #... and the attributes ...
-     #pfp_utils.CreateVariable(ds,Fsd)
-    #Author: PRI
-    #Date: September 2016
-    #Modifications:
-     #June 2021 - copy the variable before adding to the data structure otherwise
-                 #the contents of the input variable will be changed
-     #July 2022 - added ability to handle groups
-    #"""
-    ## sanity checks
-    #if hasattr(ds, "groups"):
-        #if group is None:
-            #msg = " No group specified for group data structure"
-            #logger.error(msg)
-            #raise RuntimeError(msg)
-        #elif group not in ds.groups.keys():
-            #msg = " Group " + group + " not in data structure"
-            #logger.error(msg)
-            #raise RuntimeError(msg)
-        #else:
-            #dsobj = ds.groups[group]
-    ##elif hasattr(ds, "series"):
-        ##dsobj = ds.series
-    #else:
-        #msg = " Unrecognised attribute in data structure"
-        #logger.error(msg)
-        #raise RuntimeError(msg)
-
-    #variable = CopyVariable(var_in)
-    #label = variable["Label"]
-    #if label in list(dsobj.keys()) and not over_write:
-        #msg = " Variable " + label + " already exists in data structure, not over written"
-        #logger.warning(msg)
-        #return
-    ### check the series length
-    ##if len(variable["Data"]) != int(ds.root["Attributes"]["nc_nrecs"]):
-        ##msg = " Variable " + label + " length incorrect, skipping ..."
-        ##logger.error(msg)
-        ##return
-    ## convert masked array to ndarray
-    #if numpy.ma.isMA(variable["Data"]):
-        #variable["Data"] = numpy.ma.filled(variable["Data"], float(c.missing_value))
-    ## coerce to numpy.float64
-    #if numpy.issubdtype(variable["Data"].dtype, numpy.float64):
-        ## already float64
-        #pass
-    #elif numpy.issubdtype(variable["Data"].dtype, 'O'):
-        ## datetime series have a dtype of object
-        #pass
-    #elif ((numpy.issubdtype(variable["Data"].dtype, numpy.integer)) or
-          #(numpy.issubdtype(variable["Data"].dtype, numpy.float32))):
-        ## coerce to float64
-        #variable["Data"] = numpy.array(variable["Data"], dtype=numpy.float64)
-    #else:
-        #msg = " Variable " + label + " has unrecognised dtype " + variable["Data"].dtype
-        #msg += ", skipping ..."
-        #logger.error(msg)
-        #return
-
-    ## create the series
-    #dsobj[label] = {}
-    ## put the data into the series
-    #dsobj[label]["Data"] = variable["Data"]
-    ## copy or make the QC flag
-    #dsobj[label]["Flag"] = variable["Flag"]
-    ## do the attributes
-    #dsobj[label]["Attr"] = variable["Attr"]
-    #return
 
 def csv_string_to_list(input_string):
     """ Convert a string containing items separated by commas into a list."""
@@ -2150,7 +2068,10 @@ def GetVariable(ds, label, group="root", start=0, end=-1, mode="truncate", out_t
       Fsd = pfp_utils.GetVariable(ds, "Fsd")
     Author: PRI
     """
-    gvars = getattr(ds, group)["Variables"]
+    try:
+        gvars = getattr(ds, group)["Variables"]
+    except:
+        print("oi va vei")
     gattr = getattr(ds, group)["Attributes"]
     dt = gvars["DateTime"]["Data"]
     # get the data, flag and attributes for this variable from the data structure
@@ -2195,79 +2116,6 @@ def GetVariable(ds, label, group="root", start=0, end=-1, mode="truncate", out_t
     if "long_name" not in variable["Attr"]:
         variable["Attr"]["long_name"] = label
     return variable
-
-#def GetVariable(ds, label, start=0, end=-1, mode="truncate", out_type="ma", match="exact"):
-    #"""
-    #Purpose:
-     #Returns a data variable from the data structure as a dictionary.
-    #Usage:
-     #variable = pfp_utils.GetVariable(ds, label)
-    #Required arguments are;
-      #ds    - the data structure (class)
-      #label - label of the data variable in ds (string)
-    #Optional arguments are;
-      #start - start date or index (integer), default 0
-      #end   - end date or index (integer), default -1
-      #mode  - truncate or pad the data
-      #out_type - masked array or ndarray
-      #match    - type of datetime match options are:
-                #"exact" - finds the specified datetime and returns the index
-                #"wholehours" - finds the start of the first whole hour and end of
-                               #the last whole hour
-                #"wholedays" - finds the start of the first whole day and end of
-                               #the last whole day
-                #"wholemonths" - finds the start of the first whole month and end of
-                               #the last whole month
-     #This function returns a variable as a dictionary;
-      #variable["Label"] - variable label in data structure
-      #variable["Data"] - numpy float64 masked array containing data
-      #variable["Flag"] - numpy int32 array containing QC flags
-      #variable["Attr"] - dictionary of variable attributes
-      #variable["DateTime"] - datetimes of the data
-    #Example:
-     #The code snippet below will return the incoming shortwave data values
-     #(Fsd), the associated QC flag and the variable attributes;
-      #ds = pfp_io.nc_read_series("HowardSprings_2011_L3.nc")
-      #Fsd = pfp_utils.GetVariable(ds, "Fsd")
-    #Author: PRI
-    #"""
-    #nrecs = int(ds.root["Attributes"]["nc_nrecs"])
-    #if end == -1:
-        #end = nrecs-1
-    #ldt = ds.root["Variables"]["DateTime"]["Data"]
-    ## get the start and end indices
-    #match_options = {"start": {"exact": "exact", "wholehours": "startnexthour",
-                               #"wholedays": "startnextday", "wholemonths": "startnextmonth"},
-                     #"end": {"exact": "exact", "wholehours": "endprevioushour",
-                             #"wholedays": "endpreviousday", "wholemonths": "endpreviousmonth"}}
-    #ts = int(float(ds.root["Attributes"]["time_step"]))
-    #si = GetDateIndex(ldt, start, ts=ts, default=0, match=match_options["start"][match])
-    #ei = GetDateIndex(ldt, end, ts=ts, default=nrecs-1, match=match_options["end"][match])
-    #dt = ldt[si: ei+1]
-    #data, flag, attr = GetSeries(ds, label, si=si, ei=ei, mode=mode)
-    ## check to see what kind of output the user wants
-    #if isinstance(data, numpy.ndarray) and out_type == "ma":
-        ## convert to a masked array
-        #data, WasND = SeriestoMA(data)
-    #elif isinstance(data, numpy.ndarray) and out_type == "nan":
-        ## leave as ndarray, convert c.missing_value to NaN
-        #data = numpy.where(data == c.missing_value, numpy.nan, data)
-    #elif isinstance(data, numpy.ndarray) and int(float(out_type)) == c.missing_value:
-        ## leave as ndarray, leave c.missing_value
-        #pass
-    #elif isinstance(data, numpy.ndarray) and numpy.isfinite(float(out_type)):
-        ## user specified missing data code
-        #data = numpy.where(data == c.missing_value, float(out_type), data)
-    #else:
-        ## default is masked array
-        #data, WasND = SeriestoMA(data)
-    ## assemble the variable dictionary
-    #variable = {"Label": label, "Data": data, "Flag": flag, "Attr": attr,
-                #"DateTime": dt, "time_step": ts}
-    ## make sure there is a value for the long_name attribute
-    #if "long_name" not in variable["Attr"]:
-        #variable["Attr"]["long_name"] = label
-    #return variable
 
 def GetUnitsFromds(ds, ThisOne):
     units = ds.root["Variables"][ThisOne]['Attr']['units']

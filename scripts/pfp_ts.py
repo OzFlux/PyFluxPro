@@ -385,16 +385,16 @@ def AbsoluteHumidityFromSpecificHumidity(ds):
 
 def RelativeHumidityFromDewpoint(ds):
     """ Calculate relative humidity from dewpoint. """
-    nrecs = int(float(ds.globalattributes["nc_nrecs"]))
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating relative humidity from dewpoint')
-    descr_level = "description_" + ds.globalattributes["processing_level"]
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Ta = pfp_utils.GetVariable(ds, "Ta")
     Td = pfp_utils.GetVariable(ds, "Td")
     RH_new = pfp_utils.CreateEmptyVariable("RH", nrecs)
     RH_new["Flag"] = pfp_utils.MergeQCFlag([Ta["Flag"], Td["Flag"]])
     # relative humidity in units of percent
     RH_new["Data"] = pfp_mf.relativehumidityfromdewpoint(Td["Data"], Ta["Data"])
-    if "RH" in list(ds.series.keys()):
+    if "RH" in list(ds.root["Variables"].keys()):
         RH = pfp_utils.GetVariable(ds, "RH")
         index = numpy.where(numpy.ma.getmaskarray(RH["Data"]) == True)[0]
         RH["Data"][index] = RH_new["Data"][index]
