@@ -691,7 +691,7 @@ def cpdFmax2pCp2(Fmax, n):
         return p
     interp_func = scipy.interpolate.PchipInterpolator(FmaxCritical, 1 - pTable)
     p = interp_func(Fmax)
-    return numpy.asscalar(p)
+    return numpy.ndarray.item(p)
 
 def cpdFmax2pCp3(Fmax, n):
     """
@@ -755,7 +755,7 @@ def cpdFmax2pCp3(Fmax, n):
         return p
     interp_func = scipy.interpolate.PchipInterpolator(FmaxCritical, 1 - pTable)
     p = interp_func(Fmax)
-    return numpy.asscalar(p)
+    return numpy.ndarray.item(p)
 
 def cpdBin(x, y, dx, nPerBin):
     """
