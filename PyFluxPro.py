@@ -8,9 +8,9 @@ import traceback
 import warnings
 # 3rd party modules
 from configobj import ConfigObj
+import netCDF4
 import matplotlib
 matplotlib.use("QT5Agg")
-import netCDF4
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *

@@ -463,8 +463,8 @@ def L6_summary(ds, l6_info):
     for year in years:
         nrecs = len(cumulative_dict[year]["variables"]["DateTime"]["Data"])
         if nrecs < 65530:
-            #L6_summary_write_xlfile(xl_file, "Cumulative("+str(year)+")", cumulative_dict[str(year)])
-            logger.info(" Write to L6 summary file goes here")
+            L6_summary_write_xlfile(xl_file, "Cumulative("+str(year)+")", cumulative_dict[str(year)])
+            #logger.info(" Write to L6 summary file goes here")
         else:
             msg = "L6 cumulative: too many rows for .xls workbook, skipping "+year
             logger.warning(msg)

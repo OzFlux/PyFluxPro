@@ -204,19 +204,20 @@ class partition(object):
                 model = Model(f, independent_vars = ['t_series'])
                 params = model.make_params(rb = 1, Eo = self.priors['Eo'])
                 result = model.fit(ER, t_series=TC, params=params)
-                E0_se = (result.conf_interval()['Eo'][4][1] -
-                         result.conf_interval()['Eo'][2][1]) / 2
-                rb_se = (result.conf_interval()['rb'][4][1] -
-                         result.conf_interval()['rb'][2][1]) / 2
                 self.results["E0"][n]["E0_av"] = result.params['Eo'].value
-                self.results["E0"][n]["E0_se"] = E0_se
                 self.results["E0"][n]["rb_av"] = result.params['rb'].value
-                self.results["E0"][n]["rb_se"] = rb_se
-                if ((50 < result.params['Eo'].value < 400) and
-                    (E0_se < result.params['Eo'].value / 2.0)):
-                    self.results["E0"][n]["E0_av_qc"] = result.params['Eo'].value
-                    self.results["E0"][n]["E0_se_qc"] = E0_se
-                    Eo_list.append([result.params['Eo'].value, E0_se])
+                if result.success:
+                    E0_se = (result.conf_interval()['Eo'][4][1] -
+                             result.conf_interval()['Eo'][2][1]) / 2
+                    rb_se = (result.conf_interval()['rb'][4][1] -
+                             result.conf_interval()['rb'][2][1]) / 2
+                    self.results["E0"][n]["E0_se"] = E0_se
+                    self.results["E0"][n]["rb_se"] = rb_se
+                    if ((50 < result.params['Eo'].value < 400) and
+                        (E0_se < result.params['Eo'].value / 2.0)):
+                        self.results["E0"][n]["E0_av_qc"] = result.params['Eo'].value
+                        self.results["E0"][n]["E0_se_qc"] = E0_se
+                        Eo_list.append([result.params['Eo'].value, E0_se])
                 else:
                     continue
             else:
