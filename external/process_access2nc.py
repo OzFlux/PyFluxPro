@@ -105,13 +105,13 @@ def convert_utc_to_local_standard(utc_notz, site_timezone):
     loc_ast_notz = [dt.replace(tzinfo=None) for dt in loc_ast]
     return loc_ast_notz
 def delete_intermediate_variables(ds, intermediate_variables):
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for iv_label in intermediate_variables:
         for i in range(3):
             for j in range(3):
                 label = iv_label+"_"+str(i)+str(j)
                 if label in labels:
-                    ds.series.pop(label)
+                    ds.root["Variables"].pop(label)
     return
 def init_data(cfg, site_info):
     labels = list(cfg["Variables"].keys())
@@ -136,7 +136,7 @@ def init_data(cfg, site_info):
                                                            "Attr": attr}
     return data
 def calculate_upwelling_shortwave_radiation(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     for i in range(3):
@@ -153,7 +153,7 @@ def calculate_upwelling_shortwave_radiation(ds):
             pfp_utils.CreateVariable(ds, Fsu)
     return
 def calculate_upwelling_longwave_radiation(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     for i in range(3):
@@ -170,7 +170,7 @@ def calculate_upwelling_longwave_radiation(ds):
             pfp_utils.CreateVariable(ds, Flu)
     return
 def calculate_net_radiation(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     for i in range(3):
@@ -187,7 +187,7 @@ def calculate_net_radiation(ds):
             pfp_utils.CreateVariable(ds, Fn)
     return
 def calculate_available_energy(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     for i in range(3):
@@ -203,7 +203,7 @@ def calculate_available_energy(ds):
             pfp_utils.CreateVariable(ds, Fa)
     return
 def calculate_ground_heat_flux(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     for i in range(3):
@@ -220,7 +220,7 @@ def calculate_ground_heat_flux(ds):
             pfp_utils.CreateVariable(ds, Fg)
     return
 def calculate_absolute_humidity(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     for i in range(3):
@@ -237,7 +237,7 @@ def calculate_absolute_humidity(ds):
             pfp_utils.CreateVariable(ds, AH)
     return
 def calculate_ws_and_wd_from_u_and_v(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     for i in range(3):
@@ -467,18 +467,18 @@ for site in sites:
     # convert UTC datetime to local standard time
     dt_loc_nogaps = numpy.array(convert_utc_to_local_standard(dt_utc_nogaps, site_info[site]["Time zone"]))
     # add the global attributes
-    dss_ats[site].globalattributes["site_name"] = site.replace(" ", "")
-    dss_ats[site].globalattributes["time_zone"] = site_info[site]["Time zone"]
-    dss_ats[site].globalattributes["latitude"] = site_info[site]["Latitude"]
-    dss_ats[site].globalattributes["longitude"] = site_info[site]["Longitude"]
-    dss_ats[site].globalattributes["time_coverage_start"] = str(dt_loc_nogaps[0])
-    dss_ats[site].globalattributes["time_coverage_end"] = str(dt_loc_nogaps[-1])
-    dss_ats[site].globalattributes["processing_level"] = "L1"
+    dss_ats[site].root["Attributes"]["site_name"] = site.replace(" ", "")
+    dss_ats[site].root["Attributes"]["time_zone"] = site_info[site]["Time zone"]
+    dss_ats[site].root["Attributes"]["latitude"] = site_info[site]["Latitude"]
+    dss_ats[site].root["Attributes"]["longitude"] = site_info[site]["Longitude"]
+    dss_ats[site].root["Attributes"]["time_coverage_start"] = str(dt_loc_nogaps[0])
+    dss_ats[site].root["Attributes"]["time_coverage_end"] = str(dt_loc_nogaps[-1])
+    dss_ats[site].root["Attributes"]["processing_level"] = "L1"
     # we discard the base time plus 6 hour data for non-precipitation variables
     file_id = data_nogaps[site]["file_id"]
     idx = numpy.array([i for i, l in enumerate(file_id) if l[-3:] != "006"])
     nrecs = len(idx)
-    dss_ats[site].globalattributes["nc_nrecs"] = nrecs
+    dss_ats[site].root["Attributes"]["nc_nrecs"] = nrecs
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     # put the Python datetime in the data structure
@@ -488,7 +488,7 @@ for site in sites:
     # get the time step
     ts = numpy.mean(pfp_utils.get_timestep(dss_ats[site])//60)
     ts = pfp_utils.roundtobase(ts, base=30)
-    dss_ats[site].globalattributes["time_step"] = str(int(ts))
+    dss_ats[site].root["Attributes"]["time_step"] = str(int(ts))
     # put the UTC datetime in the data structure
     attr = {"long_name": "Datetime in UTC", "units": ""}
     variable = {"Label": "DateTime_UTC", "Data": dt_utc_nogaps[idx], "Flag": zeros, "Attr": attr}
@@ -586,9 +586,9 @@ dss_tts = {}
 msg = " Interpolating data for each site "
 logger.info(msg)
 for site in sites:
-    access_ts = int(float(dss_ats[site].globalattributes["time_step"]))
+    access_ts = int(float(dss_ats[site].root["Attributes"]["time_step"]))
     tower_ts = int(float(site_info[site]["Time step"]))
-    labels = [l for l in list(dss_ats[site].series.keys()) if "DateTime" not in l]
+    labels = [l for l in list(dss_ats[site].root["Variables"].keys()) if "DateTime" not in l]
     # interpolate from the ACCESS time step (60 minutes) to the tower time step
     dss_tts[site] = pfp_ts.InterpolateDataStructure(dss_ats[site], labels=labels,
                                                     new_time_step=tower_ts,
@@ -601,6 +601,11 @@ msg = " Writing ACCESS netCDF files"
 logger.info(msg)
 for site in sites:
     cis = concatenation_info[site]
+ 
+    # What if in_file_name does not exist 
+    main_in_file_name = ''.join(cis["NetCDFConcatenate"]["in_file_names"])
+    if not os.path.isfile(main_in_file_name):
+        cis["NetCDFConcatenate"]["in_file_names"].remove(main_in_file_name)
     # get the ACCESS data path
     access_file_path = os.path.join(existing_access_base_path, site, "Data", "ACCESS", "processed")
     # check the directory exists and create if it doesn't

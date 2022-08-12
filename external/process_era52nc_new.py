@@ -110,11 +110,11 @@ def convert_utc_to_local_standard(utc_notz, site_timezone):
     loc_ast_notz = [dt.replace(tzinfo=None) for dt in loc_ast]
     return loc_ast_notz
 def delete_intermediate_variables(ds, intermediate_variables):
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for iv_label in intermediate_variables:
         label = iv_label
         if label in labels:
-            ds.series.pop(label)
+            ds.root["Variables"].pop(label)
     return
 def init_data(cfg, site_info):
     labels = list(cfg["Variables"].keys())
@@ -134,7 +134,7 @@ def init_data(cfg, site_info):
             data[site][label] = {"Data": [], "Flag": [], "Attr": attr}
     return data
 def calculate_upwelling_shortwave_radiation(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     Fsd = pfp_utils.GetVariable(ds, "Fsd")
@@ -149,7 +149,7 @@ def calculate_upwelling_shortwave_radiation(ds):
     pfp_utils.CreateVariable(ds, Fsu)
     return
 def calculate_upwelling_longwave_radiation(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     Fld = pfp_utils.GetVariable(ds, "Fld")
@@ -164,7 +164,7 @@ def calculate_upwelling_longwave_radiation(ds):
     pfp_utils.CreateVariable(ds, Flu)
     return
 def calculate_net_radiation(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     Fnsw = pfp_utils.GetVariable(ds, "Fnsw")
@@ -179,7 +179,7 @@ def calculate_net_radiation(ds):
     pfp_utils.CreateVariable(ds, Fn)
     return
 def calculate_available_energy(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     Fh = pfp_utils.GetVariable(ds, "Fh")
@@ -194,7 +194,7 @@ def calculate_available_energy(ds):
     return
 def calculate_ground_heat_flux(ds):
     # as residual from net rad - avail energy
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     Fn = pfp_utils.GetVariable(ds, "Fn")
@@ -210,7 +210,7 @@ def calculate_ground_heat_flux(ds):
     return
 def calculate_relative_humidity(ds):
     # from dew point temperature
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     Td = pfp_utils.GetVariable(ds, "Td")
@@ -226,7 +226,7 @@ def calculate_relative_humidity(ds):
     return
 def calculate_absolute_humidity(ds):
     # from relative humidity
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     RH = pfp_utils.GetVariable(ds, "RH")
@@ -240,8 +240,25 @@ def calculate_absolute_humidity(ds):
                    "units": "g/m^3", "statistic_type": "average"}
     pfp_utils.CreateVariable(ds, AH)
     return
+def calculate_specific_humidity(ds):
+    # from relative humidity
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    zeros = numpy.zeros(nrecs)
+    ones = numpy.ones(nrecs)
+    Ta = pfp_utils.GetVariable(ds,"Ta")
+    ps = pfp_utils.GetVariable(ds,"ps")
+    RH = pfp_utils.GetVariable(ds,"RH")
+    SH = pfp_utils.CreateEmptyVariable("SH", nrecs,
+                                        datetime=RH["DateTime"])
+    SH["Data"] = pfp_mf.specifichumidityfromrelativehumidity(RH["Data"], Ta["Data"], ps["Data"])
+    SH["Flag"] = numpy.where(numpy.ma.getmaskarray(SH["Data"]) == True, ones, zeros)
+    SH["Attr"] = {"standard_name": "specific_humidity",
+                   "long_name": "Specific humidity",
+                   "units": "kg/kg", "statistic_type": "average"}
+    pfp_utils.CreateVariable(ds, SH)
+
 def calculate_ws_and_wd_from_u_and_v(ds):
-    nrecs = int(ds.globalattributes["nc_nrecs"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     U = pfp_utils.GetVariable(ds, "U")
@@ -373,6 +390,7 @@ if cfg["Files"].as_bool("from_file"):
                 data[site][label]["Data"].append(d[:])
         era5_file.close()
     # move the processed files from "download" to "processed"
+    if cfg["Options"].as_bool("move_to_processed"):
     msg = " Moving " + new_era5_file.split(os.sep)[-1] + " to processed"
     logger.info(msg)
     #processed_era5_directory = new_era5_directory.replace("downloaded", "processed")
@@ -408,15 +426,15 @@ for site in sites:
     dt_loc = numpy.array(convert_utc_to_local_standard(dt_utc, site_info[site]["Time zone"]))
     nrecs = len(dt_loc)
     # add the global attributes
-    dss_ats[site].globalattributes["site_name"] = site.replace(" ", "")
-    dss_ats[site].globalattributes["time_zone"] = site_info[site]["Time zone"]
-    dss_ats[site].globalattributes["latitude"] = site_info[site]["Latitude"]
-    dss_ats[site].globalattributes["longitude"] = site_info[site]["Longitude"]
-    dss_ats[site].globalattributes["time_coverage_start"] = str(dt_loc[0])
-    dss_ats[site].globalattributes["time_coverage_end"] = str(dt_loc[-1])
-    dss_ats[site].globalattributes["processing_level"] = "L1"
+    dss_ats[site].root["Attributes"]["site_name"] = site.replace(" ", "")
+    dss_ats[site].root["Attributes"]["time_zone"] = site_info[site]["Time zone"]
+    dss_ats[site].root["Attributes"]["latitude"] = site_info[site]["Latitude"]
+    dss_ats[site].root["Attributes"]["longitude"] = site_info[site]["Longitude"]
+    dss_ats[site].root["Attributes"]["time_coverage_start"] = str(dt_loc[0])
+    dss_ats[site].root["Attributes"]["time_coverage_end"] = str(dt_loc[-1])
+    dss_ats[site].root["Attributes"]["processing_level"] = "L1"
     # 
-    dss_ats[site].globalattributes["nc_nrecs"] = nrecs
+    dss_ats[site].root["Attributes"]["nc_nrecs"] = nrecs
     zeros = numpy.zeros(nrecs)
     ones = numpy.ones(nrecs)
     # put the Python datetime in the data structure
@@ -426,7 +444,7 @@ for site in sites:
     # get the time step
     ts = numpy.mean(pfp_utils.get_timestep(dss_ats[site])//60)
     ts = pfp_utils.roundtobase(ts, base=30)
-    dss_ats[site].globalattributes["time_step"] = str(int(ts))
+    dss_ats[site].root["Attributes"]["time_step"] = str(int(ts))
     # put the UTC datetime in the data structure
     attr = {"long_name": "Datetime in UTC", "units": ""}
     variable = {"Label": "DateTime_UTC", "Data": dt_utc, "Flag": zeros, "Attr": attr}
@@ -535,6 +553,7 @@ for site in sites:
     calculate_ground_heat_flux(dss_ats[site])
     calculate_relative_humidity(dss_ats[site])
     calculate_absolute_humidity(dss_ats[site])
+    calculate_specific_humidity(dss_ats[site])
     calculate_ws_and_wd_from_u_and_v(dss_ats[site])
     delete_intermediate_variables(dss_ats[site], ["Fnlw", "Fnsw"])
     # discard duplicates or overlapping times found
@@ -547,9 +566,9 @@ dss_tts = {}
 msg = " Interpolating data for each site "
 logger.info(msg)
 for site in sites:
-    era5_ts = int(float(dss_ats[site].globalattributes["time_step"]))
+    era5_ts = int(float(dss_ats[site].root["Attributes"]["time_step"]))
     tower_ts = int(float(site_info[site]["Time step"]))
-    labels = [l for l in list(dss_ats[site].series.keys()) if "DateTime" not in l]
+    labels = [l for l in list(dss_ats[site].root["Variables"].keys()) if "DateTime" not in l]
     # interpolate from the ERA5 time step (60 minutes) to the tower time step
     dss_tts[site] = pfp_ts.InterpolateDataStructure(dss_ats[site], labels=labels,
                                                     new_time_step=tower_ts,
