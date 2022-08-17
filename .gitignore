@@ -29,6 +29,10 @@ mds/log/
 mds/output/
 
 # control files
+external/data.pickle
+external/era5.data.pickle
+
+# control files
 controlfiles/AmeriFlux/
 controlfiles/OzFlux/
 

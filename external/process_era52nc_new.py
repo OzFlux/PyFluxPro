@@ -293,7 +293,7 @@ logger.info(msg)
 cfg = pfp_io.get_controlfilecontents(cfg_file_path)
 cfg_labels = [l for l in list(cfg["Variables"].keys()) if "nc" in list(cfg["Variables"][l].keys())]
 # read the site master workbook
-site_info = read_site_master(cfg["Files"]["site_master_file_path"], "ERA5")
+site_info = read_site_master(cfg["Files"]["site_master_file_path"], cfg["Files"]["xl_sheet_name"])
 sites = list(site_info.keys())
 # build the information dictionary for concatenation
 concatenation_info = build_concatenation_dictionary(site_info, cfg)
