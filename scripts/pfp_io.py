@@ -551,7 +551,7 @@ def ReadCSVFile(l1_info):
                                              errors="raise")
     else:
         # otherwise, try and automatically detect the datetime column
-        df = df.apply(lambda col: pandas.to_datetime(col, errors='ignore')
+        df = df.apply(lambda col: pandas.to_datetime(col, dayfirst=True, errors='ignore')
                       if col.dtypes == object
                       else col,
                       axis=0)

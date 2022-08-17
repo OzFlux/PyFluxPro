@@ -2,8 +2,9 @@
     existing_access_base_path = /mnt/OzFlux/Sites/
     new_access_base_path = /rdsi/market/access_regftp/download/
     site_master_file_path = /mnt/OzFlux/site_master.xls
-    from_cleaned = True
-    from_file = False
+    xl_sheet_name = ACCESS
+    from_cleaned = False
+    from_file = True
 [Options]
     move_to_processed = no
     concatenate_with_existing = no
