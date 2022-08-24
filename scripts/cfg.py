@@ -1,5 +1,8 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.5"
+version_number = "V3.4.6"
+# V3.4.6 - August 2022
+#        - wrap estimation of confidence interval in try...except
+#        - see pfp_part.partition.estimate_Eo()
 # V3.4.5 - July/August 2022
 #        - implement the ability to read L6 summary files
 #          - needed a major rewrite of pfp_io.DataStructure(), all of
