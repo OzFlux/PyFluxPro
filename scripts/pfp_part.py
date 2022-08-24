@@ -189,12 +189,13 @@ class partition(object):
                                      "E0_av": -9999, "E0_se": -9999,
                                      "E0_av_qc": -9999, "E0_se_qc": -9999}
             df = self.get_subset(date, size = window_size, mode = 'night')
+            #print(date, self.subset_start, self.subset_end)
+            self.results["E0"][n]["start"] = self.subset_start
+            self.results["E0"][n]["end"] = self.subset_end
             if len(df) == 0:
                 continue
             if self.l6_info["Options"]["plot_raw_data"]:
                 self.plot_E0_data(df)
-            self.results["E0"][n]["start"] = df.index.values[0]
-            self.results["E0"][n]["end"] = df.index.values[-1]
             self.results["E0"][n]["num"] = len(df)
             self.results["E0"][n]["T range"] = df.TC.max() - df.TC.min()
             if ((len(df) > 6) and (df.TC.max() - df.TC.min() >= 5)):
@@ -207,17 +208,29 @@ class partition(object):
                 self.results["E0"][n]["E0_av"] = result.params['Eo'].value
                 self.results["E0"][n]["rb_av"] = result.params['rb'].value
                 if result.success:
-                    E0_se = (result.conf_interval()['Eo'][4][1] -
-                             result.conf_interval()['Eo'][2][1]) / 2
-                    rb_se = (result.conf_interval()['rb'][4][1] -
-                             result.conf_interval()['rb'][2][1]) / 2
-                    self.results["E0"][n]["E0_se"] = E0_se
-                    self.results["E0"][n]["rb_se"] = rb_se
-                    if ((50 < result.params['Eo'].value < 400) and
-                        (E0_se < result.params['Eo'].value / 2.0)):
-                        self.results["E0"][n]["E0_av_qc"] = result.params['Eo'].value
-                        self.results["E0"][n]["E0_se_qc"] = E0_se
-                        Eo_list.append([result.params['Eo'].value, E0_se])
+                    # confidence interval may fail so we wrap it in a try...except block
+                    try:
+                        E0_se = (result.conf_interval()['Eo'][4][1] -
+                                 result.conf_interval()['Eo'][2][1]) / 2
+                        rb_se = (result.conf_interval()['rb'][4][1] -
+                                 result.conf_interval()['rb'][2][1]) / 2
+                        self.results["E0"][n]["E0_se"] = E0_se
+                        self.results["E0"][n]["rb_se"] = rb_se
+                        if ((50 < result.params['Eo'].value < 400) and
+                            (E0_se < result.params['Eo'].value / 2.0)):
+                            self.results["E0"][n]["E0_av_qc"] = result.params['Eo'].value
+                            self.results["E0"][n]["E0_se_qc"] = E0_se
+                            Eo_list.append([result.params['Eo'].value, E0_se])
+                    except Exception as e:
+                        logger.warning("*****")
+                        start = np.datetime_as_string(self.results["E0"][n]["start"], unit='D')
+                        end = np.datetime_as_string(self.results["E0"][n]["end"], unit='D')
+                        msg = "The period " + start + " to " + end
+                        msg += " generated the following message:"
+                        logger.warning(msg)
+                        logger.warning(e)
+                        logger.warning("*****")
+                        continue
                 else:
                     continue
             else:
@@ -328,8 +341,7 @@ class partition(object):
 
     #--------------------------------------------------------------------------
     def get_subset(self, date, size, mode):
-
-        #ops = {"day": operator.gt, "night": operator.lt}
+        """ Returns a subset of the dataframe using a start date and window size."""
         ref_date = date + dt.timedelta(0.5)
         date_tuple = (ref_date - dt.timedelta(size / 2.0 -
                                               self.interval / 1440.0),
@@ -342,14 +354,16 @@ class partition(object):
             msg = " These are not the droids you're looking for ..."
             logger.error(msg)
             raise RuntimeError(msg)
-        sub_df = self.df.loc[date_tuple[0]: date_tuple[1], sub_labels].dropna()
-        #return sub_df[ops[mode](sub_df.PPFD, self.noct_threshold)]
+        sub_df = self.df.loc[date_tuple[0]: date_tuple[1], sub_labels]
+        self.subset_start = sub_df.index.values[0]
+        self.subset_end = sub_df.index.values[-1]
+        sub_df = sub_df.dropna()
         return sub_df
     #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
     def make_date_iterator(self, size, step):
-
+        """ Returns a pandas date range with a frequency of step_size."""
         start_date = (self.df.index[0].to_pydatetime().date() +
                       dt.timedelta(size / 2))
         end_date = self.df.index[-1].to_pydatetime().date()
