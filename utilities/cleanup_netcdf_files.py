@@ -37,79 +37,79 @@ def change_global_attributes(std, ds):
     Author: PRI
     Date: October 2018
     """
-    # check site_name is in ds.globalattributes
-    gattr_list = list(ds.globalattributes.keys())
+    # check site_name is in ds.root["Attributes"]
+    gattr_list = list(ds.root["Attributes"].keys())
     if "site_name" not in gattr_list:
         msg = "Global attributes: site_name not found"
         logger.warning(msg)
-    # check latitude and longitude are in ds.globalattributes
+    # check latitude and longitude are in ds.root["Attributes"]
     if "latitude" not in gattr_list:
         msg = "Global attributes: latitude not found"
         logger.warning(msg)
     else:
-        lat_string = str(ds.globalattributes["latitude"])
+        lat_string = str(ds.root["Attributes"]["latitude"])
         if len(lat_string) == 0:
             msg = "Global attributes: latitude empty"
             logger.warning(msg)
         else:
             lat = pfp_utils.convert_anglestring(lat_string)
-        ds.globalattributes["latitude"] = str(lat)
+        ds.root["Attributes"]["latitude"] = str(lat)
     if "longitude" not in gattr_list:
         msg = "Global attributes: longitude not found"
         logger.warning(msg)
     else:
-        lon_string = str(ds.globalattributes["longitude"])
+        lon_string = str(ds.root["Attributes"]["longitude"])
         if len(lon_string) == 0:
             msg = "Global attributes: longitude empty"
             logger.warning(msg)
         else:
             lon = pfp_utils.convert_anglestring(lon_string)
-        ds.globalattributes["longitude"] = str(lon)
+        ds.root["Attributes"]["longitude"] = str(lon)
     # check to see if there there is a time_zone global attribute
-    gattr_list = list(ds.globalattributes.keys())
+    gattr_list = list(ds.root["Attributes"].keys())
     if not "time_zone" in gattr_list:
         # get the site name
-        site_name = ds.globalattributes["site_name"]
+        site_name = ds.root["Attributes"]["site_name"]
         sn = site_name.replace(" ","").replace(",","").lower()
         # first, see if the site is in constants.tz_dict
         if sn in list(c.tz_dict.keys()):
-            ds.globalattributes["time_zone"] = c.tz_dict[sn]
+            ds.root["Attributes"]["time_zone"] = c.tz_dict[sn]
         else:
             if "latitude" in gattr_list and "longitude" in gattr_list:
-                lat = float(ds.globalattributes["latitude"])
-                lon = float(ds.globalattributes["longitude"])
+                lat = float(ds.root["Attributes"]["latitude"])
+                lon = float(ds.root["Attributes"]["longitude"])
                 if lat != -9999 and lon != -9999:
                     tf = timezonefinder.TimezoneFinder()
                     tz = tf.timezone_at(lng=lon, lat=lat)
-                    ds.globalattributes["time_zone"] = tz
+                    ds.root["Attributes"]["time_zone"] = tz
                 else:
                     msg = "Global attributes: unable to define time zone"
                     logger.warning(msg)
-                    ds.globalattributes["time_zone"] = ""
+                    ds.root["Attributes"]["time_zone"] = ""
     # remove deprecated global attributes
-    flag_list = [g for g in list(ds.globalattributes.keys()) if "Flag" in g]
+    flag_list = [g for g in list(ds.root["Attributes"].keys()) if "Flag" in g]
     others_list = pfp_utils.string_to_list(std["Global_attributes"]["deprecated"]["global"])
     remove_list = others_list + flag_list
-    for gattr in list(ds.globalattributes.keys()):
+    for gattr in list(ds.root["Attributes"].keys()):
         if gattr in remove_list:
-            ds.globalattributes.pop(gattr)
+            ds.root["Attributes"].pop(gattr)
     # rename global attributes
     for item in std["Global_attributes"]["rename_exact"]:
-        if item in list(ds.globalattributes.keys()):
+        if item in list(ds.root["Attributes"].keys()):
             new_key = std["Global_attributes"]["rename_exact"][item]
-            ds.globalattributes[new_key] = ds.globalattributes.pop(item)
+            ds.root["Attributes"][new_key] = ds.root["Attributes"].pop(item)
     # replace space characters with underscore
-    gattrs = sorted(list(ds.globalattributes.keys()))
+    gattrs = sorted(list(ds.root["Attributes"].keys()))
     for gattr in gattrs:
         if " " in gattr:
             new_gattr = gattr.replace(" ", "_")
-            ds.globalattributes[new_gattr] = ds.globalattributes.pop(gattr)
+            ds.root["Attributes"][new_gattr] = ds.root["Attributes"].pop(gattr)
     # add or change global attributes as required
     gattr_list = sorted(list(std["Global_attributes"]["force"].keys()))
     for gattr in gattr_list:
-        ds.globalattributes[gattr] = std["Global_attributes"]["force"][gattr]
+        ds.root["Attributes"][gattr] = std["Global_attributes"]["force"][gattr]
     # add acknowledgement if not present
-    gattrs = sorted(list(ds.globalattributes.keys()))
+    gattrs = sorted(list(ds.root["Attributes"].keys()))
     if "acknowledgement" not in gattrs:
         if "acknowledgement" in std["Global_attributes"]:
             msg = std["Global_attributes"]["acknowledgement"]
@@ -118,11 +118,11 @@ def change_global_attributes(std, ds):
             msg += "Processes facility. Ecosystem Processes would like to acknowledge the financial support of the "
             msg += "Australian Federal Government via the National Collaborative Research Infrastructure Scheme "
             msg += "and the Education Investment Fund."
-        ds.globalattributes["acknowledgement"] = msg
+        ds.root["Attributes"]["acknowledgement"] = msg
     # force the fluxnet_id
-    site_name = ds.globalattributes["site_name"].replace(" ","")
+    site_name = ds.root["Attributes"]["site_name"].replace(" ","")
     if site_name in std["Global_attributes"]["fluxnet_id"]:
-        ds.globalattributes["fluxnet_id"] = std["Global_attributes"]["fluxnet_id"][site_name]
+        ds.root["Attributes"]["fluxnet_id"] = std["Global_attributes"]["fluxnet_id"][site_name]
     return
 
 def change_variable_attributes(std, ds):
@@ -136,7 +136,7 @@ def change_variable_attributes(std, ds):
     # coerce units into a standard form
     msg = " Parse variable attributes"
     logger.info(msg)
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for label in labels:
         variable = pfp_utils.GetVariable(ds, label)
         # parse variable attributes to new format
@@ -148,7 +148,7 @@ def change_variable_attributes(std, ds):
     logger.info(msg)
     old_units = list(std["Variables"]["units_map"].keys())
     deprecated_units = pfp_utils.string_to_list(std["Variables"]["deprecated"]["units"])
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for label in labels:
         variable = pfp_utils.GetVariable(ds, label)
         old_unit = variable["Attr"]["units"]
@@ -164,7 +164,7 @@ def change_variable_attributes(std, ds):
     logger.info(msg)
     stdv = std["Variables"]
     stdva = std["Variables"]["attributes"]
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     vattrs = pfp_utils.string_to_list(stdv["units_convert"]["labels"])
     for label in labels:
         variable = pfp_utils.GetVariable(ds, label)
@@ -185,8 +185,8 @@ def change_variable_attributes(std, ds):
     logger.info(msg)
     stdva = std["Variables"]["attributes"]
     vattr_list = list(stdva.keys())
-    labels = list(ds.series.keys())
-    descr = "description_" + ds.globalattributes["processing_level"]
+    labels = list(ds.root["Variables"].keys())
+    descr = "description_" + ds.root["Attributes"]["processing_level"]
     for label in labels:
         variable = pfp_utils.GetVariable(ds, label)
         # existing long_name to description
@@ -216,7 +216,7 @@ def change_variable_attributes(std, ds):
                         variable["Attr"][key] = stdva[item][key]
                 # remove standard_name attribute if not defined for this variable
                 if (("standard_name" in variable["Attr"]) and ("standard_name" not in stdva[item])):
-                    variable["Attr"].pop("standard_name")                
+                    variable["Attr"].pop("standard_name")
             elif label.split("_")[0] == item:
                 for key in list(stdva[item].keys()):
                     if key == "units":
@@ -250,7 +250,7 @@ def change_variable_attributes(std, ds):
     logger.info(msg)
     tmp = std["Variables"]["deprecated"]["attributes"]
     deprecated = pfp_utils.string_to_list(tmp)
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for label in labels:
         variable = pfp_utils.GetVariable(ds, label)
         ## parse variable attributes to new format
@@ -273,7 +273,7 @@ def change_variable_attributes(std, ds):
     # ugly hack to deal with CO2_IRGA_Av, CO2_IRGA_Sd and CO2_IRGA_Vr units
     msg = " Converting CO2 units"
     logger.info(msg)
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for label in labels:
         if (label.split("_")[0] == "CO2"):
             co2 = pfp_utils.GetVariable(ds, label)
@@ -314,7 +314,7 @@ def change_variable_attributes(std, ds):
     # variances and remove standard_name if present
     msg = " Setting statistic_type"
     logger.info(msg)
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for label in labels:
         variable = pfp_utils.GetVariable(ds, label)
         if label[-3:] == "_Sd":
@@ -338,7 +338,7 @@ def change_variable_attributes(std, ds):
     height_deprecated = pfp_utils.string_to_list(stdvd["height"])
     miscellaneous_deprecated = pfp_utils.string_to_list(stdvd["miscellaneous"])
     standard_name_deprecated = pfp_utils.string_to_list(stdvd["standard_name"])
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for label in labels:
         variable = pfp_utils.GetVariable(ds, label)
         attrs = list(variable["Attr"].keys())
@@ -366,7 +366,7 @@ def change_variable_attributes(std, ds):
     # append '%' symbol to coverage_L2 and coverage_L3 variable sttributes
     msg = " Appending % to coverage statistics"
     logger.info(msg)
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for label in labels:
         variable = pfp_utils.GetVariable(ds, label)
         attrs = list(variable["Attr"].keys())
@@ -390,30 +390,30 @@ def change_variable_names(std, ds):
     # get a list of exact mappings
     renames_exact = list(std["Variables"]["rename_exact"].keys())
     # loop over the variables in the data structure
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for label in labels:
         if label in renames_exact:
             new_name = std["Variables"]["rename_exact"][label]
-            ds.series[new_name] = ds.series.pop(label)
+            ds.root["Variables"][new_name] = ds.root["Variables"].pop(label)
     # get a list of pattern mappings
     renames_pattern = list(std["Variables"]["rename_pattern"].keys())
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for label in labels:
         for rp in renames_pattern:
             #if label[:len(rp)] == rp:
                 #np = std["Variables"]["rename_pattern"][rp]
                 #new_label = label.replace(rp, np)
-                #ds.series[new_label] = ds.series.pop(label)
+                #ds.root["Variables"][new_label] = ds.root["Variables"].pop(label)
             if label.split("_")[0] == rp:
                 np = std["Variables"]["rename_pattern"][rp]
                 new_label = label.replace(rp, np)
-                ds.series[new_label] = ds.series.pop(label)
+                ds.root["Variables"][new_label] = ds.root["Variables"].pop(label)
     # replace "." in variable names with "p"
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     for label in labels:
         if "." in label:
             new_label = label.replace(".", "p")
-            ds.series[new_label] = ds.series.pop(label)
+            ds.root["Variables"][new_label] = ds.root["Variables"].pop(label)
     return
 
 def consistent_Fco2_storage(std, ds, site):
@@ -426,19 +426,19 @@ def consistent_Fco2_storage(std, ds, site):
     msg = " Sorting Fco2_storage ..."
     logger.info(msg)
     ## save Fc_single if it exists - debug only
-    #labels = ds.series.keys()
+    #labels = ds.root["Variables"].keys()
     #if "Fc_single" in labels:
         #variable = pfp_utils.GetVariable(ds, "Fc_single")
         #variable["Label"] = "Fc_sinorg"
         #pfp_utils.CreateVariable(ds, variable)
         #pfp_utils.DeleteVariable(ds, "Fc_single")
     # do nothing if Fco2_single exists
-    labels = list(ds.series.keys())
+    labels = list(ds.root["Variables"].keys())
     if "Fco2_single" in labels:
         pass
     # Fco2_single may be called Fco2_storage
     elif "Fco2_storage" in labels:
-        level = ds.globalattributes["processing_level"]
+        level = ds.root["Attributes"]["processing_level"]
         descr = "description_" + level
         variable = pfp_utils.GetVariable(ds, "Fco2_storage")
         if (("single" in variable["Attr"][descr]) or
@@ -490,15 +490,15 @@ def copy_ws_wd(ds):
     msg = " Sorting Ws and Wd ..."
     logger.info(msg)
     # get a list of the series
-    series_list = sorted(list(ds.series.keys()))
+    series_list = sorted(list(ds.root["Variables"].keys()))
     if "Wd" not in series_list:
         if "Wd_SONIC_Av" in series_list:
-            ds.series["Wd"] = copy.deepcopy(ds.series["Wd_SONIC_Av"])
-            ds.series["Wd"]["Attr"]["long_name"] = "Wind direction (copied from Wd_SONIC_Av)"
+            ds.root["Variables"]["Wd"] = copy.deepcopy(ds.root["Variables"]["Wd_SONIC_Av"])
+            ds.root["Variables"]["Wd"]["Attr"]["long_name"] = "Wind direction (copied from Wd_SONIC_Av)"
     if "Ws" not in series_list:
         if "Ws_SONIC_Av" in series_list:
-            ds.series["Ws"] = copy.deepcopy(ds.series["Ws_SONIC_Av"])
-            ds.series["Ws"]["Attr"]["long_name"] = "Wind speed (copied from Ws_SONIC_Av)"
+            ds.root["Variables"]["Ws"] = copy.deepcopy(ds.root["Variables"]["Ws_SONIC_Av"])
+            ds.root["Variables"]["Ws"]["Attr"]["long_name"] = "Wind speed (copied from Ws_SONIC_Av)"
     return
 
 def exclude_variables(std, ds):
@@ -511,13 +511,13 @@ def exclude_variables(std, ds):
     """
     msg = " Excluding variables ..."
     logger.info(msg)
-    series_list = sorted(list(ds.series.keys()))
+    series_list = sorted(list(ds.root["Variables"].keys()))
     exclude_list = pfp_utils.string_to_list(std["Variables"]["exclude"]["exclude"])
     flag_list = [v+"_QCFlag" for v in exclude_list if v+"_QCFlag" in series_list]
     remove_list = exclude_list + flag_list
     for label in series_list:
         if label in remove_list:
-            ds.series.pop(label)
+            ds.root["Variables"].pop(label)
     return
 
 def include_variables(std, ds_in):
@@ -534,15 +534,15 @@ def include_variables(std, ds_in):
     # get a new data structure
     ds_out = pfp_io.DataStructure()
     # copy the global attributes
-    for gattr in ds_in.globalattributes:
-        ds_out.globalattributes[gattr] = ds_in.globalattributes[gattr]
+    for gattr in ds_in.root["Attributes"]:
+        ds_out.root["Attributes"][gattr] = ds_in.root["Attributes"][gattr]
     # loop over variables to be included
     include_list = pfp_utils.string_to_list(std["Variables"]["include"]["include"])
-    series_list = list(ds_in.series.keys())
+    series_list = list(ds_in.root["Variables"].keys())
     for item in include_list:
         for label in series_list:
             if label[0:len(item)] == item:
-                ds_out.series[label] = ds_in.series[label]
+                ds_out.root["Variables"][label] = ds_in.root["Variables"][label]
     return ds_out
 
 def parse_variable_attributes(attributes):
@@ -615,8 +615,9 @@ else:
     msg = " 'update_control_files.txt' control file not found"
     logger.error(msg)
 
-rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
+#rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "WD2TB", "OzFlux", "Sites")
+rp = os.path.join(os.sep, "home", "peter", "OzFlux", "Sites")
 sites = ["DalyUncleared"]
 #sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
          #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",

@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.6"
+version_number = "V3.4.7"
+# V3.4.7 - September 2022
+#        - tidied up removal of intermediate series at L6
 # V3.4.6 - August 2022
 #        - wrap estimation of confidence interval in try...except
 #        - see pfp_part.partition.estimate_Eo()
