@@ -70,6 +70,7 @@ def CalculateNEE(ds, l6_info):
                                                        default=10))
     # get the incoming shortwave radiation
     Fsd = pfp_utils.GetVariable(ds, "Fsd")
+    labels = list(ds.root["Variables"].keys())
     for label in list(l6_info["NetEcosystemExchange"].keys()):
         if (("Fco2" not in l6_info["NetEcosystemExchange"][label]) and
             ("ER" not in l6_info["NetEcosystemExchange"][label])):
@@ -77,11 +78,21 @@ def CalculateNEE(ds, l6_info):
         Fco2_label = l6_info["NetEcosystemExchange"][label]["Fco2"]
         ER_label = l6_info["NetEcosystemExchange"][label]["ER"]
         output_label = l6_info["NetEcosystemExchange"][label]["output"]
-        if Fco2_label not in list(ds.root["Variables"].keys()):
+        if Fco2_label not in labels:
+            msg = " ***** " + Fco2_label + " not found in data structure"
+            logger.warning("*****")
+            logger.warning(msg)
+            logger.warning("*****")
+            ds.root["Variables"].pop(output_label)
+            continue
+        if ER_label not in labels:
+            msg = " ***** " + ER_label + " not found in data structure"
+            logger.warning("*****")
+            logger.warning(msg)
+            logger.warning("*****")
+            ds.root["Variables"].pop(output_label)
             continue
         Fco2 = pfp_utils.GetVariable(ds, Fco2_label)
-        if ER_label not in list(ds.root["Variables"].keys()):
-            continue
         ER = pfp_utils.GetVariable(ds, ER_label)
         # put the day time Fc into the NEE series
         index = numpy.ma.where(Fsd["Data"] >= Fsd_threshold)[0]
@@ -118,7 +129,14 @@ def CalculateNEP(ds, l6_info):
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     # make the L6 "description" attribute for the target variable
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
+    labels = list(ds.root["Variables"].keys())
     for nee_name in list(l6_info["NetEcosystemExchange"].keys()):
+        if nee_name not in labels:
+            msg = "***** " + nee_name + " not found in data structure"
+            logger.warning("*****")
+            logger.warning(msg)
+            logger.warning("*****")
+            continue
         nep_name = nee_name.replace("NEE", "NEP")
         NEE = pfp_utils.GetVariable(ds, nee_name)
         NEP = pfp_utils.CreateEmptyVariable(nep_name, nrecs, attr=NEE["Attr"])
@@ -1244,6 +1262,7 @@ def PartitionNEE(ds, l6_info):
     # make the L6 "description" attribute for the target variable
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     # calculate GPP from NEE and ER
+    labels = list(ds.root["Variables"].keys())
     for label in list(l6_info["GrossPrimaryProductivity"].keys()):
         if ("NEE" not in l6_info["GrossPrimaryProductivity"][label] and
             "ER" not in l6_info["GrossPrimaryProductivity"][label]):
@@ -1251,11 +1270,21 @@ def PartitionNEE(ds, l6_info):
         NEE_label = l6_info["GrossPrimaryProductivity"][label]["NEE"]
         ER_label = l6_info["GrossPrimaryProductivity"][label]["ER"]
         output_label = l6_info["GrossPrimaryProductivity"][label]["output"]
-        if NEE_label not in list(ds.root["Variables"].keys()):
+        if ER_label not in labels:
+            msg = "***** " + ER_label + " not found in data structure"
+            logger.warning("*****")
+            logger.warning(msg)
+            logger.warning("*****")
+            ds.root["Variables"].pop(output_label)
+            continue
+        if NEE_label not in labels:
+            msg = "***** " + NEE_label + " not found in data structure"
+            logger.warning("*****")
+            logger.warning(msg)
+            logger.warning("*****")
+            ds.root["Variables"].pop(output_label)
             continue
         NEE = pfp_utils.GetVariable(ds, NEE_label)
-        if ER_label not in list(ds.root["Variables"].keys()):
-            continue
         ER = pfp_utils.GetVariable(ds, ER_label)
         GPP = pfp_utils.CreateEmptyVariable(output_label, nrecs)
         # calculate GPP
@@ -1948,11 +1977,11 @@ def rp_createdict(cf, ds, l6_info, output, called_by, flag_code):
     if called_by not in l6_info.keys():
         l6_info[called_by] = {"outputs": {}, "info": {}, "gui": {}}
     # get the info section
-    rp_createdict_info(cf, ds, l6_info[called_by], called_by)
+    rp_createdict_info(cf, ds, l6_info, called_by)
     if ds.info["returncodes"]["value"] != 0:
         return
     # get the outputs section
-    rp_createdict_outputs(cf, l6_info[called_by], output, called_by, flag_code)
+    rp_createdict_outputs(cf, l6_info, output, called_by, flag_code)
     # create an empty series in ds if the output series doesn't exist yet
     Fc = pfp_utils.GetVariable(ds, l6_info[called_by]["info"]["source"])
     model_outputs = cf["EcosystemRespiration"][output][called_by].keys()
@@ -1969,7 +1998,7 @@ def rp_createdict(cf, ds, l6_info, output, called_by, flag_code):
             pfp_utils.CreateVariable(ds, variable)
     return
 
-def rp_createdict_info(cf, ds, erl, called_by):
+def rp_createdict_info(cf, ds, l6_info, called_by):
     """
     Purpose:
     Usage:
@@ -1978,6 +2007,7 @@ def rp_createdict_info(cf, ds, erl, called_by):
     Date: Back in the day
           June 2019 - modified for new l5_info structure
     """
+    erl = l6_info[called_by]
     # Create a dict to set the file_suffix and extension
     suffix_dict = {'ERUsingLasslop': "_Lasslop.xlsx",
                    'ERUsingLloydTaylor': "_LloydTaylor.xlsx"}
@@ -2040,8 +2070,9 @@ def rp_createdict_info(cf, ds, erl, called_by):
     erl["info"]["plot_path"] = plot_path
     return
 
-def rp_createdict_outputs(cf, erl, target, called_by, flag_code):
+def rp_createdict_outputs(cf, l6_info, target, called_by, flag_code):
     """Where's the docstring ya bastard?!"""
+    erl = l6_info[called_by]
     var_dict = {'ERUsingLasslop': "LL",
                 'ERUsingLloydTaylor': "LT"}
     eo = erl["outputs"]
@@ -2049,6 +2080,8 @@ def rp_createdict_outputs(cf, erl, target, called_by, flag_code):
     section = "EcosystemRespiration"
     outputs = cf[section][target][called_by].keys()
     for output in outputs:
+        # add the output label to intermediate series
+        l6_info["RemoveIntermediateSeries"]["not_output"].append(output)
         # create the dictionary keys for this series
         eo[output] = {}
         # get the target
