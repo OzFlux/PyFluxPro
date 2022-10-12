@@ -1755,11 +1755,26 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
 
         Accepts meteorological constants or variables
         """
-    if "DisableFco2WPL" in cf["Options"]:
-        if cf["Options"].as_bool("DisableFco2WPL"):
-            logger.warning(" WPL correction for Fco2 disabled in control file")
-            return 0
-    logger.info(" Applying WPL correction to Fco2")
+    #if "DisableWPL" in cf["Options"]:
+        #if cf["Options"].as_bool("DisableWPL"):
+            #logger.warning(" WPL correction for Fco2 disabled in control file")
+            #return 0
+    closed_path_irgas = ["Li-7200", "Li-7200RS", "EC155"]
+    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)", "Li-7500A (>=V6.5)", "Li-7500RS",
+                       "EC150", "IRGASON"]
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "DisableWPL", default="No")
+    if ((opt.lower() == "no" and irga_type in open_path_irgas) or
+        (opt.lower() == "yes" and irga_type in closed_path_irgas)):
+        pass
+    else:
+        msg = "!!!!! Wrong DisableWPL option ("+opt+") for IRGA type ("+irga_type
+        logger.error("!!!!!")
+        logger.error(msg)
+        logger.error("!!!!!")
+        raise RuntimeError(msg)
+    msg = " Applying WPL correction to Fco2 (IRGA type is " + irga_type + ")"
+    logger.info(msg)
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Fco2 = pfp_utils.GetVariable(ds, Fco2_in)
     Fh = pfp_utils.GetVariable(ds, "Fh")
@@ -1820,8 +1835,8 @@ def Fe_WPL(cf, ds):
 
         Accepts meteorological constants or variables
         """
-    if "DisableFeWPL" in cf["Options"]:
-        if cf["Options"].as_bool("DisableFeWPL"):
+    if "DisableWPL" in cf["Options"]:
+        if cf["Options"].as_bool("DisableWPL"):
             logger.warning(" WPL correction for Fe disabled in control file")
             return 0
     logger.info(" Applying WPL correction to Fe")

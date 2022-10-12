@@ -722,6 +722,59 @@ def check_l1_controlfile(cfg):
                 l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
                 # append this variable name to the done list
                 done.append(cfg_label)
+        # check IRGA instrument type
+        l1_check_irga_type(cfg, messages)
+        # display and messages
+        display_messages(messages)
+        if len(messages["ERROR"]) > 0:
+            ok = False
+    except Exception:
+        ok = False
+        error_message = " Error checking L1 control file, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return ok
+def check_l2_controlfile(cfg):
+    """
+    Purpose:
+     Check the L2 control file to make sure it contains all information
+     needed to run L2 and that all information is correct.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: October 2022
+    """
+    # quick and dirty use of try...except in a panic ahead to 2021 workshop
+    try:
+        ok = True
+        # initialise the messages dictionary
+        messages = {"ERROR":[], "WARNING": [], "INFO": []}
+        # check the files section
+        l2_check_files(cfg, messages)
+        # check the options section
+        l2_check_options(cfg, messages)
+        # check the variables section
+        #l2_check_variables_section(cfg, std, messages)
+        ## check variables whose name exactly matches an entry in the settings/l1.txt control file
+        #done = []
+        #label_matches = [l for l in cfg_labels if l in std_labels]
+        #for cfg_label in label_matches:
+            #std_label = cfg_label
+            ## check variable 'Attr' section
+            #l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
+            ## append this variable name to the done list
+            #done.append(cfg_label)
+        ## check variables where the first characters of the name match an entry in settings/l1.txt
+        #cfg_labels = sorted(list(cfg["Variables"].keys()))
+        #for std_label in std_labels:
+            #lsl = len(std_label)
+            #label_matches = [l for l in cfg_labels if l[:min([len(l),lsl])] == std_label and l not in done]
+            #for cfg_label in label_matches:
+                ## check variable 'Attr' section
+                #l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
+                ## append this variable name to the done list
+                #done.append(cfg_label)
         display_messages(messages)
         if len(messages["ERROR"]) > 0:
             ok = False
@@ -1123,6 +1176,54 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
                         pass
         else:
             msg = cfg_label + ": 'func' not found in 'Function' subsection"
+            messages["ERROR"].append(msg)
+    return
+def l1_check_irga_type(cfg, messages):
+    known_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)",
+                   "Li-7500A (>=V6.5)", "Li-7500RS", "Li-7200", "Li-7200RS",
+                   "EC150", "EC155", "IRGASON"]
+    signal_labels = ["Signal_CO2", "Signal_H2O"]
+    h2o_covars = ["UxA", "UyA", "UzA"]
+    co2_covars = ["UxC", "UyC", "UzC"]
+    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    irga_labels = [l for l in cfg_labels if "IRGA" in l]
+    irga_labels = irga_labels + signal_labels + h2o_covars + co2_covars
+    for irga_label in list(irga_labels):
+        if irga_label not in cfg_labels:
+            irga_labels.remove(irga_label)
+    irga_check = {}
+    for irga_label in irga_labels:
+        ok = False
+        if "instrument" in cfg["Variables"][irga_label]["Attr"]:
+            irga_type = cfg["Variables"][irga_label]["Attr"]["instrument"]
+            if irga_type in known_irgas:
+                ok = True
+                if irga_type not in irga_check:
+                    irga_check[irga_type] = []
+                irga_check[irga_type].append(irga_label)
+            else:
+                for known_irga in known_irgas:
+                    if known_irga in irga_type:
+                        ok = True
+                        if known_irga not in irga_check:
+                            irga_check[known_irga] = []
+                        irga_check[known_irga].append(irga_label)
+            if not ok:
+                msg = "Unknown IRGA type (" + irga_type + ") for " + irga_label
+                messages["ERROR"].append(msg)
+        else:
+            msg = "'instrument' attribute missing for " + irga_label
+            messages["ERROR"].append(msg)
+    irga_types = list(irga_check.keys())
+    if len(irga_types) == 1:
+        cfg["Global"]["irga_type"] = str(irga_types[0])
+        msg = "IRGA type set to " + cfg["Global"]["irga_type"]
+        logger.info(msg)
+    else:
+        msg = "More than 1 IRGA type specified (" + ",".join(irga_types) + ")"
+        messages["ERROR"].append(msg)
+        for irga_type in irga_types:
+            msg = irga_type + " is used for " + ",".join(irga_check[irga_type])
             messages["ERROR"].append(msg)
     return
 def l1_check_variables_height(cfg, cfg_label, messages):
@@ -1589,6 +1690,85 @@ def update_cfg_variables_deprecated(cfg, std):
             cfg[section_name].pop(label)
     return cfg
 
+def l2_check_files(cfg, messages):
+    # check the Files section exists
+    if ("Files" in cfg):
+        # check file_path is in the Files section
+        if "file_path" in cfg["Files"]:
+            file_path = cfg["Files"]["file_path"]
+            # check file_path directory exists
+            if os.path.isdir(file_path):
+                pass
+            else:
+                msg = "Files: " + file_path + " is not a directory"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'file_path' not in section"
+            messages["ERROR"].append(msg)
+        # check plot_path is in the Files section
+        if "plot_path" in cfg["Files"]:
+            plot_path = cfg["Files"]["plot_path"]
+            # check plot_path directory exists
+            if os.path.isdir(plot_path):
+                pass
+            else:
+                msg = "Files: " + plot_path + " is not a directory"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'plot_path' not in section"
+            messages["ERROR"].append(msg)
+        # check in_filename is in the Files section
+        if "in_filename" in cfg["Files"]:
+            file_name = cfg["Files"]["in_filename"]
+            file_parts = os.path.splitext(file_name)
+            # check the file type is supported
+            if (file_parts[-1].lower() in  [".nc"]):
+                file_uri = os.path.join(file_path, file_name)
+                if os.path.isfile(file_uri):
+                    pass
+                else:
+                    msg = "Files: " + file_name + " not found"
+                    messages["ERROR"].append(msg)
+            else:
+                msg = "Files: " + file_name + " doesn't end with .nc"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'in_filename' not in section"
+            messages["ERROR"].append(msg)
+        # check the output file type
+        if "out_filename" in cfg["Files"]:
+            file_name = cfg["Files"]["out_filename"]
+            file_parts = os.path.splitext(file_name)
+            if (file_parts[-1].lower() in [".nc"]):
+                pass
+            else:
+                msg = "Files: " + file_name + " doesn't end with .nc"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'out_filename' not in section"
+            messages["ERROR"].append(msg)
+    else:
+        msg = "'Files' section not in control file"
+        messages["ERROR"].append(msg)
+    return
+def l2_check_options(cfg, messages):
+    """ Check the Options section in the L2 control file."""
+    if "Options" in cfg:
+        if "irga_type" in cfg["Options"]:
+            irga_type = str(cfg["Options"]["irga_type"])
+            if irga_type in ["Li-7500", "Li-7500A (<V6.5)", "Li-7500A (>=V6.5)", "Li-7500RS",
+                             "Li-7200", "Li-7200RS", "EC150", "EC155", "IRGASON"]:
+                pass
+            else:
+                msg = "Unrecognised IRGA type"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "irga_type not found in Options section"
+            messages["ERROR"].append(msg)
+    else:
+        msg = "No Options section in control file (required to specify irga_type)"
+        messages["ERROR"].append(msg)
+    return
 def l2_update_controlfile(cfg):
     """
     Purpose:

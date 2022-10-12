@@ -733,12 +733,15 @@ def do_IRGAcheck(cf,ds):
         msg = " *** IRGA_Check disbled in control file"
         logger.warning(msg)
         return
-    # get the IRGA type from the control file
-    irga_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "irga_type", default="not found")
-    if irga_type == "not found":
-        msg = " IRGA type not specified in Options section, using default (Li-7500)"
-        logger.warning(msg)
-        irga_type = "Li-7500"
+    # get the IRGA type from the global attributes or the control file
+    if "irga_type" in ds.root["Attributes"]:
+        irga_type = str(ds.root["Attributes"])
+    else:
+        irga_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "irga_type", default="not found")
+        if irga_type == "not found":
+            msg = " IRGA type not in global attributes or Options section, using Li-7500"
+            logger.warning(msg)
+            irga_type = "Li-7500"
     # do the IRGA checks
     if irga_type in ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)"]:
         ds.root["Attributes"]["irga_type"] = irga_type
@@ -750,7 +753,7 @@ def do_IRGAcheck(cf,ds):
         ds.root["Attributes"]["irga_type"] = irga_type
         do_EC155check(cf, ds)
     else:
-        msg = " Unsupported IRGA type " + irga_type + ", contact the devloper ..."
+        msg = " Unsupported IRGA type " + irga_type + ", contact the developer ..."
         logger.error(msg)
         return
     return

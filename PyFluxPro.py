@@ -742,7 +742,9 @@ class pfp_main_ui(QWidget):
                 pfp_top_level.do_run_l1(cfg)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "L2":
-            pfp_top_level.do_run_l2(cfg)
+            # check the L2 control file to see if it is OK to run
+            if pfp_compliance.check_l2_controlfile(cfg):
+                pfp_top_level.do_run_l2(cfg)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "L3":
             pfp_top_level.do_run_l3(cfg)

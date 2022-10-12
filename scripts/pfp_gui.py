@@ -2870,6 +2870,14 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.add_qc_check(selected_item, new_qc)
         self.update_tab_text()
 
+    def add_DisableWPL_to_options(self):
+        """ Add DisableWPL to the [Options] section."""
+        child0 = QtGui.QStandardItem("DisableWPL")
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("Yes")
+        self.sections["Options"].appendRow([child0, child1])
+        self.update_tab_text()
+
     def add_diurnalcheck(self):
         """ Add a diurnal check to a variable."""
         new_qc = {"DiurnalCheck":{"numsd":"5"}}
@@ -3355,6 +3363,11 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddFco2Units.setText("Fco2Units")
                     self.context_menu.addAction(self.context_menu.actionAddFco2Units)
                     self.context_menu.actionAddFco2Units.triggered.connect(self.add_fco2units_to_options)
+                if "DisableWPL" not in existing_entries:
+                    self.context_menu.actionAddDisableWPL = QtWidgets.QAction(self)
+                    self.context_menu.actionAddDisableWPL.setText("DisableWPL")
+                    self.context_menu.addAction(self.context_menu.actionAddDisableWPL)
+                    self.context_menu.actionAddDisableWPL.triggered.connect(self.add_DisableWPL_to_options)
             elif selected_text == "Massman":
                 self.context_menu.actionRemoveMassmanSection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveMassmanSection.setText("Remove section")
@@ -3424,7 +3437,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 elif (selected_item.column() == 1) and (key in ["ApplyFco2Storage", "UseL2Fluxes",
                                                                 "2DCoordRotation", "MassmanCorrection",
                                                                 "CorrectIndividualFg", "CorrectFgForStorage",
-                                                                "KeepIntermediateSeries"]):
+                                                                "KeepIntermediateSeries", "DisableWPL"]):
                     if selected_text != "Yes":
                         self.context_menu.actionChangeOption = QtWidgets.QAction(self)
                         self.context_menu.actionChangeOption.setText("Yes")
