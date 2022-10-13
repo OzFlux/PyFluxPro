@@ -257,6 +257,8 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         Foken flag = 1
         unit vector = 1
         mmol/s/m2 = mmol/m^2/s
+        # extra units
+        microseconds = microseconds
     # check units for these variabes and convert if necessary
     [[units_convert]]
         labels = Sws,RH
