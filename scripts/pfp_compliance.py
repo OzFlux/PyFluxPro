@@ -725,7 +725,7 @@ def check_l1_controlfile(cfg):
         # check IRGA instrument type
         l1_check_irga_type(cfg, messages)
         # display and messages
-        display_messages(messages)
+        display_messages_interactive(messages)
         if len(messages["ERROR"]) > 0:
             ok = False
     except Exception:
@@ -775,7 +775,7 @@ def check_l2_controlfile(cfg):
                 #l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
                 ## append this variable name to the done list
                 #done.append(cfg_label)
-        display_messages(messages)
+        display_messages_interactive(messages)
         if len(messages["ERROR"]) > 0:
             ok = False
     except Exception:
@@ -785,6 +785,94 @@ def check_l2_controlfile(cfg):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return ok
+def check_l2_options(cfg, ds):
+    """
+    Purpose:
+     Check the options specified in the L3 control file are consistent
+     with the contents of the L2 netCDF file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: October 2022
+    """
+    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    closed_path_irgas = ["Li-7200", "Li-7200RS", "EC155"]
+    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)", "Li-7500A (>=V6.5)", "Li-7500RS",
+                       "EC150", "IRGASON"]
+    irga_types = open_path_irgas + closed_path_irgas
+    nc_irga_type = None
+    cfg_irga_type = None
+    if ("irga_type" in ds.root["Attributes"]):
+        nc_irga_type = str(ds.root["Attributes"]["irga_type"])
+    if ("irga_type" in cfg["Options"]):
+        cfg_irga_type = str(cfg["Options"]["irga_type"])
+    if ((nc_irga_type is None) and (cfg_irga_type is None)):
+        # IRGA type not found in the L1 netCDF file or the control file
+        msg = "IRGA type not specified in L1 netCDF file or L2 control file"
+        messages["ERROR"].append(msg)
+        ds.info["returncodes"]["value"] = 1
+    elif ((nc_irga_type is None) and (cfg_irga_type is not None)):
+        # IRGA type not found in the L1 netCDF file but found in the L2 control file
+        if (cfg_irga_type not in irga_types):
+            # make sure the IRGA type is in the known IRGA list
+            msg = "Unknown IRGA type specified in control file (" + cfg_irga_type + ")"
+            messages["ERROR"].append(msg)
+            ds.info["returncodes"]["value"] = 1
+        else:
+            ds.root["Attributes"]["irga_type"] = cfg_irga_type
+    elif ((nc_irga_type is not None) and (cfg_irga_type is None)):
+        # IRGA type found in the L1 netCDF file but not found in the L2 control file
+        if (nc_irga_type not in irga_types):
+            # make sure the IRGA type is in the known IRGA list
+            msg = "Unknown IRGA type specified in netCDF file (" + nc_irga_type + ")"
+            messages["ERROR"].append(msg)
+            ds.info["returncodes"]["value"] = 1
+        else:
+            pass
+    else:
+        # IRGA type found in the L1 netCDF file and the L2 control file
+        if (nc_irga_type == cfg_irga_type):
+            pass
+        else:
+            msg = "Different IRGA types in L1 netCDF ("+nc_irga_type
+            msg += ") and L2 control file ("+cfg_irga_type+")"
+            ds.info["returncodes"]["value"] = 1
+            messages["ERROR"].append(msg)
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
+    if opt.lower() == "interactive":
+        display_messages_interactive(messages)
+    else:
+        display_messages_batch(messages)
+    return
+def check_l3_options(cfg, ds):
+    """
+    Purpose:
+     Check the options specified in the L3 control file are consistent
+     with the contents of the L2 netCDF file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: October 2022
+    """
+    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    closed_path_irgas = ["Li-7200", "Li-7200RS", "EC155"]
+    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)", "Li-7500A (>=V6.5)", "Li-7500RS",
+                       "EC150", "IRGASON"]
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "ApplyWPL", default="Yes")
+    if ((opt.lower() == "yes" and irga_type in open_path_irgas) or
+        (opt.lower() == "no" and irga_type in closed_path_irgas)):
+        pass
+    else:
+        msg = "Wrong ApplyWPL option ("+opt+") for IRGA type ("+irga_type+")"
+        ds.info["returncodes"]["value"] = 1
+        messages["ERROR"].append(msg)
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
+    if opt.lower() == "interactive":
+        display_messages_interactive(messages)
+    else:
+        display_messages_batch(messages)
+    return
 def check_l5_controlfile(cfg):
     """
     Purpose:
@@ -803,7 +891,7 @@ def check_l5_controlfile(cfg):
         if "cpd_filename" in cfg["Files"]:
             msg = "ustar_threshold section and Files/cpd_filename present"
             messages["ERROR"].append(msg)
-    display_messages(messages)
+    display_messages_interactive(messages)
     if len(messages["ERROR"]) > 0:
         ok = False
     return ok
@@ -825,7 +913,7 @@ def check_l6_controlfile(cfg):
     l6_check_ecosystemrespiration(cfg, messages)
     l6_check_netecosystemexchange(cfg, messages)
     l6_check_grossprimaryproductivity(cfg, messages)
-    display_messages(messages)
+    display_messages_interactive(messages)
     if len(messages["ERROR"]) > 0:
         ok = False
     return ok
@@ -845,7 +933,7 @@ def check_windrose_controlfile(cfg):
     check_windrose_files_section(cfg, messages)
     check_windrose_options_section(cfg, messages)
     check_windrose_variables_section(cfg, messages)
-    display_messages(messages)
+    display_messages_interactive(messages)
     if len(messages["ERROR"]) > 0:
         ok = False
     return ok
@@ -926,11 +1014,32 @@ def check_windrose_variables_section(cfg, messages):
             msg = item + " does not have required key 'name'"
             messages["ERROR"].append(msg)
     return
-def display_messages(messages):
+def display_messages_batch(messages):
+    for msg_type in list(messages.keys()):
+        if (len(messages[msg_type]) == 0):
+            continue
+        for msg in messages[msg_type]:
+            if msg_type == "ERROR":
+                logger.error("!!!!!")
+                logger.error(msg)
+                logger.error("!!!!!")
+                raise RuntimeError(msg)
+            elif msg_type == "WARNING":
+                logger.warning(msg)
+            elif msg_type == "INFO":
+                logger.info(msg)
+            else:
+                raise RuntimeError("display_messages_batch: Unrecognised message in messages")
+    return
+def display_messages_interactive(messages):
     # gather variable error messages into a single list
     error_messages = []
-    for item in messages["ERROR"]:
+    for n, item in enumerate(messages["ERROR"]):
+        if n == 0:
+            logger.error("!!!!!")
         logger.error(item)
+        if n == 0:
+            logger.error("!!!!!")
         error_messages.append(item)
     for item in messages["WARNING"]:
         logger.warning(item)
@@ -944,7 +1053,7 @@ def display_messages(messages):
         msg += error_messages[-1] + "\n\n"
         msg += "Fix the errors, close this window and run again."
         # put up the message box
-        pfp_gui.MsgBox_Quit(msg, title="Errors")
+        pfp_gui.MsgBox_Close(msg, title="Errors")
     return
 def l1_check_files(cfg, std, messages):
     # check the Files section exists
@@ -1750,20 +1859,10 @@ def l2_check_files(cfg, messages):
 def l2_check_options(cfg, messages):
     """ Check the Options section in the L2 control file."""
     if "Options" in cfg:
-        if "irga_type" in cfg["Options"]:
-            irga_type = str(cfg["Options"]["irga_type"])
-            if irga_type in ["Li-7500", "Li-7500A (<V6.5)", "Li-7500A (>=V6.5)", "Li-7500RS",
-                             "Li-7200", "Li-7200RS", "EC150", "EC155", "IRGASON"]:
-                pass
-            else:
-                msg = "Unrecognised IRGA type"
-                messages["ERROR"].append(msg)
-        else:
-            msg = "irga_type not found in Options section"
-            messages["ERROR"].append(msg)
+        pass
     else:
-        msg = "No Options section in control file (required to specify irga_type)"
-        messages["ERROR"].append(msg)
+        msg = "No Options section in control file, using defaults for all options"
+        messages["WARNING"].append(msg)
     return
 def l2_update_controlfile(cfg):
     """
