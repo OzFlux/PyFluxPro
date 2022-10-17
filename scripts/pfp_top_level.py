@@ -438,7 +438,11 @@ def do_run_l2(cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds1 = pfp_io.NetCDFRead(in_filepath)
-        if ds1.info["returncodes"]["value"] != 0: return
+        if ds1.info["returncodes"]["value"] != 0:
+            return
+        pfp_compliance.check_l2_options(cfg, ds1)
+        if ds1.info["returncodes"]["value"] != 0:
+            return
         ds2 = pfp_levels.l2qc(cfg, ds1)
         if ds2.info["returncodes"]["value"] != 0:
             logger.error("An error occurred during L2 processing")
@@ -489,7 +493,14 @@ def do_run_l3(cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds2 = pfp_io.NetCDFRead(in_filepath)
-        if ds2.info["returncodes"]["value"] != 0: return
+        if ds2.info["returncodes"]["value"] != 0:
+            return
+        if "Options" not in cfg:
+            cfg["Options"]={}
+        cfg["Options"]["call_mode"] = "interactive"
+        pfp_compliance.check_l3_options(cfg, ds2)
+        if ds2.info["returncodes"]["value"] != 0:
+            return
         ds3 = pfp_levels.l3qc(cfg, ds2)
         if ds3.info["returncodes"]["value"] != 0:
             logger.error("An error occurred during L3 processing")

@@ -735,7 +735,7 @@ def do_IRGAcheck(cf,ds):
         return
     # get the IRGA type from the global attributes or the control file
     if "irga_type" in ds.root["Attributes"]:
-        irga_type = str(ds.root["Attributes"])
+        irga_type = str(ds.root["Attributes"]["irga_type"])
     else:
         irga_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "irga_type", default="not found")
         if irga_type == "not found":

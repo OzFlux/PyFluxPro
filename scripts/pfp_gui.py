@@ -32,6 +32,59 @@ class myMessageBox(QtWidgets.QMessageBox):
         self.setStandardButtons(QtWidgets.QMessageBox.Ok)
         self.exec_()
 
+class MsgBox_Close(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_Close, self).__init__(parent)
+        if title in ["Critical", "Error"]:
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.No)
+        self.button(QtWidgets.QMessageBox.No).setText("Close")
+        self.setModal(False)
+        self.show()
+        self.exec_()
+
+class MsgBox_CloseOrIgnore(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_CloseOrIgnore, self).__init__(parent)
+        if title == "Critical":
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.Yes |
+                                QtWidgets.QMessageBox.No)
+        self.button(QtWidgets.QMessageBox.Yes).setText("Ignore")
+        self.button(QtWidgets.QMessageBox.No).setText("Close")
+        self.setModal(False)
+        self.show()
+        self.exec_()
+
+class MsgBox_Continue(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_Continue, self).__init__(parent)
+        if title in ["Critical", "Error"]:
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.Yes)
+        self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
+        self.setModal(False)
+        self.show()
+        self.exec_()
+
 class MsgBox_ContinueOrQuit(QtWidgets.QMessageBox):
     def __init__(self, msg, title="Information", parent=None):
         super(MsgBox_ContinueOrQuit, self).__init__(parent)
@@ -64,23 +117,6 @@ class MsgBox_Quit(QtWidgets.QMessageBox):
         self.setWindowTitle(title)
         self.setStandardButtons(QtWidgets.QMessageBox.No)
         self.button(QtWidgets.QMessageBox.No).setText("Quit")
-        self.setModal(False)
-        self.show()
-        self.exec_()
-
-class MsgBox_Continue(QtWidgets.QMessageBox):
-    def __init__(self, msg, title="Information", parent=None):
-        super(MsgBox_Continue, self).__init__(parent)
-        if title in ["Critical", "Error"]:
-            self.setIcon(QtWidgets.QMessageBox.Critical)
-        elif title == "Warning":
-            self.setIcon(QtWidgets.QMessageBox.Warning)
-        else:
-            self.setIcon(QtWidgets.QMessageBox.Information)
-        self.setText(msg)
-        self.setWindowTitle(title)
-        self.setStandardButtons(QtWidgets.QMessageBox.Yes)
-        self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
         self.setModal(False)
         self.show()
         self.exec_()
@@ -2305,7 +2341,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.addAction(self.context_menu.actionSetCheckNo)
                         self.context_menu.actionSetCheckNo.triggered.connect(self.set_check_no)
             elif (str(parent.text()) == "Options") and (selected_item.column() == 0):
-                if selected_item.text() in ["SONIC_Check", "IRGA_Check"]:
+                if selected_item.text() in ["irga_type", "SONIC_Check", "IRGA_Check"]:
                     self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
@@ -2870,9 +2906,9 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.add_qc_check(selected_item, new_qc)
         self.update_tab_text()
 
-    def add_DisableWPL_to_options(self):
-        """ Add DisableWPL to the [Options] section."""
-        child0 = QtGui.QStandardItem("DisableWPL")
+    def add_ApplyWPL_to_options(self):
+        """ Add ApplyWPL to the [Options] section."""
+        child0 = QtGui.QStandardItem("ApplyWPL")
         child0.setEditable(False)
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
@@ -3363,11 +3399,11 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddFco2Units.setText("Fco2Units")
                     self.context_menu.addAction(self.context_menu.actionAddFco2Units)
                     self.context_menu.actionAddFco2Units.triggered.connect(self.add_fco2units_to_options)
-                if "DisableWPL" not in existing_entries:
-                    self.context_menu.actionAddDisableWPL = QtWidgets.QAction(self)
-                    self.context_menu.actionAddDisableWPL.setText("DisableWPL")
-                    self.context_menu.addAction(self.context_menu.actionAddDisableWPL)
-                    self.context_menu.actionAddDisableWPL.triggered.connect(self.add_DisableWPL_to_options)
+                if "ApplyWPL" not in existing_entries:
+                    self.context_menu.actionAddApplyWPL = QtWidgets.QAction(self)
+                    self.context_menu.actionAddApplyWPL.setText("ApplyWPL")
+                    self.context_menu.addAction(self.context_menu.actionAddApplyWPL)
+                    self.context_menu.actionAddApplyWPL.triggered.connect(self.add_ApplyWPL_to_options)
             elif selected_text == "Massman":
                 self.context_menu.actionRemoveMassmanSection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveMassmanSection.setText("Remove section")
@@ -3437,7 +3473,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 elif (selected_item.column() == 1) and (key in ["ApplyFco2Storage", "UseL2Fluxes",
                                                                 "2DCoordRotation", "MassmanCorrection",
                                                                 "CorrectIndividualFg", "CorrectFgForStorage",
-                                                                "KeepIntermediateSeries", "DisableWPL"]):
+                                                                "KeepIntermediateSeries", "ApplyWPL"]):
                     if selected_text != "Yes":
                         self.context_menu.actionChangeOption = QtWidgets.QAction(self)
                         self.context_menu.actionChangeOption.setText("Yes")
