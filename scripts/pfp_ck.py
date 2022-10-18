@@ -513,7 +513,8 @@ def do_EC155check(cf, ds, code=4):
     Author: PRI
     Date: October 2020 (rewrite of original)
     """
-    msg = " Doing the IRGA (EC150/155) check"
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    msg = " Doing the IRGA (" + irga_type + ") check"
     logger.info(msg)
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     labels = list(ds.root["Variables"].keys())
