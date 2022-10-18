@@ -275,18 +275,32 @@ class file_explore(QtWidgets.QWidget):
         if len(self.view.selectedIndexes()) == 0:
             # trap right click when nothing is selected
             return
+        # get the indices of selected items
         idx = self.view.selectedIndexes()
-        #groups = list(set([i.parent().parent().data() for i in idx]))
+        # get the group labels of selected items
         groups = list(set([i.parent().data() for i in idx]))
+        # dictionary to hold the labels of selected variables for each group
         selections = {}
-        for group in groups:
-            selections[group] = []
+        # add the selected variable labels to the right group in selections
         for i in idx:
+            # get the group label of this selected item
+            group = i.parent().data()
+            # skip anything selected in 'Global attributes'
+            if (group in ["Global attributes"]):
+                continue
+            # add the group to selections if not there
+            if group not in selections:
+                selections[group] = []
+            # append the label of the selected variable to the group
             selections[i.parent().data()].append(i.data())
-        for key in selections.keys():
+        # rename the 'Variables' group to 'root'
+        for key in list(selections.keys()):
             if key is None or key == "Variables":
                 selections["root"] = selections.pop(key)
                 break
+        # return if selections is empty (no variables selected)
+        if len(list(selections.keys())) == 0:
+            return
         # plot time series, separate axes or grouped
         menuPlotTimeSeries = QtWidgets.QMenu(self)
         menuPlotTimeSeries.setTitle("Plot time series")
@@ -307,6 +321,7 @@ class file_explore(QtWidgets.QWidget):
         # plot fingerprints
         # check the time steps for all groups containing selected variables
         groups = list(selections.keys())
+        groups = ["root" if i == "Global attributes" else i for i in groups]
         time_steps = []
         for group in groups:
             time_steps.append(str(getattr(self.ds, group)["Attributes"]["time_step"]))
@@ -355,6 +370,7 @@ class file_explore(QtWidgets.QWidget):
         for gattr in gattrs:
             value = str(self.ds.root["Attributes"][gattr])
             child0 = QtGui.QStandardItem(gattr)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(value)
             section.appendRow([child0, child1])
         self.model.appendRow([section, long_name])

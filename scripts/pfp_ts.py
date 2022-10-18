@@ -1755,9 +1755,11 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
 
         Accepts meteorological constants or variables
         """
+    irga_type = str(ds.root["Attributes"]["irga_type"])
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
     if (opt.lower() == "no"):
-        logger.warning(" WPL correction for Fco2 disabled in control file")
+        msg = " WPL correction for Fco2 disabled in control file (" + irga_type + ")"
+        logger.warning(msg)
         return 0
     irga_type = str(ds.root["Attributes"]["irga_type"])
     msg = " Applying WPL correction to Fco2 (IRGA type is " + irga_type + ")"
@@ -1822,9 +1824,11 @@ def Fe_WPL(cf, ds):
 
         Accepts meteorological constants or variables
         """
+    irga_type = str(ds.root["Attributes"]["irga_type"])
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
     if (opt.lower() == "no"):
-        logger.warning(" WPL correction for Fco2 disabled in control file")
+        msg = " WPL correction for Fe disabled in control file (" + irga_type + ")"
+        logger.warning(msg)
         return 0
     irga_type = str(ds.root["Attributes"]["irga_type"])
     msg = " Applying WPL correction to Fe (IRGA type is " + irga_type + ")"
