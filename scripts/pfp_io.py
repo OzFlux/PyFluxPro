@@ -634,8 +634,9 @@ def ReadExcelWorkbook(l1_info):
             del l1ire["Variables"][nc_label]
             continue
         if xl_sheet not in l1ire["xl_sheets"]:
-            l1ire["xl_sheets"][xl_sheet] = {"DateTime": "", "xl_labels":{}}
+            l1ire["xl_sheets"][xl_sheet] = {"DateTime": "", "xl_labels":{}, "nc_labels":{}}
         l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label] = nc_label
+        l1ire["xl_sheets"][xl_sheet]["nc_labels"][nc_label] = xl_label
     # check the requested variables are on the specified sheets
     for xl_sheet in list(l1ire["xl_sheets"].keys()):
         headers = list(dfs[xl_sheet])
@@ -678,8 +679,15 @@ def ReadExcelWorkbook(l1_info):
         dfs[df_name][cols] = dfs[df_name][cols].apply(pandas.to_numeric, errors='coerce')
     # rename the pandas dataframe columns from the Excel variable names to the netCDF
     # variable names
+    # loop over the sheets in the Excel workbook
     for df_name in df_names:
-        dfs[df_name] = dfs[df_name].rename(columns=l1ire["xl_sheets"][df_name]["xl_labels"])
+        # create an empty dataframe with the index
+        tmp = pandas.DataFrame(index=dfs[df_name].index)
+        # loop over the netCDF variable names, done to allow variables with duplicate values
+        for l in list(l1ire["xl_sheets"][df_name]["nc_labels"].keys()):
+            tmp[l] = dfs[df_name][l1ire["xl_sheets"][df_name]["nc_labels"][l]].copy()
+        # copy the new dataframe to the old name
+        dfs[df_name] = tmp.copy()
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     return dfs
 

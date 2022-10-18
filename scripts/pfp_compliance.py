@@ -722,6 +722,10 @@ def check_l1_controlfile(cfg):
                 l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
                 # append this variable name to the done list
                 done.append(cfg_label)
+        # check for duplicate netCDF variable labels
+        l1_check_nc_labels(cfg, messages)
+        # check for duplicate input variable labels
+        l1_check_input_labels(cfg, messages)
         # check IRGA instrument type
         l1_check_irga_type(cfg, messages)
         # display and messages
@@ -1283,6 +1287,26 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
             msg = cfg_label + ": 'func' not found in 'Function' subsection"
             messages["ERROR"].append(msg)
     return
+def l1_check_input_labels(cfg, messages):
+    # check for duplicate input labels
+    file_parts = os.path.splitext(cfg["Files"]["in_filename"])
+    if ("xls" in file_parts[-1].lower()):
+        source = "xl"
+    elif ("csv" in file_parts[-1].lower()):
+        source = "csv"
+    else:
+        msg = "Unexpected input source (" + file_parts[-1].lower() + ")"
+        raise RuntimeError(msg)
+    input_labels = [cfg["Variables"][l][source]["name"] for l in cfg["Variables"]]
+    duplicate_labels = [l for l in set(input_labels) if input_labels.count(l) > 1]
+    if len(duplicate_labels) > 0:
+        for duplicate_label in duplicate_labels:
+            nc_duplicate_labels = [l for l in cfg["Variables"]
+                                   if cfg["Variables"][l][source]["name"]==duplicate_label]
+            msg = "Duplicate input label " + duplicate_label + " used for "
+            msg += ",".join(nc_duplicate_labels)
+            messages["WARNING"].append(msg)
+    return
 def l1_check_irga_type(cfg, messages):
     known_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)",
                    "Li-7500A (>=V6.5)", "Li-7500RS", "Li-7200", "Li-7200RS",
@@ -1330,6 +1354,16 @@ def l1_check_irga_type(cfg, messages):
         for irga_type in irga_types:
             msg = irga_type + " is used for " + ",".join(irga_check[irga_type])
             messages["ERROR"].append(msg)
+    return
+def l1_check_nc_labels(cfg, messages):
+    nc_labels = list(cfg["Variables"].keys())
+    duplicate_labels = [l for l in set(nc_labels) if nc_labels.count(l) > 1]
+    if len(duplicate_labels) == 0:
+        return
+    for duplicate_label in duplicate_labels:
+        msg = "Duplicate netCDF label " + duplicate_label + " found "
+        msg += str(duplicate_labels.count(duplicate_label)) + " times"
+        messages["ERROR"].append(msg)
     return
 def l1_check_variables_height(cfg, cfg_label, messages):
     cfg_attr = cfg["Variables"][cfg_label]["Attr"]
