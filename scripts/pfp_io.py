@@ -644,7 +644,9 @@ def ReadExcelWorkbook(l1_info):
             if xl_label not in headers:
                 msg = " Variable " + xl_label + " not found on sheet " + xl_sheet + ", skipping ..."
                 logger.warning(msg)
+                nc_label = l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label]
                 del l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label]
+                del l1ire["xl_sheets"][xl_sheet]["nc_labels"][nc_label]
     df_names = list(dfs)
     for df_name in df_names:
         timestamps = list(dfs[df_name].select_dtypes(include=['datetime64']))
