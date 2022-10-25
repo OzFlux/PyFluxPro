@@ -4,6 +4,7 @@ version_number = "V3.4.8"
 #        - implement check of IRGA type at L2
 #        - imlement check of IRGA type at L3
 #          - warn user if irga_type in ["EC155", "Li-7200"] and ApplyWPL=Yes
+#        - tidy up Fco2 vs u* plotting
 # V3.4.7 - September 2022
 #        - tidied up removal of intermediate series at L6
 # V3.4.6 - August 2022
