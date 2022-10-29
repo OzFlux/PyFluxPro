@@ -354,7 +354,8 @@ def plot_fingerprint(cf):
         fig_var_list = pfp_utils.string_to_list(cf["Plots"][title]["variables"])
         logger.info(" Plotting fingerprint: " + str(fig_var_list))
         nPlots = len(fig_var_list)
-        for n,var in enumerate(fig_var_list):
+        n = 0
+        for var in fig_var_list:
             nc_varname = fp_info["variables"][var]["name"]
             infilename = fp_info["variables"][var]["in_filename"]
             ldt = ds[infilename].root["Variables"]["DateTime"]["Data"]
@@ -389,7 +390,7 @@ def plot_fingerprint(cf):
             data_daily = data.reshape(nDays,nPerDay)
             units = str(ds[infilename].root["Variables"][nc_varname]['Attr']['units'])
             label = var + ' (' + units + ')'
-            if n==0:
+            if n == 0:
                 ax = plt.subplot(1,nPlots,n+1)
             else:
                 ax = plt.subplot(1,nPlots,n+1,sharey=ax)
@@ -413,8 +414,9 @@ def plot_fingerprint(cf):
                 cb.set_ticks(numpy.linspace(data_min,data_max,4))
             plt.xticks([0,6,12,18,24])
             plt.xlabel(label)
-            if n!= 0:
+            if n != 0:
                 plt.setp(ax.get_yticklabels(), visible=False)
+            n += 1
         plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
