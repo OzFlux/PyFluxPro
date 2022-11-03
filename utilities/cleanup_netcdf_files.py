@@ -615,16 +615,16 @@ else:
     msg = " 'update_control_files.txt' control file not found"
     logger.error(msg)
 
-#rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
+rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "WD2TB", "OzFlux", "Sites")
-rp = os.path.join(os.sep, "home", "peter", "OzFlux", "Sites")
-sites = ["DalyUncleared"]
-#sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
-         #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
-         #"FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield", "Longreach",
-         #"Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek", "Samford",
-         #"SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra", "Whroo",
-         #"WombatStateForest", "Yanco"]
+#rp = os.path.join(os.sep, "home", "peter", "OzFlux", "Sites")
+#sites = ["DalyUncleared"]
+sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
+         "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
+         "Fletcherview", "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield",
+         "Longreach", "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek",
+         "Samford", "SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra",
+         "Whroo", "WombatStateForest", "Yanco"]
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
     op = os.path.join(rp, site, "Data", "Processed")

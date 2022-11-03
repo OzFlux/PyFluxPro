@@ -675,6 +675,8 @@ def ReadExcelWorkbook(l1_info):
         # round the datetime index to the nearest second
         dfs[df_name].index = dfs[df_name].index.round('1S')
         # drop columns except those wanted by the user
+        dfs[df_name] = dfs[df_name][~dfs[df_name].index.duplicated(keep='first')]
+        # drop columns except those wanted by the user
         dfs[df_name] = dfs[df_name][list(l1_info["read_excel"]["xl_sheets"][df_name]["xl_labels"])]
         # coerce all columns with dtype "object" to "float64"
         cols = dfs[df_name].columns[dfs[df_name].dtypes.eq(object)]
@@ -1244,7 +1246,7 @@ def write_csv_ep_biomet(cf):
     if not pfp_utils.path_exists(os.path.dirname(csvFileName), mode="verbose"):
         return 0
     # open the csv file
-    csvfile = open(csvFileName, "w")
+    csvfile = open(csvFileName, "w", newline="")
     writer = csv.writer(csvfile)
     # read the netCDF file
     ds = NetCDFRead(ncFileName)
