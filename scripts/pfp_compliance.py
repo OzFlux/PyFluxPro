@@ -801,8 +801,7 @@ def check_l2_options(cfg, ds):
     """
     messages = {"ERROR":[], "WARNING": [], "INFO": []}
     closed_path_irgas = ["Li-7200", "Li-7200RS", "EC155"]
-    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)", "Li-7500A (>=V6.5)", "Li-7500RS",
-                       "EC150", "IRGASON"]
+    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "EC150", "IRGASON"]
     irga_types = open_path_irgas + closed_path_irgas
     nc_irga_type = None
     cfg_irga_type = None
@@ -860,8 +859,7 @@ def check_l3_options(cfg, ds):
     """
     messages = {"ERROR":[], "WARNING": [], "INFO": []}
     closed_path_irgas = ["Li-7200", "Li-7200RS", "EC155"]
-    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)", "Li-7500A (>=V6.5)", "Li-7500RS",
-                       "EC150", "IRGASON"]
+    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "EC150", "IRGASON"]
     irga_type = str(ds.root["Attributes"]["irga_type"])
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "ApplyWPL", default="Yes")
     if ((opt.lower() == "yes" and irga_type in open_path_irgas) or
@@ -1308,8 +1306,7 @@ def l1_check_input_labels(cfg, messages):
             messages["WARNING"].append(msg)
     return
 def l1_check_irga_type(cfg, messages):
-    known_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)",
-                   "Li-7500A (>=V6.5)", "Li-7500RS", "Li-7200", "Li-7200RS",
+    known_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "Li-7200", "Li-7200RS",
                    "EC150", "EC155", "IRGASON"]
     signal_labels = ["Signal_CO2", "Signal_H2O"]
     h2o_covars = ["UxA", "UyA", "UzA"]

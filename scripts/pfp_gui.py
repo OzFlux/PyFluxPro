@@ -2204,16 +2204,11 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.actionSetIRGATypeLi7500.setText("Li-7500")
                         self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500)
                         self.context_menu.actionSetIRGATypeLi7500.triggered.connect(self.set_irga_li7500)
-                    if existing_entry != "Li-7500A (<V6.5)":
-                        self.context_menu.actionSetIRGATypeLi7500APre6_5 = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeLi7500APre6_5.setText("Li-7500A (<V6.5)")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500APre6_5)
-                        self.context_menu.actionSetIRGATypeLi7500APre6_5.triggered.connect(self.set_irga_li7500a_pre6_5)
-                    if existing_entry != "Li-7500A (>=V6.5)":
-                        self.context_menu.actionSetIRGATypeLi7500APost6_5 = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeLi7500APost6_5.setText("Li-7500A (>=V6.5)")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500APost6_5)
-                        self.context_menu.actionSetIRGATypeLi7500APost6_5.triggered.connect(self.set_irga_li7500a_post6_5)
+                    if existing_entry != "Li-7500A":
+                        self.context_menu.actionSetIRGATypeLi7500A = QtWidgets.QAction(self)
+                        self.context_menu.actionSetIRGATypeLi7500A.setText("Li-7500A")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500A)
+                        self.context_menu.actionSetIRGATypeLi7500A.triggered.connect(self.set_irga_li7500a)
                     if existing_entry != "Li-7500RS":
                         self.context_menu.actionSetIRGATypeLi7500RS = QtWidgets.QAction(self)
                         self.context_menu.actionSetIRGATypeLi7500RS.setText("Li-7500RS")
@@ -2695,19 +2690,12 @@ class edit_cfg_L2(QtWidgets.QWidget):
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("Li-7500")
 
-    def set_irga_li7500a_pre6_5(self):
-        """ Set the IRGA type to Li-7500A pre V6.5."""
+    def set_irga_li7500a(self):
+        """ Set the IRGA type to Li-7500A (pre and post V6.5)."""
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("Li-7500A (<V6.5)")
-
-    def set_irga_li7500a_post6_5(self):
-        """ Set the IRGA type to Li-7500A post V6.5."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("Li-7500A (>=V6.5)")
+        parent.child(selected_item.row(), 1).setText("Li-7500A")
 
     def set_irga_li7500rs(self):
         """ Set the IRGA type to Li-7500RS."""

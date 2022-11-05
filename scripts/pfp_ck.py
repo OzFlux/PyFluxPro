@@ -744,12 +744,9 @@ def do_IRGAcheck(cf,ds):
             logger.warning(msg)
             irga_type = "Li-7500"
     # do the IRGA checks
-    if irga_type in ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)"]:
+    if irga_type in ["Li-7500", "Li-7500A", "Li-7500RS", "Li-7200", "Li-7200RS"]:
         ds.root["Attributes"]["irga_type"] = irga_type
         do_li7500check(cf, ds)
-    elif irga_type in ["Li-7500A (>=V6.5)", "Li-7500RS", "Li-7200", "Li-7200RS"]:
-        ds.root["Attributes"]["irga_type"] = irga_type
-        do_li7500acheck(cf, ds)
     elif irga_type in ["EC150", "EC155", "IRGASON"]:
         ds.root["Attributes"]["irga_type"] = irga_type
         do_EC155check(cf, ds)
@@ -758,6 +755,117 @@ def do_IRGAcheck(cf,ds):
         logger.error(msg)
         return
     return
+
+#def do_li7500check(cf, ds, code=4):
+    #"""
+    #Purpose:
+     #Reject covariances of H2O (UxA, UyA and UzA) and CO2 (UzC, UyC and UzC)
+     #based on the IRGA AGC and the standard deviation or variance of H2O and
+     #CO2 concentration.
+     #QC checks on AGC and standard deviation or variance of H2O and CO2 are
+     #performed before this routine is called.  This routine then rejects the
+     #covariance values for those times when the precursors have been rejected.
+     #Only 1 H2O and 1 CO2 variable, either standard deviation or
+     #variance, are used.
+     #This routine is an implicit DependencyCheck.
+     #Li-7500 version.
+    #Usage:
+     #pfp_ch.do_li7500check(cf, ds, code=4)
+     #where cf is a control file
+           #ds is a data structure
+    #Side effects:
+     #Covariance values are masked and flags set to 4 for all time steps when
+     #any of the precursors have failed a previous QC check.
+    #Author: PRI
+    #Date: October 2020 (rewrite of original)
+    #"""
+    #msg = " Doing the IRGA (Li-7500) check"
+    #logger.info(msg)
+    #nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    #labels = list(ds.root["Variables"].keys())
+    ## list of variables to be modified by this QC check
+    #dependents = ["UzA", "UxA", "UyA", "UzC", "UxC", "UyC",
+                  #"AH_IRGA_Av", "AH_IRGA_Sd", "AH_IRGA_Vr",
+                  #"CO2_IRGA_Av", "CO2_IRGA_Sd", "CO2_IRGA_Vr",
+                  #"H2O_IRGA_Av", "H2O_IRGA_Sd", "H2O_IRGA_Vr"]
+    ## check these are in the data structure
+    #for label in list(dependents):
+        #if label not in labels:
+            #dependents.remove(label)
+    ## return if there are no dependents to check
+    #if len(dependents) == 0:
+        #msg = "  No dependent variables found, skipping IRGA check ..."
+        #logger.info(msg)
+        #return
+    ## list for conditional variables
+    #conditionals = []
+    ## check if we have the IRGA diagnostic
+    #got_diag = False
+    #for diag in ["Diag_IRGA", "Diag_7500"]:
+        #if diag in labels:
+            #got_diag = True
+            #conditionals.append(diag)
+            #break
+    #if not got_diag:
+        #msg = " IRGA diagnostic (Diag_IRGA) not found in data"
+        #logger.warning(msg)
+    ## check if we have an AGC (only use one)
+    #got_AGC = False
+    #for agc in ["AGC_7500", "AGC_IRGA"]:
+        #if agc in labels:
+            #got_AGC = True
+            #conditionals.append(agc)
+            #break
+    #if not got_AGC:
+        #msg = " AGC not used in IRGA check (not in data structure)"
+        #logger.warning(msg)
+    ## check of H2O standard deviation or variance (only use one)
+    #got_H2O = False
+    #for h2o in ["H2O_IRGA_Sd", "AH_IRGA_Sd", "H2O_IRGA_Vr", "AH_IRGA_Vr"]:
+        #if h2o in labels:
+            #got_H2O = True
+            #conditionals.append(h2o)
+            #break
+    #if not got_H2O:
+        #msg = " H2O standard deviation or variance not used in IRGA check (not in data structure)"
+        #logger.warning(msg)
+    ## check of CO2 standard deviation or variance (only use one)
+    #got_CO2 = False
+    #for co2 in ["CO2_IRGA_Sd", "CO2_IRGA_Vr"]:
+        #if co2 in labels:
+            #got_CO2 = True
+            #conditionals.append(co2)
+            #break
+    #if not got_CO2:
+        #msg = " CO2 standard deviation or variance not used in IRGA check (not in data structure)"
+        #logger.warning(msg)
+    ## return if we found no conditionals
+    #if len(conditionals) == 0:
+        #msg = " No conditional variables found, skipping IRGA check ..."
+        #logger.warning(msg)
+        #return
+    ## create an index series, 0 ==> not OK, 1 ==> OK
+    #cidx = numpy.ones(nrecs, dtype=int)
+    #for conditional in conditionals:
+        #variable = pfp_utils.GetVariable(ds, conditional)
+        #idx = numpy.where(numpy.ma.getmaskarray(variable["Data"]) == True)[0]
+        #msg = "  IRGA check: " + conditional + " rejected " + str(numpy.size(idx)) + " points"
+        #logger.info(msg)
+        #cidx[idx] = int(0)
+    #rejected = numpy.count_nonzero(cidx == 0)
+    #percent = int(numpy.rint(100*rejected/nrecs))
+    #msg = "  IRGA check: total number of points rejected was " + str(rejected)
+    #msg += " (" + str(percent) + "%)"
+    #logger.info(msg)
+    ## use the conditional series to mask the dependents
+    #for dependent in dependents:
+        #variable = pfp_utils.GetVariable(ds, dependent)
+        #variable["Data"] = numpy.ma.masked_where(cidx == int(0), variable["Data"])
+        #idx = numpy.where(cidx == int(0))[0]
+        #variable["Flag"][idx] = int(code)
+        #variable["Attr"]["irga_check"] = ",".join(dependents)
+        #pfp_utils.CreateVariable(ds, variable)
+    #return
 
 def do_li7500check(cf, ds, code=4):
     """
@@ -782,118 +890,8 @@ def do_li7500check(cf, ds, code=4):
     Author: PRI
     Date: October 2020 (rewrite of original)
     """
-    msg = " Doing the IRGA (Li-7500) check"
-    logger.info(msg)
-    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
-    labels = list(ds.root["Variables"].keys())
-    # list of variables to be modified by this QC check
-    dependents = ["UzA", "UxA", "UyA", "UzC", "UxC", "UyC",
-                  "AH_IRGA_Av", "AH_IRGA_Sd", "AH_IRGA_Vr",
-                  "CO2_IRGA_Av", "CO2_IRGA_Sd", "CO2_IRGA_Vr",
-                  "H2O_IRGA_Av", "H2O_IRGA_Sd", "H2O_IRGA_Vr"]
-    # check these are in the data structure
-    for label in list(dependents):
-        if label not in labels:
-            dependents.remove(label)
-    # return if there are no dependents to check
-    if len(dependents) == 0:
-        msg = "  No dependent variables found, skipping IRGA check ..."
-        logger.info(msg)
-        return
-    # list for conditional variables
-    conditionals = []
-    # check if we have the IRGA diagnostic
-    got_diag = False
-    for diag in ["Diag_IRGA", "Diag_7500"]:
-        if diag in labels:
-            got_diag = True
-            conditionals.append(diag)
-            break
-    if not got_diag:
-        msg = " IRGA diagnostic (Diag_IRGA) not found in data"
-        logger.warning(msg)
-    # check if we have an AGC (only use one)
-    got_AGC = False
-    for agc in ["AGC_7500", "AGC_IRGA"]:
-        if agc in labels:
-            got_AGC = True
-            conditionals.append(agc)
-            break
-    if not got_AGC:
-        msg = " AGC not used in IRGA check (not in data structure)"
-        logger.warning(msg)
-    # check of H2O standard deviation or variance (only use one)
-    got_H2O = False
-    for h2o in ["H2O_IRGA_Sd", "AH_IRGA_Sd", "H2O_IRGA_Vr", "AH_IRGA_Vr"]:
-        if h2o in labels:
-            got_H2O = True
-            conditionals.append(h2o)
-            break
-    if not got_H2O:
-        msg = " H2O standard deviation or variance not used in IRGA check (not in data structure)"
-        logger.warning(msg)
-    # check of CO2 standard deviation or variance (only use one)
-    got_CO2 = False
-    for co2 in ["CO2_IRGA_Sd", "CO2_IRGA_Vr"]:
-        if co2 in labels:
-            got_CO2 = True
-            conditionals.append(co2)
-            break
-    if not got_CO2:
-        msg = " CO2 standard deviation or variance not used in IRGA check (not in data structure)"
-        logger.warning(msg)
-    # return if we found no conditionals
-    if len(conditionals) == 0:
-        msg = " No conditional variables found, skipping IRGA check ..."
-        logger.warning(msg)
-        return
-    # create an index series, 0 ==> not OK, 1 ==> OK
-    cidx = numpy.ones(nrecs, dtype=int)
-    for conditional in conditionals:
-        variable = pfp_utils.GetVariable(ds, conditional)
-        idx = numpy.where(numpy.ma.getmaskarray(variable["Data"]) == True)[0]
-        msg = "  IRGA check: " + conditional + " rejected " + str(numpy.size(idx)) + " points"
-        logger.info(msg)
-        cidx[idx] = int(0)
-    rejected = numpy.count_nonzero(cidx == 0)
-    percent = int(numpy.rint(100*rejected/nrecs))
-    msg = "  IRGA check: total number of points rejected was " + str(rejected)
-    msg += " (" + str(percent) + "%)"
-    logger.info(msg)
-    # use the conditional series to mask the dependents
-    for dependent in dependents:
-        variable = pfp_utils.GetVariable(ds, dependent)
-        variable["Data"] = numpy.ma.masked_where(cidx == int(0), variable["Data"])
-        idx = numpy.where(cidx == int(0))[0]
-        variable["Flag"][idx] = int(code)
-        variable["Attr"]["irga_check"] = ",".join(dependents)
-        pfp_utils.CreateVariable(ds, variable)
-    return
-
-def do_li7500acheck(cf, ds, code=4):
-    """
-    Purpose:
-     Reject covariances of H2O (UxA, UyA and UzA) and CO2 (UzC, UyC and UzC)
-     based on the IRGA AGC and the standard deviation or variance of H2O and
-     CO2 concentration.
-     QC checks on AGC and standard deviation or variance of H2O and CO2 are
-     performed before this routine is called.  This routine then rejects the
-     covariance values for those times when the precursors have been rejected.
-     Only 1 H2O and 1 CO2 variable, either standard deviation or
-     variance, are used.
-     This routine is an implicit DependencyCheck.
-     Li-7500 version.
-    Usage:
-     pfp_ch.do_li7500check(cf, ds, code=4)
-     where cf is a control file
-           ds is a data structure
-    Side effects:
-     Covariance values are masked and flags set to 4 for all time steps when
-     any of the precursors have failed a previous QC check.
-    Author: PRI
-    Date: October 2020 (rewrite of original)
-    """
-    msg = " Doing the IRGA (Li-7500A) check"
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    msg = " Doing the IRGA (" + irga_type + ") check"
     logger.info(msg)
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     labels = list(ds.root["Variables"].keys())
@@ -925,7 +923,7 @@ def do_li7500acheck(cf, ds, code=4):
         logger.warning(msg)
     # check if we have the H2O and CO2 signal strengths
     got_signal = False
-    for signal in ["Signal_Av", "Signal_H2O", "Signal_CO2", "AGC_IRGA"]:
+    for signal in ["Signal_Av", "Signal_H2O", "Signal_CO2", "AGC_7500", "AGC_IRGA"]:
         if signal in labels:
             got_signal = True
             conditionals.append(signal)
