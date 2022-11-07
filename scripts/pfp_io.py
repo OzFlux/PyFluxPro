@@ -532,7 +532,10 @@ def ReadCSVFile(l1_info):
                          skip_blank_lines=False)
     # check the requested variables are in the file
     headers = list(df)
+    # list of csv variable names
     csv_labels = []
+    # dictionary of csv to nc name mapping
+    column_name_map = {}
     for nc_label in list(l1ire["Variables"].keys()):
         csv_label = l1ire["Variables"][nc_label]["csv"]["name"]
         if csv_label not in headers:
@@ -541,6 +544,7 @@ def ReadCSVFile(l1_info):
             continue
         else:
             csv_labels.append(csv_label)
+            column_name_map[csv_label] = nc_label
     # remove duplicate CSV labels
     csv_labels = list(set(csv_labels))
     # check for a timestamp
@@ -549,6 +553,12 @@ def ReadCSVFile(l1_info):
         # if so, we use the timestamp at the end of the period
         df["TIMESTAMP"] = pandas.to_datetime(df["TIMESTAMP_END"].astype("string"),
                                              errors="raise")
+    # maybe an EddyPro output file?
+    elif (("date" in headers) and ("time" in headers)):
+        # date and time in separate columns, time at end of the period
+        df["TIMESTAMP"] = pandas.to_datetime(df["date"].astype('string')+" "+df["time"].astype('string'),
+                                             errors="raise")
+    # try and automatically find a timestamp
     else:
         # otherwise, try and automatically detect the datetime column
         df = df.apply(lambda col: pandas.to_datetime(col, dayfirst=True, errors='ignore')
@@ -577,6 +587,8 @@ def ReadCSVFile(l1_info):
     # coerce all columns with dtype "object" to "float64"
     cols = df.columns[df.dtypes.eq(object)]
     df[cols] = df[cols].apply(pandas.to_numeric, errors='coerce')
+    # rename the data frame columns
+    df = df.rename(columns=column_name_map)
     # return a dictionary to be compatible with ReadExcelWorkbook
     return {0: df}
 
