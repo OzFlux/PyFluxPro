@@ -1,0 +1,312 @@
+level = L1
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.csv)
+    in_firstdatarow = 3
+    in_headerrow = 2
+    out_filename = Right click to browse (*.nc)
+[Global]
+    Conventions = CF-1.8
+    acknowledgement = 
+    altitude = <altitude>m
+    canopy_height = <canopy_height>m
+    comment = 
+    contact = 
+    data_link = http://data.ozflux.org.au/
+    featureType = timeSeries
+    fluxnet_id = 
+    history = 
+    institution = 
+    latitude = <latitude>
+    license = https://creativecommons.org/licenses/by/4.0/
+    license_name = CC BY 4.0
+    longitude = <longitude>
+    metadata_link = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
+    ozflux_link = http://ozflux.org.au/
+    publisher_name = TERN Ecosystem Processes,OzFlux
+    references = 
+    site_name = <site_name>
+    site_pi = 
+    soil = 
+    source = 
+    time_step = 30
+    time_zone = <country>/<time_zone>
+    title = EddyPro Level 1 statistics file
+    tower_height = 
+    vegetation = 
+[Variables]
+    [[AH_IRGA_Av]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <irga_type>
+            long_name = Absolute humidity
+            standard_name = mass_concentration_of_water_vapor_in_air
+            statistic_type = average
+            units = g/m^3
+        [[[csv]]]
+            name = mean(h2o)
+    [[AH_IRGA_Vr]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <irga_type>
+            long_name = Absolute humidity
+            statistic_type = variance
+            units = g^2/m^6
+        [[[csv]]]
+            name = var(h2o)
+    [[CO2_IRGA_Av]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <irga_type>
+            long_name = CO2 concentration
+            standard_name = mass_concentration_of_carbon_dioxide_in_air
+            statistic_type = average
+            units = mg/m^3
+        [[[csv]]]
+            name = mean(co2)
+    [[CO2_IRGA_Vr]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <irga_type>
+            long_name = CO2 concentration
+            statistic_type = variance
+            units = mg^2/m^6
+        [[[csv]]]
+            name = var(co2)
+    [[Tv_SONIC_Av]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Virtual temperature
+            standard_name = virtual_temperature
+            statistic_type = average
+            units = K
+        [[[Function]]]
+            func = K_to_C(Tv_SONIC_Av)
+        [[[csv]]]
+            name = mean(ts)
+    [[Tv_SONIC_Vr]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Virtual temperature
+            statistic_type = variance
+            units = degC^2
+        [[[csv]]]
+            name = var(ts)
+    [[UxA]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>,<irga_type>
+            long_name = Covariance of Ux and H2O
+            statistic_type = average
+            units = g/m^2/s
+        [[[csv]]]
+            name = cov(u/h2o)
+    [[UxC]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>,<irga_type>
+            long_name = Covariance of Ux and CO2
+            statistic_type = average
+            units = mg/m^2/s
+        [[[csv]]]
+            name = cov(u/co2)
+    [[UxT]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Covariance of Ux and T
+            statistic_type = average
+            units = m.degC/s
+        [[[csv]]]
+            name = cov(u/ts)
+    [[UxUy]]
+        [[[Attr]]]
+            height = <height>
+            instrument = CSA3
+            long_name = Covariance of Ux and Uy
+            statistic_type = average
+            units = m^2/s^2
+        [[[csv]]]
+            name = cov(u/v)
+    [[UxUz]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Covariance of Ux and Uz
+            statistic_type = average
+            units = m^2/s^2
+        [[[csv]]]
+            name = cov(u/w)
+    [[Ux_SONIC_Av]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Longitudinal wind velocity component, sonic coordinates
+            statistic_type = average
+            units = m/s
+        [[[csv]]]
+            name = mean(u)
+    [[Ux_SONIC_Vr]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Longitudinal wind velocity component, sonic coordinates
+            statistic_type = variance
+            units = m^2/s^2
+        [[[csv]]]
+            name = var(u)
+    [[UyA]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>,<irga_type>
+            long_name = Covariance of Uy and H2O
+            statistic_type = average
+            units = g/m^2/s
+        [[[csv]]]
+            name = cov(v/h2o)
+    [[UyC]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>,<irga_type>
+            long_name = Covariance of Uy and CO2
+            statistic_type = average
+            units = mg/m^2/s
+        [[[csv]]]
+            name = cov(v/co2)
+    [[UyT]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Covariance of Uy and T
+            statistic_type = average
+            units = m.degC/s
+        [[[csv]]]
+            name = cov(v/ts)
+    [[UyUz]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Covariance of Uy and Uz
+            statistic_type = average
+            units = m^2/s^2
+        [[[csv]]]
+            name = cov(v/w)
+    [[Uy_SONIC_Av]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Lateral wind velocity component, sonic coordinates
+            statistic_type = average
+            units = m/s
+        [[[csv]]]
+            name = mean(v)
+    [[Uy_SONIC_Vr]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Lateral wind velocity component, sonic coordinates
+            statistic_type = variance
+            units = m^2/s^2
+        [[[csv]]]
+            name = var(v)
+    [[UzA]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>,<irga_type>
+            long_name = Covariance of Uz and H2O
+            statistic_type = average
+            units = g/m^2/s
+        [[[csv]]]
+            name = cov(w/h2o)
+    [[UzC]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>,<irga_type>
+            long_name = Covariance of Uz and CO2
+            statistic_type = average
+            units = mg/m^2/s
+        [[[csv]]]
+            name = cov(w/co2)
+    [[UzT]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Covariance of Uz and T
+            statistic_type = average
+            units = m.degC/s
+        [[[csv]]]
+            name = cov(w/ts)
+    [[Uz_SONIC_Av]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Vertical wind velocity component, sonic coordinates
+            statistic_type = average
+            units = m/s
+        [[[csv]]]
+            name = mean(w)
+    [[Uz_SONIC_Vr]]
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Vertical wind velocity component, sonic coordinates
+            statistic_type = variance
+            units = m^2/s^2
+        [[[csv]]]
+            name = var(w)
+    [[Ux_SONIC_Sd]]
+        [[[csv]]]
+            name = st_dev(u)
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Longitudinal wind velocity component, sonic coordinates
+            statistic_type = standard_deviation
+            units = m/s
+    [[Uy_SONIC_Sd]]
+        [[[csv]]]
+            name = st_dev(v)
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Lateral wind velocity component, sonic coordinates
+            statistic_type = standard_deviation
+            units = m/s
+    [[Uz_SONIC_Sd]]
+        [[[csv]]]
+            name = st_dev(w)
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Vertical wind velocity component, sonic coordinates
+            statistic_type = standard_deviation
+            units = m/s
+    [[Tv_SONIC_Sd]]
+        [[[csv]]]
+            name = st_dev(ts)
+        [[[Attr]]]
+            height = <height>
+            instrument = <sonic_type>
+            long_name = Virtual temperature
+            statistic_type = standard_deviation
+            units = degC
+    [[CO2_IRGA_Sd]]
+        [[[csv]]]
+            name = st_dev(co2)
+        [[[Attr]]]
+            height = <height>
+            instrument = <irga_type>
+            long_name = CO2 concentration
+            statistic_type = standard_deviation
+            units = mg/m^3
+    [[AH_IRGA_Sd]]
+        [[[csv]]]
+            name = st_dev(h2o)
+        [[[Attr]]]
+            height = <height>
+            instrument = <irga_type>
+            long_name = Absolute humidity
+            statistic_type = standard_deviation
+            units = g/m^3
