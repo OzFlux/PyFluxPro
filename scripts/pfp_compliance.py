@@ -535,8 +535,8 @@ def ParseL1ControlFile(cf):
     # copy the files section from the control file
     l1ire["Files"] = copy.deepcopy(cf["Files"])
     l1ire["Files"]["file_name"] = os.path.join(cf["Files"]["file_path"], cf["Files"]["in_filename"])
-    l1ire["Files"]["in_headerrow"] = int(cf["Files"]["in_headerrow"])
-    l1ire["Files"]["in_firstdatarow"] = int(cf["Files"]["in_firstdatarow"])
+    l1ire["Files"]["in_headerrow"] = cf["Files"]["in_headerrow"]
+    l1ire["Files"]["in_firstdatarow"] = cf["Files"]["in_firstdatarow"]
     # get the global attributes
     l1ire["Global"] = copy.deepcopy(cf["Global"])
     # get the variables
@@ -910,38 +910,42 @@ def l1_check_files(cfg, std, messages):
             messages["ERROR"].append(msg)
         # check in_filename is in the Files section
         if "in_filename" in cfg["Files"]:
-            file_name = cfg["Files"]["in_filename"]
-            file_parts = os.path.splitext(file_name)
-            # check the file type is supported
-            if (file_parts[-1].lower() in  [".xls", ".xlsx", ".csv"]):
-                file_uri = os.path.join(file_path, file_name)
-                if os.path.isfile(file_uri):
-                    pass
+            file_names = cfg["Files"]["in_filename"]
+            file_names = file_names.split(",")
+            for file_name in file_names:
+                file_parts = os.path.splitext(file_name)
+                # check the file type is supported
+                if (file_parts[-1].lower() in  [".xls", ".xlsx", ".csv"]):
+                    file_uri = os.path.join(file_path, file_name)
+                    if os.path.isfile(file_uri):
+                        pass
+                    else:
+                        msg = "Files: " + file_name + " not found"
+                        messages["ERROR"].append(msg)
                 else:
-                    msg = "Files: " + file_name + " not found"
+                    msg = "Files: " + file_name + " doesn't end with .xls, .xlsx or .csv"
                     messages["ERROR"].append(msg)
-            else:
-                msg = "Files: " + file_name + " doesn't end with .xls, .xlsx or .csv"
-                messages["ERROR"].append(msg)
         else:
             msg = "Files: 'in_filename' not in section"
             messages["ERROR"].append(msg)
         # check in_firstdatarow is in the Files section
         if "in_firstdatarow" in cfg["Files"]:
-            # check to see if in_firdtdatarow is an integer
-            try:
-                i = int(cfg["Files"]["in_firstdatarow"])
-            except:
-                msg = "Files: 'in_firstdatarow' is not an integer"
-                messages["ERROR"].append(msg)
+            for item in cfg["Files"]["in_firstdatarow"].split(","):
+                # check to see if in_firdtdatarow is an integer
+                try:
+                    i = int(item)
+                except:
+                    msg = "Files: 'in_firstdatarow' is not an integer"
+                    messages["ERROR"].append(msg)
         # check in_headerrow is in the Files section
         if "in_headerrow" in cfg["Files"]:
-            # check to see if in_heafderrow is an integer
-            try:
-                i = int(cfg["Files"]["in_headerrow"])
-            except:
-                msg = "Files: 'in_headerrow' is not an integer"
-                messages["ERROR"].append(msg)
+            for item in cfg["Files"]["in_headerrow"].split(","):
+                # check to see if in_heafderrow is an integer
+                try:
+                    i = int(item)
+                except:
+                    msg = "Files: 'in_headerrow' is not an integer"
+                    messages["ERROR"].append(msg)
         # check the output file type
         if "out_filename" in cfg["Files"]:
             file_name = cfg["Files"]["out_filename"]
