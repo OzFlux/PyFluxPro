@@ -510,87 +510,98 @@ def ReadCSVFile(l1_info):
     Date: February 2021
     """
     l1ire = l1_info["read_excel"]
+    # dictionary to hold pandas data frames
+    dfs = {}
     # get the input file name, header row and first data row numbers
-    basename = os.path.basename(l1ire["Files"]["in_filename"])
-    msg = " Reading CSV file " + basename
-    logger.info(msg)
-    file_name = os.path.join(l1ire["Files"]["file_path"],
-                             l1ire["Files"]["in_filename"])
-    header_row_number = int(l1ire["Files"]["in_headerrow"]) - 1
-    first_data_row = int(l1ire["Files"]["in_firstdatarow"]) - 1
-    # set up some pandas read_csv options
-    skiprows = list(range(first_data_row))
-    if header_row_number in skiprows:
-        skiprows.remove(header_row_number)
-    engine = "python"
-    na_values = ["NAN"]
-    # read the CSV file
-    df = pandas.read_csv(file_name, delimiter=",",
-                         engine=engine, header=0,
-                         skiprows=skiprows,
-                         na_values=na_values,
-                         skip_blank_lines=False)
-    # check the requested variables are in the file
-    headers = list(df)
-    # list of csv variable names
-    csv_labels = []
-    # dictionary of csv to nc name mapping
-    column_name_map = {}
-    for nc_label in list(l1ire["Variables"].keys()):
-        csv_label = l1ire["Variables"][nc_label]["csv"]["name"]
-        if csv_label not in headers:
-            msg = csv_label + " not found in " + basename + ", skipping ..."
-            logger.warning(msg)
-            continue
+    file_names = l1ire["Files"]["in_filename"].split(",")
+    in_header_rows = l1ire["Files"]["in_headerrow"].split(",")
+    first_data_rows = l1ire["Files"]["in_firstdatarow"].split(",")
+    all_csv_labels = []
+    found_csv_labels = []
+    for n, file_name in enumerate(file_names):
+        msg = " Reading CSV file " + file_name
+        logger.info(msg)
+        file_uri = os.path.join(l1ire["Files"]["file_path"], file_name)
+        header_row_number = int(in_header_rows[n]) - 1
+        first_data_row = int(first_data_rows[n]) - 1
+        # set up some pandas read_csv options
+        skiprows = list(range(first_data_row))
+        if header_row_number in skiprows:
+            skiprows.remove(header_row_number)
+        engine = "python"
+        na_values = ["NAN"]
+        # read the CSV file
+        df = pandas.read_csv(file_uri, delimiter=",",
+                             engine=engine, header=0,
+                             skiprows=skiprows,
+                             na_values=na_values,
+                             skip_blank_lines=False)
+        # check the requested variables are in the file
+        headers = list(df)
+        # list of csv variable names
+        csv_labels = []
+        # dictionary of csv to nc name mapping
+        column_name_map = {}
+        for nc_label in list(l1ire["Variables"].keys()):
+            csv_label = l1ire["Variables"][nc_label]["csv"]["name"]
+            all_csv_labels.append(csv_label)
+            if csv_label in headers:
+                csv_labels.append(csv_label)
+                found_csv_labels.append(csv_label)
+                column_name_map[csv_label] = nc_label
+            else:
+                pass
+        # remove duplicate CSV labels
+        csv_labels = list(set(csv_labels))
+        # check for a timestamp
+        # are we dealing with a FluxNet or AmeriFlux file?
+        if ("TIMESTAMP_END" in headers):
+            # if so, we use the timestamp at the end of the period
+            df["TIMESTAMP"] = pandas.to_datetime(df["TIMESTAMP_END"].astype("string"),
+                                                 errors="raise")
+        # maybe an EddyPro output file?
+        elif (("date" in headers) and ("time" in headers)):
+            # date and time in separate columns, time at end of the period
+            df["TIMESTAMP"] = pandas.to_datetime(df["date"].astype('string')+" "+df["time"].astype('string'),
+                                                 errors="raise")
+        # try and automatically find a timestamp
         else:
-            csv_labels.append(csv_label)
-            column_name_map[csv_label] = nc_label
-    # remove duplicate CSV labels
-    csv_labels = list(set(csv_labels))
-    # check for a timestamp
-    # are we dealing with a FluxNet or AmeriFlux file?
-    if ("TIMESTAMP_END" in headers):
-        # if so, we use the timestamp at the end of the period
-        df["TIMESTAMP"] = pandas.to_datetime(df["TIMESTAMP_END"].astype("string"),
-                                             errors="raise")
-    # maybe an EddyPro output file?
-    elif (("date" in headers) and ("time" in headers)):
-        # date and time in separate columns, time at end of the period
-        df["TIMESTAMP"] = pandas.to_datetime(df["date"].astype('string')+" "+df["time"].astype('string'),
-                                             errors="raise")
-    # try and automatically find a timestamp
-    else:
-        # otherwise, try and automatically detect the datetime column
-        df = df.apply(lambda col: pandas.to_datetime(col, dayfirst=True, errors='ignore')
-                      if col.dtypes == object
-                      else col,
-                      axis=0)
-    # check that we found a datetime column
-    timestamps = list(df.select_dtypes(include=['datetime64']))
-    if len(timestamps) < 1:
-        msg = " Did not find a time stamp for file " + basename + ", aborting ..."
-        logger.error(msg)
-        return {0: pandas.DataFrame()}
-    elif len(timestamps) > 1:
-        msg = " More than 1 time stamp found for file " + basename + ", using " + timestamps[0]
-        logger.warning(msg)
-    else:
-        pass
-    # choose the first datetime column
-    timestamp = timestamps[0]
-    # set the data frame index to the time stamp
-    df.set_index(timestamp, inplace=True)
-    # round the datetime index to the nearest second
-    df.index = df.index.round('1S')
-    # drop columns except those wanted by the user
-    df = df[csv_labels]
-    # coerce all columns with dtype "object" to "float64"
-    cols = df.columns[df.dtypes.eq(object)]
-    df[cols] = df[cols].apply(pandas.to_numeric, errors='coerce')
-    # rename the data frame columns
-    df = df.rename(columns=column_name_map)
+            # otherwise, try and automatically detect the datetime column
+            df = df.apply(lambda col: pandas.to_datetime(col, dayfirst=True, errors='ignore')
+                          if col.dtypes == object
+                          else col,
+                          axis=0)
+        # check that we found a datetime column
+        timestamps = list(df.select_dtypes(include=['datetime64']))
+        if len(timestamps) < 1:
+            msg = " Did not find a time stamp for file " + file_name + ", aborting ..."
+            logger.error(msg)
+            return {0: pandas.DataFrame()}
+        elif len(timestamps) > 1:
+            msg = " More than 1 time stamp found for file " + file_name + ", using " + timestamps[0]
+            logger.warning(msg)
+        else:
+            pass
+        # choose the first datetime column
+        timestamp = timestamps[0]
+        # set the data frame index to the time stamp
+        df.set_index(timestamp, inplace=True)
+        # round the datetime index to the nearest second
+        df.index = df.index.round('1S')
+        # drop columns except those wanted by the user
+        df = df[csv_labels]
+        # coerce all columns with dtype "object" to "float64"
+        cols = df.columns[df.dtypes.eq(object)]
+        df[cols] = df[cols].apply(pandas.to_numeric, errors='coerce')
+        # rename the data frame columns
+        dfs[file_name] = df.rename(columns=column_name_map)
+    # check to see if any variables were not found in the CSV files
+    for item in all_csv_labels:
+        if item not in found_csv_labels:
+            msg = " " + item + " not found in input files, skipped ..."
+            logger.warning(msg)
     # return a dictionary to be compatible with ReadExcelWorkbook
-    return {0: df}
+    return dfs
 
 def ReadExcelWorkbook(l1_info):
     """
@@ -2062,7 +2073,7 @@ def MergeDataFrames(dfs, l1_info):
     df_names = list(dfs)
     # merge data frames
     if len(df_names) > 1:
-        msg = " Merging " + ','.join(df_names) + " to a single data frame"
+        msg = " Merging into a single data frame"
         logger.info(msg)
         # get the earliest start and latest end time
         start = min(dfs[df_names[0]].index.values)

@@ -1177,13 +1177,76 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # get the file_path so it can be used as a default directory
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+        filter_text = "All (*.csv *.xls *.xlsx);;CSV (*.csv);;Excel (*.xls *.xlsx)"
+        new_file_path = QtWidgets.QFileDialog.getOpenFileNames(caption="Choose an input file ...",
+                                                               directory=file_path,
+                                                               filter=filter_text)[0]
         # update the model
-        if len(str(new_file_path)) > 0:
-            new_file_parts = os.path.split(str(new_file_path))
-            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
-            self.update_tab_text()
+        if len(new_file_path) > 0:
+            if self.browse_input_file_check_entry(new_file_path):
+                new_file_names = []
+                for item in new_file_path:
+                    new_file_names.append(os.path.split(item)[1])
+                s = ",".join(new_file_names)
+                parent.child(selected_item.row(), 1).setText(s)
+                self.update_header_rows(new_file_names)
+                self.update_tab_text()
+        return
+    
+    def browse_input_file_check_entry(self, new_file_path):
+        """
+         Check the files selected by the user.  The rukes are:
+          1) if the file name ends in .xls or .xlsx then;
+             i) only 1 file can be selected
+          2) if the file name ends in .csv then;
+             i) no more than to 2 files can be selected
+             ii) if 2 files are selected they must be full_output
+                and biomet
+          3) file extensions .xls, .xlsx and .csv can't be mixed
+        """
+        ok = True
+        # check file extensions
+        new_file_extensions = []
+        new_file_names = []
+        for item in new_file_path:
+            _, file_extension = os.path.splitext(item)
+            new_file_extensions.append(file_extension)
+            file_name = os.path.basename(item)
+            new_file_names.append(file_name)
+        new_file_extension = list(set(new_file_extensions))
+        if len(new_file_extension) == 1:
+            # check Excel and CSV rules
+            if new_file_extension[0].lower() in [".xls", ".xlsx"]:
+                if len(new_file_path) == 1:
+                    ok = True
+                else:
+                    msg = " Only 1 Excel workbook can be opened"
+                    logger.error(msg)
+                    ok = False
+            elif new_file_extension[0].lower() in [".csv"]:
+                if len(new_file_path) == 1:
+                    ok = True
+                elif len(new_file_path) == 2:
+                    s = ",".join(new_file_names)
+                    if "biomet" in s and "full_output" in s:
+                        ok = True
+                    else:
+                        msg = " When opening 2 CSV files, they must be 'biomet' and 'full_output' files"
+                        logger.error(msg)
+                        ok = False
+                else:
+                    msg = " No more than 2 CSV files can be opened"
+                    logger.error(msg)
+                    ok = False
+            else:
+                msg = " Unrecognised file type (must be .xls, .xlsx or .csv)"
+                logger.error(msg)
+                ok = False
+        else:
+            msg = " All input files must be of the same type (same file extension)"
+            logger.error(msg)
+            ok = False
+        return ok
 
     def browse_output_file(self):
         """ Browse for the output data file path."""
@@ -1584,6 +1647,43 @@ class edit_cfg_L1(QtWidgets.QWidget):
             parent.removeRow(selected_item.row())
         self.update_tab_text()
 
+    def update_header_rows(self, new_file_names):
+        """
+         Check to see if we are reading a full_output and a biomet CSV file
+         and update the in_firstdatarow and in_headerrow entries accordingly.
+        """
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the row number of in_firstdatarow and in_headerrow in parent
+        _, _, _, ifdr = self.get_keyval_by_key_name(parent, "in_firstdatarow")
+        _, _, _, ihr = self.get_keyval_by_key_name(parent, "in_headerrow")
+        got_ep_output = False
+        in_firstdatarow = []
+        in_headerrow = []
+        for new_file_name in new_file_names:
+            if "biomet" in new_file_name:
+                got_ep_output = True
+                in_firstdatarow.append("3")
+                in_headerrow.append("1")
+            elif "full_output" in new_file_name:
+                got_ep_output = True
+                in_firstdatarow.append("4")
+                in_headerrow.append("2")
+            elif "fluxnet" in new_file_name:
+                got_ep_output = True
+                in_firstdatarow.append("2")
+                in_headerrow.append("1")
+            else:
+                pass
+        if got_ep_output:
+            parent.child(ifdr, 1).setText(",".join(in_firstdatarow))
+            parent.child(ihr, 1).setText(",".join(in_headerrow))
+        return
+        
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
         # add an asterisk to the tab text to indicate the tab contents have changed
