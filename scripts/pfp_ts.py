@@ -992,7 +992,8 @@ def CoordRotation2D(cf, ds, info):
         vw = UyUz["Data"]*ct*ce - UxUz["Data"]*ct*se - UxUy["Data"]*st*(ce*ce-se*se) + \
              UxUx["Data"]*st*ce*se - UyUy["Data"]*st*ce*se
     else:
-        logger.info(" 2D coordinate rotation disabled, using unrotated components and covariances")
+        msg = " 2D coordinate rotation disabled, using unrotated components and covariances"
+        logger.warning(msg)
         # dummy series for rotation angles
         theta = numpy.zeros(nRecs)
         eta = numpy.zeros(nRecs)

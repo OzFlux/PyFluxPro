@@ -65,8 +65,13 @@ class MsgBox_CloseOrIgnore(QtWidgets.QMessageBox):
         self.button(QtWidgets.QMessageBox.Yes).setText("Ignore")
         self.button(QtWidgets.QMessageBox.No).setText("Close")
         self.setModal(False)
-        self.show()
+        #self.show()
+    def execute(self):
         self.exec_()
+        if self.clickedButton() is self.button(QtWidgets.QMessageBox.Yes):
+            return "ignore"
+        else:
+            return "close"
 
 class MsgBox_Continue(QtWidgets.QMessageBox):
     def __init__(self, msg, title="Information", parent=None):
@@ -3058,9 +3063,9 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.sections["Plots"].appendRow(parent)
         self.update_tab_text()
 
-    def add_usel2fluxes(self):
-        """ Add UseL2Fluxes to the [Options] section."""
-        child0 = QtGui.QStandardItem("UseL2Fluxes")
+    def add_calculatefluxes(self):
+        """ Add CalculateFluxes to the [Options] section."""
+        child0 = QtGui.QStandardItem("CalculateFluxes")
         child0.setEditable(False)
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
@@ -3258,11 +3263,11 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddzms.setText("Add zms")
                     self.context_menu.addAction(self.context_menu.actionAddzms)
                     self.context_menu.actionAddzms.triggered.connect(self.add_zms)
-                if "UseL2Fluxes" not in existing_entries:
-                    self.context_menu.actionAddUseL2Fluxes = QtWidgets.QAction(self)
-                    self.context_menu.actionAddUseL2Fluxes.setText("UseL2Fluxes")
-                    self.context_menu.addAction(self.context_menu.actionAddUseL2Fluxes)
-                    self.context_menu.actionAddUseL2Fluxes.triggered.connect(self.add_usel2fluxes)
+                if "CalculateFluxes" not in existing_entries:
+                    self.context_menu.actionAddCalculateFluxes = QtWidgets.QAction(self)
+                    self.context_menu.actionAddCalculateFluxes.setText("CalculateFluxes")
+                    self.context_menu.addAction(self.context_menu.actionAddCalculateFluxes)
+                    self.context_menu.actionAddCalculateFluxes.triggered.connect(self.add_calculatefluxes)
                 if "2DCoordRotation" not in existing_entries:
                     self.context_menu.actionAdd2DCoordRotation = QtWidgets.QAction(self)
                     self.context_menu.actionAdd2DCoordRotation.setText("2DCoordRotation")
@@ -3374,7 +3379,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
                     self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
-                elif (selected_item.column() == 1) and (key in ["ApplyFco2Storage", "UseL2Fluxes",
+                elif (selected_item.column() == 1) and (key in ["ApplyFco2Storage", "CalculateFluxes",
                                                                 "2DCoordRotation", "MassmanCorrection",
                                                                 "CorrectIndividualFg", "CorrectFgForStorage",
                                                                 "KeepIntermediateSeries", "ApplyWPL"]):

@@ -141,7 +141,7 @@ def l3qc(cf, ds2):
     # *** Calculate fluxes from covariances section ***
     # *************************************************
     # check to see if the user wants to use the fluxes in the L2 file
-    if not pfp_utils.get_optionskeyaslogical(cf, "UseL2Fluxes", default=False):
+    if pfp_utils.get_optionskeyaslogical(cf, "CalculateFluxes", default=True):
         # check the covariance units and change if necessary
         pfp_ts.CheckCovarianceUnits(ds3)
         # do the 2D coordinate rotation
