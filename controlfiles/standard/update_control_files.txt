@@ -73,8 +73,14 @@ xl_filename,xl_moddatetime"""
 [Options]
     L2 = irga_type,SONIC_Check,IRGA_Check
     L3 = """zms,UseL2Fluxes,2DCoordRotation,MassmanCorrection,ApplyFco2Storage,
+<<<<<<< HEAD
 ApplyFcStorage,CorrectIndividualFg,CorrectFgForStorage,KeepIntermediateSeries,CO2Units,
 Fco2Units,FcUnits,DisableFco2WPL,DisableFcWPL,DisableFeWPL,DisableWPL,ApplyWPL"""
+=======
+ApplyFcStorage,CorrectIndividualFg,CorrectFgForStorage,KeepIntermediateSeries,
+CcUnits, CO2Units, Fco2Units,FcUnits,DisableFco2WPL,DisableFcWPL,DisableFeWPL,
+DisableWPL,ApplyWPL"""
+>>>>>>> 6435089820f1be4f18cd909f9c5095557a9968ec
     concatenate = """NumberOfDimensions,MaxGapInterpolate,FixTimeStepMethod,
 Truncate,DoFingerprints,TruncateThreshold,SeriesToCheck"""
     cpd_barr = Fsd_threshold,Num_bootstraps

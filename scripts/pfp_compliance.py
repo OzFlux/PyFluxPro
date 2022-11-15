@@ -801,8 +801,7 @@ def check_l2_options(cfg, ds):
     """
     messages = {"ERROR":[], "WARNING": [], "INFO": []}
     closed_path_irgas = ["Li-7200", "Li-7200RS", "EC155"]
-    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)", "Li-7500A (>=V6.5)", "Li-7500RS",
-                       "EC150", "IRGASON"]
+    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "EC150", "IRGASON"]
     irga_types = open_path_irgas + closed_path_irgas
     nc_irga_type = None
     cfg_irga_type = None
@@ -859,9 +858,34 @@ def check_l3_options(cfg, ds):
     Date: October 2022
     """
     messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    check_l3_options_wpl(cfg, ds, messages)
+    check_l3_options_rotation(cfg, messages)
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
+    if opt.lower() == "interactive":
+        display_messages_interactive(messages)
+        if messages["RESULT"] == "ignore":
+            ds.info["returncodes"]["value"] = 0
+        else:
+            ds.info["returncodes"]["value"] = 1
+    else:
+        display_messages_batch(messages)
+    return
+def check_l3_options_rotation(cfg, messages):
+    """ Check the rotation option."""
+    rotation_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "2DCoordRotation",
+                                                   default="Yes")
+    calculate_fluxes_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "CalculateFluxes",
+                                                            default="No")
+    if ((calculate_fluxes_option.lower() == "no") and (rotation_option.lower() == "no")):
+        msg = "Coordinate rotation disabled"
+        messages["ERROR"].append(msg)
+    else:
+        pass
+    return
+def check_l3_options_wpl(cfg, ds, messages):
+    """ Check the WPL option against the IRGA type."""
     closed_path_irgas = ["Li-7200", "Li-7200RS", "EC155"]
-    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)", "Li-7500A (>=V6.5)", "Li-7500RS",
-                       "EC150", "IRGASON"]
+    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "EC150", "IRGASON"]
     irga_type = str(ds.root["Attributes"]["irga_type"])
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "ApplyWPL", default="Yes")
     if ((opt.lower() == "yes" and irga_type in open_path_irgas) or
@@ -1038,13 +1062,12 @@ def display_messages_batch(messages):
 def display_messages_interactive(messages):
     # gather variable error messages into a single list
     error_messages = []
-    for n, item in enumerate(messages["ERROR"]):
-        if n == 0:
-            logger.error("!!!!!")
-        logger.error(item)
-        if n == 0:
-            logger.error("!!!!!")
-        error_messages.append(item)
+    if len(messages["ERROR"]) > 0:
+        logger.error("!!!!!")
+        for n, item in enumerate(messages["ERROR"]):
+            logger.error(item)
+            error_messages.append(item)
+        logger.error("!!!!!")
     for item in messages["WARNING"]:
         logger.warning(item)
     for item in messages["INFO"]:
@@ -1057,7 +1080,8 @@ def display_messages_interactive(messages):
         msg += error_messages[-1] + "\n\n"
         msg += "Fix the errors, close this window and run again."
         # put up the message box
-        pfp_gui.MsgBox_Close(msg, title="Errors")
+        msgbox = pfp_gui.MsgBox_CloseOrIgnore(msg, title="Errors")
+        messages["RESULT"] = msgbox.execute()
     return
 def l1_check_files(cfg, std, messages):
     # check the Files section exists
@@ -1312,8 +1336,7 @@ def l1_check_input_labels(cfg, messages):
             messages["WARNING"].append(msg)
     return
 def l1_check_irga_type(cfg, messages):
-    known_irgas = ["Li-7500", "Li-7500A", "Li-7500A (<V6.5)",
-                   "Li-7500A (>=V6.5)", "Li-7500RS", "Li-7200", "Li-7200RS",
+    known_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "Li-7200", "Li-7200RS",
                    "EC150", "EC155", "IRGASON"]
     signal_labels = ["Signal_CO2", "Signal_H2O"]
     h2o_covars = ["UxA", "UyA", "UzA"]
@@ -1677,7 +1700,6 @@ def l1_update_cfg_variables_attributes(cfg, std, chk):
     miscellaneous_deprecated = pfp_utils.string_to_list(stdvd["miscellaneous"])
     standard_name_deprecated = pfp_utils.string_to_list(stdvd["standard_name"])
     # list of standard attribute values
-    std_labels = list(std["Variables"]["attributes"].keys())
     cfg_labels = list(cfg["Variables"].keys())
     # add any essential variable attributes that are missing, deprecate those no longer used
     for label in cfg_labels:
@@ -2210,9 +2232,35 @@ def update_cfg_options(cfg, std):
     # update the units in the Options section
     if cfg["level"] == "L3":
         if "Options" in cfg:
-            for item in cfg["Options"]:
-                if item in ["ApplyFcStorage", "CcUnits", "FcUnits", "ReplaceFcStorage", "DisableFcWPL"]:
+            for item in list(cfg["Options"].keys()):
+                if item in ["ApplyFcStorage", "FcUnits", "ReplaceFcStorage", "DisableFcWPL"]:
                     cfg["Options"].rename(item, item.replace("Fc", "Fco2"))
+                if item in ["CcUnits"]:
+                    cfg["Options"].rename(item, item.replace("Cc", "CO2"))
+            if "DisableFco2WPL" in list(cfg["Options"].keys()):
+                opt = cfg["Options"]["DisableFco2WPL"]
+                if opt.lower() == "no":
+                    apply_wpl = "Yes"
+                else:
+                    apply_wpl = "No"
+                cfg["Options"].pop("DisableFco2WPL")
+                cfg["Options"]["ApplyWPL"] = apply_wpl
+            if "DisableFeWPL" in list(cfg["Options"].keys()):
+                opt = cfg["Options"]["DisableFeWPL"]
+                if opt.lower() == "no":
+                    apply_wpl = "Yes"
+                else:
+                    apply_wpl = "No"
+                cfg["Options"].pop("DisableFeWPL")
+                cfg["Options"]["ApplyWPL"] = apply_wpl
+            if "UseL2Fluxes" in list(cfg["Options"].keys()):
+                opt = cfg["Options"]["UseL2Fluxes"]
+                if opt.lower() == "no":
+                    calculate_fluxes = "Yes"
+                else:
+                    calculate_fluxes = "No"
+                cfg["Options"].pop("UseL2Fluxes")
+                cfg["Options"]["CalculateFluxes"] = calculate_fluxes
             old_units = list(std["Variables"]["units_map"].keys())
             for item in list(cfg["Options"].keys()):
                 if cfg["Options"][item] in old_units:
@@ -2382,7 +2430,7 @@ def l6_update_controlfile(cfg):
         msg = "This is an old version of the L6 control file.\n"
         msg = msg + "Close the L6 control file and create a new one from\n"
         msg = msg + "the template in PyFluxPro/controlfiles/template/L6."
-        result = pfp_gui.MsgBox_Quit(msg, title="Critical")
+        pfp_gui.MsgBox_Quit(msg, title="Critical")
         return ok
     try:
         cfg = l6_update_cfg_syntax(cfg)
