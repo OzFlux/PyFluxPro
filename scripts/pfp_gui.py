@@ -64,9 +64,9 @@ class MsgBox_CloseOrIgnore(QtWidgets.QMessageBox):
                                 QtWidgets.QMessageBox.No)
         self.button(QtWidgets.QMessageBox.Yes).setText("Ignore")
         self.button(QtWidgets.QMessageBox.No).setText("Close")
-        self.setModal(False)
-        #self.show()
     def execute(self):
+        self.setModal(False)
+        self.show()
         self.exec_()
         if self.clickedButton() is self.button(QtWidgets.QMessageBox.Yes):
             return "ignore"
@@ -2001,6 +2001,17 @@ class edit_cfg_L2(QtWidgets.QWidget):
             self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_sonic_type(self):
+        """ Add sonic_type to Options section."""
+        new_options = {"sonic_type": "CSAT3"}
+        for key in new_options:
+            value = new_options[key]
+            child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
+            child1 = QtGui.QStandardItem(value)
+            self.sections["Options"].appendRow([child0, child1])
+        self.update_tab_text()
+
     def add_subsection(self, section, dict_to_add):
         for key in dict_to_add:
             val = str(dict_to_add[key])
@@ -2239,6 +2250,12 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionirgatype)
                     self.context_menu.actionirgatype.triggered.connect(self.add_irga_type)
                     add_separator = True
+                if "sonic_type" not in existing_entries:
+                    self.context_menu.actionsonictype = QtWidgets.QAction(self)
+                    self.context_menu.actionsonictype.setText("sonic_type")
+                    self.context_menu.addAction(self.context_menu.actionsonictype)
+                    self.context_menu.actionsonictype.triggered.connect(self.add_sonic_type)
+                    add_separator = True
                 if "SONIC_Check" not in existing_entries:
                     self.context_menu.actionSonicCheck = QtWidgets.QAction(self)
                     self.context_menu.actionSonicCheck.setText("SONIC_Check")
@@ -2344,6 +2361,18 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.actionSetIRGATypeIRGASON.setText("IRGASON")
                         self.context_menu.addAction(self.context_menu.actionSetIRGATypeIRGASON)
                         self.context_menu.actionSetIRGATypeIRGASON.triggered.connect(self.set_irga_irgason)
+                elif key == "sonic_type":
+                    existing_entry = str(parent.child(selected_item.row(),1).text())
+                    if existing_entry != "CSAT3":
+                        self.context_menu.actionSetSonicTypeCSAT3 = QtWidgets.QAction(self)
+                        self.context_menu.actionSetSonicTypeCSAT3.setText("CSAT3")
+                        self.context_menu.addAction(self.context_menu.actionSetSonicTypeCSAT3)
+                        self.context_menu.actionSetSonicTypeCSAT3.triggered.connect(self.set_sonic_csat3)
+                    if existing_entry != "CSAT3B":
+                        self.context_menu.actionSetSonicTypeCSAT3B = QtWidgets.QAction(self)
+                        self.context_menu.actionSetSonicTypeCSAT3B.setText("CSAT3B")
+                        self.context_menu.addAction(self.context_menu.actionSetSonicTypeCSAT3B)
+                        self.context_menu.actionSetSonicTypeCSAT3B.triggered.connect(self.set_sonic_csat3b)
                 elif key in ["SONIC_Check", "IRGA_Check"]:
                     existing_entry = str(parent.child(selected_item.row(),1).text())
                     if existing_entry != "Yes":
@@ -2357,7 +2386,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.addAction(self.context_menu.actionSetCheckNo)
                         self.context_menu.actionSetCheckNo.triggered.connect(self.set_check_no)
             elif (str(parent.text()) == "Options") and (selected_item.column() == 0):
-                if selected_item.text() in ["irga_type", "SONIC_Check", "IRGA_Check"]:
+                if selected_item.text() in ["irga_type", "sonic_type", "SONIC_Check", "IRGA_Check"]:
                     self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
@@ -2822,6 +2851,20 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("Li-7200RS")
+
+    def set_sonic_csat3(self):
+        """ Set the sonic type to CSAT3."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("CSAT3")
+
+    def set_sonic_csat3b(self):
+        """ Set the sonic type to CSAT3B."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("CSAT3B")
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
@@ -3782,7 +3825,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 self.sections[key1].setEditable(False)
-                for key2 in self.cfg[key1]:
+                for key2 in sorted(list(self.cfg[key1].keys())):
                     value = self.cfg[key1][key2]
                     child0 = QtGui.QStandardItem(key2)
                     child0.setEditable(False)

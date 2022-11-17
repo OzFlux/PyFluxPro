@@ -28,13 +28,27 @@ Pi = 3.14159   # Pi
 sb = 5.6704E-8 # Stefan-Boltzman constant, W/m^2/K^4
 Tref = 15.0    # reference temperature in the Lloyd-Taylor respiration equation, degC
 T0   = -46.02  # zero temp[erature in the Lloyd-Taylor respiration equation, degC
+
 lwVert = 0.115       # vertical path length of CSAT3, m
 lwHor = 0.058      # horizontal path length of CSAT3, m
 lTv = 0.115      # path length of sonic virtual temperature, m
 dIRGA = 0.0095 # path diameter of LI7500 IRGA, m
 lIRGA = 0.127  # path length of LI7500 IRGA, m
+
 Tb = 1800      # 30-min period, seconds
 C2K = 273.15   # convert degrees celsius to kelvin
+# dictionary of sonic and IRGA dimensions
+# used in pfp_ts.MassmanStandard()
+dims = {"CSAT3": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
+        "CSAT3B": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
+        "Li-7500": {"dIRGA": 0.0095, "lIRGA": 0.127},
+        "Li-7500A": {"dIRGA": 0.0095, "lIRGA": 0.127},
+        "Li-7500RS": {"dIRGA": 0.0095, "lIRGA": 0.127},
+        "Li-7200": {"dIRGA": 0.0064, "lIRGA": 0.125},
+        "Li-7200RS": {"dIRGA": 0.0064, "lIRGA": 0.125},
+        "EC150": {"dIRGA": 0.01, "lIRGA": 0.154},
+        "EC155": {"dIRGA": 0.008, "lIRGA": 0.120},
+        "IRGASON": {"dIRGA": 0.01, "lIRGA": 0.154}}
 # dictionary of site names and time zones
 tz_dict = {"adelaideriver":"Australia/Darwin",
            "alicespringsmulga":"Australia/Darwin",

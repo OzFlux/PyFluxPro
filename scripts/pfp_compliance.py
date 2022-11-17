@@ -728,6 +728,8 @@ def check_l1_controlfile(cfg):
         l1_check_input_labels(cfg, messages)
         # check IRGA instrument type
         l1_check_irga_type(cfg, messages)
+        # check SONIC instrument type
+        l1_check_sonic_type(cfg, messages)
         # display and messages
         display_messages_interactive(messages)
         if len(messages["ERROR"]) > 0:
@@ -841,6 +843,49 @@ def check_l2_options(cfg, ds):
             msg += ") and L2 control file ("+cfg_irga_type+")"
             ds.info["returncodes"]["value"] = 1
             messages["ERROR"].append(msg)
+    # check the sonic type
+    sonic_types = ["CSAT3", "CSAT3B"]
+    nc_sonic_type = None
+    cfg_sonic_type = None
+    # is sonic_type in the global attributes?
+    if ("sonic_type" in ds.root["Attributes"]):
+        nc_sonic_type = str(ds.root["Attributes"]["sonic_type"])
+    # is sonic_type in the [Options] section of the control file
+    if ("sonic_type" in cfg["Options"]):
+        cfg_sonic_type = str(cfg["Options"]["sonic_type"])
+    if ((nc_sonic_type is None) and (cfg_sonic_type is None)):
+        # sonic type not found in the L1 netCDF file or the control file
+        msg = "Sonic type not specified in L1 netCDF file or L2 control file"
+        messages["ERROR"].append(msg)
+        ds.info["returncodes"]["value"] = 1
+    elif ((nc_sonic_type is None) and (cfg_sonic_type is not None)):
+        # sonic type not found in the L1 netCDF file but found in the L2 control file
+        if (cfg_sonic_type not in sonic_types):
+            # make sure the sonic type is in the known sonic list
+            msg = "Unknown sonic type specified in control file (" + cfg_sonic_type + ")"
+            messages["ERROR"].append(msg)
+            ds.info["returncodes"]["value"] = 1
+        else:
+            ds.root["Attributes"]["sonic_type"] = cfg_sonic_type
+    elif ((nc_sonic_type is not None) and (cfg_sonic_type is None)):
+        # sonic type found in the L1 netCDF file but not found in the L2 control file
+        if (nc_sonic_type not in sonic_types):
+            # make sure the sonic type is in the known sonic list
+            msg = "Unknown sonic type specified in netCDF file (" + nc_sonic_type + ")"
+            messages["ERROR"].append(msg)
+            ds.info["returncodes"]["value"] = 1
+        else:
+            pass
+    else:
+        # sonic type found in the L1 netCDF file and the L2 control file
+        if (nc_sonic_type == cfg_sonic_type):
+            pass
+        else:
+            msg = "Different sonic types in L1 netCDF ("+nc_sonic_type
+            msg += ") and L2 control file ("+cfg_sonic_type+")"
+            ds.info["returncodes"]["value"] = 1
+            messages["ERROR"].append(msg)
+
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
     if opt.lower() == "interactive":
         display_messages_interactive(messages)
@@ -857,9 +902,9 @@ def check_l3_options(cfg, ds):
     Author: PRI
     Date: October 2022
     """
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "RESULT": "close"}
     check_l3_options_wpl(cfg, ds, messages)
-    check_l3_options_rotation(cfg, messages)
+    check_l3_options_rotation(cfg, ds, messages)
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
     if opt.lower() == "interactive":
         display_messages_interactive(messages)
@@ -870,36 +915,54 @@ def check_l3_options(cfg, ds):
     else:
         display_messages_batch(messages)
     return
-def check_l3_options_rotation(cfg, messages):
+def check_l3_options_rotation(cfg, ds, messages):
     """ Check the rotation option."""
+    # get the CalculateFluxes setting from the [Options] section
+    calculate_fluxes_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "CalculateFluxes",
+                                                           default="Yes")
+    # if we are not calculating fluxes at L3, we do not need to check the 2DCoordRotation option
+    if (calculate_fluxes_option.lower() == "no"):
+        return
+    # get the 2DCoordRotation setting from the L3 [Options]
     rotation_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "2DCoordRotation",
                                                    default="Yes")
-    calculate_fluxes_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "CalculateFluxes",
-                                                            default="No")
-    if ((calculate_fluxes_option.lower() == "no") and (rotation_option.lower() == "no")):
+    # check to see if 2D coordinate rotation is turned on or off
+    if (rotation_option.lower() == "no"):
+        # error message if calculating fluxes at L3 but 2D coordinate rotation turned off
         msg = "Coordinate rotation disabled"
         messages["ERROR"].append(msg)
+        # set the return code to non-zero to indicate a problem
+        ds.info["returncodes"]["value"] = 1
     else:
+        # all good
         pass
     return
 def check_l3_options_wpl(cfg, ds, messages):
     """ Check the WPL option against the IRGA type."""
+    # get the CalculateFluxes setting from the [Options] section
+    calculate_fluxes_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "CalculateFluxes",
+                                                           default="Yes")
+    # if we are not calculating fluxes at L3, we do not need to check the 2DCoordRotation option
+    if calculate_fluxes_option.lower() == "no":
+        return
+    # define the known IRGAs, this should be an external settings option
     closed_path_irgas = ["Li-7200", "Li-7200RS", "EC155"]
     open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "EC150", "IRGASON"]
+    # get the IRGA type from the global attributes
     irga_type = str(ds.root["Attributes"]["irga_type"])
-    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "ApplyWPL", default="Yes")
-    if ((opt.lower() == "yes" and irga_type in open_path_irgas) or
-        (opt.lower() == "no" and irga_type in closed_path_irgas)):
+    # get the ApplyWPL setting from the L3 [Options] section
+    apply_wpl_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "ApplyWPL", default="Yes")
+    # check to see if the IRGA type and ApplyWPL option are consistent
+    if ((apply_wpl_option.lower() == "yes" and irga_type in open_path_irgas) or
+        (apply_wpl_option.lower() == "no" and irga_type in closed_path_irgas)):
+        # all good
         pass
     else:
-        msg = "Wrong ApplyWPL option ("+opt+") for IRGA type ("+irga_type+")"
-        ds.info["returncodes"]["value"] = 1
+        # not all good
+        msg = "Wrong ApplyWPL option ("+apply_wpl_option+") for IRGA type ("+irga_type+")"
         messages["ERROR"].append(msg)
-    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
-    if opt.lower() == "interactive":
-        display_messages_interactive(messages)
-    else:
-        display_messages_batch(messages)
+        # set the return code to non-zero to indicate a problem
+        ds.info["returncodes"]["value"] = 1
     return
 def check_l5_controlfile(cfg):
     """
@@ -1339,11 +1402,17 @@ def l1_check_irga_type(cfg, messages):
     known_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "Li-7200", "Li-7200RS",
                    "EC150", "EC155", "IRGASON"]
     signal_labels = ["Signal_CO2", "Signal_H2O"]
+    # PFP covariances
     h2o_covars = ["UxA", "UyA", "UzA"]
     co2_covars = ["UxC", "UyC", "UzC"]
     cfg_labels = sorted(list(cfg["Variables"].keys()))
+    # anything with 'IRGA' in the variable name
     irga_labels = [l for l in cfg_labels if "IRGA" in l]
-    irga_labels = irga_labels + signal_labels + h2o_covars + co2_covars
+    # EasyFlux labels
+    ef_labels = ["Fco2_EF", "Fco2_EF_Num", "Fco2_EF_QC", "Fe_EF", "Fe_EF_Num", "Fe_EF_QC"]
+    # EddyPro labels
+    ep_labels = ["Fco2_EP", "Fco2_EP_QC", "Fe_EP", "Fe_EP_QC"]
+    irga_labels = irga_labels + signal_labels + h2o_covars + co2_covars + ef_labels + ep_labels
     for irga_label in list(irga_labels):
         if irga_label not in cfg_labels:
             irga_labels.remove(irga_label)
@@ -1380,6 +1449,68 @@ def l1_check_irga_type(cfg, messages):
         messages["ERROR"].append(msg)
         for irga_type in irga_types:
             msg = irga_type + " is used for " + ",".join(irga_check[irga_type])
+            messages["ERROR"].append(msg)
+    return
+def l1_check_sonic_type(cfg, messages):
+    """
+    Purpose:
+     Check the 'instrument' attribute of all variables associated with the sonic
+     anemometer and make sure only one sonic type is specified from a list of
+     known sonics.
+    Usage:
+     l1_check_sonic_type(cfg, messages)
+     where cfg is a control file
+           messages is a dictionary for error, warning and info messages
+    Author: PRI
+    Date: November 2022
+    """
+    known_sonics = ["CSAT3", "CSAT3B"]
+    # PFP covariances
+    sonic_covars = ["UxT", "UyT", "UzT", "UxUy", "UxUz", "UyUz"]
+    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    # anything with 'SONIC' in the variable name
+    sonic_labels = [l for l in cfg_labels if "SONIC" in l]
+    # EasyFlux labels
+    ef_labels = ["Fco2_EF", "Fco2_EF_Num", "Fco2_EF_QC", "Fe_EF", "Fe_EF_Num", "Fe_EF_QC"]
+    # EddyPro labels
+    ep_labels = ["Fco2_EP", "Fco2_EP_QC", "Fe_EP", "Fe_EP_QC"]
+    sonic_labels = sonic_labels + sonic_covars + ef_labels + ep_labels
+    for sonic_label in list(sonic_labels):
+        if sonic_label not in cfg_labels:
+            sonic_labels.remove(sonic_label)
+    sonic_check = {}
+    for sonic_label in sonic_labels:
+        ok = False
+        if "instrument" in cfg["Variables"][sonic_label]["Attr"]:
+            sonic_type = cfg["Variables"][sonic_label]["Attr"]["instrument"]
+            if sonic_type in known_sonics:
+                ok = True
+                if sonic_type not in sonic_check:
+                    sonic_check[sonic_type] = []
+                sonic_check[sonic_type].append(sonic_label)
+            else:
+                for known_sonic in known_sonics:
+                    if known_sonic in sonic_type:
+                        ok = True
+                        if known_sonic not in sonic_check:
+                            sonic_check[known_sonic] = []
+                        sonic_check[known_sonic].append(sonic_label)
+            if not ok:
+                msg = "Unknown SONIC type (" + sonic_type + ") for " + sonic_label
+                messages["ERROR"].append(msg)
+        else:
+            msg = "'instrument' attribute missing for " + sonic_label
+            messages["ERROR"].append(msg)
+    sonic_types = list(sonic_check.keys())
+    if len(sonic_types) == 1:
+        cfg["Global"]["sonic_type"] = str(sonic_types[0])
+        msg = "SONIC type set to " + cfg["Global"]["sonic_type"]
+        logger.info(msg)
+    else:
+        msg = "More than 1 SONIC type specified (" + ",".join(sonic_types) + ")"
+        messages["ERROR"].append(msg)
+        for sonic_type in sonic_types:
+            msg = sonic_type + " is used for " + ",".join(sonic_check[sonic_type])
             messages["ERROR"].append(msg)
     return
 def l1_check_nc_labels(cfg, messages):

@@ -2378,8 +2378,13 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
        The steps involved are as follows:
         1) calculate ustar and L using rotated but otherwise uncorrected covariances
        """
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MassmanCorrection", default="Yes")
+    if (opt.lower() != "yes"):
+        msg = " Massman frequency correction disabled in control file, skipping correction ..."
+        logger.warning(msg)
+        return
     if "Massman" not in cf:
-        msg = " Massman section not in control file, skipping correction ..."
+        msg = " Massman section not in control file, skipping frequency correction ..."
         logger.warning(msg)
         return
     logger.info(" Correcting for flux loss from spectral attenuation")
@@ -2414,6 +2419,14 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
     #  The code for the first and second passes is very similar.  It would be useful to make them the
     #  same and put into a loop to reduce the number of lines in this function.
     # calculate ustar and Monin-Obukhov length from rotated but otherwise uncorrected covariances
+    # get some instrument specific constants
+    sonic_type = str(ds.root["Attributes"]["sonic_type"])
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    lwVert = c.dims[sonic_type]["lwVert"]
+    lwHor = c.dims[sonic_type]["lwHor"]
+    lTv = c.dims[sonic_type]["lTv"]
+    dIRGA = c.dims[irga_type]["dIRGA"]
+    lIRGA = c.dims[irga_type]["lIRGA"]
     Ta = pfp_utils.GetVariable(ds, Ta_in)
     AH = pfp_utils.GetVariable(ds, AH_in)
     ps = pfp_utils.GetVariable(ds, ps_in)
@@ -2443,16 +2456,16 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
     fxMom = nxMom * u["Data"] / zmd
     fxScalar = nxScalar * u["Data"] / zmd
     # compute spectral filters
-    tau_sonic_law_4scalar = c.lwVert / (8.4 * u["Data"])
-    tau_sonic_laT_4scalar = c.lTv / (4.0 * u["Data"])
-    tau_irga_la = (c.lIRGA / (4.0 * u["Data"]))
-    tau_irga_va = (0.2+0.4*c.dIRGA/c.lIRGA)*(c.lIRGA/u["Data"])
+    tau_sonic_law_4scalar = lwVert / (8.4 * u["Data"])
+    tau_sonic_laT_4scalar = lTv / (4.0 * u["Data"])
+    tau_irga_la = (lIRGA / (4.0 * u["Data"]))
+    tau_irga_va = (0.2+0.4*dIRGA/lIRGA)*(lIRGA/u["Data"])
     tau_irga_bw = 0.016
     tau_irga_lat = (lLat / (1.1 * u["Data"]))
     tau_irga_lon = (lLong / (1.05 * u["Data"]))
 
-    tao_eMom = numpy.ma.sqrt(((c.lwVert / (5.7 * u["Data"])) ** 2) +
-                             ((c.lwHor / (2.8 * u["Data"])) ** 2))
+    tao_eMom = numpy.ma.sqrt(((lwVert / (5.7 * u["Data"])) ** 2) +
+                             ((lwHor / (2.8 * u["Data"])) ** 2))
     tao_ewT = numpy.ma.sqrt((tau_sonic_law_4scalar ** 2) + (tau_sonic_laT_4scalar ** 2))
 
     tao_ewIRGA = numpy.ma.sqrt((tau_sonic_law_4scalar ** 2) +
