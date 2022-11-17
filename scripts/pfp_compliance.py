@@ -885,7 +885,7 @@ def check_l2_options(cfg, ds):
             msg += ") and L2 control file ("+cfg_sonic_type+")"
             ds.info["returncodes"]["value"] = 1
             messages["ERROR"].append(msg)
-
+    # check if we are running in interactive mode and display messages accordingly
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
     if opt.lower() == "interactive":
         display_messages_interactive(messages)
