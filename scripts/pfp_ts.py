@@ -2422,11 +2422,14 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
     # get some instrument specific constants
     sonic_type = str(ds.root["Attributes"]["sonic_type"])
     irga_type = str(ds.root["Attributes"]["irga_type"])
-    lwVert = c.dims[sonic_type]["lwVert"]
-    lwHor = c.dims[sonic_type]["lwHor"]
-    lTv = c.dims[sonic_type]["lTv"]
-    dIRGA = c.dims[irga_type]["dIRGA"]
-    lIRGA = c.dims[irga_type]["lIRGA"]
+    lwVert = c.instruments["sonics"][sonic_type]["lwVert"]
+    lwHor = c.instruments["sonics"][sonic_type]["lwHor"]
+    lTv = c.instruments["sonics"][sonic_type]["lTv"]
+    for path_type in list(c.instruments["irgas"].keys()):
+        if irga_type in list(c.instruments["irgas"][path_type].keys()):
+            break
+    dIRGA = c.instruments["irgas"][path_type][irga_type]["dIRGA"]
+    lIRGA = c.instruments["irgas"][path_type][irga_type]["lIRGA"]
     Ta = pfp_utils.GetVariable(ds, Ta_in)
     AH = pfp_utils.GetVariable(ds, AH_in)
     ps = pfp_utils.GetVariable(ds, ps_in)

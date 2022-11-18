@@ -10,6 +10,7 @@ from configobj import ConfigObj
 #import numpy
 import timezonefinder
 # PFP modules
+from scripts import constants as c
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
 from scripts import pfp_gui
@@ -802,8 +803,8 @@ def check_l2_options(cfg, ds):
     Date: October 2022
     """
     messages = {"ERROR":[], "WARNING": [], "INFO": []}
-    closed_path_irgas = ["Li-7200", "Li-7200RS", "EC155"]
-    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "EC150", "IRGASON"]
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     irga_types = open_path_irgas + closed_path_irgas
     nc_irga_type = None
     cfg_irga_type = None
@@ -902,7 +903,7 @@ def check_l3_options(cfg, ds):
     Author: PRI
     Date: October 2022
     """
-    messages = {"ERROR":[], "WARNING": [], "INFO": [], "RESULT": "close"}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "RESULT": "ignore"}
     check_l3_options_wpl(cfg, ds, messages)
     check_l3_options_rotation(cfg, ds, messages)
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
@@ -946,8 +947,8 @@ def check_l3_options_wpl(cfg, ds, messages):
     if calculate_fluxes_option.lower() == "no":
         return
     # define the known IRGAs, this should be an external settings option
-    closed_path_irgas = ["Li-7200", "Li-7200RS", "EC155"]
-    open_path_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "EC150", "IRGASON"]
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     # get the IRGA type from the global attributes
     irga_type = str(ds.root["Attributes"]["irga_type"])
     # get the ApplyWPL setting from the L3 [Options] section
@@ -1399,8 +1400,9 @@ def l1_check_input_labels(cfg, messages):
             messages["WARNING"].append(msg)
     return
 def l1_check_irga_type(cfg, messages):
-    known_irgas = ["Li-7500", "Li-7500A", "Li-7500RS", "Li-7200", "Li-7200RS",
-                   "EC150", "EC155", "IRGASON"]
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    known_irgas = open_path_irgas + closed_path_irgas
     signal_labels = ["Signal_CO2", "Signal_H2O"]
     # PFP covariances
     h2o_covars = ["UxA", "UyA", "UzA"]
@@ -1464,7 +1466,7 @@ def l1_check_sonic_type(cfg, messages):
     Author: PRI
     Date: November 2022
     """
-    known_sonics = ["CSAT3", "CSAT3B"]
+    known_sonics = list(c.instruments["sonics"].keys())
     # PFP covariances
     sonic_covars = ["UxT", "UyT", "UzT", "UxUy", "UxUz", "UyUz"]
     cfg_labels = sorted(list(cfg["Variables"].keys()))

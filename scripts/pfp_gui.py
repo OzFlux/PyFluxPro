@@ -1920,7 +1920,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
     def add_options_section(self):
         """ Add an Options section."""
         self.sections["Options"] = QtGui.QStandardItem("Options")
-        new_options = {"irga_type": "Li-7500A"}
+        new_options = {"irga_type": "Li-7500RS", "sonic_type": "CSAT3B",
+                       "SONIC_Check": "Yes", "IRGA_Check": "Yes"}
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)

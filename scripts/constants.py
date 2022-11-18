@@ -30,18 +30,18 @@ Tref = 15.0    # reference temperature in the Lloyd-Taylor respiration equation,
 T0   = -46.02  # zero temp[erature in the Lloyd-Taylor respiration equation, degC
 Tb = 1800      # 30-min period, seconds
 C2K = 273.15   # convert degrees celsius to kelvin
-# dictionary of sonic and IRGA dimensions
+# dictionary of instrument characteristics
 # used in pfp_ts.MassmanStandard()
-dims = {"CSAT3": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
-        "CSAT3B": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
-        "Li-7500": {"dIRGA": 0.0095, "lIRGA": 0.127},
-        "Li-7500A": {"dIRGA": 0.0095, "lIRGA": 0.127},
-        "Li-7500RS": {"dIRGA": 0.0095, "lIRGA": 0.127},
-        "Li-7200": {"dIRGA": 0.0064, "lIRGA": 0.125},
-        "Li-7200RS": {"dIRGA": 0.0064, "lIRGA": 0.125},
-        "EC150": {"dIRGA": 0.01, "lIRGA": 0.154},
-        "EC155": {"dIRGA": 0.008, "lIRGA": 0.120},
-        "IRGASON": {"dIRGA": 0.01, "lIRGA": 0.154}}
+instruments = {"sonics": {"CSAT3": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
+                          "CSAT3B": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115}},
+               "irgas": {"open_path": {"Li-7500": {"dIRGA": 0.0095, "lIRGA": 0.127},
+                                       "Li-7500A": {"dIRGA": 0.0095, "lIRGA": 0.127},
+                                       "Li-7500RS": {"dIRGA": 0.0095, "lIRGA": 0.127},
+                                       "EC150": {"dIRGA": 0.01, "lIRGA": 0.154},
+                                       "IRGASON": {"dIRGA": 0.01, "lIRGA": 0.154}},
+                         "closed_path": {"Li-7200": {"dIRGA": 0.0064, "lIRGA": 0.125},
+                                         "Li-7200RS": {"dIRGA": 0.0064, "lIRGA": 0.125},
+                                         "EC155": {"dIRGA": 0.008, "lIRGA": 0.120},}}}
 # dictionary of site names and time zones
 tz_dict = {"adelaideriver":"Australia/Darwin",
            "alicespringsmulga":"Australia/Darwin",
