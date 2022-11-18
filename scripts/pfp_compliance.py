@@ -908,7 +908,7 @@ def check_l3_options(cfg, ds):
     check_l3_options_rotation(cfg, ds, messages)
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
     if opt.lower() == "interactive":
-        display_messages_interactive(messages)
+        display_messages_interactive(messages, mode="CloseOrIgnore")
         if messages["RESULT"] == "ignore":
             ds.info["returncodes"]["value"] = 0
         else:
@@ -1123,7 +1123,7 @@ def display_messages_batch(messages):
             else:
                 raise RuntimeError("display_messages_batch: Unrecognised message in messages")
     return
-def display_messages_interactive(messages):
+def display_messages_interactive(messages, mode="Close"):
     # gather variable error messages into a single list
     error_messages = []
     if len(messages["ERROR"]) > 0:
@@ -1144,8 +1144,16 @@ def display_messages_interactive(messages):
         msg += error_messages[-1] + "\n\n"
         msg += "Fix the errors, close this window and run again."
         # put up the message box
-        msgbox = pfp_gui.MsgBox_CloseOrIgnore(msg, title="Errors")
-        messages["RESULT"] = msgbox.execute()
+        if mode == "Close":
+            msgbox = pfp_gui.MsgBox_Close(msg, title="Errors")
+            messages["RESULT"] = msgbox.execute()
+        elif mode == "CloseOrIgnore":
+            msgbox = pfp_gui.MsgBox_CloseOrIgnore(msg, title="Errors")
+            messages["RESULT"] = msgbox.execute()
+        else:
+            msg = "Unrecognised mode in display_messages_interactive()"
+            logger.error(msg)
+            messages["RESULT"] = "close"
     return
 def l1_check_files(cfg, std, messages):
     # check the Files section exists

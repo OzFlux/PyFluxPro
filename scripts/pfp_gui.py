@@ -45,9 +45,11 @@ class MsgBox_Close(QtWidgets.QMessageBox):
         self.setWindowTitle(title)
         self.setStandardButtons(QtWidgets.QMessageBox.No)
         self.button(QtWidgets.QMessageBox.No).setText("Close")
+    def execute(self):
         self.setModal(False)
         self.show()
         self.exec_()
+        return "close"
 
 class MsgBox_CloseOrIgnore(QtWidgets.QMessageBox):
     def __init__(self, msg, title="Information", parent=None):
