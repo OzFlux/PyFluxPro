@@ -845,7 +845,7 @@ def check_l2_options(cfg, ds):
             ds.info["returncodes"]["value"] = 1
             messages["ERROR"].append(msg)
     # check the sonic type
-    sonic_types = ["CSAT3", "CSAT3B"]
+    sonic_types = list(c.instruments["sonics"].keys())
     nc_sonic_type = None
     cfg_sonic_type = None
     # is sonic_type in the global attributes?

@@ -33,6 +33,7 @@ C2K = 273.15   # convert degrees celsius to kelvin
 # dictionary of instrument characteristics
 # used in pfp_ts.MassmanStandard()
 instruments = {"sonics": {"CSAT3": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
+                          "CSAT3A": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
                           "CSAT3B": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115}},
                "irgas": {"open_path": {"Li-7500": {"dIRGA": 0.0095, "lIRGA": 0.127},
                                        "Li-7500A": {"dIRGA": 0.0095, "lIRGA": 0.127},

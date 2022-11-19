@@ -2006,7 +2006,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_sonic_type(self):
         """ Add sonic_type to Options section."""
-        new_options = {"sonic_type": "CSAT3"}
+        new_options = {"sonic_type": "CSAT3B"}
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
@@ -2371,6 +2371,11 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.actionSetSonicTypeCSAT3.setText("CSAT3")
                         self.context_menu.addAction(self.context_menu.actionSetSonicTypeCSAT3)
                         self.context_menu.actionSetSonicTypeCSAT3.triggered.connect(self.set_sonic_csat3)
+                    if existing_entry != "CSAT3A":
+                        self.context_menu.actionSetSonicTypeCSAT3A = QtWidgets.QAction(self)
+                        self.context_menu.actionSetSonicTypeCSAT3A.setText("CSAT3A")
+                        self.context_menu.addAction(self.context_menu.actionSetSonicTypeCSAT3A)
+                        self.context_menu.actionSetSonicTypeCSAT3A.triggered.connect(self.set_sonic_csat3a)
                     if existing_entry != "CSAT3B":
                         self.context_menu.actionSetSonicTypeCSAT3B = QtWidgets.QAction(self)
                         self.context_menu.actionSetSonicTypeCSAT3B.setText("CSAT3B")
@@ -2861,6 +2866,13 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("CSAT3")
+
+    def set_sonic_csat3a(self):
+        """ Set the sonic type to CSAT3A."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("CSAT3A")
 
     def set_sonic_csat3b(self):
         """ Set the sonic type to CSAT3B."""
