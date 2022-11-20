@@ -2161,11 +2161,13 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     if iel["gui"]["show_plots"]:
         plt.ion()
     else:
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
         plt.ioff()
     fig = plt.figure(pd["fig_num"], figsize=(13, 8))
     fig.clf()
-    fig.canvas.set_window_title(target + " (" + mode + "): " + pd["startdate"]
-                                + " to " + pd["enddate"])
+    fig.canvas.manager.set_window_title(target + " (" + mode + "): " + pd["startdate"]
+                                        + " to " + pd["enddate"])
     plt.figtext(0.5, 0.95, pd["title"], ha='center', size=16)
     # XY plot of the diurnal variation
     rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
@@ -2272,9 +2274,11 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     # draw the plot on the screen
     if iel["gui"]["show_plots"]:
         plt.draw()
-        pfp_utils.mypause(1)
+        pfp_utils.mypause(0.5)
         plt.ioff()
     else:
-        plt.close(fig)
+        #plt.close(fig)
+        plt.close()
+        plt.switch_backend(current_backend)
         plt.ion()
     return
