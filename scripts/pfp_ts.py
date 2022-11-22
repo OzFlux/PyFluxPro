@@ -1128,7 +1128,7 @@ def CalculateComponentsFromWsWd(ds):
     pfp_utils.CreateVariable(ds, u)
     pfp_utils.CreateVariable(ds, v)
 
-def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
+def CalculateSco2SinglePoint(cf, ds, info, Sco2_out="Sco2_single"):
     """
     Calculate CO2 flux storage term in the air column beneath the CO2 instrument.  This
     routine assumes the air column between the sensor and the surface is well mixed.
@@ -1142,8 +1142,8 @@ def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
     Parameters loaded from control file:
         zms: measurement height from surface, m
     """
-    if Fco2_out not in list(ds.root["Variables"].keys()):
-        logger.info(" Calculating Fco2 storage (single height)")
+    if Sco2_out not in list(ds.root["Variables"].keys()):
+        logger.info(" Calculating Sco2 (single height)")
         nRecs = int(ds.root["Attributes"]["nc_nrecs"])
         zeros = numpy.zeros(nRecs, dtype=numpy.int32)
         ones = numpy.ones(nRecs, dtype=numpy.int32)
@@ -1152,7 +1152,7 @@ def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
         descr_level = "description_" + level
         # create an empty output variable
         ldt = pfp_utils.GetVariable(ds, "DateTime")
-        Fco2_single = pfp_utils.CreateEmptyVariable(Fco2_out, nRecs, datetime=ldt["Data"])
+        Sco2_single = pfp_utils.CreateEmptyVariable(Sco2_out, nRecs, datetime=ldt["Data"])
         # get the input data
         CO2 = pfp_utils.GetVariable(ds, info["CO2"]["label"])
         Ta = pfp_utils.GetVariable(ds, "Ta")
@@ -1170,25 +1170,25 @@ def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
         seconds = numpy.array([(dt-epoch).total_seconds() for dt in ldt["Data"]])
         dt = numpy.ediff1d(seconds, to_begin=float(ts)*60)
         # calculate the CO2 flux based on storage below the measurement height
-        Fco2_single["Data"] = info["CO2"]["height"]*dc/dt
+        Sco2_single["Data"] = info["CO2"]["height"]*dc/dt
         # do the attributes
-        Fco2_single["Attr"] = {}
+        Sco2_single["Attr"] = {}
         for attr in ["instrument", "height"]:
             if attr in CO2["Attr"]:
-                Fco2_single["Attr"][attr] = CO2["Attr"][attr]
-        Fco2_single["Attr"]["height"] = info["CO2"]["height"]
-        Fco2_single["Attr"]["units"] = "umol/m^2/s"
-        Fco2_single["Attr"]["standard_name"] = "surface_upward_mole_flux_of_carbon_dioxide"
-        Fco2_single["Attr"]["long_name"] = "CO2 flux"
-        Fco2_single["Attr"]["statistic_type"] = "average"
-        tmp = "Fco2 storage component calcuated using single point CO2 measurement"
-        Fco2_single["Attr"][descr_level] = tmp
+                Sco2_single["Attr"][attr] = CO2["Attr"][attr]
+        Sco2_single["Attr"]["height"] = info["CO2"]["height"]
+        Sco2_single["Attr"]["units"] = "umol/m^2/s"
+        Sco2_single["Attr"]["standard_name"] = "surface_upward_mole_flux_of_carbon_dioxide"
+        Sco2_single["Attr"]["long_name"] = "Storage term of CO2 flux"
+        Sco2_single["Attr"]["statistic_type"] = "average"
+        tmp = "Sco2 calcuated using single point CO2 measurement"
+        Sco2_single["Attr"][descr_level] = tmp
         # put the storage flux in the data structure
-        mask = numpy.ma.getmaskarray(Fco2_single["Data"])
-        Fco2_single["Flag"] = numpy.where(mask == True, ones, zeros)
-        pfp_utils.CreateVariable(ds, Fco2_single)
+        mask = numpy.ma.getmaskarray(Sco2_single["Data"])
+        Sco2_single["Flag"] = numpy.where(mask == True, ones, zeros)
+        pfp_utils.CreateVariable(ds, Sco2_single)
     else:
-        msg = "  " + Fco2_out + " found in data structure, not calculated"
+        msg = "  " + Sco2_out + " found in data structure, not calculated"
         logger.info(msg)
     return
 
@@ -1201,7 +1201,7 @@ def CorrectFco2ForStorage(cf, ds, Fco2_out="Fco2", Fco2_in="Fco2"):
     ds: data structure
     Fco2_out: series label of the corrected CO2 flux
     Fco2_in: series label of the input CO2 flux
-    Fco2_storage: series label of the CO2 flux storage term
+    Sco2: series label of the CO2 flux storage term
 
     """
     descr_level = "description_" + str(ds.root["Attributes"]["processing_level"])
@@ -1226,28 +1226,32 @@ def CorrectFco2ForStorage(cf, ds, Fco2_out="Fco2", Fco2_in="Fco2"):
             logger.warning(msg)
             return
         # check to see if we have an Fco2_profile series
-        if "Fco2_storage" in list(ds.root["Variables"].keys()):
-            msg = " Using Fco2_storage for the storage term"
+        if "Sco2" in list(ds.root["Variables"].keys()):
+            msg = " Using Sco2 for the storage term"
             logger.info(msg)
-            Fco2_storage_in = "Fco2_storage"
-        elif "Fco2_profile" in list(ds.root["Variables"].keys()):
-            msg = " Using Fco2_profile for the storage term"
+            Sco2_in = "Sco2"
+        elif "Sco2_storage" in list(ds.root["Variables"].keys()):
+            msg = " Using Sco2_storage for the storage term"
             logger.info(msg)
-            Fco2_storage_in = "Fco2_profile"
-        elif "Fco2_single" in list(ds.root["Variables"].keys()):
-            msg = " Using Fco2_single for the storage term"
+            Sco2_in = "Sco2_storage"
+        elif "Sco2_profile" in list(ds.root["Variables"].keys()):
+            msg = " Using Sco2_profile for the storage term"
             logger.info(msg)
-            Fco2_storage_in = "Fco2_single"
+            Sco2_in = "Sco2_profile"
+        elif "Sco2_single" in list(ds.root["Variables"].keys()):
+            msg = " Using Sco2_single for the storage term"
+            logger.info(msg)
+            Sco2_in = "Sco2_single"
         else:
-            msg = " Storage term (Fco2_storage, Fco2_profile or Fco2_single) not found"
+            msg = " Storage term (Sco2, Sco2_storage, Sco2_profile or Sco2_single) not found"
             logger.warning(msg)
             return
         # apply the storage term
-        msg = " ***!!! Applying Fco2 storage term !!!***"
+        msg = " ***!!! Applying CO2 storage term using " + Sco2_in +" !!!***"
         logger.info(msg)
         Fco2_uncorrected = pfp_utils.GetVariable(ds, Fco2_in)
-        Fco2_storage = pfp_utils.GetVariable(ds, Fco2_storage_in)
-        if Fco2_uncorrected["Attr"]["units"] != Fco2_storage["Attr"]["units"]:
+        Sco2 = pfp_utils.GetVariable(ds, Sco2_in)
+        if Fco2_uncorrected["Attr"]["units"] != Sco2["Attr"]["units"]:
             msg = "CorrectFco2ForStorage: units of Fco2 do not match those of storage term"
             msg += ", storage not applied"
             logger.error(msg)
@@ -1255,7 +1259,7 @@ def CorrectFco2ForStorage(cf, ds, Fco2_out="Fco2", Fco2_in="Fco2"):
         # get a copy of the uncorrected data
         Fco2_corrected = copy.deepcopy(Fco2_uncorrected)
         # add the storage term
-        Fco2_corrected["Data"] = Fco2_uncorrected["Data"] + Fco2_storage["Data"]
+        Fco2_corrected["Data"] = Fco2_uncorrected["Data"] + Sco2["Data"]
         # if requested, replace missing storage corrected with uncorrected data
         if pfp_utils.get_optionskeyaslogical(cf, "RelaxFco2Storage"):
             # if so, replace missing corrected Fco2 with uncorrected Fco2

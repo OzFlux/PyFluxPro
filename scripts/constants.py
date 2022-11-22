@@ -31,7 +31,9 @@ T0   = -46.02  # zero temp[erature in the Lloyd-Taylor respiration equation, deg
 Tb = 1800      # 30-min period, seconds
 C2K = 273.15   # convert degrees celsius to kelvin
 # dictionary of instrument characteristics
-# used in pfp_ts.MassmanStandard()
+# used in pfp_ts.MassmanStandard(), pfp_compliance.l1_check_sonic_type() and
+# pfp_compliance.l1_check_irga_type()
+# 'no_sonic' is for IRGAs used in profile measurements
 instruments = {"sonics": {"CSAT3": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
                           "CSAT3A": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
                           "CSAT3B": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115}},
@@ -42,7 +44,8 @@ instruments = {"sonics": {"CSAT3": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.11
                                        "IRGASON": {"dIRGA": 0.01, "lIRGA": 0.154}},
                          "closed_path": {"Li-7200": {"dIRGA": 0.0064, "lIRGA": 0.125},
                                          "Li-7200RS": {"dIRGA": 0.0064, "lIRGA": 0.125},
-                                         "EC155": {"dIRGA": 0.008, "lIRGA": 0.120},}}}
+                                         "EC155": {"dIRGA": 0.008, "lIRGA": 0.120},
+                                         "Li-840": {"dIRGA": None, "lIRGA": None}}}}
 # dictionary of site names and time zones
 tz_dict = {"adelaideriver":"Australia/Darwin",
            "alicespringsmulga":"Australia/Darwin",

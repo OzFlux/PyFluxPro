@@ -557,7 +557,7 @@ def ParseL3ControlFile(cf, ds):
     #   profile data present
     ds.info["returncodes"]["message"] = "OK"
     ds.info["returncodes"]["value"] = 0
-    l3_info = {"CO2": {}, "Fco2": {}, "status": {"value": 0, "message": "OK"}}
+    l3_info = {"CO2": {}, "Fco2": {}, "Sco2": {}, "status": {"value": 0, "message": "OK"}}
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
@@ -632,6 +632,11 @@ def ParseL3ControlFile(cf, ds):
     merge_list = [l for l in list(cfv.keys()) if l[0:4] == "Fco2" and "MergeSeries" in list(cfv[l].keys())]
     average_list = [l for l in list(cfv.keys()) if l[0:4] == "Fco2" and "AverageSeries" in list(cfv[l].keys())]
     l3_info["Fco2"]["combine_list"] = merge_list + average_list
+    # get a list of Sco2 variables to be merged
+    cfv = cf["Variables"]
+    merge_list = [l for l in list(cfv.keys()) if l[0:4] == "Sco2" and "MergeSeries" in list(cfv[l].keys())]
+    average_list = [l for l in list(cfv.keys()) if l[0:4] == "Sco2" and "AverageSeries" in list(cfv[l].keys())]
+    l3_info["Sco2"]["combine_list"] = merge_list + average_list
     return l3_info
 
 def parse_variable_attributes(attributes):
@@ -727,10 +732,8 @@ def check_l1_controlfile(cfg):
         l1_check_nc_labels(cfg, messages)
         # check for duplicate input variable labels
         l1_check_input_labels(cfg, messages)
-        # check IRGA instrument type
-        l1_check_irga_type(cfg, messages)
-        # check SONIC instrument type
-        l1_check_sonic_type(cfg, messages)
+        # check IRGA and sonic instrument type
+        l1_check_irga_sonic_type(cfg, messages)
         # display and messages
         display_messages_interactive(messages)
         if len(messages["ERROR"]) > 0:
@@ -1133,7 +1136,9 @@ def display_messages_interactive(messages, mode="Close"):
             error_messages.append(item)
         logger.error("!!!!!")
     for item in messages["WARNING"]:
+        logger.warning("?????")
         logger.warning(item)
+        logger.warning("?????")
     for item in messages["INFO"]:
         logger.info(item)
     # convert error list to a comma separated string
@@ -1388,7 +1393,7 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
             messages["ERROR"].append(msg)
     return
 def l1_check_input_labels(cfg, messages):
-    # check for duplicate input labels
+    #
     file_parts = os.path.splitext(cfg["Files"]["in_filename"])
     if ("xls" in file_parts[-1].lower()):
         source = "xl"
@@ -1397,60 +1402,222 @@ def l1_check_input_labels(cfg, messages):
     else:
         msg = "Unexpected input source (" + file_parts[-1].lower() + ")"
         raise RuntimeError(msg)
-    input_labels = [cfg["Variables"][l][source]["name"] for l in cfg["Variables"]]
+    # check each variable has the necessary subsections
+    input_labels = []
+    cfg_labels = list(cfg["Variables"].keys())
+    for cfg_label in cfg_labels:
+        if ((source not in cfg["Variables"][cfg_label]) and
+            ("Function" not in cfg["Variables"][cfg_label])):
+            msg = "Neither '" + source + "' nor 'Function' found in " + cfg_label
+            messages["ERROR"].append(msg)
+        if "Attr" not in cfg["Variables"][cfg_label]:
+            msg = "'Attr' subsction not found in " + cfg_label
+            messages["ERROR"].append(msg)
+        if source in cfg["Variables"][cfg_label]:
+            if "name" in cfg["Variables"][cfg_label][source]:
+                input_labels.append(cfg["Variables"][cfg_label][source]["name"])
+            else:
+                msg = "'name' not found in " + cfg_label
+                messages["ERROR"].append(msg)
+    # check for duplicate input labels
     duplicate_labels = [l for l in set(input_labels) if input_labels.count(l) > 1]
+    nc_duplicate_labels = []
     if len(duplicate_labels) > 0:
         for duplicate_label in duplicate_labels:
-            nc_duplicate_labels = [l for l in cfg["Variables"]
-                                   if cfg["Variables"][l][source]["name"]==duplicate_label]
+            for cfg_label in cfg_labels:
+                if source in cfg["Variables"][cfg_label]:
+                    if "name" in cfg["Variables"][cfg_label][source]:
+                        if cfg["Variables"][cfg_label][source]["name"] == duplicate_label:
+                            nc_duplicate_labels.append(cfg_label)
             msg = "Duplicate input label " + duplicate_label + " used for "
             msg += ",".join(nc_duplicate_labels)
             messages["WARNING"].append(msg)
     return
-def l1_check_irga_type(cfg, messages):
-    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
-    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
-    known_irgas = open_path_irgas + closed_path_irgas
+def l1_check_irga_sonic_type(cfg, messages):
+    """
+    Purpose:
+
+    Usage:
+
+    Author: PRI
+    Date: November 2022
+    """
+    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    # IRGA signal strengths
     signal_labels = ["Signal_CO2", "Signal_H2O"]
     # PFP covariances
     h2o_covars = ["UxA", "UyA", "UzA"]
     co2_covars = ["UxC", "UyC", "UzC"]
-    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    t_covars = ["UxT", "UyT", "UzT"]
+    m_covars = ["UxUy", "UxUz", "UyUz"]
     # anything with 'IRGA' in the variable name
     irga_labels = [l for l in cfg_labels if "IRGA" in l]
-    # EasyFlux labels
-    ef_labels = ["Fco2_EF", "Fco2_EF_Num", "Fco2_EF_QC", "Fe_EF", "Fe_EF_Num", "Fe_EF_QC"]
-    # EddyPro labels
-    ep_labels = ["Fco2_EP", "Fco2_EP_QC", "Fe_EP", "Fe_EP_QC"]
-    irga_labels = irga_labels + signal_labels + h2o_covars + co2_covars + ef_labels + ep_labels
-    for irga_label in list(irga_labels):
-        if irga_label not in cfg_labels:
-            irga_labels.remove(irga_label)
+    # anything with 'SONIC' in the variable name
+    sonic_labels = [l for l in cfg_labels if "SONIC" in l]
+    # fluxes from EddyPro, EasyFlux and the like
+    fco2_labels = [l for l in cfg_labels if l[0:4] == "Fco2"]
+    sco2_labels = [l for l in cfg_labels if l[0:4] == "Sco2"]
+    fh2o_labels = [l for l in cfg_labels if l[0:4] == "Fh2o"]
+    fe_labels = [l for l in cfg_labels if l[0:2] == "Fe"]
+    fh_labels = [l for l in cfg_labels if l[0:2] == "Fh"]
+    fm_labels = [l for l in cfg_labels if l[0:2] == "Fm"]
+    # lists of variables by instrument
+    # fast IRGAs e.g. Li-7500RS etc used for turbulence measurements
+    fast_irga_only_labels = irga_labels + signal_labels
+    # slow IRGAs e.g. Li-840 used for profile measurements
+    slow_irga_only_labels = sco2_labels
+    # sonic anemometer only
+    sonic_only_labels = sonic_labels + t_covars + m_covars + fh_labels + fm_labels
+    # sonic and fast IRGA
+    sonic_irga_labels = h2o_covars + co2_covars + fco2_labels + fh2o_labels + fe_labels
+    # call the check routines
+    l1_check_irga_only(cfg, fast_irga_only_labels, messages)
+    l1_check_irga_only(cfg, slow_irga_only_labels, messages)
+    l1_check_sonic_only(cfg, sonic_only_labels, messages)
+    l1_check_sonic_irga(cfg, sonic_irga_labels, messages)
+    return
+def l1_check_irga_only(cfg, irga_only_labels, messages):
+    """ Check instrument attribute of variables that depend only on the IRGA"""
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    known_irgas = open_path_irgas + closed_path_irgas
+    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    for label in list(irga_only_labels):
+        if label not in cfg_labels:
+            irga_only_labels.remove(label)
     irga_check = {}
-    for irga_label in irga_labels:
-        ok = False
-        if "instrument" in cfg["Variables"][irga_label]["Attr"]:
-            irga_type = cfg["Variables"][irga_label]["Attr"]["instrument"]
+    for label in irga_only_labels:
+        if "instrument" in cfg["Variables"][label]["Attr"]:
+            irga_type = cfg["Variables"][label]["Attr"]["instrument"]
             if irga_type in known_irgas:
-                ok = True
+                # IRGA type is something we know
                 if irga_type not in irga_check:
                     irga_check[irga_type] = []
-                irga_check[irga_type].append(irga_label)
+                irga_check[irga_type].append(label)
             else:
-                for known_irga in known_irgas:
-                    if known_irga in irga_type:
-                        ok = True
-                        if known_irga not in irga_check:
-                            irga_check[known_irga] = []
-                        irga_check[known_irga].append(irga_label)
-            if not ok:
-                msg = "Unknown IRGA type (" + irga_type + ") for " + irga_label
+                msg = "Unknown IRGA type (" + irga_type + ") for " + label
                 messages["ERROR"].append(msg)
         else:
-            msg = "'instrument' attribute missing for " + irga_label
+            msg = "'instrument' attribute missing for " + label
             messages["ERROR"].append(msg)
     irga_types = list(irga_check.keys())
     if len(irga_types) == 1:
+        pass
+    else:
+        msg = "More than 1 IRGA type specified (" + ",".join(irga_types) + ")"
+        messages["ERROR"].append(msg)
+        for irga_type in irga_types:
+            msg = irga_type + " is used for " + ",".join(irga_check[irga_type])
+            messages["ERROR"].append(msg)
+    return
+def l1_check_sonic_only(cfg, sonic_only_labels, messages):
+    """ Check instrument attribute of variables that depend only on the sonic."""
+    known_sonics = list(c.instruments["sonics"].keys())
+    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    for label in list(sonic_only_labels):
+        if label not in cfg_labels:
+            sonic_only_labels.remove(label)
+    sonic_check = {}
+    for label in sonic_only_labels:
+        if "instrument" in cfg["Variables"][label]["Attr"]:
+            sonic_type = cfg["Variables"][label]["Attr"]["instrument"]
+            if sonic_type in known_sonics:
+                # sonic type is something we know
+                if sonic_type not in sonic_check:
+                    sonic_check[sonic_type] = []
+                sonic_check[sonic_type].append(label)
+            else:
+                msg = "Unknown sonic type (" + sonic_type + ") for " + label
+                messages["ERROR"].append(msg)
+        else:
+            msg = "'instrument' attribute missing for " + label
+            messages["ERROR"].append(msg)
+    sonic_types = list(sonic_check.keys())
+    if len(sonic_types) == 1:
+        pass
+    else:
+        msg = "More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
+        messages["ERROR"].append(msg)
+        for sonic_type in sonic_types:
+            msg = sonic_type + " is used for " + ",".join(sonic_check[sonic_type])
+            messages["ERROR"].append(msg)
+    return
+def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
+    """
+    Purpose:
+     Check the 'instrument' attribute of all variables associated with the sonic
+     and the fast IRGA and make sure only one sonic type and one IRGA type are
+     specified from the lists of known sonics and IRGAs.
+    Usage:
+     l1_check_sonic_irga(cfg, sonic_irga_labels, messages)
+     where cfg is a control file
+           sonic_irga_labels is a list of variables measured using the sonic
+                             and the fast IRGA
+           messages is a dictionary for error, warning and info messages
+    Author: PRI
+    Date: November 2022
+    """
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    known_irgas = open_path_irgas + closed_path_irgas
+    known_sonics = list(c.instruments["sonics"].keys())
+    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    for sonic_irga_label in list(sonic_irga_labels):
+        if sonic_irga_label not in cfg_labels:
+            sonic_irga_labels.remove(sonic_irga_label)
+    sonic_check = {}
+    irga_check = {}
+    for sonic_irga_label in sonic_irga_labels:
+        sonic_ok = False
+        irga_ok = False
+        if "instrument" in cfg["Variables"][sonic_irga_label]["Attr"]:
+            instrument_type = cfg["Variables"][sonic_irga_label]["Attr"]["instrument"]
+            if "," in instrument_type:
+                # instrument is a string with comma separated values
+                itl = [l.strip() for l in instrument_type.split(",")]
+                for known_sonic in known_sonics:
+                    if known_sonic in itl:
+                        sonic_ok = True
+                        if known_sonic not in sonic_check:
+                            sonic_check[known_sonic] = []
+                        sonic_check[known_sonic].append(sonic_irga_label)
+                for known_irga in known_irgas:
+                    if known_irga in itl:
+                        irga_ok = True
+                        if known_irga not in irga_check:
+                            irga_check[known_irga] = []
+                        irga_check[known_irga].append(sonic_irga_label)
+            else:
+                # instrument attribute is something we can't handle
+                pass
+            if not sonic_ok:
+                msg = "Unknown sonic type (" + instrument_type + ") for " + sonic_irga_label
+                messages["ERROR"].append(msg)
+            if not irga_ok:
+                msg = "Unknown IRGA type (" + instrument_type + ") for " + sonic_irga_label
+                messages["ERROR"].append(msg)
+        else:
+            msg = "'instrument' attribute missing for " + sonic_irga_label
+            messages["ERROR"].append(msg)
+    sonic_types = list(sonic_check.keys())
+    if len(sonic_types) == 0:
+        msg = "No known sonic types found"
+        messages["ERROR"].append(msg)
+    elif len(sonic_types) == 1:
+        cfg["Global"]["sonic_type"] = str(sonic_types[0])
+        msg = "Sonic type set to " + cfg["Global"]["sonic_type"]
+        logger.info(msg)
+    else:
+        msg = "More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
+        messages["ERROR"].append(msg)
+        for sonic_type in sonic_types:
+            msg = sonic_type + " is used for " + ",".join(sonic_check[sonic_type])
+            messages["ERROR"].append(msg)
+    irga_types = list(irga_check.keys())
+    if len(irga_types) == 0:
+        msg = "No known IRGA types found"
+        messages["ERROR"].append(msg)
+    elif len(irga_types) == 1:
         cfg["Global"]["irga_type"] = str(irga_types[0])
         msg = "IRGA type set to " + cfg["Global"]["irga_type"]
         logger.info(msg)
@@ -1459,68 +1626,6 @@ def l1_check_irga_type(cfg, messages):
         messages["ERROR"].append(msg)
         for irga_type in irga_types:
             msg = irga_type + " is used for " + ",".join(irga_check[irga_type])
-            messages["ERROR"].append(msg)
-    return
-def l1_check_sonic_type(cfg, messages):
-    """
-    Purpose:
-     Check the 'instrument' attribute of all variables associated with the sonic
-     anemometer and make sure only one sonic type is specified from a list of
-     known sonics.
-    Usage:
-     l1_check_sonic_type(cfg, messages)
-     where cfg is a control file
-           messages is a dictionary for error, warning and info messages
-    Author: PRI
-    Date: November 2022
-    """
-    known_sonics = list(c.instruments["sonics"].keys())
-    # PFP covariances
-    sonic_covars = ["UxT", "UyT", "UzT", "UxUy", "UxUz", "UyUz"]
-    cfg_labels = sorted(list(cfg["Variables"].keys()))
-    # anything with 'SONIC' in the variable name
-    sonic_labels = [l for l in cfg_labels if "SONIC" in l]
-    # EasyFlux labels
-    ef_labels = ["Fco2_EF", "Fco2_EF_Num", "Fco2_EF_QC", "Fe_EF", "Fe_EF_Num", "Fe_EF_QC"]
-    # EddyPro labels
-    ep_labels = ["Fco2_EP", "Fco2_EP_QC", "Fe_EP", "Fe_EP_QC"]
-    sonic_labels = sonic_labels + sonic_covars + ef_labels + ep_labels
-    for sonic_label in list(sonic_labels):
-        if sonic_label not in cfg_labels:
-            sonic_labels.remove(sonic_label)
-    sonic_check = {}
-    for sonic_label in sonic_labels:
-        ok = False
-        if "instrument" in cfg["Variables"][sonic_label]["Attr"]:
-            sonic_type = cfg["Variables"][sonic_label]["Attr"]["instrument"]
-            if sonic_type in known_sonics:
-                ok = True
-                if sonic_type not in sonic_check:
-                    sonic_check[sonic_type] = []
-                sonic_check[sonic_type].append(sonic_label)
-            else:
-                for known_sonic in known_sonics:
-                    if known_sonic in sonic_type:
-                        ok = True
-                        if known_sonic not in sonic_check:
-                            sonic_check[known_sonic] = []
-                        sonic_check[known_sonic].append(sonic_label)
-            if not ok:
-                msg = "Unknown SONIC type (" + sonic_type + ") for " + sonic_label
-                messages["ERROR"].append(msg)
-        else:
-            msg = "'instrument' attribute missing for " + sonic_label
-            messages["ERROR"].append(msg)
-    sonic_types = list(sonic_check.keys())
-    if len(sonic_types) == 1:
-        cfg["Global"]["sonic_type"] = str(sonic_types[0])
-        msg = "SONIC type set to " + cfg["Global"]["sonic_type"]
-        logger.info(msg)
-    else:
-        msg = "More than 1 SONIC type specified (" + ",".join(sonic_types) + ")"
-        messages["ERROR"].append(msg)
-        for sonic_type in sonic_types:
-            msg = sonic_type + " is used for " + ",".join(sonic_check[sonic_type])
             messages["ERROR"].append(msg)
     return
 def l1_check_nc_labels(cfg, messages):
@@ -2097,6 +2202,12 @@ def l2_update_controlfile(cfg):
     except Exception:
         ok = False
         msg = " An error occurred while updating the L2 control file syntax"
+    # clean up the Options section
+    try:
+        cfg = update_cfg_options(cfg, std)
+    except Exception:
+        ok = False
+        msg = " An error occurred while updating the L2 control file Options section"
     # clean up the variable names
     try:
         cfg = update_cfg_variables_deprecated(cfg, std)
@@ -2371,7 +2482,13 @@ def update_cfg_options(cfg, std):
             cfg["Options"][item] = cfg["General"][item]
         del cfg["General"]
     # update the units in the Options section
-    if cfg["level"] == "L3":
+    if cfg["level"] == "L2":
+        if "Options" in cfg:
+            if "irga_type" in cfg["Options"]:
+                irga_type = cfg["Options"]["irga_type"]
+                if irga_type in ["Li-7500A (<V6.5)", "Li-7500A (>=V6.5)"]:
+                    cfg["Options"]["irga_type"] = "Li-7500A"
+    elif cfg["level"] == "L3":
         if "Options" in cfg:
             for item in list(cfg["Options"].keys()):
                 if item in ["ApplyFcStorage", "FcUnits", "ReplaceFcStorage", "DisableFcWPL"]:

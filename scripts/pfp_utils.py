@@ -353,48 +353,46 @@ def ConvertFco2Units(cf, ds):
     # list of supported CO2 flux units
     units_list = ["mg/m^2/s", "umol/m^2/s"]
     # get the Fco2 units requested by the user
-    Fco2_units_out = get_keyvaluefromcf(cf, ['Options'], "Fco2Units", default="umol/m^2/s")
-    # get a list of Fco2 series
+    units_out = get_keyvaluefromcf(cf, ['Options'], "Fco2Units", default="umol/m^2/s")
+    # get a list of Fco2 and Sco2 variables
     labels = list(ds.root["Variables"].keys())
-    Fco2_list = [l for l in labels if l[0:4] == "Fco2"]
-    for label in list(Fco2_list):
+    Fco2_labels = [l for l in labels if l[0:4] == "Fco2"]
+    Sco2_labels = [l for l in labels if l[0:4] == "Sco2"]
+    labels = Fco2_labels + Sco2_labels
+    for label in list(labels):
         if "units" not in ds.root["Variables"][label]["Attr"]:
-            Fco2_list.remove(label)
+            labels.remove(label)
             continue
         if ds.root["Variables"][label]["Attr"]["units"] not in units_list:
-            Fco2_list.remove(label)
+            labels.remove(label)
             continue
-    # convert units of Fco2 as required
-    for label in Fco2_list:
-        # get the Fco2 variable
-        Fco2 = GetVariable(ds, label)
-        # check the units, we only operate on what we know (LBYL)
-        if Fco2["Attr"]["units"] not in units_list:
-            Fco2_list.remove(label)
-            continue
-        Fco2_units_in = Fco2["Attr"]["units"]
+    # convert units of Fco2 and Sco2 as required
+    for label in labels:
+        # get the Fco2 or Sco2 variable
+        var = GetVariable(ds, label)
+        units_in = var["Attr"]["units"]
         # check to see if we need to convert units
-        if Fco2_units_in == Fco2_units_out:
+        if units_in == units_out:
             # nothing to see here, folks
             continue
         # if we get here, we need to convert units
-        logger.info(" Converting " + label + " from " + Fco2_units_in + " to " + Fco2_units_out)
-        if Fco2_units_out == "umol/m^2/s" and Fco2_units_in == "mg/m^2/s":
-            Fco2["Data"] = pfp_mf.Fco2_umolpm2psfrommgCO2pm2ps(Fco2["Data"])
-            append_to_attribute(Fco2["Attr"], {descr_level: "converted to umol/m^2/s"})
-            Fco2["Attr"]["units"] = Fco2_units_out
-            Fco2["Attr"]["standard_name"] = "surface_upward_mole_flux_of_carbon_dioxide"
-            CreateVariable(ds, Fco2)
-        elif Fco2_units_out == "mg/m^2/s" and Fco2_units_in == "umol/m^2/s":
-            Fco2["Data"] = pfp_mf.Fco2_mgCO2pm2psfromumolpm2ps(Fco2["Data"])
-            append_to_attribute(Fco2["Attr"], {descr_level: "converted to mg/m^2/s"})
-            Fco2["Attr"]["units"] = Fco2_units_out
+        logger.info(" Converting " + label + " from " + units_in + " to " + units_out)
+        if units_out == "umol/m^2/s" and units_in == "mg/m^2/s":
+            var["Data"] = pfp_mf.Fco2_umolpm2psfrommgCO2pm2ps(var["Data"])
+            append_to_attribute(var["Attr"], {descr_level: "converted to umol/m^2/s"})
+            var["Attr"]["units"] = units_out
+            var["Attr"]["standard_name"] = "surface_upward_mole_flux_of_carbon_dioxide"
+            CreateVariable(ds, var)
+        elif units_out == "mg/m^2/s" and units_in == "umol/m^2/s":
+            var["Data"] = pfp_mf.Fco2_mgCO2pm2psfromumolpm2ps(var["Data"])
+            append_to_attribute(var["Attr"], {descr_level: "converted to mg/m^2/s"})
+            var["Attr"]["units"] = units_out
             # standard_name not defined when units are mg/m^2/s
-            if "standard_name" in Fco2["Attr"]:
-                Fco2["Attr"].pop("standard_name")
-            CreateVariable(ds, Fco2)
+            if "standard_name" in var["Attr"]:
+                var["Attr"].pop("standard_name")
+            CreateVariable(ds, var)
         else:
-            logger.info('  ConvertFco2Units: input or output units for Fco2 unrecognised')
+            logger.info('  Unrecognised input or output units for '+label)
     return
 
 def convert_units_func(ds, variable, new_units, mode="quiet"):

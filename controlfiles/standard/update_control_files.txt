@@ -119,6 +119,10 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         Diag_CSAT = Diag_SONIC
         e = VP
         esat = VPsat
+        # rename CO2 storage terms
+        Fco2_profile = Sco2_profile
+        Fco2_single = Sco2_single
+        Fco2_storage = Sco2
         Fco2_EPFlag = Fco2_EP_QC
         Fc_EPFlag = Fco2_EP_QC
         Fe_EPFlag = Fe_EP_QC
@@ -532,6 +536,12 @@ Friction velocity"""
         [[[xl]]]
             name = H2O_sig_strgth_Min
             sheet = CSFormat
+        [[[Sco2_profile]]]
+            long_name = CO2 flux storage term
+        [[[Sco2_single]]]
+            long_name = CO2 flux storage term
+        [[[Sco2_storage]]]
+            long_name = CO2 flux storage term
         [[[Sws]]]
             long_name = Soil water content
             standard_name = volume_fraction_of_condensed_water_in_soil
