@@ -787,9 +787,8 @@ class pfp_main_ui(QWidget):
                 pfp_top_level.do_run_l5(self)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "L6":
-            if not pfp_compliance.check_l6_controlfile(cfg):
-                return
-            pfp_top_level.do_run_l6(self)
+            if pfp_compliance.check_l6_controlfile(cfg):
+                pfp_top_level.do_run_l6(self)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_biomet":
             pfp_top_level.do_file_convert_nc2biomet(self, mode="custom")

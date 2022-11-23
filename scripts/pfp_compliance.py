@@ -1008,7 +1008,12 @@ def check_l6_controlfile(cfg):
     l6_check_ecosystemrespiration(cfg, messages)
     l6_check_netecosystemexchange(cfg, messages)
     l6_check_grossprimaryproductivity(cfg, messages)
-    display_messages_interactive(messages)
+    # check if we are running in interactive mode and display messages accordingly
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
+    if opt.lower() == "interactive":
+        display_messages_interactive(messages)
+    else:
+        display_messages_batch(messages)
     if len(messages["ERROR"]) > 0:
         ok = False
     return ok
