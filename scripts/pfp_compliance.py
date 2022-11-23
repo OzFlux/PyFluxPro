@@ -1123,6 +1123,8 @@ def display_messages_batch(messages):
                 logger.warning(msg)
             elif msg_type == "INFO":
                 logger.info(msg)
+            elif msg_type == "RESULT":
+                pass
             else:
                 raise RuntimeError("display_messages_batch: Unrecognised message in messages")
     return

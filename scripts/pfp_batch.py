@@ -90,8 +90,8 @@ def do_L2_batch(main_ui, cf_level):
             ds1 = pfp_io.NetCDFRead(infilename)
             if ds1.info["returncodes"]["value"] != 0:
                 return
-            pfp_compliance.check_l2_options(cf_l2, ds2)
-            if ds2.info["returncodes"]["value"] != 0:
+            pfp_compliance.check_l2_options(cf_l2, ds1)
+            if ds1.info["returncodes"]["value"] != 0:
                 return
             ds2 = pfp_levels.l2qc(cf_l2, ds1)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l2)
