@@ -1478,6 +1478,8 @@ def l1_check_irga_sonic_type(cfg, messages):
     return
 def l1_check_irga_only(cfg, irga_only_labels, messages):
     """ Check instrument attribute of variables that depend only on the IRGA"""
+    if len(irga_only_labels) == 0:
+        return
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     known_irgas = open_path_irgas + closed_path_irgas
@@ -1501,7 +1503,10 @@ def l1_check_irga_only(cfg, irga_only_labels, messages):
             msg = "'instrument' attribute missing for " + label
             messages["ERROR"].append(msg)
     irga_types = list(irga_check.keys())
-    if len(irga_types) == 1:
+    if len(irga_types) == 0:
+        msg = "No known irga types found"
+        messages["ERROR"].append(msg)
+    elif len(irga_types) == 1:
         pass
     else:
         msg = "More than 1 IRGA type specified (" + ",".join(irga_types) + ")"
@@ -1512,6 +1517,8 @@ def l1_check_irga_only(cfg, irga_only_labels, messages):
     return
 def l1_check_sonic_only(cfg, sonic_only_labels, messages):
     """ Check instrument attribute of variables that depend only on the sonic."""
+    if len(sonic_only_labels) == 0:
+        return
     known_sonics = list(c.instruments["sonics"].keys())
     cfg_labels = sorted(list(cfg["Variables"].keys()))
     for label in list(sonic_only_labels):
@@ -1533,7 +1540,10 @@ def l1_check_sonic_only(cfg, sonic_only_labels, messages):
             msg = "'instrument' attribute missing for " + label
             messages["ERROR"].append(msg)
     sonic_types = list(sonic_check.keys())
-    if len(sonic_types) == 1:
+    if len(sonic_types) == 0:
+        msg = "No known sonic types found"
+        messages["ERROR"].append(msg)
+    elif len(sonic_types) == 1:
         pass
     else:
         msg = "More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
@@ -1557,6 +1567,8 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
     Author: PRI
     Date: November 2022
     """
+    if len(sonic_irga_labels) == 0:
+        return
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     known_irgas = open_path_irgas + closed_path_irgas
@@ -1568,33 +1580,32 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
     sonic_check = {}
     irga_check = {}
     for sonic_irga_label in sonic_irga_labels:
-        sonic_ok = False
-        irga_ok = False
         if "instrument" in cfg["Variables"][sonic_irga_label]["Attr"]:
             instrument_type = cfg["Variables"][sonic_irga_label]["Attr"]["instrument"]
             if "," in instrument_type:
                 # instrument is a string with comma separated values
                 itl = [l.strip() for l in instrument_type.split(",")]
-                for known_sonic in known_sonics:
-                    if known_sonic in itl:
-                        sonic_ok = True
-                        if known_sonic not in sonic_check:
-                            sonic_check[known_sonic] = []
-                        sonic_check[known_sonic].append(sonic_irga_label)
-                for known_irga in known_irgas:
-                    if known_irga in itl:
-                        irga_ok = True
-                        if known_irga not in irga_check:
-                            irga_check[known_irga] = []
-                        irga_check[known_irga].append(sonic_irga_label)
+                if len(itl) == 2:
+                    for item in itl:
+                        if item in known_sonics:
+                            if item not in sonic_check:
+                                sonic_check[item] = []
+                            sonic_check[item].append(sonic_irga_label)
+                        elif item in known_irgas:
+                            if item not in irga_check:
+                                irga_check[item] = []
+                            irga_check[item].append(sonic_irga_label)
+                        else:
+                            msg = "Unrecognised instrument (" + item + ") for " + sonic_irga_label
+                            messages["ERROR"].append(msg)
+                else:
+                    msg = "'instrument' attribute must have 2 entries separated by a comma, got "
+                    msg += instrument_type + " for " + sonic_irga_label
+                    messages["ERROR"].append(msg)
             else:
                 # instrument attribute is something we can't handle
-                pass
-            if not sonic_ok:
-                msg = "Unknown sonic type (" + instrument_type + ") for " + sonic_irga_label
-                messages["ERROR"].append(msg)
-            if not irga_ok:
-                msg = "Unknown IRGA type (" + instrument_type + ") for " + sonic_irga_label
+                msg = "'instrument' attribute must have 2 entries separated by a comma, got "
+                msg += instrument_type + " for " + sonic_irga_label
                 messages["ERROR"].append(msg)
         else:
             msg = "'instrument' attribute missing for " + sonic_irga_label
