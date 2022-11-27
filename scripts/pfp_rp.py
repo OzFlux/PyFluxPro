@@ -2084,7 +2084,10 @@ def rp_createdict_outputs(cf, l6_info, target, called_by, flag_code):
         l6_info["RemoveIntermediateSeries"]["not_output"].append(output)
         # create the dictionary keys for this series
         eo[output] = {}
-        # get the target
+        # get the output options
+        for key in list(cf[section][target][called_by][output].keys()):
+            eo[output][key] = cf[section][target][called_by][output][key]
+        # update the target and source
         sl = [section, target, called_by, output]
         eo[output]["target"] = pfp_utils.get_keyvaluefromcf(cf, sl, "target", default=target)
         eo[output]["source"] = pfp_utils.get_keyvaluefromcf(cf, sl, "source", default=target)

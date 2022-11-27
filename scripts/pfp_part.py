@@ -178,12 +178,17 @@ class partition(object):
     #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
-    def estimate_Eo(self, window_size = 15, window_step = 5, get_stats = False):
+    #def estimate_Eo(self, window_size = 15, window_step = 5, get_stats = False):
+    def estimate_Eo(self, get_stats = False):
 
         """Estimate the activation energy type parameter for the L&T Arrhenius
            style equation using nocturnal data"""
 
         Eo_list = []
+        called_by = self.l6_info["Options"]["called_by"]
+        output = self.l6_info["Options"]["output"]
+        window_size = int(self.l6_info[called_by]["outputs"][output]["window_size_days"])
+        window_step = int(self.l6_info[called_by]["outputs"][output]["step_size_days"])
         for n, date in enumerate(self.make_date_iterator(window_size, window_step)):
             self.results["E0"][n] = {"start": date, "end": date,
                                      "num": 0, "T range": -9999,
