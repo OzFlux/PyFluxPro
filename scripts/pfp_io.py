@@ -2356,6 +2356,13 @@ def nc_read_series(nc_file, checktimestep=True, fixtimestepmethod="round"):
     if len(gattrlist) != 0:
         for gattr in gattrlist:
             ds.root["Attributes"][gattr] = getattr(nc_file, gattr)
+    if "processing_level" not in ds.root["Attributes"]:
+        if "nc_level" in ds.root["Attributes"]:
+            ds.root["Attributes"]["processing_level"] = ds.root["Attributes"]["nc_level"]
+        else:
+            msg = "  No processing level in global attributes, set to unknown"
+            logger.warning(msg)
+            ds.root["Attributes"]["processing_level"] = "unknown"
     # get a list of the variables in the netCDF file (not their QC flags)
     varlist = [x for x in list(nc_file.variables.keys()) if "_QCFlag" not in x]
     for ThisOne in varlist:
