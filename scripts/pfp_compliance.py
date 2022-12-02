@@ -1142,9 +1142,10 @@ def display_messages_interactive(messages, mode="Close"):
             logger.error(item)
             error_messages.append(item)
         logger.error("!!!!!")
-    for item in messages["WARNING"]:
+    if len(messages["WARNING"]) > 0:
         logger.warning("?????")
-        logger.warning(item)
+        for item in messages["WARNING"]:
+            logger.warning(item)
         logger.warning("?????")
     for item in messages["INFO"]:
         logger.info(item)
