@@ -125,7 +125,7 @@ def get_yaxislimitsfromcf(cf, nFig, maxkey, minkey, nSer, YArray):
         YAxMin = YAxMin - YAxDelta
     return YAxMax,YAxMin
 
-def plot_fcvsustar(ds):
+def plot_fcvsustar_annual(ds):
     """
     Purpose:
      Plots Fc versus u* for each year and for each season
@@ -149,6 +149,7 @@ def plot_fcvsustar(ds):
         Fco2 = pfp_utils.GetVariable(ds, "Fco2", start=start, end=end)
         Fsd = pfp_utils.GetVariable(ds, "Fsd", start=start, end=end)
         ustar = pfp_utils.GetVariable(ds, "ustar", start=start, end=end)
+        Ta = pfp_utils.GetVariable(ds, "Ta", start=start, end=end)
         # get the observations and night time filters
         obs = (Fco2["Flag"] == 0) & (ustar["Flag"] == 0)
         night = (Fsd["Data"] <= 10)
@@ -156,39 +157,60 @@ def plot_fcvsustar(ds):
         # mask anything that is not an observation and at night
         ustar["Data"] = numpy.ma.masked_where(obs_night_filter == False, ustar["Data"])
         Fco2["Data"] = numpy.ma.masked_where(obs_night_filter == False, Fco2["Data"])
-        # get mask when either ustar or Fc masked
-        mask = numpy.ma.mask_or(numpy.ma.getmaskarray(ustar["Data"]), numpy.ma.getmaskarray(Fco2["Data"]))
+        Ta["Data"] = numpy.ma.masked_where(obs_night_filter == False, Ta["Data"])
+        # get mask when either ustar or Fc or Ta masked
+        mask = numpy.ma.mask_or(numpy.ma.getmaskarray(ustar["Data"]),
+                                numpy.ma.getmaskarray(Fco2["Data"]))
+        mask = numpy.ma.mask_or(mask, numpy.ma.getmaskarray(Ta["Data"]))
         # apply mask
         ustar["Data"] = numpy.ma.masked_where(mask == True, ustar["Data"])
         Fco2["Data"] = numpy.ma.masked_where(mask == True, Fco2["Data"])
+        Ta["Data"] = numpy.ma.masked_where(mask == True, Ta["Data"])
         # remove masked elements
         ustar["Data"] = numpy.ma.compressed(ustar["Data"])
         Fco2["Data"] = numpy.ma.compressed(Fco2["Data"])
+        Ta["Data"] = numpy.ma.compressed(Ta["Data"])
         # get the binned statistics
-        count, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"], statistic='count', bins=nbins)
-        means, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"], statistic='mean', bins=nbins)
-        stdevs, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"], statistic='std', bins=nbins)
+        count, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"],
+                                                       statistic='count', bins=nbins)
+        means, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"],
+                                                       statistic='mean', bins=nbins)
+        stdevs, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"],
+                                                        statistic='std', bins=nbins)
         mids = (edges[:-1]+edges[1:])/2
         # drop bins with less than 10 counts
         mids = numpy.array(mids[count >= 10])
         means = numpy.array(means[count >= 10])
         stdevs = numpy.array(stdevs[count >= 10])
         # do the plot
-        fig = plt.figure()
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(6, 6))
         fig.canvas.manager.set_window_title("Fco2 versus u*: "+str(year))
-        plt.plot(ustar["Data"], Fco2["Data"], 'b.', alpha=0.25)
-        plt.errorbar(mids, means, yerr=stdevs, fmt='ro')
-        plt.xlabel("u* ("+ustar["Attr"]["units"]+")")
-        plt.ylabel("Fco2 ("+Fco2["Attr"]["units"]+")")
-        plt.title(site_name+": "+str(year))
+        axs.scatter(ustar["Data"], Fco2["Data"], c=Ta["Data"], alpha=0.25, s=10)
+        axs.errorbar(mids, means, yerr=stdevs, fmt='ro')
+        axs.set_xlabel("u* ("+ustar["Attr"]["units"]+")")
+        axs.set_ylabel("Fco2 ("+Fco2["Attr"]["units"]+")")
+        if len(means) > 0:
+            axs.set_ylim([min(means-stdevs), max(means+stdevs)])
+        axs.set_title(site_name+": "+str(year))
         plt.draw()
         pfp_utils.mypause(0.5)
+    return
+
+def plot_fcvsustar_seasonal(ds):
+    site_name = ds.root["Attributes"]["site_name"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    nbins = 20
+    # plot each season for each year
+    plt.ion()
+    start_year = ldt["Data"][0].year
+    end_year = ldt["Data"][-1].year
     # plot 4 seasons for each year
     logger.info(" Doing seasonal Fco2 versus u* plots")
     nrows = 2
     ncols = 2
     for year in range(start_year, end_year+1):
-        fig, axs = plt.subplots(nrows=nrows, ncols=ncols)
+        fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(8, 8))
         fig.canvas.manager.set_window_title("Fco2 versus u*: "+str(year))
         for n, season in enumerate(["Summer", "Autumn", "Winter", "Spring"]):
             col = numpy.mod(n, ncols)
@@ -212,6 +234,7 @@ def plot_fcvsustar(ds):
             Fco2 = pfp_utils.GetVariable(ds, "Fco2", start=start, end=end)
             Fsd = pfp_utils.GetVariable(ds, "Fsd", start=start, end=end)
             ustar = pfp_utils.GetVariable(ds, "ustar", start=start, end=end)
+            Ta = pfp_utils.GetVariable(ds, "Ta", start=start, end=end)
             # get the observations and night time filters
             obs = (Fco2["Flag"] == 0) & (ustar["Flag"] == 0)
             night = (Fsd["Data"] <= 10)
@@ -219,32 +242,128 @@ def plot_fcvsustar(ds):
             # mask anything that is not an observation and at night
             ustar["Data"] = numpy.ma.masked_where(obs_night_filter == False, ustar["Data"])
             Fco2["Data"] = numpy.ma.masked_where(obs_night_filter == False, Fco2["Data"])
-            # get mask when either ustar or Fc masked
-            mask = numpy.ma.mask_or(numpy.ma.getmaskarray(ustar["Data"]), numpy.ma.getmaskarray(Fco2["Data"]))
+            Ta["Data"] = numpy.ma.masked_where(obs_night_filter == False, Ta["Data"])
+            # get mask when either ustar or Fc or Ta masked
+            mask = numpy.ma.mask_or(numpy.ma.getmaskarray(ustar["Data"]),
+                                    numpy.ma.getmaskarray(Fco2["Data"]))
+            mask = numpy.ma.mask_or(mask, numpy.ma.getmaskarray(Ta["Data"]))
             # apply mask
             ustar["Data"] = numpy.ma.masked_where(mask == True, ustar["Data"])
             Fco2["Data"] = numpy.ma.masked_where(mask == True, Fco2["Data"])
+            Ta["Data"] = numpy.ma.masked_where(mask == True, Ta["Data"])
             # remove masked elements
             ustar["Data"] = numpy.ma.compressed(ustar["Data"])
             Fco2["Data"] = numpy.ma.compressed(Fco2["Data"])
+            Ta["Data"] = numpy.ma.compressed(Ta["Data"])
             # if no data, skip this plot and delete the axes
-            if (len(ustar["Data"]) == 0) or (len(Fco2["Data"]) == 0):
+            if (len(ustar["Data"]) == 0) or (len(Fco2["Data"]) == 0) or (len(Ta["Data"]) == 0):
                 fig.delaxes(axs[row, col])
                 continue
             # get the binned statistics
-            count, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"], statistic='count', bins=nbins)
-            means, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"], statistic='mean', bins=nbins)
-            stdevs, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"], statistic='std', bins=nbins)
+            count, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"],
+                                                           statistic='count', bins=nbins)
+            means, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"],
+                                                           statistic='mean', bins=nbins)
+            stdevs, edges, numbers = stats.binned_statistic(ustar["Data"],Fco2["Data"],
+                                                            statistic='std', bins=nbins)
             mids = (edges[:-1]+edges[1:])/2
             # drop bins with less than 10 counts
             mids = numpy.array(mids[count >= 10])
             means = numpy.array(means[count >= 10])
             stdevs = numpy.array(stdevs[count >= 10])
-            axs[row, col].plot(ustar["Data"], Fco2["Data"], 'b.', alpha=0.25)
+            axs[row, col].scatter(ustar["Data"], Fco2["Data"], c=Ta["Data"], alpha=0.25, s=10)
             axs[row, col].errorbar(mids, means, yerr=stdevs, fmt='ro')
             axs[row, col].set_title(site_name+": "+str(year)+" "+season)
             axs[row, col].set_xlabel("u* ("+ustar["Attr"]["units"]+")")
             axs[row, col].set_ylabel("Fco2 ("+Fco2["Attr"]["units"]+")")
+            if len(means) > 0:
+                axs[row, col].set_ylim([min(means-stdevs), max(means+stdevs)])
+        fig.tight_layout()
+        plt.draw()
+        pfp_utils.mypause(0.5)
+    plt.ioff()
+    return
+
+def plot_fcvsustar_monthly(ds):
+    site_name = ds.root["Attributes"]["site_name"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    nbins = 20
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    # plot each month for each year
+    plt.ion()
+    start_year = dt["Data"][0].year
+    end_year = dt["Data"][-1].year
+    # plot 12 months for each year
+    logger.info(" Doing monthly Fco2 versus u* plots")
+    nrows = 4
+    ncols = 3
+    for year in range(start_year, end_year+1):
+        start = datetime.datetime(year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+        end = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+        # get the variables from the data structure
+        ldt = pfp_utils.GetVariable(ds, "DateTime", start=start, end=end)
+        month = numpy.array([d.month for d in ldt["Data"]])
+        Fco2 = pfp_utils.GetVariable(ds, "Fco2", start=start, end=end)
+        Fsd = pfp_utils.GetVariable(ds, "Fsd", start=start, end=end)
+        ustar = pfp_utils.GetVariable(ds, "ustar", start=start, end=end)
+        Ta = pfp_utils.GetVariable(ds, "Ta", start=start, end=end)
+        # get the figure
+        fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(8, 10))
+        fig.canvas.manager.set_window_title("Fco2 versus u*: "+str(year))
+        # loop over months
+        for n, m in enumerate([12] + list(range(1, 12))):
+            ncol = numpy.mod(n, ncols)
+            nrow = n//ncols
+            #if (end < dt["Data"][0]) or (start > dt["Data"][-1]):
+                #fig.delaxes(axs[nrow, ncol])
+                #continue
+            # get indices for this month
+            idx = numpy.where(month == m)[0]
+            # skip month and remove axes if there is no data for this month
+            if len(idx) == 0:
+                axs[nrow, ncol].remove()
+                continue
+            # get the observations and night time filters
+            obs = (Fco2["Flag"][idx] == 0) & (ustar["Flag"][idx] == 0)
+            night = (Fsd["Data"][idx] <= 10)
+            obs_night_filter = obs & night
+            # mask anything that is not an observation and at night
+            us = numpy.ma.masked_where(obs_night_filter == False, ustar["Data"][idx])
+            fc = numpy.ma.masked_where(obs_night_filter == False, Fco2["Data"][idx])
+            ta = numpy.ma.masked_where(obs_night_filter == False, Ta["Data"][idx])
+            # get mask when either ustar or Fco2 or Ta masked
+            mask = numpy.ma.mask_or(numpy.ma.getmaskarray(us),
+                                    numpy.ma.getmaskarray(fc))
+            mask = numpy.ma.mask_or(mask, numpy.ma.getmaskarray(ta))
+            # apply mask
+            us = numpy.ma.masked_where(mask == True, us)
+            fc = numpy.ma.masked_where(mask == True, fc)
+            ta = numpy.ma.masked_where(mask == True, ta)
+            # remove masked elements
+            us = numpy.ma.compressed(us)
+            fc = numpy.ma.compressed(fc)
+            ta = numpy.ma.compressed(ta)
+            # if no data, skip this plot and delete the axes
+            if (len(us) == 0) or (len(fc) == 0) or (len(ta) == 0):
+                fig.delaxes(axs[nrow, ncol])
+                continue
+            # get the binned statistics
+            count, edges, numbers = stats.binned_statistic(us, fc, statistic='count', bins=nbins)
+            means, edges, numbers = stats.binned_statistic(us, fc, statistic='mean', bins=nbins)
+            stdevs, edges, numbers = stats.binned_statistic(us, fc, statistic='std', bins=nbins)
+            mids = (edges[:-1]+edges[1:])/2
+            # drop bins with less than 10 counts
+            mids = numpy.array(mids[count >= 3])
+            means = numpy.array(means[count >= 3])
+            stdevs = numpy.array(stdevs[count >= 3])
+            axs[nrow, ncol].scatter(us, fc, c=ta, alpha=0.25, s=10)
+            axs[nrow, ncol].errorbar(mids, means, yerr=stdevs, fmt='ro')
+            axs[nrow, ncol].set_title(site_name+": "+str(year)+" "+months[m-1])
+            axs[nrow, ncol].set_xlabel("u* ("+ustar["Attr"]["units"]+")")
+            axs[nrow, ncol].set_ylabel("Fco2 ("+Fco2["Attr"]["units"]+")")
+            if len(means) > 0:
+                axs[nrow, ncol].set_ylim([min(means-stdevs), max(means+stdevs)])
         fig.tight_layout()
         plt.draw()
         pfp_utils.mypause(0.5)

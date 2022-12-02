@@ -32,6 +32,66 @@ class myMessageBox(QtWidgets.QMessageBox):
         self.setStandardButtons(QtWidgets.QMessageBox.Ok)
         self.exec_()
 
+class MsgBox_Close(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_Close, self).__init__(parent)
+        if title in ["Critical", "Error"]:
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.No)
+        self.button(QtWidgets.QMessageBox.No).setText("Close")
+    def execute(self):
+        self.setModal(False)
+        self.show()
+        self.exec_()
+        return "close"
+
+class MsgBox_CloseOrIgnore(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_CloseOrIgnore, self).__init__(parent)
+        if title == "Critical":
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.Yes |
+                                QtWidgets.QMessageBox.No)
+        self.button(QtWidgets.QMessageBox.Yes).setText("Ignore")
+        self.button(QtWidgets.QMessageBox.No).setText("Close")
+    def execute(self):
+        self.setModal(False)
+        self.show()
+        self.exec_()
+        if self.clickedButton() is self.button(QtWidgets.QMessageBox.Yes):
+            return "ignore"
+        else:
+            return "close"
+
+class MsgBox_Continue(QtWidgets.QMessageBox):
+    def __init__(self, msg, title="Information", parent=None):
+        super(MsgBox_Continue, self).__init__(parent)
+        if title in ["Critical", "Error"]:
+            self.setIcon(QtWidgets.QMessageBox.Critical)
+        elif title == "Warning":
+            self.setIcon(QtWidgets.QMessageBox.Warning)
+        else:
+            self.setIcon(QtWidgets.QMessageBox.Information)
+        self.setText(msg)
+        self.setWindowTitle(title)
+        self.setStandardButtons(QtWidgets.QMessageBox.Yes)
+        self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
+        self.setModal(False)
+        self.show()
+        self.exec_()
+
 class MsgBox_ContinueOrQuit(QtWidgets.QMessageBox):
     def __init__(self, msg, title="Information", parent=None):
         super(MsgBox_ContinueOrQuit, self).__init__(parent)
@@ -64,23 +124,6 @@ class MsgBox_Quit(QtWidgets.QMessageBox):
         self.setWindowTitle(title)
         self.setStandardButtons(QtWidgets.QMessageBox.No)
         self.button(QtWidgets.QMessageBox.No).setText("Quit")
-        self.setModal(False)
-        self.show()
-        self.exec_()
-
-class MsgBox_Continue(QtWidgets.QMessageBox):
-    def __init__(self, msg, title="Information", parent=None):
-        super(MsgBox_Continue, self).__init__(parent)
-        if title in ["Critical", "Error"]:
-            self.setIcon(QtWidgets.QMessageBox.Critical)
-        elif title == "Warning":
-            self.setIcon(QtWidgets.QMessageBox.Warning)
-        else:
-            self.setIcon(QtWidgets.QMessageBox.Information)
-        self.setText(msg)
-        self.setWindowTitle(title)
-        self.setStandardButtons(QtWidgets.QMessageBox.Yes)
-        self.button(QtWidgets.QMessageBox.Yes).setText("Continue")
         self.setModal(False)
         self.show()
         self.exec_()
@@ -239,18 +282,32 @@ class file_explore(QtWidgets.QWidget):
         if len(self.view.selectedIndexes()) == 0:
             # trap right click when nothing is selected
             return
+        # get the indices of selected items
         idx = self.view.selectedIndexes()
-        #groups = list(set([i.parent().parent().data() for i in idx]))
+        # get the group labels of selected items
         groups = list(set([i.parent().data() for i in idx]))
+        # dictionary to hold the labels of selected variables for each group
         selections = {}
-        for group in groups:
-            selections[group] = []
+        # add the selected variable labels to the right group in selections
         for i in idx:
+            # get the group label of this selected item
+            group = i.parent().data()
+            # skip anything selected in 'Global attributes'
+            if (group in ["Global attributes"]):
+                continue
+            # add the group to selections if not there
+            if group not in selections:
+                selections[group] = []
+            # append the label of the selected variable to the group
             selections[i.parent().data()].append(i.data())
-        for key in selections.keys():
+        # rename the 'Variables' group to 'root'
+        for key in list(selections.keys()):
             if key is None or key == "Variables":
                 selections["root"] = selections.pop(key)
                 break
+        # return if selections is empty (no variables selected)
+        if len(list(selections.keys())) == 0:
+            return
         # plot time series, separate axes or grouped
         menuPlotTimeSeries = QtWidgets.QMenu(self)
         menuPlotTimeSeries.setTitle("Plot time series")
@@ -271,6 +328,7 @@ class file_explore(QtWidgets.QWidget):
         # plot fingerprints
         # check the time steps for all groups containing selected variables
         groups = list(selections.keys())
+        groups = ["root" if i == "Global attributes" else i for i in groups]
         time_steps = []
         for group in groups:
             time_steps.append(str(getattr(self.ds, group)["Attributes"]["time_step"]))
@@ -319,6 +377,7 @@ class file_explore(QtWidgets.QWidget):
         for gattr in gattrs:
             value = str(self.ds.root["Attributes"][gattr])
             child0 = QtGui.QStandardItem(gattr)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(value)
             section.appendRow([child0, child1])
         self.model.appendRow([section, long_name])
@@ -1192,7 +1251,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.update_header_rows(new_file_names)
                 self.update_tab_text()
         return
-    
+
     def browse_input_file_check_entry(self, new_file_path):
         """
          Check the files selected by the user.  The rukes are:
@@ -1683,7 +1742,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
             parent.child(ifdr, 1).setText(",".join(in_firstdatarow))
             parent.child(ihr, 1).setText(",".join(in_headerrow))
         return
-        
+
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -1863,7 +1922,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
     def add_options_section(self):
         """ Add an Options section."""
         self.sections["Options"] = QtGui.QStandardItem("Options")
-        new_options = {"irga_type": "Li-7500A"}
+        new_options = {"irga_type": "Li-7500RS", "sonic_type": "CSAT3B",
+                       "SONIC_Check": "Yes", "IRGA_Check": "Yes"}
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
@@ -1936,6 +1996,17 @@ class edit_cfg_L2(QtWidgets.QWidget):
     def add_sonic_check(self):
         """ Add sonic check to Options section."""
         new_options = {"SONIC_Check": "Yes"}
+        for key in new_options:
+            value = new_options[key]
+            child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
+            child1 = QtGui.QStandardItem(value)
+            self.sections["Options"].appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_sonic_type(self):
+        """ Add sonic_type to Options section."""
+        new_options = {"sonic_type": "CSAT3B"}
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
@@ -2182,6 +2253,12 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionirgatype)
                     self.context_menu.actionirgatype.triggered.connect(self.add_irga_type)
                     add_separator = True
+                if "sonic_type" not in existing_entries:
+                    self.context_menu.actionsonictype = QtWidgets.QAction(self)
+                    self.context_menu.actionsonictype.setText("sonic_type")
+                    self.context_menu.addAction(self.context_menu.actionsonictype)
+                    self.context_menu.actionsonictype.triggered.connect(self.add_sonic_type)
+                    add_separator = True
                 if "SONIC_Check" not in existing_entries:
                     self.context_menu.actionSonicCheck = QtWidgets.QAction(self)
                     self.context_menu.actionSonicCheck.setText("SONIC_Check")
@@ -2252,16 +2329,11 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.actionSetIRGATypeLi7500.setText("Li-7500")
                         self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500)
                         self.context_menu.actionSetIRGATypeLi7500.triggered.connect(self.set_irga_li7500)
-                    if existing_entry != "Li-7500A (<V6.5)":
-                        self.context_menu.actionSetIRGATypeLi7500APre6_5 = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeLi7500APre6_5.setText("Li-7500A (<V6.5)")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500APre6_5)
-                        self.context_menu.actionSetIRGATypeLi7500APre6_5.triggered.connect(self.set_irga_li7500a_pre6_5)
-                    if existing_entry != "Li-7500A (>=V6.5)":
-                        self.context_menu.actionSetIRGATypeLi7500APost6_5 = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeLi7500APost6_5.setText("Li-7500A (>=V6.5)")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500APost6_5)
-                        self.context_menu.actionSetIRGATypeLi7500APost6_5.triggered.connect(self.set_irga_li7500a_post6_5)
+                    if existing_entry != "Li-7500A":
+                        self.context_menu.actionSetIRGATypeLi7500A = QtWidgets.QAction(self)
+                        self.context_menu.actionSetIRGATypeLi7500A.setText("Li-7500A")
+                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500A)
+                        self.context_menu.actionSetIRGATypeLi7500A.triggered.connect(self.set_irga_li7500a)
                     if existing_entry != "Li-7500RS":
                         self.context_menu.actionSetIRGATypeLi7500RS = QtWidgets.QAction(self)
                         self.context_menu.actionSetIRGATypeLi7500RS.setText("Li-7500RS")
@@ -2292,6 +2364,23 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.actionSetIRGATypeIRGASON.setText("IRGASON")
                         self.context_menu.addAction(self.context_menu.actionSetIRGATypeIRGASON)
                         self.context_menu.actionSetIRGATypeIRGASON.triggered.connect(self.set_irga_irgason)
+                elif key == "sonic_type":
+                    existing_entry = str(parent.child(selected_item.row(),1).text())
+                    if existing_entry != "CSAT3":
+                        self.context_menu.actionSetSonicTypeCSAT3 = QtWidgets.QAction(self)
+                        self.context_menu.actionSetSonicTypeCSAT3.setText("CSAT3")
+                        self.context_menu.addAction(self.context_menu.actionSetSonicTypeCSAT3)
+                        self.context_menu.actionSetSonicTypeCSAT3.triggered.connect(self.set_sonic_csat3)
+                    if existing_entry != "CSAT3A":
+                        self.context_menu.actionSetSonicTypeCSAT3A = QtWidgets.QAction(self)
+                        self.context_menu.actionSetSonicTypeCSAT3A.setText("CSAT3A")
+                        self.context_menu.addAction(self.context_menu.actionSetSonicTypeCSAT3A)
+                        self.context_menu.actionSetSonicTypeCSAT3A.triggered.connect(self.set_sonic_csat3a)
+                    if existing_entry != "CSAT3B":
+                        self.context_menu.actionSetSonicTypeCSAT3B = QtWidgets.QAction(self)
+                        self.context_menu.actionSetSonicTypeCSAT3B.setText("CSAT3B")
+                        self.context_menu.addAction(self.context_menu.actionSetSonicTypeCSAT3B)
+                        self.context_menu.actionSetSonicTypeCSAT3B.triggered.connect(self.set_sonic_csat3b)
                 elif key in ["SONIC_Check", "IRGA_Check"]:
                     existing_entry = str(parent.child(selected_item.row(),1).text())
                     if existing_entry != "Yes":
@@ -2305,7 +2394,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.addAction(self.context_menu.actionSetCheckNo)
                         self.context_menu.actionSetCheckNo.triggered.connect(self.set_check_no)
             elif (str(parent.text()) == "Options") and (selected_item.column() == 0):
-                if selected_item.text() in ["SONIC_Check", "IRGA_Check"]:
+                if selected_item.text() in ["irga_type", "sonic_type", "SONIC_Check", "IRGA_Check"]:
                     self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
@@ -2743,19 +2832,12 @@ class edit_cfg_L2(QtWidgets.QWidget):
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("Li-7500")
 
-    def set_irga_li7500a_pre6_5(self):
-        """ Set the IRGA type to Li-7500A pre V6.5."""
+    def set_irga_li7500a(self):
+        """ Set the IRGA type to Li-7500A (pre and post V6.5)."""
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("Li-7500A (<V6.5)")
-
-    def set_irga_li7500a_post6_5(self):
-        """ Set the IRGA type to Li-7500A post V6.5."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("Li-7500A (>=V6.5)")
+        parent.child(selected_item.row(), 1).setText("Li-7500A")
 
     def set_irga_li7500rs(self):
         """ Set the IRGA type to Li-7500RS."""
@@ -2777,6 +2859,27 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("Li-7200RS")
+
+    def set_sonic_csat3(self):
+        """ Set the sonic type to CSAT3."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("CSAT3")
+
+    def set_sonic_csat3a(self):
+        """ Set the sonic type to CSAT3A."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("CSAT3A")
+
+    def set_sonic_csat3b(self):
+        """ Set the sonic type to CSAT3B."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText("CSAT3B")
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
@@ -2868,6 +2971,14 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
         self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_ApplyWPL_to_options(self):
+        """ Add ApplyWPL to the [Options] section."""
+        child0 = QtGui.QStandardItem("ApplyWPL")
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("Yes")
+        self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
     def add_diurnalcheck(self):
@@ -3110,9 +3221,9 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.sections["Plots"].appendRow(parent)
         self.update_tab_text()
 
-    def add_usel2fluxes(self):
-        """ Add UseL2Fluxes to the [Options] section."""
-        child0 = QtGui.QStandardItem("UseL2Fluxes")
+    def add_calculatefluxes(self):
+        """ Add CalculateFluxes to the [Options] section."""
+        child0 = QtGui.QStandardItem("CalculateFluxes")
         child0.setEditable(False)
         child1 = QtGui.QStandardItem("Yes")
         self.sections["Options"].appendRow([child0, child1])
@@ -3310,11 +3421,11 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddzms.setText("Add zms")
                     self.context_menu.addAction(self.context_menu.actionAddzms)
                     self.context_menu.actionAddzms.triggered.connect(self.add_zms)
-                if "UseL2Fluxes" not in existing_entries:
-                    self.context_menu.actionAddUseL2Fluxes = QtWidgets.QAction(self)
-                    self.context_menu.actionAddUseL2Fluxes.setText("UseL2Fluxes")
-                    self.context_menu.addAction(self.context_menu.actionAddUseL2Fluxes)
-                    self.context_menu.actionAddUseL2Fluxes.triggered.connect(self.add_usel2fluxes)
+                if "CalculateFluxes" not in existing_entries:
+                    self.context_menu.actionAddCalculateFluxes = QtWidgets.QAction(self)
+                    self.context_menu.actionAddCalculateFluxes.setText("CalculateFluxes")
+                    self.context_menu.addAction(self.context_menu.actionAddCalculateFluxes)
+                    self.context_menu.actionAddCalculateFluxes.triggered.connect(self.add_calculatefluxes)
                 if "2DCoordRotation" not in existing_entries:
                     self.context_menu.actionAdd2DCoordRotation = QtWidgets.QAction(self)
                     self.context_menu.actionAdd2DCoordRotation.setText("2DCoordRotation")
@@ -3355,6 +3466,11 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddFco2Units.setText("Fco2Units")
                     self.context_menu.addAction(self.context_menu.actionAddFco2Units)
                     self.context_menu.actionAddFco2Units.triggered.connect(self.add_fco2units_to_options)
+                if "ApplyWPL" not in existing_entries:
+                    self.context_menu.actionAddApplyWPL = QtWidgets.QAction(self)
+                    self.context_menu.actionAddApplyWPL.setText("ApplyWPL")
+                    self.context_menu.addAction(self.context_menu.actionAddApplyWPL)
+                    self.context_menu.actionAddApplyWPL.triggered.connect(self.add_ApplyWPL_to_options)
             elif selected_text == "Massman":
                 self.context_menu.actionRemoveMassmanSection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveMassmanSection.setText("Remove section")
@@ -3421,10 +3537,10 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
                     self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
-                elif (selected_item.column() == 1) and (key in ["ApplyFco2Storage", "UseL2Fluxes",
+                elif (selected_item.column() == 1) and (key in ["ApplyFco2Storage", "CalculateFluxes",
                                                                 "2DCoordRotation", "MassmanCorrection",
                                                                 "CorrectIndividualFg", "CorrectFgForStorage",
-                                                                "KeepIntermediateSeries"]):
+                                                                "KeepIntermediateSeries", "ApplyWPL"]):
                     if selected_text != "Yes":
                         self.context_menu.actionChangeOption = QtWidgets.QAction(self)
                         self.context_menu.actionChangeOption.setText("Yes")
@@ -3724,7 +3840,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 self.sections[key1].setEditable(False)
-                for key2 in self.cfg[key1]:
+                for key2 in sorted(list(self.cfg[key1].keys())):
                     value = self.cfg[key1][key2]
                     child0 = QtGui.QStandardItem(key2)
                     child0.setEditable(False)

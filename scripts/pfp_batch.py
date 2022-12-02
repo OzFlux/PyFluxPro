@@ -54,12 +54,16 @@ def do_L1_batch(main_ui, cf_level):
             cf_l1 = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.l1_update_controlfile(cf_l1):
                 continue
-            ds1 = pfp_levels.l1qc(cf_l1)
-            outfilename = pfp_io.get_outfilenamefromcf(cf_l1)
-            pfp_io.NetCDFWrite(outfilename, ds1)
-            msg = "Finished L1 processing with " + cf_file_name[1]
-            logger.info(msg)
-            logger.info("")
+            if pfp_compliance.check_l1_controlfile(cf_l1):
+                ds1 = pfp_levels.l1qc(cf_l1)
+                outfilename = pfp_io.get_outfilenamefromcf(cf_l1)
+                pfp_io.NetCDFWrite(outfilename, ds1)
+                msg = "Finished L1 processing with " + cf_file_name[1]
+                logger.info(msg)
+                logger.info("")
+            else:
+                msg = "Error occurred checking compliance of L1 controlfile"
+                logger.error(msg)
         except Exception:
             msg = "Error occurred during L1 processing " + cf_file_name[1]
             logger.error(msg)
@@ -88,27 +92,35 @@ def do_L2_batch(main_ui, cf_level):
             cf_l2["Options"]["show_plots"] = "No"
             infilename = pfp_io.get_infilenamefromcf(cf_l2)
             ds1 = pfp_io.NetCDFRead(infilename)
-            if ds1.info["returncodes"]["value"] != 0: return
-            ds2 = pfp_levels.l2qc(cf_l2, ds1)
-            outfilename = pfp_io.get_outfilenamefromcf(cf_l2)
-            pfp_io.NetCDFWrite(outfilename, ds2)
-            msg = "Finished L2 processing with " + cf_file_name[1]
-            logger.info(msg)
-            if "Plots" in list(cf_l2.keys()):
-                logger.info("Plotting L1 and L2 data")
-                for nFig in list(cf_l2['Plots'].keys()):
-                    if "(disabled)" in nFig:
-                        continue
-                    plt_cf = cf_l2['Plots'][str(nFig)]
-                    if 'type' in plt_cf.keys():
-                        if str(plt_cf['type']).lower() == 'xy':
-                            pfp_plot.plotxy(cf_l2, nFig, plt_cf, ds1, ds2)
+            if ds1.info["returncodes"]["value"] != 0:
+                return
+            pfp_compliance.check_l2_options(cf_l2, ds1)
+            if ds1.info["returncodes"]["value"] != 0:
+                return
+            if pfp_compliance.check_l2_controlfile(cf_l2):
+                ds2 = pfp_levels.l2qc(cf_l2, ds1)
+                outfilename = pfp_io.get_outfilenamefromcf(cf_l2)
+                pfp_io.NetCDFWrite(outfilename, ds2)
+                msg = "Finished L2 processing with " + cf_file_name[1]
+                logger.info(msg)
+                if "Plots" in list(cf_l2.keys()):
+                    logger.info("Plotting L1 and L2 data")
+                    for nFig in list(cf_l2['Plots'].keys()):
+                        if "(disabled)" in nFig:
+                            continue
+                        plt_cf = cf_l2['Plots'][str(nFig)]
+                        if 'type' in plt_cf.keys():
+                            if str(plt_cf['type']).lower() == 'xy':
+                                pfp_plot.plotxy(cf_l2, nFig, plt_cf, ds1, ds2)
+                            else:
+                                pfp_plot.plottimeseries(cf_l2, nFig, ds1, ds2)
                         else:
                             pfp_plot.plottimeseries(cf_l2, nFig, ds1, ds2)
-                    else:
-                        pfp_plot.plottimeseries(cf_l2, nFig, ds1, ds2)
-                logger.info("Finished plotting L1 and L2 data")
-            logger.info("")
+                    logger.info("Finished plotting L1 and L2 data")
+                logger.info("")
+            else:
+                msg = "Error occurred checking compliance of L2 controlfile"
+                logger.error(msg)
         except Exception:
             msg = "Error occurred during L2 processing " + cf_file_name[1]
             logger.error(msg)
@@ -137,7 +149,11 @@ def do_L3_batch(main_ui, cf_level):
             cf_l3["Options"]["show_plots"] = "No"
             infilename = pfp_io.get_infilenamefromcf(cf_l3)
             ds2 = pfp_io.NetCDFRead(infilename)
-            if ds2.info["returncodes"]["value"] != 0: return
+            if ds2.info["returncodes"]["value"] != 0:
+                return
+            pfp_compliance.check_l3_options(cf_l3, ds2)
+            if ds2.info["returncodes"]["value"] != 0:
+                return
             ds3 = pfp_levels.l3qc(cf_l3, ds2)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l3)
             pfp_io.NetCDFWrite(outfilename, ds3)
@@ -467,17 +483,22 @@ def do_L5_batch(main_ui, cf_level):
             cf_l5["Options"]["show_plots"] = "No"
             infilename = pfp_io.get_infilenamefromcf(cf_l5)
             ds4 = pfp_io.NetCDFRead(infilename)
-            if ds4.info["returncodes"]["value"] != 0: return
-            ds5 = pfp_levels.l5qc(None, cf_l5, ds4)
-            outfilename = pfp_io.get_outfilenamefromcf(cf_l5)
-            pfp_io.NetCDFWrite(outfilename, ds5)
-            msg = "Finished L5 processing with " + cf_file_name[1]
-            logger.info(msg)
-            # do the CF compliance check
-            #do_batch_cfcheck(cf_l5)
-            # plot the L5 fingerprints
-            do_batch_fingerprints(cf_l5)
-            logger.info("")
+            if ds4.info["returncodes"]["value"] != 0:
+                return
+            if pfp_compliance.check_l5_controlfile(cf_l5):
+                ds5 = pfp_levels.l5qc(None, cf_l5, ds4)
+                outfilename = pfp_io.get_outfilenamefromcf(cf_l5)
+                pfp_io.NetCDFWrite(outfilename, ds5)
+                msg = "Finished L5 processing with " + cf_file_name[1]
+                logger.info(msg)
+                # do the CF compliance check
+                #do_batch_cfcheck(cf_l5)
+                # plot the L5 fingerprints
+                do_batch_fingerprints(cf_l5)
+                logger.info("")
+            else:
+                msg = "Error occurred checking compliance of L5 controlfile"
+                logger.error(msg)
         except Exception:
             msg = "Error occurred during L5 with " + cf_file_name[1]
             logger.error(msg)
@@ -506,15 +527,20 @@ def do_L6_batch(main_ui, cf_level):
             cf_l6["Options"]["show_plots"] = "No"
             infilename = pfp_io.get_infilenamefromcf(cf_l6)
             ds5 = pfp_io.NetCDFRead(infilename)
-            if ds5.info["returncodes"]["value"] != 0: return
-            ds6 = pfp_levels.l6qc(None, cf_l6, ds5)
-            outfilename = pfp_io.get_outfilenamefromcf(cf_l6)
-            pfp_io.NetCDFWrite(outfilename, ds6)
-            msg = "Finished L6 processing with " + cf_file_name[1]
-            logger.info(msg)
-            # do the CF compliance check
-            #do_batch_cfcheck(cf_l6)
-            logger.info("")
+            if ds5.info["returncodes"]["value"] != 0:
+                return
+            if pfp_compliance.check_l6_controlfile(cf_l6):
+                ds6 = pfp_levels.l6qc(None, cf_l6, ds5)
+                outfilename = pfp_io.get_outfilenamefromcf(cf_l6)
+                pfp_io.NetCDFWrite(outfilename, ds6)
+                msg = "Finished L6 processing with " + cf_file_name[1]
+                logger.info(msg)
+                # do the CF compliance check
+                #do_batch_cfcheck(cf_l6)
+                logger.info("")
+            else:
+                msg = "Error occurred checking compliance of L6 controlfile"
+                logger.error(msg)
         except Exception:
             msg = "Error occurred during L6 with " + cf_file_name[1]
             logger.error(msg)

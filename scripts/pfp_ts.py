@@ -992,7 +992,8 @@ def CoordRotation2D(cf, ds, info):
         vw = UyUz["Data"]*ct*ce - UxUz["Data"]*ct*se - UxUy["Data"]*st*(ce*ce-se*se) + \
              UxUx["Data"]*st*ce*se - UyUy["Data"]*st*ce*se
     else:
-        logger.info(" 2D coordinate rotation disabled, using unrotated components and covariances")
+        msg = " 2D coordinate rotation disabled, using unrotated components and covariances"
+        logger.warning(msg)
         # dummy series for rotation angles
         theta = numpy.zeros(nRecs)
         eta = numpy.zeros(nRecs)
@@ -1127,7 +1128,7 @@ def CalculateComponentsFromWsWd(ds):
     pfp_utils.CreateVariable(ds, u)
     pfp_utils.CreateVariable(ds, v)
 
-def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
+def CalculateSco2SinglePoint(cf, ds, info, Sco2_out="Sco2_single"):
     """
     Calculate CO2 flux storage term in the air column beneath the CO2 instrument.  This
     routine assumes the air column between the sensor and the surface is well mixed.
@@ -1141,8 +1142,8 @@ def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
     Parameters loaded from control file:
         zms: measurement height from surface, m
     """
-    if Fco2_out not in list(ds.root["Variables"].keys()):
-        logger.info(" Calculating Fco2 storage (single height)")
+    if Sco2_out not in list(ds.root["Variables"].keys()):
+        logger.info(" Calculating Sco2 (single height)")
         nRecs = int(ds.root["Attributes"]["nc_nrecs"])
         zeros = numpy.zeros(nRecs, dtype=numpy.int32)
         ones = numpy.ones(nRecs, dtype=numpy.int32)
@@ -1151,7 +1152,7 @@ def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
         descr_level = "description_" + level
         # create an empty output variable
         ldt = pfp_utils.GetVariable(ds, "DateTime")
-        Fco2_single = pfp_utils.CreateEmptyVariable(Fco2_out, nRecs, datetime=ldt["Data"])
+        Sco2_single = pfp_utils.CreateEmptyVariable(Sco2_out, nRecs, datetime=ldt["Data"])
         # get the input data
         CO2 = pfp_utils.GetVariable(ds, info["CO2"]["label"])
         Ta = pfp_utils.GetVariable(ds, "Ta")
@@ -1169,25 +1170,25 @@ def CalculateFco2StorageSinglePoint(cf, ds, info, Fco2_out="Fco2_single"):
         seconds = numpy.array([(dt-epoch).total_seconds() for dt in ldt["Data"]])
         dt = numpy.ediff1d(seconds, to_begin=float(ts)*60)
         # calculate the CO2 flux based on storage below the measurement height
-        Fco2_single["Data"] = info["CO2"]["height"]*dc/dt
+        Sco2_single["Data"] = info["CO2"]["height"]*dc/dt
         # do the attributes
-        Fco2_single["Attr"] = {}
+        Sco2_single["Attr"] = {}
         for attr in ["instrument", "height"]:
             if attr in CO2["Attr"]:
-                Fco2_single["Attr"][attr] = CO2["Attr"][attr]
-        Fco2_single["Attr"]["height"] = info["CO2"]["height"]
-        Fco2_single["Attr"]["units"] = "umol/m^2/s"
-        Fco2_single["Attr"]["standard_name"] = "surface_upward_mole_flux_of_carbon_dioxide"
-        Fco2_single["Attr"]["long_name"] = "CO2 flux"
-        Fco2_single["Attr"]["statistic_type"] = "average"
-        tmp = "Fco2 storage component calcuated using single point CO2 measurement"
-        Fco2_single["Attr"][descr_level] = tmp
+                Sco2_single["Attr"][attr] = CO2["Attr"][attr]
+        Sco2_single["Attr"]["height"] = info["CO2"]["height"]
+        Sco2_single["Attr"]["units"] = "umol/m^2/s"
+        Sco2_single["Attr"]["standard_name"] = "surface_upward_mole_flux_of_carbon_dioxide"
+        Sco2_single["Attr"]["long_name"] = "Storage term of CO2 flux"
+        Sco2_single["Attr"]["statistic_type"] = "average"
+        tmp = "Sco2 calcuated using single point CO2 measurement"
+        Sco2_single["Attr"][descr_level] = tmp
         # put the storage flux in the data structure
-        mask = numpy.ma.getmaskarray(Fco2_single["Data"])
-        Fco2_single["Flag"] = numpy.where(mask == True, ones, zeros)
-        pfp_utils.CreateVariable(ds, Fco2_single)
+        mask = numpy.ma.getmaskarray(Sco2_single["Data"])
+        Sco2_single["Flag"] = numpy.where(mask == True, ones, zeros)
+        pfp_utils.CreateVariable(ds, Sco2_single)
     else:
-        msg = "  " + Fco2_out + " found in data structure, not calculated"
+        msg = "  " + Sco2_out + " found in data structure, not calculated"
         logger.info(msg)
     return
 
@@ -1200,7 +1201,7 @@ def CorrectFco2ForStorage(cf, ds, Fco2_out="Fco2", Fco2_in="Fco2"):
     ds: data structure
     Fco2_out: series label of the corrected CO2 flux
     Fco2_in: series label of the input CO2 flux
-    Fco2_storage: series label of the CO2 flux storage term
+    Sco2: series label of the CO2 flux storage term
 
     """
     descr_level = "description_" + str(ds.root["Attributes"]["processing_level"])
@@ -1225,28 +1226,32 @@ def CorrectFco2ForStorage(cf, ds, Fco2_out="Fco2", Fco2_in="Fco2"):
             logger.warning(msg)
             return
         # check to see if we have an Fco2_profile series
-        if "Fco2_storage" in list(ds.root["Variables"].keys()):
-            msg = " Using Fco2_storage for the storage term"
+        if "Sco2" in list(ds.root["Variables"].keys()):
+            msg = " Using Sco2 for the storage term"
             logger.info(msg)
-            Fco2_storage_in = "Fco2_storage"
-        elif "Fco2_profile" in list(ds.root["Variables"].keys()):
-            msg = " Using Fco2_profile for the storage term"
+            Sco2_in = "Sco2"
+        elif "Sco2_storage" in list(ds.root["Variables"].keys()):
+            msg = " Using Sco2_storage for the storage term"
             logger.info(msg)
-            Fco2_storage_in = "Fco2_profile"
-        elif "Fco2_single" in list(ds.root["Variables"].keys()):
-            msg = " Using Fco2_single for the storage term"
+            Sco2_in = "Sco2_storage"
+        elif "Sco2_profile" in list(ds.root["Variables"].keys()):
+            msg = " Using Sco2_profile for the storage term"
             logger.info(msg)
-            Fco2_storage_in = "Fco2_single"
+            Sco2_in = "Sco2_profile"
+        elif "Sco2_single" in list(ds.root["Variables"].keys()):
+            msg = " Using Sco2_single for the storage term"
+            logger.info(msg)
+            Sco2_in = "Sco2_single"
         else:
-            msg = " Storage term (Fco2_storage, Fco2_profile or Fco2_single) not found"
+            msg = " Storage term (Sco2, Sco2_storage, Sco2_profile or Sco2_single) not found"
             logger.warning(msg)
             return
         # apply the storage term
-        msg = " ***!!! Applying Fco2 storage term !!!***"
+        msg = " ***!!! Applying CO2 storage term using " + Sco2_in +" !!!***"
         logger.info(msg)
         Fco2_uncorrected = pfp_utils.GetVariable(ds, Fco2_in)
-        Fco2_storage = pfp_utils.GetVariable(ds, Fco2_storage_in)
-        if Fco2_uncorrected["Attr"]["units"] != Fco2_storage["Attr"]["units"]:
+        Sco2 = pfp_utils.GetVariable(ds, Sco2_in)
+        if Fco2_uncorrected["Attr"]["units"] != Sco2["Attr"]["units"]:
             msg = "CorrectFco2ForStorage: units of Fco2 do not match those of storage term"
             msg += ", storage not applied"
             logger.error(msg)
@@ -1254,7 +1259,7 @@ def CorrectFco2ForStorage(cf, ds, Fco2_out="Fco2", Fco2_in="Fco2"):
         # get a copy of the uncorrected data
         Fco2_corrected = copy.deepcopy(Fco2_uncorrected)
         # add the storage term
-        Fco2_corrected["Data"] = Fco2_uncorrected["Data"] + Fco2_storage["Data"]
+        Fco2_corrected["Data"] = Fco2_uncorrected["Data"] + Sco2["Data"]
         # if requested, replace missing storage corrected with uncorrected data
         if pfp_utils.get_optionskeyaslogical(cf, "RelaxFco2Storage"):
             # if so, replace missing corrected Fco2 with uncorrected Fco2
@@ -1755,11 +1760,15 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
 
         Accepts meteorological constants or variables
         """
-    if "DisableFco2WPL" in cf["Options"]:
-        if cf["Options"].as_bool("DisableFco2WPL"):
-            logger.warning(" WPL correction for Fco2 disabled in control file")
-            return 0
-    logger.info(" Applying WPL correction to Fco2")
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
+    if (opt.lower() == "no"):
+        msg = " WPL correction for Fco2 disabled in control file (" + irga_type + ")"
+        logger.warning(msg)
+        return 0
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    msg = " Applying WPL correction to Fco2 (IRGA type is " + irga_type + ")"
+    logger.info(msg)
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Fco2 = pfp_utils.GetVariable(ds, Fco2_in)
     Fh = pfp_utils.GetVariable(ds, "Fh")
@@ -1820,11 +1829,15 @@ def Fe_WPL(cf, ds):
 
         Accepts meteorological constants or variables
         """
-    if "DisableFeWPL" in cf["Options"]:
-        if cf["Options"].as_bool("DisableFeWPL"):
-            logger.warning(" WPL correction for Fe disabled in control file")
-            return 0
-    logger.info(" Applying WPL correction to Fe")
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
+    if (opt.lower() == "no"):
+        msg = " WPL correction for Fe disabled in control file (" + irga_type + ")"
+        logger.warning(msg)
+        return 0
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    msg = " Applying WPL correction to Fe (IRGA type is " + irga_type + ")"
+    logger.info(msg)
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Fe = pfp_utils.GetVariable(ds, "Fe")
     Fh = pfp_utils.GetVariable(ds, "Fh")
@@ -2369,8 +2382,13 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
        The steps involved are as follows:
         1) calculate ustar and L using rotated but otherwise uncorrected covariances
        """
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MassmanCorrection", default="Yes")
+    if (opt.lower() != "yes"):
+        msg = " Massman frequency correction disabled in control file, skipping correction ..."
+        logger.warning(msg)
+        return
     if "Massman" not in cf:
-        msg = " Massman section not in control file, skipping correction ..."
+        msg = " Massman section not in control file, skipping frequency correction ..."
         logger.warning(msg)
         return
     logger.info(" Correcting for flux loss from spectral attenuation")
@@ -2405,6 +2423,17 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
     #  The code for the first and second passes is very similar.  It would be useful to make them the
     #  same and put into a loop to reduce the number of lines in this function.
     # calculate ustar and Monin-Obukhov length from rotated but otherwise uncorrected covariances
+    # get some instrument specific constants
+    sonic_type = str(ds.root["Attributes"]["sonic_type"])
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    lwVert = c.instruments["sonics"][sonic_type]["lwVert"]
+    lwHor = c.instruments["sonics"][sonic_type]["lwHor"]
+    lTv = c.instruments["sonics"][sonic_type]["lTv"]
+    for path_type in list(c.instruments["irgas"].keys()):
+        if irga_type in list(c.instruments["irgas"][path_type].keys()):
+            break
+    dIRGA = c.instruments["irgas"][path_type][irga_type]["dIRGA"]
+    lIRGA = c.instruments["irgas"][path_type][irga_type]["lIRGA"]
     Ta = pfp_utils.GetVariable(ds, Ta_in)
     AH = pfp_utils.GetVariable(ds, AH_in)
     ps = pfp_utils.GetVariable(ds, ps_in)
@@ -2434,16 +2463,16 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
     fxMom = nxMom * u["Data"] / zmd
     fxScalar = nxScalar * u["Data"] / zmd
     # compute spectral filters
-    tau_sonic_law_4scalar = c.lwVert / (8.4 * u["Data"])
-    tau_sonic_laT_4scalar = c.lTv / (4.0 * u["Data"])
-    tau_irga_la = (c.lIRGA / (4.0 * u["Data"]))
-    tau_irga_va = (0.2+0.4*c.dIRGA/c.lIRGA)*(c.lIRGA/u["Data"])
+    tau_sonic_law_4scalar = lwVert / (8.4 * u["Data"])
+    tau_sonic_laT_4scalar = lTv / (4.0 * u["Data"])
+    tau_irga_la = (lIRGA / (4.0 * u["Data"]))
+    tau_irga_va = (0.2+0.4*dIRGA/lIRGA)*(lIRGA/u["Data"])
     tau_irga_bw = 0.016
     tau_irga_lat = (lLat / (1.1 * u["Data"]))
     tau_irga_lon = (lLong / (1.05 * u["Data"]))
 
-    tao_eMom = numpy.ma.sqrt(((c.lwVert / (5.7 * u["Data"])) ** 2) +
-                             ((c.lwHor / (2.8 * u["Data"])) ** 2))
+    tao_eMom = numpy.ma.sqrt(((lwVert / (5.7 * u["Data"])) ** 2) +
+                             ((lwHor / (2.8 * u["Data"])) ** 2))
     tao_ewT = numpy.ma.sqrt((tau_sonic_law_4scalar ** 2) + (tau_sonic_laT_4scalar ** 2))
 
     tao_ewIRGA = numpy.ma.sqrt((tau_sonic_law_4scalar ** 2) +

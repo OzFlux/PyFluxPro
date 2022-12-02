@@ -28,13 +28,25 @@ Pi = 3.14159   # Pi
 sb = 5.6704E-8 # Stefan-Boltzman constant, W/m^2/K^4
 Tref = 15.0    # reference temperature in the Lloyd-Taylor respiration equation, degC
 T0   = -46.02  # zero temp[erature in the Lloyd-Taylor respiration equation, degC
-lwVert = 0.115       # vertical path length of CSAT3, m
-lwHor = 0.058      # horizontal path length of CSAT3, m
-lTv = 0.115      # path length of sonic virtual temperature, m
-dIRGA = 0.0095 # path diameter of LI7500 IRGA, m
-lIRGA = 0.127  # path length of LI7500 IRGA, m
 Tb = 1800      # 30-min period, seconds
 C2K = 273.15   # convert degrees celsius to kelvin
+# dictionary of instrument characteristics
+# used in pfp_ts.MassmanStandard(), pfp_compliance.l1_check_sonic_type() and
+# pfp_compliance.l1_check_irga_type()
+# 'no_sonic' is for IRGAs used in profile measurements
+instruments = {"sonics": {"CSAT3": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
+                          "CSAT3A": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
+                          "CSAT3B": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115}},
+               "irgas": {"open_path": {"Li-7500": {"dIRGA": 0.0095, "lIRGA": 0.127},
+                                       "Li-7500A": {"dIRGA": 0.0095, "lIRGA": 0.127},
+                                       "Li-7500RS": {"dIRGA": 0.0095, "lIRGA": 0.127},
+                                       "EC150": {"dIRGA": 0.01, "lIRGA": 0.154},
+                                       "IRGASON": {"dIRGA": 0.01, "lIRGA": 0.154}},
+                         "closed_path": {"Li-7200": {"dIRGA": 0.0064, "lIRGA": 0.125},
+                                         "Li-7200RS": {"dIRGA": 0.0064, "lIRGA": 0.125},
+                                         "EC155": {"dIRGA": 0.008, "lIRGA": 0.120},
+                                         "Li-840": {"dIRGA": None, "lIRGA": None},
+                                         "None": {"dIRGA": None, "lIRGA": None}}}}
 # dictionary of site names and time zones
 tz_dict = {"adelaideriver":"Australia/Darwin",
            "alicespringsmulga":"Australia/Darwin",

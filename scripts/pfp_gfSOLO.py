@@ -89,6 +89,7 @@ def  gfSOLO_gui(main_gui, ds, l5_info, called_by):
     # display the SOLO GUI
     main_gui.solo_gui.show()
     main_gui.solo_gui.exec_()
+    return
 
 def gfSOLO_autocomplete(ds, l5_info, called_by):
     """

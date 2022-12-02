@@ -657,8 +657,9 @@ def ReadExcelWorkbook(l1_info):
             del l1ire["Variables"][nc_label]
             continue
         if xl_sheet not in l1ire["xl_sheets"]:
-            l1ire["xl_sheets"][xl_sheet] = {"DateTime": "", "xl_labels":{}}
+            l1ire["xl_sheets"][xl_sheet] = {"DateTime": "", "xl_labels":{}, "nc_labels":{}}
         l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label] = nc_label
+        l1ire["xl_sheets"][xl_sheet]["nc_labels"][nc_label] = xl_label
     # check the requested variables are on the specified sheets
     for xl_sheet in list(l1ire["xl_sheets"].keys()):
         headers = list(dfs[xl_sheet])
@@ -666,7 +667,9 @@ def ReadExcelWorkbook(l1_info):
             if xl_label not in headers:
                 msg = " Variable " + xl_label + " not found on sheet " + xl_sheet + ", skipping ..."
                 logger.warning(msg)
+                nc_label = l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label]
                 del l1ire["xl_sheets"][xl_sheet]["xl_labels"][xl_label]
+                del l1ire["xl_sheets"][xl_sheet]["nc_labels"][nc_label]
     df_names = list(dfs)
     for df_name in df_names:
         timestamps = list(dfs[df_name].select_dtypes(include=['datetime64']))
@@ -703,8 +706,15 @@ def ReadExcelWorkbook(l1_info):
         dfs[df_name][cols] = dfs[df_name][cols].apply(pandas.to_numeric, errors='coerce')
     # rename the pandas dataframe columns from the Excel variable names to the netCDF
     # variable names
+    # loop over the sheets in the Excel workbook
     for df_name in df_names:
-        dfs[df_name] = dfs[df_name].rename(columns=l1ire["xl_sheets"][df_name]["xl_labels"])
+        # create an empty dataframe with the index
+        tmp = pandas.DataFrame(index=dfs[df_name].index)
+        # loop over the netCDF variable names, done to allow variables with duplicate values
+        for l in list(l1ire["xl_sheets"][df_name]["nc_labels"].keys()):
+            tmp[l] = dfs[df_name][l1ire["xl_sheets"][df_name]["nc_labels"][l]].copy()
+        # copy the new dataframe to the old name
+        dfs[df_name] = tmp.copy()
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     return dfs
 
@@ -2346,6 +2356,13 @@ def nc_read_series(nc_file, checktimestep=True, fixtimestepmethod="round"):
     if len(gattrlist) != 0:
         for gattr in gattrlist:
             ds.root["Attributes"][gattr] = getattr(nc_file, gattr)
+    if "processing_level" not in ds.root["Attributes"]:
+        if "nc_level" in ds.root["Attributes"]:
+            ds.root["Attributes"]["processing_level"] = ds.root["Attributes"]["nc_level"]
+        else:
+            msg = "  No processing level in global attributes, set to unknown"
+            logger.warning(msg)
+            ds.root["Attributes"]["processing_level"] = "unknown"
     # get a list of the variables in the netCDF file (not their QC flags)
     varlist = [x for x in list(nc_file.variables.keys()) if "_QCFlag" not in x]
     for ThisOne in varlist:

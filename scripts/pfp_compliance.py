@@ -10,6 +10,7 @@ from configobj import ConfigObj
 #import numpy
 import timezonefinder
 # PFP modules
+from scripts import constants as c
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
 from scripts import pfp_gui
@@ -556,7 +557,7 @@ def ParseL3ControlFile(cf, ds):
     #   profile data present
     ds.info["returncodes"]["message"] = "OK"
     ds.info["returncodes"]["value"] = 0
-    l3_info = {"CO2": {}, "Fco2": {}, "status": {"value": 0, "message": "OK"}}
+    l3_info = {"CO2": {}, "Fco2": {}, "Sco2": {}, "status": {"value": 0, "message": "OK"}}
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
@@ -631,6 +632,11 @@ def ParseL3ControlFile(cf, ds):
     merge_list = [l for l in list(cfv.keys()) if l[0:4] == "Fco2" and "MergeSeries" in list(cfv[l].keys())]
     average_list = [l for l in list(cfv.keys()) if l[0:4] == "Fco2" and "AverageSeries" in list(cfv[l].keys())]
     l3_info["Fco2"]["combine_list"] = merge_list + average_list
+    # get a list of Sco2 variables to be merged
+    cfv = cf["Variables"]
+    merge_list = [l for l in list(cfv.keys()) if l[0:4] == "Sco2" and "MergeSeries" in list(cfv[l].keys())]
+    average_list = [l for l in list(cfv.keys()) if l[0:4] == "Sco2" and "AverageSeries" in list(cfv[l].keys())]
+    l3_info["Sco2"]["combine_list"] = merge_list + average_list
     return l3_info
 
 def parse_variable_attributes(attributes):
@@ -722,7 +728,14 @@ def check_l1_controlfile(cfg):
                 l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
                 # append this variable name to the done list
                 done.append(cfg_label)
-        display_messages(messages)
+        # check for duplicate netCDF variable labels
+        l1_check_nc_labels(cfg, messages)
+        # check for duplicate input variable labels
+        l1_check_input_labels(cfg, messages)
+        # check IRGA and sonic instrument type
+        l1_check_irga_sonic_type(cfg, messages)
+        # display and messages
+        display_messages_interactive(messages)
         if len(messages["ERROR"]) > 0:
             ok = False
     except Exception:
@@ -732,6 +745,229 @@ def check_l1_controlfile(cfg):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return ok
+def check_l2_controlfile(cfg):
+    """
+    Purpose:
+     Check the L2 control file to make sure it contains all information
+     needed to run L2 and that all information is correct.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: October 2022
+    """
+    # quick and dirty use of try...except in a panic ahead to 2021 workshop
+    try:
+        ok = True
+        # initialise the messages dictionary
+        messages = {"ERROR":[], "WARNING": [], "INFO": []}
+        # check the files section
+        l2_check_files(cfg, messages)
+        # check the options section
+        l2_check_options(cfg, messages)
+        # check the variables section
+        #l2_check_variables_section(cfg, std, messages)
+        ## check variables whose name exactly matches an entry in the settings/l1.txt control file
+        #done = []
+        #label_matches = [l for l in cfg_labels if l in std_labels]
+        #for cfg_label in label_matches:
+            #std_label = cfg_label
+            ## check variable 'Attr' section
+            #l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
+            ## append this variable name to the done list
+            #done.append(cfg_label)
+        ## check variables where the first characters of the name match an entry in settings/l1.txt
+        #cfg_labels = sorted(list(cfg["Variables"].keys()))
+        #for std_label in std_labels:
+            #lsl = len(std_label)
+            #label_matches = [l for l in cfg_labels if l[:min([len(l),lsl])] == std_label and l not in done]
+            #for cfg_label in label_matches:
+                ## check variable 'Attr' section
+                #l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
+                ## append this variable name to the done list
+                #done.append(cfg_label)
+        display_messages_interactive(messages)
+        if len(messages["ERROR"]) > 0:
+            ok = False
+    except Exception:
+        ok = False
+        error_message = " Error checking L1 control file, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return ok
+def check_l2_options(cfg, ds):
+    """
+    Purpose:
+     Check the options specified in the L3 control file are consistent
+     with the contents of the L2 netCDF file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: October 2022
+    """
+    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
+    irga_types = open_path_irgas + closed_path_irgas
+    nc_irga_type = None
+    cfg_irga_type = None
+    if ("irga_type" in ds.root["Attributes"]):
+        nc_irga_type = str(ds.root["Attributes"]["irga_type"])
+    if ("irga_type" in cfg["Options"]):
+        cfg_irga_type = str(cfg["Options"]["irga_type"])
+    if ((nc_irga_type is None) and (cfg_irga_type is None)):
+        # IRGA type not found in the L1 netCDF file or the control file
+        msg = "IRGA type not specified in L1 netCDF file or L2 control file"
+        messages["ERROR"].append(msg)
+        ds.info["returncodes"]["value"] = 1
+    elif ((nc_irga_type is None) and (cfg_irga_type is not None)):
+        # IRGA type not found in the L1 netCDF file but found in the L2 control file
+        if (cfg_irga_type not in irga_types):
+            # make sure the IRGA type is in the known IRGA list
+            msg = "Unknown IRGA type specified in control file (" + cfg_irga_type + ")"
+            messages["ERROR"].append(msg)
+            ds.info["returncodes"]["value"] = 1
+        else:
+            ds.root["Attributes"]["irga_type"] = cfg_irga_type
+    elif ((nc_irga_type is not None) and (cfg_irga_type is None)):
+        # IRGA type found in the L1 netCDF file but not found in the L2 control file
+        if (nc_irga_type not in irga_types):
+            # make sure the IRGA type is in the known IRGA list
+            msg = "Unknown IRGA type specified in netCDF file (" + nc_irga_type + ")"
+            messages["ERROR"].append(msg)
+            ds.info["returncodes"]["value"] = 1
+        else:
+            pass
+    else:
+        # IRGA type found in the L1 netCDF file and the L2 control file
+        if (nc_irga_type == cfg_irga_type):
+            pass
+        else:
+            msg = "Different IRGA types in L1 netCDF ("+nc_irga_type
+            msg += ") and L2 control file ("+cfg_irga_type+")"
+            ds.info["returncodes"]["value"] = 1
+            messages["ERROR"].append(msg)
+    # check the sonic type
+    sonic_types = list(c.instruments["sonics"].keys())
+    nc_sonic_type = None
+    cfg_sonic_type = None
+    # is sonic_type in the global attributes?
+    if ("sonic_type" in ds.root["Attributes"]):
+        nc_sonic_type = str(ds.root["Attributes"]["sonic_type"])
+    # is sonic_type in the [Options] section of the control file
+    if ("sonic_type" in cfg["Options"]):
+        cfg_sonic_type = str(cfg["Options"]["sonic_type"])
+    if ((nc_sonic_type is None) and (cfg_sonic_type is None)):
+        # sonic type not found in the L1 netCDF file or the control file
+        msg = "Sonic type not specified in L1 netCDF file or L2 control file"
+        messages["ERROR"].append(msg)
+        ds.info["returncodes"]["value"] = 1
+    elif ((nc_sonic_type is None) and (cfg_sonic_type is not None)):
+        # sonic type not found in the L1 netCDF file but found in the L2 control file
+        if (cfg_sonic_type not in sonic_types):
+            # make sure the sonic type is in the known sonic list
+            msg = "Unknown sonic type specified in control file (" + cfg_sonic_type + ")"
+            messages["ERROR"].append(msg)
+            ds.info["returncodes"]["value"] = 1
+        else:
+            ds.root["Attributes"]["sonic_type"] = cfg_sonic_type
+    elif ((nc_sonic_type is not None) and (cfg_sonic_type is None)):
+        # sonic type found in the L1 netCDF file but not found in the L2 control file
+        if (nc_sonic_type not in sonic_types):
+            # make sure the sonic type is in the known sonic list
+            msg = "Unknown sonic type specified in netCDF file (" + nc_sonic_type + ")"
+            messages["ERROR"].append(msg)
+            ds.info["returncodes"]["value"] = 1
+        else:
+            pass
+    else:
+        # sonic type found in the L1 netCDF file and the L2 control file
+        if (nc_sonic_type == cfg_sonic_type):
+            pass
+        else:
+            msg = "Different sonic types in L1 netCDF ("+nc_sonic_type
+            msg += ") and L2 control file ("+cfg_sonic_type+")"
+            ds.info["returncodes"]["value"] = 1
+            messages["ERROR"].append(msg)
+    # check if we are running in interactive mode and display messages accordingly
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
+    if opt.lower() == "interactive":
+        display_messages_interactive(messages)
+    else:
+        display_messages_batch(messages)
+    return
+def check_l3_options(cfg, ds):
+    """
+    Purpose:
+     Check the options specified in the L3 control file are consistent
+     with the contents of the L2 netCDF file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: October 2022
+    """
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "RESULT": "ignore"}
+    check_l3_options_wpl(cfg, ds, messages)
+    check_l3_options_rotation(cfg, ds, messages)
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
+    if opt.lower() == "interactive":
+        display_messages_interactive(messages, mode="CloseOrIgnore")
+        if messages["RESULT"] == "ignore":
+            ds.info["returncodes"]["value"] = 0
+        else:
+            ds.info["returncodes"]["value"] = 1
+    else:
+        display_messages_batch(messages)
+    return
+def check_l3_options_rotation(cfg, ds, messages):
+    """ Check the rotation option."""
+    # get the CalculateFluxes setting from the [Options] section
+    calculate_fluxes_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "CalculateFluxes",
+                                                           default="Yes")
+    # if we are not calculating fluxes at L3, we do not need to check the 2DCoordRotation option
+    if (calculate_fluxes_option.lower() == "no"):
+        return
+    # get the 2DCoordRotation setting from the L3 [Options]
+    rotation_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "2DCoordRotation",
+                                                   default="Yes")
+    # check to see if 2D coordinate rotation is turned on or off
+    if (rotation_option.lower() == "no"):
+        # error message if calculating fluxes at L3 but 2D coordinate rotation turned off
+        msg = "Coordinate rotation disabled"
+        messages["ERROR"].append(msg)
+        # set the return code to non-zero to indicate a problem
+        ds.info["returncodes"]["value"] = 1
+    else:
+        # all good
+        pass
+    return
+def check_l3_options_wpl(cfg, ds, messages):
+    """ Check the WPL option against the IRGA type."""
+    # get the CalculateFluxes setting from the [Options] section
+    calculate_fluxes_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "CalculateFluxes",
+                                                           default="Yes")
+    # if we are not calculating fluxes at L3, we do not need to check the 2DCoordRotation option
+    if calculate_fluxes_option.lower() == "no":
+        return
+    # define the known IRGAs, this should be an external settings option
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
+    # get the IRGA type from the global attributes
+    irga_type = str(ds.root["Attributes"]["irga_type"])
+    # get the ApplyWPL setting from the L3 [Options] section
+    apply_wpl_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "ApplyWPL", default="Yes")
+    # check to see if the IRGA type and ApplyWPL option are consistent
+    if ((apply_wpl_option.lower() == "yes" and irga_type in open_path_irgas) or
+        (apply_wpl_option.lower() == "no" and irga_type in closed_path_irgas)):
+        # all good
+        pass
+    else:
+        # not all good
+        msg = "Wrong ApplyWPL option ("+apply_wpl_option+") for IRGA type ("+irga_type+")"
+        messages["ERROR"].append(msg)
+        # set the return code to non-zero to indicate a problem
+        ds.info["returncodes"]["value"] = 1
+    return
 def check_l5_controlfile(cfg):
     """
     Purpose:
@@ -750,7 +986,7 @@ def check_l5_controlfile(cfg):
         if "cpd_filename" in cfg["Files"]:
             msg = "ustar_threshold section and Files/cpd_filename present"
             messages["ERROR"].append(msg)
-    display_messages(messages)
+    display_messages_interactive(messages)
     if len(messages["ERROR"]) > 0:
         ok = False
     return ok
@@ -772,7 +1008,12 @@ def check_l6_controlfile(cfg):
     l6_check_ecosystemrespiration(cfg, messages)
     l6_check_netecosystemexchange(cfg, messages)
     l6_check_grossprimaryproductivity(cfg, messages)
-    display_messages(messages)
+    # check if we are running in interactive mode and display messages accordingly
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
+    if opt.lower() == "interactive":
+        display_messages_interactive(messages)
+    else:
+        display_messages_batch(messages)
     if len(messages["ERROR"]) > 0:
         ok = False
     return ok
@@ -792,7 +1033,7 @@ def check_windrose_controlfile(cfg):
     check_windrose_files_section(cfg, messages)
     check_windrose_options_section(cfg, messages)
     check_windrose_variables_section(cfg, messages)
-    display_messages(messages)
+    display_messages_interactive(messages)
     if len(messages["ERROR"]) > 0:
         ok = False
     return ok
@@ -873,14 +1114,39 @@ def check_windrose_variables_section(cfg, messages):
             msg = item + " does not have required key 'name'"
             messages["ERROR"].append(msg)
     return
-def display_messages(messages):
+def display_messages_batch(messages):
+    for msg_type in list(messages.keys()):
+        if (len(messages[msg_type]) == 0):
+            continue
+        for msg in messages[msg_type]:
+            if msg_type == "ERROR":
+                logger.error("!!!!!")
+                logger.error(msg)
+                logger.error("!!!!!")
+                raise RuntimeError(msg)
+            elif msg_type == "WARNING":
+                logger.warning(msg)
+            elif msg_type == "INFO":
+                logger.info(msg)
+            elif msg_type == "RESULT":
+                pass
+            else:
+                raise RuntimeError("display_messages_batch: Unrecognised message in messages")
+    return
+def display_messages_interactive(messages, mode="Close"):
     # gather variable error messages into a single list
     error_messages = []
-    for item in messages["ERROR"]:
-        logger.error(item)
-        error_messages.append(item)
-    for item in messages["WARNING"]:
-        logger.warning(item)
+    if len(messages["ERROR"]) > 0:
+        logger.error("!!!!!")
+        for n, item in enumerate(messages["ERROR"]):
+            logger.error(item)
+            error_messages.append(item)
+        logger.error("!!!!!")
+    if len(messages["WARNING"]) > 0:
+        logger.warning("?????")
+        for item in messages["WARNING"]:
+            logger.warning(item)
+        logger.warning("?????")
     for item in messages["INFO"]:
         logger.info(item)
     # convert error list to a comma separated string
@@ -891,7 +1157,16 @@ def display_messages(messages):
         msg += error_messages[-1] + "\n\n"
         msg += "Fix the errors, close this window and run again."
         # put up the message box
-        pfp_gui.MsgBox_Quit(msg, title="Errors")
+        if mode == "Close":
+            msgbox = pfp_gui.MsgBox_Close(msg, title="Errors")
+            messages["RESULT"] = msgbox.execute()
+        elif mode == "CloseOrIgnore":
+            msgbox = pfp_gui.MsgBox_CloseOrIgnore(msg, title="Errors")
+            messages["RESULT"] = msgbox.execute()
+        else:
+            msg = "Unrecognised mode in display_messages_interactive()"
+            logger.error(msg)
+            messages["RESULT"] = "close"
     return
 def l1_check_files(cfg, std, messages):
     # check the Files section exists
@@ -1124,6 +1399,263 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
         else:
             msg = cfg_label + ": 'func' not found in 'Function' subsection"
             messages["ERROR"].append(msg)
+    return
+def l1_check_input_labels(cfg, messages):
+    #
+    file_parts = os.path.splitext(cfg["Files"]["in_filename"])
+    if ("xls" in file_parts[-1].lower()):
+        source = "xl"
+    elif ("csv" in file_parts[-1].lower()):
+        source = "csv"
+    else:
+        msg = "Unexpected input source (" + file_parts[-1].lower() + ")"
+        raise RuntimeError(msg)
+    # check each variable has the necessary subsections
+    input_labels = []
+    cfg_labels = list(cfg["Variables"].keys())
+    for cfg_label in cfg_labels:
+        if ((source not in cfg["Variables"][cfg_label]) and
+            ("Function" not in cfg["Variables"][cfg_label])):
+            msg = "Neither '" + source + "' nor 'Function' found in " + cfg_label
+            messages["ERROR"].append(msg)
+        if "Attr" not in cfg["Variables"][cfg_label]:
+            msg = "'Attr' subsction not found in " + cfg_label
+            messages["ERROR"].append(msg)
+        if source in cfg["Variables"][cfg_label]:
+            if "name" in cfg["Variables"][cfg_label][source]:
+                input_labels.append(cfg["Variables"][cfg_label][source]["name"])
+            else:
+                msg = "'name' not found in " + cfg_label
+                messages["ERROR"].append(msg)
+    # check for duplicate input labels
+    duplicate_labels = [l for l in set(input_labels) if input_labels.count(l) > 1]
+    nc_duplicate_labels = []
+    if len(duplicate_labels) > 0:
+        for duplicate_label in duplicate_labels:
+            for cfg_label in cfg_labels:
+                if source in cfg["Variables"][cfg_label]:
+                    if "name" in cfg["Variables"][cfg_label][source]:
+                        if cfg["Variables"][cfg_label][source]["name"] == duplicate_label:
+                            nc_duplicate_labels.append(cfg_label)
+            msg = "Duplicate input label " + duplicate_label + " used for "
+            msg += ",".join(nc_duplicate_labels)
+            messages["WARNING"].append(msg)
+    return
+def l1_check_irga_sonic_type(cfg, messages):
+    """
+    Purpose:
+
+    Usage:
+
+    Author: PRI
+    Date: November 2022
+    """
+    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    # IRGA signal strengths
+    signal_labels = ["Signal_CO2", "Signal_H2O"]
+    # PFP covariances
+    h2o_covars = ["UxA", "UyA", "UzA"]
+    co2_covars = ["UxC", "UyC", "UzC"]
+    t_covars = ["UxT", "UyT", "UzT"]
+    m_covars = ["UxUy", "UxUz", "UyUz"]
+    # anything with 'IRGA' in the variable name
+    irga_labels = [l for l in cfg_labels if "IRGA" in l]
+    # anything with 'SONIC' in the variable name
+    sonic_labels = [l for l in cfg_labels if "SONIC" in l]
+    # fluxes from EddyPro, EasyFlux and the like
+    fco2_labels = [l for l in cfg_labels if l[0:4] == "Fco2"]
+    sco2_labels = [l for l in cfg_labels if l[0:4] == "Sco2"]
+    fh2o_labels = [l for l in cfg_labels if l[0:4] == "Fh2o"]
+    fe_labels = [l for l in cfg_labels if l[0:2] == "Fe"]
+    fh_labels = [l for l in cfg_labels if l[0:2] == "Fh"]
+    fm_labels = [l for l in cfg_labels if l[0:2] == "Fm"]
+    # lists of variables by instrument
+    # fast IRGAs e.g. Li-7500RS etc used for turbulence measurements
+    fast_irga_only_labels = irga_labels + signal_labels
+    # slow IRGAs e.g. Li-840 used for profile measurements
+    slow_irga_only_labels = sco2_labels
+    # sonic anemometer only
+    sonic_only_labels = sonic_labels + t_covars + m_covars + fh_labels + fm_labels
+    # sonic and fast IRGA
+    sonic_irga_labels = h2o_covars + co2_covars + fco2_labels + fh2o_labels + fe_labels
+    # call the check routines
+    l1_check_irga_only(cfg, fast_irga_only_labels, messages)
+    l1_check_irga_only(cfg, slow_irga_only_labels, messages)
+    l1_check_sonic_only(cfg, sonic_only_labels, messages)
+    l1_check_sonic_irga(cfg, sonic_irga_labels, messages)
+    return
+def l1_check_irga_only(cfg, irga_only_labels, messages):
+    """ Check instrument attribute of variables that depend only on the IRGA"""
+    if len(irga_only_labels) == 0:
+        return
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    known_irgas = open_path_irgas + closed_path_irgas
+    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    for label in list(irga_only_labels):
+        if label not in cfg_labels:
+            irga_only_labels.remove(label)
+    irga_check = {}
+    for label in irga_only_labels:
+        if "instrument" in cfg["Variables"][label]["Attr"]:
+            irga_type = cfg["Variables"][label]["Attr"]["instrument"]
+            if irga_type in known_irgas:
+                # IRGA type is something we know
+                if irga_type not in irga_check:
+                    irga_check[irga_type] = []
+                irga_check[irga_type].append(label)
+            else:
+                msg = "Unknown IRGA type (" + irga_type + ") for " + label
+                messages["ERROR"].append(msg)
+        else:
+            msg = "'instrument' attribute missing for " + label
+            messages["ERROR"].append(msg)
+    irga_types = list(irga_check.keys())
+    if len(irga_types) == 0:
+        msg = "No known irga types found"
+        messages["ERROR"].append(msg)
+    elif len(irga_types) == 1:
+        pass
+    else:
+        msg = "More than 1 IRGA type specified (" + ",".join(irga_types) + ")"
+        messages["ERROR"].append(msg)
+        for irga_type in irga_types:
+            msg = irga_type + " is used for " + ",".join(irga_check[irga_type])
+            messages["ERROR"].append(msg)
+    return
+def l1_check_sonic_only(cfg, sonic_only_labels, messages):
+    """ Check instrument attribute of variables that depend only on the sonic."""
+    if len(sonic_only_labels) == 0:
+        return
+    known_sonics = list(c.instruments["sonics"].keys())
+    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    for label in list(sonic_only_labels):
+        if label not in cfg_labels:
+            sonic_only_labels.remove(label)
+    sonic_check = {}
+    for label in sonic_only_labels:
+        if "instrument" in cfg["Variables"][label]["Attr"]:
+            sonic_type = cfg["Variables"][label]["Attr"]["instrument"]
+            if sonic_type in known_sonics:
+                # sonic type is something we know
+                if sonic_type not in sonic_check:
+                    sonic_check[sonic_type] = []
+                sonic_check[sonic_type].append(label)
+            else:
+                msg = "Unknown sonic type (" + sonic_type + ") for " + label
+                messages["ERROR"].append(msg)
+        else:
+            msg = "'instrument' attribute missing for " + label
+            messages["ERROR"].append(msg)
+    sonic_types = list(sonic_check.keys())
+    if len(sonic_types) == 0:
+        msg = "No known sonic types found"
+        messages["ERROR"].append(msg)
+    elif len(sonic_types) == 1:
+        pass
+    else:
+        msg = "More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
+        messages["ERROR"].append(msg)
+        for sonic_type in sonic_types:
+            msg = sonic_type + " is used for " + ",".join(sonic_check[sonic_type])
+            messages["ERROR"].append(msg)
+    return
+def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
+    """
+    Purpose:
+     Check the 'instrument' attribute of all variables associated with the sonic
+     and the fast IRGA and make sure only one sonic type and one IRGA type are
+     specified from the lists of known sonics and IRGAs.
+    Usage:
+     l1_check_sonic_irga(cfg, sonic_irga_labels, messages)
+     where cfg is a control file
+           sonic_irga_labels is a list of variables measured using the sonic
+                             and the fast IRGA
+           messages is a dictionary for error, warning and info messages
+    Author: PRI
+    Date: November 2022
+    """
+    if len(sonic_irga_labels) == 0:
+        return
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    known_irgas = open_path_irgas + closed_path_irgas
+    known_sonics = list(c.instruments["sonics"].keys())
+    cfg_labels = sorted(list(cfg["Variables"].keys()))
+    for sonic_irga_label in list(sonic_irga_labels):
+        if sonic_irga_label not in cfg_labels:
+            sonic_irga_labels.remove(sonic_irga_label)
+    sonic_check = {}
+    irga_check = {}
+    for sonic_irga_label in sonic_irga_labels:
+        if "instrument" in cfg["Variables"][sonic_irga_label]["Attr"]:
+            instrument_type = cfg["Variables"][sonic_irga_label]["Attr"]["instrument"]
+            if "," in instrument_type:
+                # instrument is a string with comma separated values
+                itl = [l.strip() for l in instrument_type.split(",")]
+                if len(itl) == 2:
+                    for item in itl:
+                        if item in known_sonics:
+                            if item not in sonic_check:
+                                sonic_check[item] = []
+                            sonic_check[item].append(sonic_irga_label)
+                        elif item in known_irgas:
+                            if item not in irga_check:
+                                irga_check[item] = []
+                            irga_check[item].append(sonic_irga_label)
+                        else:
+                            msg = "Unrecognised instrument (" + item + ") for " + sonic_irga_label
+                            messages["ERROR"].append(msg)
+                else:
+                    msg = "'instrument' attribute must have 2 entries separated by a comma, got "
+                    msg += instrument_type + " for " + sonic_irga_label
+                    messages["ERROR"].append(msg)
+            else:
+                # instrument attribute is something we can't handle
+                msg = "'instrument' attribute must have 2 entries separated by a comma, got "
+                msg += instrument_type + " for " + sonic_irga_label
+                messages["ERROR"].append(msg)
+        else:
+            msg = "'instrument' attribute missing for " + sonic_irga_label
+            messages["ERROR"].append(msg)
+    sonic_types = list(sonic_check.keys())
+    if len(sonic_types) == 0:
+        msg = "No known sonic types found"
+        messages["ERROR"].append(msg)
+    elif len(sonic_types) == 1:
+        cfg["Global"]["sonic_type"] = str(sonic_types[0])
+        msg = "Sonic type set to " + cfg["Global"]["sonic_type"]
+        logger.info(msg)
+    else:
+        msg = "More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
+        messages["ERROR"].append(msg)
+        for sonic_type in sonic_types:
+            msg = sonic_type + " is used for " + ",".join(sonic_check[sonic_type])
+            messages["ERROR"].append(msg)
+    irga_types = list(irga_check.keys())
+    if len(irga_types) == 0:
+        msg = "No known IRGA types found"
+        messages["ERROR"].append(msg)
+    elif len(irga_types) == 1:
+        cfg["Global"]["irga_type"] = str(irga_types[0])
+        msg = "IRGA type set to " + cfg["Global"]["irga_type"]
+        logger.info(msg)
+    else:
+        msg = "More than 1 IRGA type specified (" + ",".join(irga_types) + ")"
+        messages["ERROR"].append(msg)
+        for irga_type in irga_types:
+            msg = irga_type + " is used for " + ",".join(irga_check[irga_type])
+            messages["ERROR"].append(msg)
+    return
+def l1_check_nc_labels(cfg, messages):
+    nc_labels = list(cfg["Variables"].keys())
+    duplicate_labels = [l for l in set(nc_labels) if nc_labels.count(l) > 1]
+    if len(duplicate_labels) == 0:
+        return
+    for duplicate_label in duplicate_labels:
+        msg = "Duplicate netCDF label " + duplicate_label + " found "
+        msg += str(duplicate_labels.count(duplicate_label)) + " times"
+        messages["ERROR"].append(msg)
     return
 def l1_check_variables_height(cfg, cfg_label, messages):
     cfg_attr = cfg["Variables"][cfg_label]["Attr"]
@@ -1433,7 +1965,6 @@ def l1_update_cfg_variables_attributes(cfg, std, chk):
     miscellaneous_deprecated = pfp_utils.string_to_list(stdvd["miscellaneous"])
     standard_name_deprecated = pfp_utils.string_to_list(stdvd["standard_name"])
     # list of standard attribute values
-    std_labels = list(std["Variables"]["attributes"].keys())
     cfg_labels = list(cfg["Variables"].keys())
     # add any essential variable attributes that are missing, deprecate those no longer used
     for label in cfg_labels:
@@ -1589,6 +2120,75 @@ def update_cfg_variables_deprecated(cfg, std):
             cfg[section_name].pop(label)
     return cfg
 
+def l2_check_files(cfg, messages):
+    # check the Files section exists
+    if ("Files" in cfg):
+        # check file_path is in the Files section
+        if "file_path" in cfg["Files"]:
+            file_path = cfg["Files"]["file_path"]
+            # check file_path directory exists
+            if os.path.isdir(file_path):
+                pass
+            else:
+                msg = "Files: " + file_path + " is not a directory"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'file_path' not in section"
+            messages["ERROR"].append(msg)
+        # check plot_path is in the Files section
+        if "plot_path" in cfg["Files"]:
+            plot_path = cfg["Files"]["plot_path"]
+            # check plot_path directory exists
+            if os.path.isdir(plot_path):
+                pass
+            else:
+                msg = "Files: " + plot_path + " is not a directory"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'plot_path' not in section"
+            messages["ERROR"].append(msg)
+        # check in_filename is in the Files section
+        if "in_filename" in cfg["Files"]:
+            file_name = cfg["Files"]["in_filename"]
+            file_parts = os.path.splitext(file_name)
+            # check the file type is supported
+            if (file_parts[-1].lower() in  [".nc"]):
+                file_uri = os.path.join(file_path, file_name)
+                if os.path.isfile(file_uri):
+                    pass
+                else:
+                    msg = "Files: " + file_name + " not found"
+                    messages["ERROR"].append(msg)
+            else:
+                msg = "Files: " + file_name + " doesn't end with .nc"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'in_filename' not in section"
+            messages["ERROR"].append(msg)
+        # check the output file type
+        if "out_filename" in cfg["Files"]:
+            file_name = cfg["Files"]["out_filename"]
+            file_parts = os.path.splitext(file_name)
+            if (file_parts[-1].lower() in [".nc"]):
+                pass
+            else:
+                msg = "Files: " + file_name + " doesn't end with .nc"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'out_filename' not in section"
+            messages["ERROR"].append(msg)
+    else:
+        msg = "'Files' section not in control file"
+        messages["ERROR"].append(msg)
+    return
+def l2_check_options(cfg, messages):
+    """ Check the Options section in the L2 control file."""
+    if "Options" in cfg:
+        pass
+    else:
+        msg = "No Options section in control file, using defaults for all options"
+        messages["WARNING"].append(msg)
+    return
 def l2_update_controlfile(cfg):
     """
     Purpose:
@@ -1621,6 +2221,12 @@ def l2_update_controlfile(cfg):
     except Exception:
         ok = False
         msg = " An error occurred while updating the L2 control file syntax"
+    # clean up the Options section
+    try:
+        cfg = update_cfg_options(cfg, std)
+    except Exception:
+        ok = False
+        msg = " An error occurred while updating the L2 control file Options section"
     # clean up the variable names
     try:
         cfg = update_cfg_variables_deprecated(cfg, std)
@@ -1895,11 +2501,43 @@ def update_cfg_options(cfg, std):
             cfg["Options"][item] = cfg["General"][item]
         del cfg["General"]
     # update the units in the Options section
-    if cfg["level"] == "L3":
+    if cfg["level"] == "L2":
         if "Options" in cfg:
-            for item in cfg["Options"]:
-                if item in ["ApplyFcStorage", "CcUnits", "FcUnits", "ReplaceFcStorage", "DisableFcWPL"]:
+            if "irga_type" in cfg["Options"]:
+                irga_type = cfg["Options"]["irga_type"]
+                if irga_type in ["Li-7500A (<V6.5)", "Li-7500A (>=V6.5)"]:
+                    cfg["Options"]["irga_type"] = "Li-7500A"
+    elif cfg["level"] == "L3":
+        if "Options" in cfg:
+            for item in list(cfg["Options"].keys()):
+                if item in ["ApplyFcStorage", "FcUnits", "ReplaceFcStorage", "DisableFcWPL"]:
                     cfg["Options"].rename(item, item.replace("Fc", "Fco2"))
+                if item in ["CcUnits"]:
+                    cfg["Options"].rename(item, item.replace("Cc", "CO2"))
+            if "DisableFco2WPL" in list(cfg["Options"].keys()):
+                opt = cfg["Options"]["DisableFco2WPL"]
+                if opt.lower() == "no":
+                    apply_wpl = "Yes"
+                else:
+                    apply_wpl = "No"
+                cfg["Options"].pop("DisableFco2WPL")
+                cfg["Options"]["ApplyWPL"] = apply_wpl
+            if "DisableFeWPL" in list(cfg["Options"].keys()):
+                opt = cfg["Options"]["DisableFeWPL"]
+                if opt.lower() == "no":
+                    apply_wpl = "Yes"
+                else:
+                    apply_wpl = "No"
+                cfg["Options"].pop("DisableFeWPL")
+                cfg["Options"]["ApplyWPL"] = apply_wpl
+            if "UseL2Fluxes" in list(cfg["Options"].keys()):
+                opt = cfg["Options"]["UseL2Fluxes"]
+                if opt.lower() == "no":
+                    calculate_fluxes = "Yes"
+                else:
+                    calculate_fluxes = "No"
+                cfg["Options"].pop("UseL2Fluxes")
+                cfg["Options"]["CalculateFluxes"] = calculate_fluxes
             old_units = list(std["Variables"]["units_map"].keys())
             for item in list(cfg["Options"].keys()):
                 if cfg["Options"][item] in old_units:
@@ -2069,7 +2707,7 @@ def l6_update_controlfile(cfg):
         msg = "This is an old version of the L6 control file.\n"
         msg = msg + "Close the L6 control file and create a new one from\n"
         msg = msg + "the template in PyFluxPro/controlfiles/template/L6."
-        result = pfp_gui.MsgBox_Quit(msg, title="Critical")
+        pfp_gui.MsgBox_Quit(msg, title="Critical")
         return ok
     try:
         cfg = l6_update_cfg_syntax(cfg)

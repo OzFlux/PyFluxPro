@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from scripts import pfp_utils
+
 logger = logging.getLogger("pfp_log")
 
 #------------------------------------------------------------------------------
@@ -176,12 +178,17 @@ class partition(object):
     #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
-    def estimate_Eo(self, window_size = 15, window_step = 5, get_stats = False):
+    #def estimate_Eo(self, window_size = 15, window_step = 5, get_stats = False):
+    def estimate_Eo(self, get_stats = False):
 
         """Estimate the activation energy type parameter for the L&T Arrhenius
            style equation using nocturnal data"""
 
         Eo_list = []
+        called_by = self.l6_info["Options"]["called_by"]
+        output = self.l6_info["Options"]["output"]
+        window_size = int(self.l6_info[called_by]["outputs"][output]["window_size_days"])
+        window_step = int(self.l6_info[called_by]["outputs"][output]["step_size_days"])
         for n, date in enumerate(self.make_date_iterator(window_size, window_step)):
             self.results["E0"][n] = {"start": date, "end": date,
                                      "num": 0, "T range": -9999,
@@ -235,6 +242,14 @@ class partition(object):
                     continue
             else:
                 continue
+        # check to see if the raw LL plot was produced by checking the LL_fignum attribute
+        if hasattr(self, "LL_fignum"):
+            # check to see if a figure with this number exists
+            if plt.fignum_exists(self.LL_fignum):
+                # close the plot
+                plt.close(self.LL_fignum)
+                # delete the attribute
+                delattr(self, "LL_fignum")
         E0_results = pd.DataFrame.from_dict(self.results["E0"], orient="index")
         E0_results.to_excel(self.xl_writer, "E0 results")
         if len(Eo_list) == 0:
@@ -320,6 +335,14 @@ class partition(object):
                 #msg = '- {}'.format(e)
                 #logger.error(msg)
                 continue
+        # check to see if the raw LL plot was produced by checking the LL_fignum attribute
+        if hasattr(self, "LL_fignum"):
+            # check to see if a figure with this number exists
+            if plt.fignum_exists(self.LL_fignum):
+                # close the plot
+                plt.close(self.LL_fignum)
+                # delete the attribute
+                delattr(self, "LL_fignum")
         full_date_list = np.unique(self.df.index.date)
         flag = pd.Series(0, index = date_list, name = 'Fill_flag')
         flag = flag.reindex(pd.date_range(full_date_list[0], full_date_list[-1],
@@ -515,10 +538,26 @@ class partition(object):
         title = np.datetime_as_string(df.index.values[0], unit='D') + " to "
         title += np.datetime_as_string(df.index.values[-1], unit='D')
         file_name = os.path.join("plots", "estimate_e0_" + title.replace(" ", "_") + ".png")
-        current_backend = plt.get_backend()
-        plt.switch_backend("agg")
-        plt.ioff()
-        fig, axs = plt.subplots()
+
+        if hasattr(self, 'E0_fignum'):
+            pass
+        else:
+            self.E0_fignum = plt.get_fignums()[-1] + 1
+
+        if self.l6_info["Options"]["call_mode"] == "interactive":
+            plt.ion()
+        else:
+            current_backend = plt.get_backend()
+            plt.switch_backend("agg")
+            plt.ioff()
+
+        if plt.fignum_exists(self.E0_fignum):
+            fig = plt.figure(self.E0_fignum)
+            plt.clf()
+            axs = fig.add_subplot(1, 1, 1)
+        else:
+            fig, axs = plt.subplots(num=self.E0_fignum, figsize=(8, 8))
+
         if "Sws" in list(self.df):
             ldf = self.df[self.df.index.isin(df.index)]
             sc = axs.scatter(df.TC.values, df.ER.values, c=ldf.Sws.values, s=10)
@@ -530,9 +569,15 @@ class partition(object):
         clb = plt.colorbar(sc)
         clb.ax.set_title("Sws")
         fig.savefig(file_name, format="png")
-        plt.close(fig)
-        plt.switch_backend(current_backend)
-        plt.ion()
+
+        if self.l6_info["Options"]["call_mode"] == "interactive":
+            plt.draw()
+            pfp_utils.mypause(0.5)
+            plt.ioff()
+        else:
+            plt.close()
+            plt.switch_backend(current_backend)
+            plt.ion()
         return
     #--------------------------------------------------------------------------
 
@@ -541,10 +586,26 @@ class partition(object):
         title = np.datetime_as_string(df.index.values[0], unit='D') + " to "
         title += np.datetime_as_string(df.index.values[-1], unit='D')
         file_name = os.path.join("plots", "LL_" + title.replace(" ", "_") + ".png")
-        current_backend = plt.get_backend()
-        plt.switch_backend("agg")
-        plt.ioff()
-        fig, axs = plt.subplots()
+
+        if hasattr(self, 'LL_fignum'):
+            pass
+        else:
+            self.LL_fignum = plt.get_fignums()[-1] + 1
+
+        if self.l6_info["Options"]["call_mode"] == "interactive":
+            plt.ion()
+        else:
+            current_backend = plt.get_backend()
+            plt.switch_backend("agg")
+            plt.ioff()
+
+        if plt.fignum_exists(self.LL_fignum):
+            fig = plt.figure(self.LL_fignum)
+            plt.clf()
+            axs = fig.add_subplot(1, 1, 1)
+        else:
+            fig, axs = plt.subplots(num=self.LL_fignum, figsize=(8, 8))
+
         sc = axs.scatter(df.PPFD.values, df.NEE.values, c=df.VPD.values, s=10)
         axs.set_title(title)
         axs.set_xlabel("PPFD (umol/m^2/s)")
@@ -552,9 +613,16 @@ class partition(object):
         clb = plt.colorbar(sc)
         clb.ax.set_title("VPD")
         fig.savefig(file_name, format="png")
-        plt.close(fig)
-        plt.switch_backend(current_backend)
-        plt.ion()
+
+        if self.l6_info["Options"]["call_mode"] == "interactive":
+            plt.draw()
+            pfp_utils.mypause(0.5)
+            plt.ioff()
+        else:
+            plt.close()
+            plt.switch_backend(current_backend)
+            plt.ion()
+
         return
     #--------------------------------------------------------------------------
 

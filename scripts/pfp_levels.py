@@ -141,7 +141,7 @@ def l3qc(cf, ds2):
     # *** Calculate fluxes from covariances section ***
     # *************************************************
     # check to see if the user wants to use the fluxes in the L2 file
-    if not pfp_utils.get_optionskeyaslogical(cf, "UseL2Fluxes", default=False):
+    if pfp_utils.get_optionskeyaslogical(cf, "CalculateFluxes", default=True):
         # check the covariance units and change if necessary
         pfp_ts.CheckCovarianceUnits(ds3)
         # do the 2D coordinate rotation
@@ -163,11 +163,12 @@ def l3qc(cf, ds2):
     # convert CO2 units if required
     pfp_utils.ConvertCO2Units(cf, ds3)
     # calculate Fco2 storage term - single height only at present
-    pfp_ts.CalculateFco2StorageSinglePoint(cf, ds3, l3_info)
-    # convert Fco2 units if required
+    pfp_ts.CalculateSco2SinglePoint(cf, ds3, l3_info)
+    # convert Fco2 and Sco2 units if required
     pfp_utils.ConvertFco2Units(cf, ds3)
-    # merge Fco2 and Fco2_storage series if required
+    # merge Fco2 and Sco2 series as required
     pfp_ts.CombineSeries(cf, ds3, l3_info["Fco2"]["combine_list"])
+    pfp_ts.CombineSeries(cf, ds3, l3_info["Sco2"]["combine_list"])
     # correct Fco2 for storage term - only recommended if storage calculated from profile available
     pfp_ts.CorrectFco2ForStorage(cf, ds3)
     # *************************

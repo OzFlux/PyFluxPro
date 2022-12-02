@@ -438,7 +438,11 @@ def do_run_l2(cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds1 = pfp_io.NetCDFRead(in_filepath)
-        if ds1.info["returncodes"]["value"] != 0: return
+        if ds1.info["returncodes"]["value"] != 0:
+            return
+        pfp_compliance.check_l2_options(cfg, ds1)
+        if ds1.info["returncodes"]["value"] != 0:
+            return
         ds2 = pfp_levels.l2qc(cfg, ds1)
         if ds2.info["returncodes"]["value"] != 0:
             logger.error("An error occurred during L2 processing")
@@ -489,7 +493,14 @@ def do_run_l3(cfg):
             logger.error("File "+in_filename[1]+" not found")
             return
         ds2 = pfp_io.NetCDFRead(in_filepath)
-        if ds2.info["returncodes"]["value"] != 0: return
+        if ds2.info["returncodes"]["value"] != 0:
+            return
+        if "Options" not in cfg:
+            cfg["Options"]={}
+        cfg["Options"]["call_mode"] = "interactive"
+        pfp_compliance.check_l3_options(cfg, ds2)
+        if ds2.info["returncodes"]["value"] != 0:
+            return
         ds3 = pfp_levels.l3qc(cfg, ds2)
         if ds3.info["returncodes"]["value"] != 0:
             logger.error("An error occurred during L3 processing")
@@ -658,21 +669,21 @@ def do_run_l6(main_gui):
         logger.error(error_message)
     return
 # top level routines for the Plot menu
-def do_plot_fcvsustar():
+def do_plot_fcvsustar_annual():
     """
     Purpose:
-     Plot Fc versus u*.
+     Plot Fc versus u* for each year.
     Usage:
-     pfp_top_level.do_plot_fcvsustar()
+     pfp_top_level.do_plot_fcvsustar_annual()
     Side effects:
-     Annual and seasonal plots of Fc versus u* to the screen and creates .PNG
+     Annual plots of Fc versus u* to the screen and creates .PNG
      hardcopies of the plots.
     Author: PRI
     Date: Back in the day
     Mods:
      December 2017: rewrite for use with new GUI
     """
-    logger.info("Starting Fc versus u* plots")
+    logger.info("Starting annual Fc versus u* plots")
     try:
         file_path = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
         if len(file_path) == 0 or not os.path.isfile(file_path):
@@ -681,7 +692,71 @@ def do_plot_fcvsustar():
         ds = pfp_io.NetCDFRead(file_path)
         if ds.info["returncodes"]["value"] != 0: return
         logger.info("Plotting Fc versus u* ...")
-        pfp_plot.plot_fcvsustar(ds)
+        pfp_plot.plot_fcvsustar_annual(ds)
+        logger.info(" Finished plotting Fc versus u*")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while plotting Fc versus u*, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
+def do_plot_fcvsustar_seasonal():
+    """
+    Purpose:
+     Plot Fc versus u* for each season for each year.
+    Usage:
+     pfp_top_level.do_plot_fcvsustar_seasonal()
+    Side effects:
+     Seasonal plots of Fc versus u* to the screen and creates .PNG
+     hardcopies of the plots.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     December 2017: rewrite for use with new GUI
+    """
+    logger.info("Starting seasonal Fc versus u* plots")
+    try:
+        file_path = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
+        if len(file_path) == 0 or not os.path.isfile(file_path):
+            return
+        # read the netCDF file
+        ds = pfp_io.NetCDFRead(file_path)
+        if ds.info["returncodes"]["value"] != 0: return
+        logger.info("Plotting Fc versus u* ...")
+        pfp_plot.plot_fcvsustar_seasonal(ds)
+        logger.info(" Finished plotting Fc versus u*")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while plotting Fc versus u*, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
+def do_plot_fcvsustar_monthly():
+    """
+    Purpose:
+     Plot Fc versus u* for each month for each year.
+    Usage:
+     pfp_top_level.do_plot_fcvsustar_monthly()
+    Side effects:
+     Monthly plots of Fc versus u* to the screen and creates .PNG
+     hardcopies of the plots.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     December 2017: rewrite for use with new GUI
+    """
+    logger.info("Starting monthly Fc versus u* plots")
+    try:
+        file_path = pfp_io.get_filename_dialog(file_path="../Sites",title="Choose a netCDF file")
+        if len(file_path) == 0 or not os.path.isfile(file_path):
+            return
+        # read the netCDF file
+        ds = pfp_io.NetCDFRead(file_path)
+        if ds.info["returncodes"]["value"] != 0: return
+        logger.info("Plotting Fc versus u* ...")
+        pfp_plot.plot_fcvsustar_monthly(ds)
         logger.info(" Finished plotting Fc versus u*")
         logger.info("")
     except Exception:

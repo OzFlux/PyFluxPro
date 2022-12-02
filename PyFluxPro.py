@@ -112,8 +112,11 @@ class pfp_main_ui(QWidget):
         self.actionStopCurrent = QAction(self)
         self.actionStopCurrent.setText("Stop run")
         # Plot menu items
-        self.actionPlotFcVersusUstar = QAction(self)
-        self.actionPlotFcVersusUstar.setText("Fco2 vs u*")
+        #self.actionPlotFcVersusUstar = QAction(self)
+        #self.actionPlotFcVersusUstar.setText("Fco2 vs u*")
+        # Plot Fco2 vs u* submenu
+        self.menuPlotFco2vsUstar = QMenu(self.menuPlot)
+        self.menuPlotFco2vsUstar.setTitle("Fco2 vs u*")
         self.actionPlotFingerprints = QAction(self)
         self.actionPlotFingerprints.setText("Fingerprints")
         self.actionPlotQuickCheck = QAction(self)
@@ -124,6 +127,13 @@ class pfp_main_ui(QWidget):
         self.actionPlotWindrose.setText("Windrose")
         self.actionPlotClosePlots = QAction(self)
         self.actionPlotClosePlots.setText("Close plots")
+        # Plot Fco2 vs u* submenu
+        self.actionPlotFco2vsUstar_annual = QAction(self)
+        self.actionPlotFco2vsUstar_annual.setText("Annual")
+        self.actionPlotFco2vsUstar_seasonal = QAction(self)
+        self.actionPlotFco2vsUstar_seasonal.setText("Seasonal")
+        self.actionPlotFco2vsUstar_monthly = QAction(self)
+        self.actionPlotFco2vsUstar_monthly.setText("Monthly")
         # Utilities menu
         self.actionUtilitiesClimatology = QAction(self)
         self.actionUtilitiesClimatology.setText("Climatology")
@@ -156,8 +166,13 @@ class pfp_main_ui(QWidget):
         # Run menu
         self.menuRun.addAction(self.actionRunCurrent)
         self.menuRun.addAction(self.actionRunClearLogWindow)
+        # Plot Fco2 vs u* submenu
+        self.menuPlotFco2vsUstar.addAction(self.actionPlotFco2vsUstar_annual)
+        self.menuPlotFco2vsUstar.addAction(self.actionPlotFco2vsUstar_seasonal)
+        self.menuPlotFco2vsUstar.addAction(self.actionPlotFco2vsUstar_monthly)
         # Plot menu
-        self.menuPlot.addAction(self.actionPlotFcVersusUstar)
+        #self.menuPlot.addAction(self.actionPlotFcVersusUstar)
+        self.menuPlot.addAction(self.menuPlotFco2vsUstar.menuAction())
         self.menuPlot.addAction(self.actionPlotFingerprints)
         self.menuPlot.addAction(self.actionPlotQuickCheck)
         self.menuPlot.addAction(self.actionPlotTimeSeries)
@@ -224,7 +239,9 @@ class pfp_main_ui(QWidget):
         self.actionRunCurrent.triggered.connect(self.run_current)
         self.actionRunClearLogWindow.triggered.connect(self.run_clear_log_window)
         # Plot menu actions
-        self.actionPlotFcVersusUstar.triggered.connect(pfp_top_level.do_plot_fcvsustar)
+        self.actionPlotFco2vsUstar_annual.triggered.connect(pfp_top_level.do_plot_fcvsustar_annual)
+        self.actionPlotFco2vsUstar_seasonal.triggered.connect(pfp_top_level.do_plot_fcvsustar_seasonal)
+        self.actionPlotFco2vsUstar_monthly.triggered.connect(pfp_top_level.do_plot_fcvsustar_monthly)
         self.actionPlotFingerprints.triggered.connect(pfp_top_level.do_plot_fingerprints)
         self.actionPlotQuickCheck.triggered.connect(pfp_top_level.do_plot_quickcheck)
         self.actionPlotTimeSeries.triggered.connect(pfp_top_level.do_plot_timeseries)
@@ -742,7 +759,9 @@ class pfp_main_ui(QWidget):
                 pfp_top_level.do_run_l1(cfg)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "L2":
-            pfp_top_level.do_run_l2(cfg)
+            # check the L2 control file to see if it is OK to run
+            if pfp_compliance.check_l2_controlfile(cfg):
+                pfp_top_level.do_run_l2(cfg)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "L3":
             pfp_top_level.do_run_l3(cfg)
@@ -768,9 +787,8 @@ class pfp_main_ui(QWidget):
                 pfp_top_level.do_run_l5(self)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "L6":
-            if not pfp_compliance.check_l6_controlfile(cfg):
-                return
-            pfp_top_level.do_run_l6(self)
+            if pfp_compliance.check_l6_controlfile(cfg):
+                pfp_top_level.do_run_l6(self)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_biomet":
             pfp_top_level.do_file_convert_nc2biomet(self, mode="custom")
