@@ -1429,14 +1429,17 @@ def l1_check_input_labels(cfg, messages):
                 messages["ERROR"].append(msg)
     # check for duplicate input labels
     duplicate_labels = [l for l in set(input_labels) if input_labels.count(l) > 1]
-    nc_duplicate_labels = []
     if len(duplicate_labels) > 0:
         for duplicate_label in duplicate_labels:
+            nc_duplicate_labels = []
+            nc_duplicate_sheets = []
             for cfg_label in cfg_labels:
                 if source in cfg["Variables"][cfg_label]:
                     if "name" in cfg["Variables"][cfg_label][source]:
                         if cfg["Variables"][cfg_label][source]["name"] == duplicate_label:
                             nc_duplicate_labels.append(cfg_label)
+                            nc_duplicate_sheets.append(cfg["Variables"][cfg_label][source]["sheet"])
+            if nc_duplicate_sheets[0] == nc_duplicate_sheets[1]:
             msg = "Duplicate input label " + duplicate_label + " used for "
             msg += ",".join(nc_duplicate_labels)
             messages["WARNING"].append(msg)
