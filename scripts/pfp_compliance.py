@@ -1440,9 +1440,9 @@ def l1_check_input_labels(cfg, messages):
                             nc_duplicate_labels.append(cfg_label)
                             nc_duplicate_sheets.append(cfg["Variables"][cfg_label][source]["sheet"])
             if nc_duplicate_sheets[0] == nc_duplicate_sheets[1]:
-            msg = "Duplicate input label " + duplicate_label + " used for "
-            msg += ",".join(nc_duplicate_labels)
-            messages["WARNING"].append(msg)
+                msg = "Duplicate input label " + duplicate_label + " used for "
+                msg += ",".join(nc_duplicate_labels)
+                messages["WARNING"].append(msg)
     return
 def l1_check_irga_sonic_type(cfg, messages):
     """
