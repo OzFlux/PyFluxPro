@@ -2,12 +2,18 @@ import datetime
 import logging
 import math
 import os
+import warnings
 # 3rd party
+import matplotlib
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    matplotlib.rcParams['toolbar'] = 'toolmanager'
 import matplotlib.dates as mdt
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.backend_tools import ToolToggleBase
 import numpy
 from scipy import stats
 import statsmodels.api as sm
@@ -21,6 +27,15 @@ from scripts import pfp_io
 from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
+
+class XYPlotButton(ToolToggleBase):
+    default_toggled = False
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    def enable(self, event):
+        pass
+    def disable(self, event):
+        pass
 
 def get_diurnalstats(DecHour,Data,dt):
     nInts = 24*int((60/dt)+0.5)
@@ -826,7 +841,29 @@ def plot_explore_timeseries(ds, selections):
     return
 
 def plot_explore_timeseries_grouped(ds, selections):
-    """ Plot time series of grouped variables."""
+    """
+    Purpose:
+     Plot time series of grouped variables.
+    Special case:
+     If the user selects only 2 variables, both with the same variable name prefix
+     and then choses a "Grouped" time series then we add an option to produce an XY
+     scatter plot when the user zooms into a part of the time series plot using the
+     toolbar "Zoom" tool.  The steps are as follows:
+     1) select 2 variables with the same variable name prefix e.g. AH_IRGA_Av and AH_HMP_80m
+     2) choose "Plot time series/Grouped"
+     3) an extra button labelled "XY" is added to the default toolbar for the figure
+     4) click on the "XY" button to enable production of an XY
+        scatter plot when the user zooms in on part of the plot
+     5) click on the "Zoom" button
+     6) whenever the user zooms into a region of the plot, an XY scatter
+        plot of the 2 variables is produced for the date range covered by
+        the zoomed view.
+    Date: Back in the day
+    Author: PRI
+    Mods:
+     December 2022 - added ability to plot XY scatter plot of 2 variables
+                     when zoom tool used
+    """
     # colours for the lines
     colors = ["blue","red","green","yellow","magenta","black","cyan","brown"]
     # site name for the title
@@ -855,35 +892,125 @@ def plot_explore_timeseries_grouped(ds, selections):
                 if lg in al:
                     gll.append(al)
             d[lg][g] = gll
-    # and then do the plot
+    # turn on interactive plotting
     plt.ion()
+    # get a figure and axes with shared X axis, nrows is the number of groups being plotted
     fig, axs = plt.subplots(nrows=nrows, sharex=True, figsize=(10.9, 7.5))
-    if nrows == 1: axs = [axs]
+    # if only 1 row is being plotted ...
+    if nrows == 1:
+        # put the axes object into a list, same as nrows > 1
+        axs = [axs]
+        # check to see if only 2 variables have been selected ...
+        if len(all_labels) == 2:
+            # if so then put an "XY" button in the toolbar
+            fig.canvas.manager.toolmanager.add_tool('XY', XYPlotButton)
+            xy = fig.canvas.manager.toolmanager.get_tool('XY')
+            fig.canvas.manager.toolbar.add_tool(xy, "toolgroup")
+    # adjust the margins
     fig.subplots_adjust(wspace=0.0, hspace=0.05, left=0.1, right=0.95, top=0.95, bottom=0.1)
+    # change the window title
     fig.canvas.manager.set_window_title(site_name)
+    # loop over the groups to be plotted
     for i, lg in enumerate(d.keys()):
         for j, group in enumerate(d[lg].keys()):
+            # get a dictionary to hold the variables to be plotted
+            var = {}
+            # loop over the variables to be plotted in each group
             for k, label in enumerate(d[lg][group]):
-                var = pfp_utils.GetVariable(ds, label, group=group)
-                sdt = var["DateTime"][0]
-                edt = var["DateTime"][-1]
-                axs[i].plot(var["DateTime"], var["Data"], label=label,
+                # put the variable into the dictionary
+                var[k] = pfp_utils.GetVariable(ds, label, group=group)
+                # get the start and end datetimes
+                sdt = var[k]["DateTime"][0]
+                edt = var[k]["DateTime"][-1]
+                # plot the variable on the axis for this group
+                axs[i].plot(var[k]["DateTime"], var[k]["Data"], label=label,
                             marker=".", color=colors[numpy.mod(j+k, 8)])
+                # only label the Y axis on the first variable
                 if j+k == 0:
-                    axs[i].set_ylabel("(" + var["Attr"]["units"] + ")")
+                    axs[i].set_ylabel("(" + var[k]["Attr"]["units"] + ")")
+            # add the legend
             axs[i].legend()
+            # set the X axis limits to the start and end datetimes
             axs[i].set_xlim([sdt, edt])
+            # only add the title to the first axes
             if i == 0:
                 title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
                 title_str += edt.strftime("%Y-%m-%d")
                 axs[i].set_title(title_str)
+            # only label the X axis of the last axes
             if i == nrows-1:
                 axs[i].set_xlabel("Date")
+    # if only 2 variables with the same variable name prefix were selected ...
+    if nrows == 1 and len(all_labels) == 2:
+        # call the XY scatter plot routine when the X axis limits change
+        axs[0].callbacks.connect("xlim_changed", lambda x: xy_xlims_changed(x, fig, var))
+    # render the plot
     plt.draw()
-    pfp_utils.mypause(0.5)
     plt.ioff()
     return
-
+def xy_xlims_changed(event_ax, fig, var):
+    """
+    Purpose:
+     Plot data for the date range selected in a zoom operation and add a robust
+     linear regression line plus equation to the plot.
+    Date: December 2022
+    Author: PRI
+    """
+    # only do this if the figure cursor is a crosshair, the cursor shape used for
+    # the zoom tool, this prevents a scatter plot being triggered by pressing the
+    # "Home", "Back" or "Forward" buttons (cursor is an arrow) or by using the pan
+    # tool (cursor is a closed fist)
+    if fig.canvas.cursor().shape() != 2:
+        return
+    # get the XY button on the figure toolbar
+    xy = fig.canvas.manager.toolmanager.get_tool('XY')
+    # check to see if the XY button is toggled on ...
+    if not xy.toggled:
+        # if not, then don't produce an XY plot
+        return
+    # get the date when the mouse button was pressed at the start of the zoom
+    press_date = mdt.num2date(event_ax.get_xlim()[0]).replace(tzinfo=None)
+    # get the date when the mouse button was released at the end of the zoom
+    release_date = mdt.num2date(event_ax.get_xlim()[1]).replace(tzinfo=None)
+    # make sure the start date is the earliest of the 2
+    start = min([press_date, release_date])
+    # and the end date is the latest of the 2
+    end = max([press_date, release_date])
+    # get the indices of the datetimes nearest to the start and end
+    si = pfp_utils.find_nearest_value(var[0]["DateTime"], start)
+    ei = pfp_utils.find_nearest_value(var[0]["DateTime"], end)
+    plot_start = var[0]["DateTime"][si]
+    plot_end = var[0]["DateTime"][ei-1]
+    title = plot_start.strftime("%Y-%m-%d %H:%M") + " to " + plot_end.strftime("%Y-%m-%d %H:%M")
+    plt.ion()
+    fig_xy, ax_xy = plt.subplots(nrows=1, ncols=1)
+    fig_xy.suptitle(title)
+    ax_xy.plot(var[0]["Data"][si:ei], var[1]["Data"][si:ei], 'b.')
+    ax_xy.set_xlabel(var[0]["Label"]+" ("+var[0]["Attr"]["units"]+")")
+    ax_xy.set_ylabel(var[1]["Label"]+" ("+var[1]["Attr"]["units"]+")")
+    mask = numpy.ma.mask_or(numpy.ma.getmaskarray(var[0]["Data"][si:ei]),
+                            numpy.ma.getmaskarray(var[1]["Data"][si:ei]))
+    x_nm = numpy.ma.compressed(numpy.ma.array(var[0]["Data"][si:ei], mask=mask))
+    if len(x_nm) == 0:
+        return
+    x_nm = sm.add_constant(x_nm,prepend=False)
+    y_nm = numpy.ma.compressed(numpy.ma.array(var[1]["Data"][si:ei], mask=mask))
+    if len(y_nm) == 0:
+        return
+    resrlm = sm.RLM(y_nm,x_nm,M=sm.robust.norms.TukeyBiweight()).fit()
+    if numpy.isnan(resrlm.params[0]):
+        resrlm = sm.RLM(y_nm,x_nm,M=sm.robust.norms.TrimmedMean()).fit()
+    r = numpy.corrcoef(numpy.ma.compressed(numpy.ma.array(var[0]["Data"][si:ei], mask=mask)),
+                       numpy.ma.compressed(numpy.ma.array(var[1]["Data"][si:ei], mask=mask)))
+    eqnstr = 'y = %.3fx + %.3f (RLM)'%(resrlm.params[0],resrlm.params[1])
+    ax_xy.plot(x_nm[:,0],resrlm.fittedvalues,'r--',linewidth=3)
+    ax_xy.text(0.5,0.93,eqnstr,fontsize=8,horizontalalignment='center',transform=ax_xy.transAxes)
+    eqnstr = 'r = %.3f'%(r[0][1])
+    ax_xy.text(0.5,0.89,eqnstr,fontsize=8,horizontalalignment='center',transform=ax_xy.transAxes)
+    fig_xy.tight_layout()
+    plt.draw()
+    plt.ioff()
+    return
 def plottimeseries(cf, nFig, dsa, dsb):
     SiteName = dsa.root["Attributes"]['site_name']
     Level = dsb.root["Attributes"]['processing_level']
