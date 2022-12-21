@@ -1,5 +1,12 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.8"
+version_number = "V3.4.9"
+# V3.4.9 - December 2022
+#        - implement XY plot on zoom of grouped time series plot with 2 variables
+#        - implement ability to read EddyPro stats files
+#        - implement ability to read EddyPro full_output and biomet files CSV files
+#        - final implementation of robust checking L3 options and IRGA type
+#        - warn user when same variable from same worksheet is read twice
+#        - read window and step size from L6 control file
 # V3.4.8 - October 2022
 #        - implement check of IRGA type at L2
 #        - imlement check of IRGA type at L3
