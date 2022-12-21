@@ -942,11 +942,24 @@ def plot_explore_timeseries_grouped(ds, selections):
                 axs[i].set_xlabel("Date")
     # if only 2 variables with the same variable name prefix were selected ...
     if nrows == 1 and len(all_labels) == 2:
+        cid = fig.canvas.mpl_connect('button_press_event', lambda x: petsg_onclick(x, fig))
         # call the XY scatter plot routine when the X axis limits change
         axs[0].callbacks.connect("xlim_changed", lambda x: xy_xlims_changed(x, fig, var))
     # render the plot
     plt.draw()
     plt.ioff()
+    return
+def petsg_onclick(event, fig):
+    """
+    Purpose:
+      Get the cursor shape when a button is clicked.  This will be used in
+      xy_lims_changed() to decide whether or not to draw an XY plot of the
+      2 variables lotted in the time series.
+      An XY plot will only be drawn if the cursor shape is a set of
+      crosshairs (shape==2) indicating that the zoom tool is enabled.
+    """
+    # save the cursor shape as an attribute of the current figure
+    fig.cursor_shape_on_click = fig.canvas.cursor().shape()
     return
 def xy_xlims_changed(event_ax, fig, var):
     """
@@ -960,8 +973,11 @@ def xy_xlims_changed(event_ax, fig, var):
     # the zoom tool, this prevents a scatter plot being triggered by pressing the
     # "Home", "Back" or "Forward" buttons (cursor is an arrow) or by using the pan
     # tool (cursor is a closed fist)
-    if fig.canvas.cursor().shape() != 2:
+    if fig.cursor_shape_on_click != 2:
         return
+    # reset the cursor shape to prevent triggering an XY plot when Home, Forward or
+    # Backward is pressed
+    fig.cursor_shape_on_click = 0
     # get the XY button on the figure toolbar
     xy = fig.canvas.manager.toolmanager.get_tool('XY')
     # check to see if the XY button is toggled on ...
