@@ -6,6 +6,7 @@ import os
 import sys
 import traceback
 import warnings
+import webbrowser
 # 3rd party modules
 from configobj import ConfigObj
 import netCDF4
@@ -147,6 +148,11 @@ class pfp_main_ui(QWidget):
         self.actionUtilitiesUstarMPT.setText("MPT")
         #self.actionUtilitiesCFCheck = QAction(self)
         #self.actionUtilitiesCFCheck.setText("CF check")
+        # Help menu
+        self.actionHelpWiki = QAction(self)
+        self.actionHelpWiki.setText("Wiki")
+        self.actionHelpAbout = QAction(self)
+        self.actionHelpAbout.setText("About")
         # add the actions to the menus
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
@@ -195,6 +201,9 @@ class pfp_main_ui(QWidget):
         self.menubar.addAction(self.menuPlot.menuAction())
         self.menubar.addAction(self.menuUtilities.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
+        # Help menu
+        self.menuHelp.addAction(self.actionHelpWiki)
+        self.menuHelp.addAction(self.actionHelpAbout)
 
         # create a tab bar
         self.tabs = QTabWidget(self)
@@ -254,6 +263,9 @@ class pfp_main_ui(QWidget):
         self.actionUtilitiesUstarCPDMcNew.triggered.connect(self.utilities_ustar_cpd_mcnew_standard)
         self.actionUtilitiesUstarMPT.triggered.connect(self.utilities_ustar_mpt_standard)
         #self.actionUtilitiesCFCheck.triggered.connect(self.utilities_cfcheck)
+        # Help menu actions
+        self.actionHelpWiki.triggered.connect(self.help_wiki)
+        self.actionHelpAbout.triggered.connect(self.help_about)
         # add the L4 GUI
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
         # add the L5 GUI
@@ -329,6 +341,19 @@ class pfp_main_ui(QWidget):
             logger.error(msg)
             error_message = traceback.format_exc()
             logger.error(error_message)
+        return
+
+    def help_about(self):
+        msg = cfg.version_name + " " + cfg.version_number
+        #msg = cfg.version_name + " " + cfg.version_number + "\n"
+        #msg += "Contributors: Peter Isaac, Jamie Cleverley and Cacilia Ewenz"
+        pfp_gui.myMessageBox(msg)
+        return
+
+    def help_wiki(self):
+        """ Opens the default browser and goes to the PyFluxPro Wiki."""
+        browser = webbrowser.get()
+        browser.open_new("https://github.com/OzFlux/PyFluxPro/wiki")
         return
 
     def open_control_file(self):
