@@ -344,9 +344,8 @@ class pfp_main_ui(QWidget):
         return
 
     def help_about(self):
-        msg = cfg.version_name + " " + cfg.version_number
-        #msg = cfg.version_name + " " + cfg.version_number + "\n"
-        #msg += "Contributors: Peter Isaac, Jamie Cleverley and Cacilia Ewenz"
+        msg = cfg.version_name + " " + cfg.version_number + "\n"
+        msg += "Contributors: Peter Isaac, Jamie Cleverly, Cacilia Ewenz, Ian McHugh"
         pfp_gui.myMessageBox(msg)
         return
 

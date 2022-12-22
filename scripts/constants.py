@@ -45,7 +45,9 @@ instruments = {"sonics": {"CSAT3": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.11
                          "closed_path": {"Li-7200": {"dIRGA": 0.0064, "lIRGA": 0.125},
                                          "Li-7200RS": {"dIRGA": 0.0064, "lIRGA": 0.125},
                                          "EC155": {"dIRGA": 0.008, "lIRGA": 0.120},
+                                         "Li-830": {"dIRGA": None, "lIRGA": None},
                                          "Li-840": {"dIRGA": None, "lIRGA": None},
+                                         "Li-850": {"dIRGA": None, "lIRGA": None},
                                          "None": {"dIRGA": None, "lIRGA": None}}}}
 # dictionary of site names and time zones
 tz_dict = {"adelaideriver":"Australia/Darwin",
