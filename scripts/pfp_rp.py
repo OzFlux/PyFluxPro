@@ -440,67 +440,68 @@ def L6_summary(ds, l6_info):
     nc_summary = pfp_io.nc_open_write(nc_name, nctype='NETCDF4')
     pfp_io.nc_write_globalattributes(nc_summary, ds, flag_defs=False)
     # daily averages and totals, all variables
-    daily_dict = L6_summary_daily(ds, series_dict)
-    L6_summary_write_xlfile(xl_file, "Daily (all)", daily_dict)
+    ds_daily = L6_summary_daily(ds, series_dict)
+    #L6_summary_write_xlfile(xl_file, "Daily (all)", daily_dict)
     # combined netCDF summary file
     nc_group = nc_summary.createGroup("Daily")
-    L6_summary_write_ncfile(nc_group, daily_dict)
+    L6_summary_write_ncfile(nc_group, ds_daily)
     # separate daily file
     nc_daily = pfp_io.nc_open_write(out_name.replace(".nc", "_Daily.nc"))
-    pfp_io.nc_write_globalattributes(nc_daily, daily_dict, flag_defs=False)
-    L6_summary_write_ncfile(nc_daily, daily_dict)
+    pfp_io.nc_write_globalattributes(nc_daily, ds_daily, flag_defs=False)
+    L6_summary_write_ncfile(nc_daily, ds_daily)
     nc_daily.close()
-    # daily averages and totals, CO2 and H2O fluxes only
-    fluxes_dict = L6_summary_co2andh2o_fluxes(ds, series_dict, daily_dict)
-    L6_summary_write_xlfile(xl_file, "Daily (CO2,H2O)", fluxes_dict)
-    # monthly averages and totals
-    monthly_dict = L6_summary_monthly(ds, series_dict)
-    L6_summary_write_xlfile(xl_file, "Monthly", monthly_dict)
-    # combined netCDF summary file
-    nc_group = nc_summary.createGroup("Monthly")
-    L6_summary_write_ncfile(nc_group, monthly_dict)
-    # separate monthly file
-    nc_monthly = pfp_io.nc_open_write(out_name.replace(".nc", "_Monthly.nc"))
-    pfp_io.nc_write_globalattributes(nc_monthly, monthly_dict, flag_defs=False)
-    L6_summary_write_ncfile(nc_monthly, monthly_dict)
-    nc_monthly.close()
-    # annual averages and totals
-    annual_dict = L6_summary_annual(ds, series_dict)
-    L6_summary_write_xlfile(xl_file, "Annual", annual_dict)
-    # combined netCDF summary file
-    nc_group = nc_summary.createGroup("Annual")
-    L6_summary_write_ncfile(nc_group, annual_dict)
-    # separate annual file
-    nc_annual = pfp_io.nc_open_write(out_name.replace(".nc", "_Annual.nc"))
-    pfp_io.nc_write_globalattributes(nc_annual, annual_dict, flag_defs=False)
-    L6_summary_write_ncfile(nc_annual, annual_dict)
-    nc_annual.close()
-    # cumulative totals
-    cumulative_dict = L6_summary_cumulative(ds, series_dict)
-    years = sorted(list(cumulative_dict.keys()))
-    for year in years:
-        nrecs = len(cumulative_dict[year]["variables"]["DateTime"]["Data"])
-        if nrecs < 65530:
-            L6_summary_write_xlfile(xl_file, "Cumulative("+str(year)+")", cumulative_dict[str(year)])
-            #logger.info(" Write to L6 summary file goes here")
-        else:
-            msg = "L6 cumulative: too many rows for .xls workbook, skipping "+year
-            logger.warning(msg)
-        nc_group = nc_summary.createGroup("Cumulative_"+str(year))
-        L6_summary_write_ncfile(nc_group, cumulative_dict[str(year)])
+    ## daily averages and totals, CO2 and H2O fluxes only
+    #fluxes_dict = L6_summary_co2andh2o_fluxes(ds, series_dict, daily_dict)
+    #L6_summary_write_xlfile(xl_file, "Daily (CO2,H2O)", fluxes_dict)
+    ## monthly averages and totals
+    #monthly_dict = L6_summary_monthly(ds, series_dict)
+    #L6_summary_write_xlfile(xl_file, "Monthly", monthly_dict)
+    ## combined netCDF summary file
+    #nc_group = nc_summary.createGroup("Monthly")
+    #L6_summary_write_ncfile(nc_group, monthly_dict)
+    ## separate monthly file
+    #nc_monthly = pfp_io.nc_open_write(out_name.replace(".nc", "_Monthly.nc"))
+    #pfp_io.nc_write_globalattributes(nc_monthly, monthly_dict, flag_defs=False)
+    #L6_summary_write_ncfile(nc_monthly, monthly_dict)
+    #nc_monthly.close()
+    ## annual averages and totals
+    #annual_dict = L6_summary_annual(ds, series_dict)
+    #L6_summary_write_xlfile(xl_file, "Annual", annual_dict)
+    ## combined netCDF summary file
+    #nc_group = nc_summary.createGroup("Annual")
+    #L6_summary_write_ncfile(nc_group, annual_dict)
+    ## separate annual file
+    #nc_annual = pfp_io.nc_open_write(out_name.replace(".nc", "_Annual.nc"))
+    #pfp_io.nc_write_globalattributes(nc_annual, annual_dict, flag_defs=False)
+    #L6_summary_write_ncfile(nc_annual, annual_dict)
+    #nc_annual.close()
+    ## cumulative totals
+    #cumulative_dict = L6_summary_cumulative(ds, series_dict)
+    #years = sorted(list(cumulative_dict.keys()))
+    #for year in years:
+        #nrecs = len(cumulative_dict[year]["variables"]["DateTime"]["Data"])
+        #if nrecs < 65530:
+            #L6_summary_write_xlfile(xl_file, "Cumulative("+str(year)+")", cumulative_dict[str(year)])
+            ##logger.info(" Write to L6 summary file goes here")
+        #else:
+            #msg = "L6 cumulative: too many rows for .xls workbook, skipping "+year
+            #logger.warning(msg)
+        #nc_group = nc_summary.createGroup("Cumulative_"+str(year))
+        #L6_summary_write_ncfile(nc_group, cumulative_dict[str(year)])
     # close the summary netCDF file
     nc_summary.close()
-    # separate cumulative file
-    nc_cumulative = pfp_io.nc_open_write(out_name.replace(".nc", "_Cumulative.nc"))
-    pfp_io.nc_write_globalattributes(nc_cumulative, cumulative_dict["all"], flag_defs=False)
-    L6_summary_write_ncfile(nc_cumulative, cumulative_dict["all"])
-    nc_cumulative.close()
-    # close the Excel workbook
-    xl_file.save(xl_name)
-    # plot the daily averages and sums
-    L6_summary_plotdaily(daily_dict, l6_info)
-    # plot the cumulative sums
-    L6_summary_plotcumulative(cumulative_dict, l6_info)
+    ## separate cumulative file
+    #nc_cumulative = pfp_io.nc_open_write(out_name.replace(".nc", "_Cumulative.nc"))
+    #pfp_io.nc_write_globalattributes(nc_cumulative, cumulative_dict["all"], flag_defs=False)
+    #L6_summary_write_ncfile(nc_cumulative, cumulative_dict["all"])
+    #nc_cumulative.close()
+    ## close the Excel workbook
+    #xl_file.save(xl_name)
+    ## plot the daily averages and sums
+    #L6_summary_plotdaily(daily_dict, l6_info)
+    ## plot the cumulative sums
+    #L6_summary_plotcumulative(cumulative_dict, l6_info)
+    return
 
 def L6_summary_plotdaily(daily_dict, l6_info):
     """
@@ -812,10 +813,13 @@ def L6_summary_daily(ds, series_dict):
     f0 = numpy.zeros(nDays, dtype=numpy.int32)
     ldt_daily = [ldt[0]+datetime.timedelta(days=i) for i in range(0,nDays)]
     # create a dictionary to hold the daily statistics
-    daily_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]),
-                  "variables":{}}
-    ddg = daily_dict["globalattributes"]
-    ddv = daily_dict["variables"]
+    ds_daily = pfp_io.DataStructure()
+    setattr(ds_daily, "Daily", {"Attributes": {}, "Variables": {}})
+    ds_daily.root["Attributes"] = copy.deepcopy(ds.root["Attributes"])
+    #daily_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]),
+                  #"variables":{}}
+    ddg = ds_daily.root["Attributes"]
+    ddv = ds_daily.Daily["Variables"]
     # create the datetime variable
     ddv["DateTime"] = {"Data": ldt_daily, "Flag": f0,
                        "Attr":{"units": "Days", "format": "dd/mm/yyyy", "time_step": "daily"}}
