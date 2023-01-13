@@ -435,74 +435,91 @@ def L6_summary(ds, l6_info):
         logger.error(" L6_summary: error opening Excel file "+xl_name)
         return 0
     # open the netCDF files for the summary results
+    ds_summary = pfp_io.DataStructure()
+    ds_summary.root["Attributes"] = copy.deepcopy(ds.root["Attributes"])
     # all data as groups in one netCDF4 file
     nc_name = out_name.replace(".nc", "_Summary.nc")
     nc_summary = pfp_io.nc_open_write(nc_name, nctype='NETCDF4')
     pfp_io.nc_write_globalattributes(nc_summary, ds, flag_defs=False)
     # daily averages and totals, all variables
-    daily_dict = L6_summary_daily(ds, series_dict)
-    L6_summary_write_xlfile(xl_file, "Daily (all)", daily_dict)
+    dss = L6_summary_daily(ds, series_dict)
+    setattr(ds_summary, "Daily", dss.Daily)
+    L6_summary_write_xlfile(xl_file, "Daily (all)", ds_summary, group="Daily")
     # combined netCDF summary file
     nc_group = nc_summary.createGroup("Daily")
-    L6_summary_write_ncfile(nc_group, daily_dict)
+    pfp_io.nc_write_group(nc_group, ds_summary, "Daily")
     # separate daily file
     nc_daily = pfp_io.nc_open_write(out_name.replace(".nc", "_Daily.nc"))
-    pfp_io.nc_write_globalattributes(nc_daily, daily_dict, flag_defs=False)
-    L6_summary_write_ncfile(nc_daily, daily_dict)
+    pfp_io.nc_write_globalattributes(nc_daily, ds, flag_defs=False)
+    pfp_io.nc_write_group(nc_daily, ds_summary, "Daily")
     nc_daily.close()
     # daily averages and totals, CO2 and H2O fluxes only
-    fluxes_dict = L6_summary_co2andh2o_fluxes(ds, series_dict, daily_dict)
-    L6_summary_write_xlfile(xl_file, "Daily (CO2,H2O)", fluxes_dict)
+    labels = series_dict["lists"]["h2o"] + series_dict["lists"]["co2"]
+    L6_summary_write_xlfile(xl_file, "Daily (CO2,H2O)", ds_summary, group="Daily", labels=labels)
     # monthly averages and totals
-    monthly_dict = L6_summary_monthly(ds, series_dict)
-    L6_summary_write_xlfile(xl_file, "Monthly", monthly_dict)
+    dss = L6_summary_monthly(ds, series_dict)
+    setattr(ds_summary, "Monthly", dss.Monthly)
+    L6_summary_write_xlfile(xl_file, "Monthly", ds_summary, group="Monthly")
     # combined netCDF summary file
     nc_group = nc_summary.createGroup("Monthly")
-    L6_summary_write_ncfile(nc_group, monthly_dict)
+    pfp_io.nc_write_group(nc_group, ds_summary, "Monthly")
     # separate monthly file
     nc_monthly = pfp_io.nc_open_write(out_name.replace(".nc", "_Monthly.nc"))
-    pfp_io.nc_write_globalattributes(nc_monthly, monthly_dict, flag_defs=False)
-    L6_summary_write_ncfile(nc_monthly, monthly_dict)
+    pfp_io.nc_write_globalattributes(nc_monthly, ds, flag_defs=False)
+    pfp_io.nc_write_group(nc_monthly, ds_summary, "Monthly")
     nc_monthly.close()
     # annual averages and totals
-    annual_dict = L6_summary_annual(ds, series_dict)
-    L6_summary_write_xlfile(xl_file, "Annual", annual_dict)
+    dss = L6_summary_annual(ds, series_dict)
+    setattr(ds_summary, "Annual", dss.Annual)
+    L6_summary_write_xlfile(xl_file, "Annual", ds_summary, group="Annual")
     # combined netCDF summary file
     nc_group = nc_summary.createGroup("Annual")
-    L6_summary_write_ncfile(nc_group, annual_dict)
+    pfp_io.nc_write_group(nc_group, ds_summary, "Annual")
     # separate annual file
     nc_annual = pfp_io.nc_open_write(out_name.replace(".nc", "_Annual.nc"))
-    pfp_io.nc_write_globalattributes(nc_annual, annual_dict, flag_defs=False)
-    L6_summary_write_ncfile(nc_annual, annual_dict)
+    pfp_io.nc_write_globalattributes(nc_annual, ds, flag_defs=False)
+    pfp_io.nc_write_group(nc_annual, ds_summary, "Annual")
     nc_annual.close()
     # cumulative totals
-    cumulative_dict = L6_summary_cumulative(ds, series_dict)
-    years = sorted(list(cumulative_dict.keys()))
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    cdt = dt["Data"] - datetime.timedelta(minutes=ts)
+    years = sorted(list(set([ldt.year for ldt in cdt])))
+    # loop over individual years
     for year in years:
-        nrecs = len(cumulative_dict[year]["variables"]["DateTime"]["Data"])
+        dss = L6_summary_cumulative(ds, series_dict, year=year)
+        setattr(ds_summary, "Cumulative_"+str(year), dss.Cumulative)
+        nc_group = nc_summary.createGroup("Cumulative_"+str(year))
+        pfp_io.nc_write_group(nc_group, ds_summary, "Cumulative_"+str(year))
+        nrecs = len(dss.Cumulative["Variables"]["DateTime"]["Data"])
         if nrecs < 65530:
-            L6_summary_write_xlfile(xl_file, "Cumulative("+str(year)+")", cumulative_dict[str(year)])
-            #logger.info(" Write to L6 summary file goes here")
+            sheet = "Cumulative(" + str(year) + ")"
+            group = "Cumulative_" + str(year)
+            L6_summary_write_xlfile(xl_file, sheet, ds_summary, group=group)
         else:
             msg = "L6 cumulative: too many rows for .xls workbook, skipping "+year
             logger.warning(msg)
-        nc_group = nc_summary.createGroup("Cumulative_"+str(year))
-        L6_summary_write_ncfile(nc_group, cumulative_dict[str(year)])
+    # all years
+    dss = L6_summary_cumulative(ds, series_dict, year="all")
+    setattr(ds_summary, "Cumulative_all", dss.Cumulative)
+    nc_group = nc_summary.createGroup("Cumulative_all")
+    pfp_io.nc_write_group(nc_group, ds_summary, "Cumulative_all")
     # close the summary netCDF file
     nc_summary.close()
     # separate cumulative file
     nc_cumulative = pfp_io.nc_open_write(out_name.replace(".nc", "_Cumulative.nc"))
-    pfp_io.nc_write_globalattributes(nc_cumulative, cumulative_dict["all"], flag_defs=False)
-    L6_summary_write_ncfile(nc_cumulative, cumulative_dict["all"])
+    pfp_io.nc_write_globalattributes(nc_cumulative, ds, flag_defs=False)
+    pfp_io.nc_write_group(nc_cumulative, ds_summary, "Cumulative_all")
     nc_cumulative.close()
     # close the Excel workbook
     xl_file.save(xl_name)
     # plot the daily averages and sums
-    L6_summary_plotdaily(daily_dict, l6_info)
+    L6_summary_plotdaily(ds_summary, l6_info)
     # plot the cumulative sums
-    L6_summary_plotcumulative(cumulative_dict, l6_info)
+    L6_summary_plotcumulative(ds_summary, l6_info)
+    return
 
-def L6_summary_plotdaily(daily_dict, l6_info):
+def L6_summary_plotdaily(ds_summary, l6_info):
     """
     Purpose:
      Plot the daily averages or sums with a 30 day filter.
@@ -512,7 +529,7 @@ def L6_summary_plotdaily(daily_dict, l6_info):
     Author: PRI
     Date: June 2015
     """
-    ddv = daily_dict["variables"]
+    ddv = ds_summary.Daily["Variables"]
     type_list = []
     for item in list(ddv.keys()):
         if item[0:2] == "ER": type_list.append(item[2:])
@@ -575,7 +592,7 @@ def L6_summary_plotdaily(daily_dict, l6_info):
     fig.canvas.manager.set_window_title("Surface Energy Budget")
     plt.figtext(0.5,0.95,title_str,horizontalalignment='center')
     for label, line in zip(["Fn", "Fg", "Fh", "Fe"], ["k-", "g-", "r-", "b-"]):
-        if label in daily_dict["variables"]:
+        if label in list(ddv):
             plt.plot(ddv["DateTime"]["Data"], ddv[label]["Data"], line, alpha=0.3)
             plt.plot(ddv["DateTime"]["Data"], pfp_ts.smooth(ddv[label]["Data"], window_len=30),
                      line, linewidth=2, label=label+" (30 day filter)")
@@ -599,22 +616,26 @@ def L6_summary_plotdaily(daily_dict, l6_info):
         plt.close(fig)
         plt.switch_backend(current_backend)
         plt.ion()
+    return
 
-def L6_summary_plotcumulative(cumulative_dict, l6_info):
+def L6_summary_plotcumulative(ds_summary, l6_info):
     # cumulative plots
     color_list = ["blue","red","green","yellow","magenta","black","cyan","brown"]
-    year_list = [y for y in list(cumulative_dict.keys()) if y not in ["all"]]
-    year_list.sort()
-    cdy0 = cumulative_dict[year_list[0]]
+    cumulative_years = [l for l in list(vars(ds_summary)) if "Cumulative" in l and "_all" not in l]
+    cumulative_years = sorted(cumulative_years)
+    cdy0 = getattr(ds_summary, cumulative_years[0])
     type_list = []
-    for item in list(cdy0["variables"].keys()):
+    for item in list(cdy0["Variables"].keys()):
         if item[0:2] == "ER": type_list.append(item[2:])
     for item in type_list:
-        if "NEE"+item not in cdy0["variables"] or "GPP"+item not in cdy0["variables"]:
+        if "NEE"+item not in cdy0["Variables"] or "GPP"+item not in cdy0["Variables"]:
             type_list.remove(item)
     # do the plots
     site_name = l6_info["Global"]["site_name"]
-    title_str = site_name+": "+year_list[0]+" to "+year_list[-1]
+    dt = pfp_utils.GetVariable(ds_summary, "DateTime", group="Cumulative_all")
+    start_year = dt["Data"][0].year
+    end_year = dt["Data"][-1].year
+    title_str = site_name+": " + str(start_year) + " to " + str(end_year)
     # get lists of X labels (letter of month) and position
     xlabels = numpy.array(["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"])
     xlabel_posn = numpy.array([0,31, 59, 89, 120, 150, 181, 212, 242, 273, 303, 334])/float(366)
@@ -630,9 +651,10 @@ def L6_summary_plotcumulative(cumulative_dict, l6_info):
         plt.suptitle(title_str)
         plt.subplot(221)
         plt.title("NEE: "+item.replace("_",""),fontsize=12)
-        for n,year in enumerate(year_list):
-            cdyv = cumulative_dict[year]["variables"]
+        for n, cumulative_year in enumerate(cumulative_years):
+            cdyv = getattr(ds_summary, cumulative_year)["Variables"]
             cdyt = cdyv["DateTime"]["Data"]
+            year = cdyt[0].year
             cyf = [pfp_utils.get_yearfractionfromdatetime(dt) - int(year) for dt in cdyt]
             plt.plot(cyf, cdyv["NEE"+item]["Data"], color=color_list[numpy.mod(n,8)],
                      label=str(year))
@@ -644,9 +666,10 @@ def L6_summary_plotcumulative(cumulative_dict, l6_info):
 
         plt.subplot(222)
         plt.title("GPP: "+item.replace("_",""),fontsize=12)
-        for n,year in enumerate(year_list):
-            cdyv = cumulative_dict[year]["variables"]
+        for n, cumulative_year in enumerate(cumulative_years):
+            cdyv = getattr(ds_summary, cumulative_year)["Variables"]
             cdyt = cdyv["DateTime"]["Data"]
+            year = cdyt[0].year
             cyf = [pfp_utils.get_yearfractionfromdatetime(dt) - int(year) for dt in cdyt]
             plt.plot(cyf, cdyv["GPP"+item]["Data"],color=color_list[numpy.mod(n,8)],
                      label=str(year))
@@ -658,9 +681,10 @@ def L6_summary_plotcumulative(cumulative_dict, l6_info):
 
         plt.subplot(223)
         plt.title("ER: "+item.replace("_",""),fontsize=12)
-        for n,year in enumerate(year_list):
-            cdyv = cumulative_dict[year]["variables"]
+        for n, cumulative_year in enumerate(cumulative_years):
+            cdyv = getattr(ds_summary, cumulative_year)["Variables"]
             cdyt = cdyv["DateTime"]["Data"]
+            year = cdyt[0].year
             cyf = [pfp_utils.get_yearfractionfromdatetime(dt) - int(year) for dt in cdyt]
             plt.plot(cyf, cdyv["ER"+item]["Data"],color=color_list[numpy.mod(n,8)],
                      label=str(year))
@@ -672,9 +696,10 @@ def L6_summary_plotcumulative(cumulative_dict, l6_info):
 
         plt.subplot(224)
         plt.title("ET & Precip",fontsize=12)
-        for n,year in enumerate(year_list):
-            cdyv = cumulative_dict[year]["variables"]
+        for n, cumulative_year in enumerate(cumulative_years):
+            cdyv = getattr(ds_summary, cumulative_year)["Variables"]
             cdyt = cdyv["DateTime"]["Data"]
+            year = cdyt[0].year
             cyf = [pfp_utils.get_yearfractionfromdatetime(dt) - int(year) for dt in cdyt]
             plt.plot(cyf, cdyv["ET"]["Data"],color=color_list[numpy.mod(n,8)],
                      label=str(year))
@@ -687,13 +712,12 @@ def L6_summary_plotcumulative(cumulative_dict, l6_info):
         plt.legend(loc='upper left',prop={'size':8})
         plt.tight_layout(rect=[0, 0, 1, 0.98])
         # save a hard copy of the plot
-        sdt = year_list[0]
-        edt = year_list[-1]
         plot_path = pfp_utils.get_keyvaluefromcf(l6_info, ["Files"], "plot_path", default="plots/")
         plot_path = os.path.join(plot_path, "L6", "")
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
-        figure_name = site_name.replace(" ", "")+"_Cumulative"+item+"_"+sdt+"_"+edt+'.png'
+        figure_name = site_name.replace(" ", "")
+        figure_name += "_Cumulative_" + item + "_" + str(start_year) + "_" + str(end_year) + ".png"
         figure_path = os.path.join(plot_path, figure_name)
         fig.savefig(figure_path, format='png')
         if l6_info["Options"]["call_mode"].lower() == "interactive":
@@ -812,15 +836,18 @@ def L6_summary_daily(ds, series_dict):
     f0 = numpy.zeros(nDays, dtype=numpy.int32)
     ldt_daily = [ldt[0]+datetime.timedelta(days=i) for i in range(0,nDays)]
     # create a dictionary to hold the daily statistics
-    daily_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]),
-                  "variables":{}}
-    ddg = daily_dict["globalattributes"]
-    ddv = daily_dict["variables"]
+    ds_daily = pfp_io.DataStructure()
+    setattr(ds_daily, "Daily", {"Attributes": {}, "Variables": {}})
+    ds_daily.root["Attributes"] = copy.deepcopy(ds.root["Attributes"])
+    #daily_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]),
+                  #"variables":{}}
+    dda = ds_daily.Daily["Attributes"]
+    ddv = ds_daily.Daily["Variables"]
     # create the datetime variable
     ddv["DateTime"] = {"Data": ldt_daily, "Flag": f0,
-                       "Attr":{"units": "Days", "format": "dd/mm/yyyy", "time_step": "daily"}}
-    ddg["nc_nrecs"] = len(ldt_daily)
-    ddg["time_step"] = "daily"
+                       "Attr":{"units": "Days", "format": "yyyy-mm-dd", "time_step": "daily"}}
+    dda["nc_nrecs"] = len(ldt_daily)
+    dda["time_step"] = "daily"
     series_list = list(series_dict["daily"].keys())
     series_list.sort()
     for item in series_list:
@@ -861,88 +888,21 @@ def L6_summary_daily(ds, series_dict):
         flag_2d = variable["Flag"].reshape(nDays, ntsInDay)
         for i in range(nDays):
             ddv[item]["Flag"][i] = 1-float(numpy.count_nonzero(flag_2d[i,:]))/float(ntsInDay)
-    return daily_dict
+    return ds_daily
 
-def L6_summary_co2andh2o_fluxes(ds, series_dict, daily_dict):
-    """
-    Purpose:
-    Usage:
-    Author: PRI
-    Date: March 2016
-    """
-    logger.info(" Doing the daily summary (fluxes) at L6")
-    sdl = series_dict["lists"]
-    series_list = sdl["h2o"]+sdl["co2"]
-    fluxes_dict = {"globalattributes":copy.deepcopy(daily_dict["globalattributes"]),
-                   "variables":{}}
-    # create the datetime variable
-    fluxes_dict["variables"]["DateTime"] = daily_dict["variables"]["DateTime"]
-    for item in series_list:
-        fluxes_dict["variables"][item] = {}
-        fluxes_dict["variables"][item]["Data"] = daily_dict["variables"][item]["Data"]
-        fluxes_dict["variables"][item]["Attr"] = daily_dict["variables"][item]["Attr"]
-        fluxes_dict["variables"][item+"_Flag"] = {}
-        fluxes_dict["variables"][item+"_Flag"]["Data"] = daily_dict["variables"][item]["Flag"]
-        fluxes_dict["variables"][item+"_Flag"]["Attr"] = {"units":"1","format":"0.00"}
-    return fluxes_dict
-
-def L6_summary_write_ncfile(nc_obj, data_dict):
-    """
-    Purpose:
-     Write the L6 summary statistics (daily, monthly, annual and cumulative)
-     to a single netCDF file with different groups for each time period.
-    Usage:
-    Author: PRI
-    Date: January 2018
-    """
-    # write the data to the group
-    dt = data_dict["variables"]["DateTime"]["Data"]
-    nrecs = len(dt)
-    # set the group attributes
-    setattr(nc_obj, "time_step", data_dict["globalattributes"]["time_step"])
-    setattr(nc_obj, "nc_nrecs", data_dict["globalattributes"]["nc_nrecs"])
-    # and give it dimensions of time, latitude and longitude
-    nc_obj.createDimension("time", nrecs)
-    nc_obj.createDimension("latitude", 1)
-    nc_obj.createDimension("longitude", 1)
-    dims = ("time", "latitude", "longitude")
-    # write the time variable to the netCDF object
-    nc_time_units = "days since 1800-01-01 00:00:00.0"
-    nc_time = pfp_utils.get_nctime_from_datetime_data(dt, nc_time_units=nc_time_units)
-    nc_var = nc_obj.createVariable("time", "d", ("time",))
-    nc_var[:] = nc_time
-    nc_var.setncattr("long_name", "time")
-    nc_var.setncattr("standard_name", "time")
-    nc_var.setncattr("units", nc_time_units)
-    # write the latitude and longitude variables to the group
-    nc_var = nc_obj.createVariable("latitude", "d", ("latitude",))
-    nc_var[:] = float(data_dict["globalattributes"]["latitude"])
-    nc_var.setncattr('long_name', 'latitude')
-    nc_var.setncattr('standard_name', 'latitude')
-    nc_var.setncattr('units', 'degrees north')
-    nc_var = nc_obj.createVariable("longitude", "d", ("longitude",))
-    nc_var[:] = float(data_dict["globalattributes"]["longitude"])
-    nc_var.setncattr('long_name', 'longitude')
-    nc_var.setncattr('standard_name', 'longitude')
-    nc_var.setncattr('units', 'degrees east')
-    # get a list of variables to write to the netCDF file
-    labels = sorted([label for label in list(data_dict["variables"].keys()) if label != "DateTime"])
-    # write the variables to the netCDF file object
-    for label in labels:
-        nc_var = nc_obj.createVariable(label, "d", dims)
-        nc_var[:, 0, 0] = data_dict["variables"][label]["Data"].tolist()
-        for attr_key in data_dict["variables"][label]["Attr"]:
-            if attr_key not in ["format"]:
-                attr_value = data_dict["variables"][label]["Attr"][attr_key]
-                nc_var.setncattr(attr_key, attr_value)
-    return
-
-def L6_summary_write_xlfile(xl_file,sheet_name,data_dict):
+def L6_summary_write_xlfile(xl_file, sheet_name, ds, group=None, labels=None):
     # add the daily worksheet to the summary Excel file
     xl_sheet = xl_file.add_sheet(sheet_name)
-    pfp_io.xl_write_data(xl_sheet,data_dict["variables"])
+    if group is None:
+        group = "root"
+    if group not in list(vars(ds)):
+        msg = "Attribute " + group + " not in data structure"
+        raise RuntimeError(msg)
+    dsg = getattr(ds, group)
+    pfp_io.xl_write_data(xl_sheet, dsg, labels=labels)
+    return
 
-def L6_summary_monthly(ds,series_dict):
+def L6_summary_monthly(ds, series_dict):
     """
     Purpose:
      Calculate the monthly averages or sums of various quantities and write
@@ -959,14 +919,17 @@ def L6_summary_monthly(ds,series_dict):
     ts = int(float(ds.root["Attributes"]["time_step"]))
     si = pfp_utils.GetDateIndex(dt, str(dt[0]), ts=ts, default=0, match="startnextmonth")
     ldt = dt[si:]
-    monthly_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]),
-                    "variables": {}}
-    mdg = monthly_dict["globalattributes"]
-    mdv = monthly_dict["variables"]
-    mdg["time_step"] = "monthly"
+    ds_monthly = pfp_io.DataStructure()
+    setattr(ds_monthly, "Monthly", {"Attributes": {}, "Variables": {}})
+    ds_monthly.root["Attributes"] = copy.deepcopy(ds.root["Attributes"])
+    #monthly_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]),
+                    #"variables": {}}
+    mda = ds_monthly.Monthly["Attributes"]
+    mdv = ds_monthly.Monthly["Variables"]
+    mda["time_step"] = "monthly"
     mdv["DateTime"] = {"Data":numpy.ma.array([]),
                        "Flag":numpy.array([]),
-                       "Attr":{"units":"Months", "format":"dd/mm/yyyy", "time_step":"Monthly"}}
+                       "Attr":{"units":"Months", "format":"yyyy-mm-dd", "time_step":"Monthly"}}
     # create arrays in monthly_dict
     series_list = list(series_dict["monthly"].keys())
     series_list.sort()
@@ -1017,8 +980,8 @@ def L6_summary_monthly(ds,series_dict):
         start_date = end_date+dateutil.relativedelta.relativedelta(minutes=ts)
         end_date = start_date+dateutil.relativedelta.relativedelta(months=1)
         end_date = end_date-dateutil.relativedelta.relativedelta(minutes=ts)
-    mdg["nc_nrecs"] = len(mdv["DateTime"]["Data"])
-    return monthly_dict
+    mda["nc_nrecs"] = len(mdv["DateTime"]["Data"])
+    return ds_monthly
 
 def L6_summary_annual(ds, series_dict):
     """
@@ -1043,14 +1006,18 @@ def L6_summary_annual(ds, series_dict):
     end_year = ldt[-1].year
     year_list = list(range(start_year, end_year+1, 1))
     nYears = len(year_list)
-    annual_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]), "variables": {}}
-    adg = annual_dict["globalattributes"]
-    adv = annual_dict["variables"]
-    adg["time_step"] = "annual"
+    # create a dictionary to hold the annual statistics
+    ds_annual = pfp_io.DataStructure()
+    setattr(ds_annual, "Annual", {"Attributes": {}, "Variables": {}})
+    ds_annual.root["Attributes"] = copy.deepcopy(ds.root["Attributes"])
+    #annual_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]), "variables": {}}
+    ada = ds_annual.Annual["Attributes"]
+    adv = ds_annual.Annual["Variables"]
+    ada["time_step"] = "annual"
     # copy the global attributes
     adv["DateTime"] = {"Data": [datetime.datetime(yr, 1, 1) for yr in year_list],
                        "Flag": numpy.zeros(nYears, dtype=numpy.int32),
-                       "Attr": {"units": "Years", "format": "dd/mm/yyyy", "time_step": "Annual"}}
+                       "Attr": {"units": "Years", "format": "yyyy-mm-dd", "time_step": "Annual"}}
     adv["nDays"] = {"Data": numpy.full(nYears, c.missing_value, dtype=numpy.float64),
                     "Flag": numpy.zeros(nYears, dtype=numpy.int32),
                     "Attr": {"units": "Number of days","format": "0"}}
@@ -1099,10 +1066,10 @@ def L6_summary_annual(ds, series_dict):
             for attr in vattr_list:
                 if attr in variable["Attr"]:
                     adv[item]["Attr"][attr] = variable["Attr"][attr]
-    adg["nc_nrecs"] = len(adv["DateTime"]["Data"])
-    return annual_dict
+    ada["nc_nrecs"] = len(adv["DateTime"]["Data"])
+    return ds_annual
 
-def L6_summary_cumulative(ds, series_dict):
+def L6_summary_cumulative(ds, series_dict, year="all"):
     """
     Purpose:
      Calculate the cumulative sums of various quantities and write
@@ -1115,78 +1082,60 @@ def L6_summary_cumulative(ds, series_dict):
     Author: PRI
     Date: June 2015
     """
-    logger.info(" Doing the cumulative summaries at L6")
+    if year != "all":
+        msg = " Doing the cumulative summary for " + str(year)
+    else:
+        msg = " Doing the cumulative summary for all years"
+    logger.info(msg)
     # get the datetime series and the time step
     dt = pfp_utils.GetVariable(ds, "DateTime")
     ts = int(float(ds.root["Attributes"]["time_step"]))
+    ts_delta = datetime.timedelta(minutes=ts)
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
-    # subtract 1 time step from the datetime to avoid orphan years
-    cdt = dt["Data"] - datetime.timedelta(minutes=ts)
-    years = sorted(list(set([ldt.year for ldt in cdt])))
     series_list = list(series_dict["cumulative"].keys())
-    cumulative_dict = {}
-    for year in years:
-        cumulative_dict[str(year)] = cdyr = {"globalattributes":{}, "variables":{}}
-        # copy the global attributes
-        cdyr["globalattributes"] = copy.deepcopy(ds.root["Attributes"])
-        start_date = datetime.datetime(year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
-        end_date = datetime.datetime(year+1, 1, 1, 0, 0, 0)
-        si = pfp_utils.GetDateIndex(dt["Data"], start_date, ts=ts, default=0)
-        ei = pfp_utils.GetDateIndex(dt["Data"], end_date, ts=ts, default=nrecs-1)
-        ldt = dt["Data"][si:ei+1]
-        cdyr["globalattributes"]["nc_nrecs"] = len(ldt)
-        f0 = numpy.zeros(len(ldt), dtype=numpy.int32)
-        cdyr["variables"]["DateTime"] = {"Data":ldt, "Flag":f0,
-                                         "Attr":{"units":"Year", "format":"dd/mm/yyyy HH:MM",
-                                                 "time_step":str(ts)}}
-        for item in series_list:
-            cdyr["variables"][item] = {"Data":[], "Attr":{}}
-            variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
-            if item in series_dict["lists"]["co2"]:
-                variable = pfp_utils.convert_units_func(ds, variable, "gC/m^2")
-                cdyr["variables"][item]["Attr"]["units"] = "gC/m^2"
-            elif item in series_dict["lists"]["ET"]:
-                variable = pfp_utils.convert_units_func(ds, variable, "kg/m^2")
-                cdyr["variables"][item]["Attr"]["units"] = "kg/m^2"
-            else:
-                cdyr["variables"][item]["Attr"]["units"] = variable["Attr"]["units"]
-            cdyr["variables"][item]["Data"] = numpy.ma.cumsum(variable["Data"])
-            cdyr["variables"][item]["Attr"]["format"] = series_dict["cumulative"][item]["format"]
-            cdyr["variables"][item]["Attr"]["units"] = cdyr["variables"][item]["Attr"]["units"]+"/year"
-            # copy some of the variable attributes
-            default_list = ["long_name", "height", "instrument"]
-            descr_list = [d for d in list(variable["Attr"].keys()) if "description" in d]
-            vattr_list = default_list + descr_list
-            for attr in vattr_list:
-                if attr in variable["Attr"]:
-                    cdyr["variables"][item]["Attr"][attr] = variable["Attr"][attr]
-    # cumulative total over all data
-    cdyr = cumulative_dict["all"] = {"globalattributes":{}, "variables":{}}
-    cdyr["globalattributes"] = copy.deepcopy(ds.root["Attributes"])
-    cdyr["variables"]["DateTime"] = {"Data":dt["Data"], "Flag":dt["Flag"], "Attr":dt["Attr"]}
-    cdyr["variables"]["DateTime"]["Attr"]["format"] = "dd/mm/yyyy HH:MM"
+
+    dsc = pfp_io.DataStructure()
+    setattr(dsc, "Cumulative", {"Attributes": copy.deepcopy(ds.root["Attributes"]), "Variables": {}})
+
+    cda = dsc.Cumulative["Attributes"]
+    cdv = dsc.Cumulative["Variables"]
+
+    if year != "all":
+        start_date = datetime.datetime(int(year), 1, 1, 0, 0, 0) + ts_delta
+        end_date = datetime.datetime(int(year)+1, 1, 1, 0, 0, 0)
+    else:
+        start_date = dt["Data"][0]
+        end_date = dt["Data"][-1]
+    si = pfp_utils.GetDateIndex(dt["Data"], start_date, ts=ts, default=0)
+    ei = pfp_utils.GetDateIndex(dt["Data"], end_date, ts=ts, default=nrecs-1)
+    ldt = dt["Data"][si:ei+1]
+    cda["nc_nrecs"] = len(ldt)
+    f0 = numpy.zeros(len(ldt), dtype=numpy.int32)
+    cdv["DateTime"] = {"Data":ldt, "Flag":f0,
+                       "Attr":{"units":"Year", "format":"yyyy-mm-dd HH:MM",
+                               "time_step":str(ts)}}
     for item in series_list:
-        cdyr["variables"][item] = {"Data":[],"Attr":{}}
-        variable = pfp_utils.GetVariable(ds, item)
+        cdv[item] = {"Data":[], "Flag": [], "Attr":{}}
+        variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
         if item in series_dict["lists"]["co2"]:
             variable = pfp_utils.convert_units_func(ds, variable, "gC/m^2")
-            cdyr["variables"][item]["Attr"]["units"] = "gC/m^2"
+            cdv[item]["Attr"]["units"] = "gC/m^2"
         elif item in series_dict["lists"]["ET"]:
             variable = pfp_utils.convert_units_func(ds, variable, "kg/m^2")
-            cdyr["variables"][item]["Attr"]["units"] = "kg/m^2"
+            cdv[item]["Attr"]["units"] = "kg/m^2"
         else:
-            cdyr["variables"][item]["Attr"]["units"] = variable["Attr"]["units"]
-        cdyr["variables"][item]["Data"] = numpy.ma.cumsum(variable["Data"])
-        cdyr["variables"][item]["Attr"]["format"] = series_dict["cumulative"][item]["format"]
+            cdv[item]["Attr"]["units"] = variable["Attr"]["units"]
+        cdv[item]["Data"] = numpy.ma.cumsum(variable["Data"])
+        cdv[item]["Attr"]["format"] = series_dict["cumulative"][item]["format"]
+        cdv[item]["Attr"]["units"] = cdv[item]["Attr"]["units"]+"/year"
         # copy some of the variable attributes
         default_list = ["long_name", "height", "instrument"]
         descr_list = [d for d in list(variable["Attr"].keys()) if "description" in d]
         vattr_list = default_list + descr_list
         for attr in vattr_list:
             if attr in variable["Attr"]:
-                cdyr["variables"][item]["Attr"][attr] = variable["Attr"][attr]
-    cdyr["globalattributes"]["nc_nrecs"] = len(cdyr["variables"]["DateTime"]["Data"])
-    return cumulative_dict
+                cdv[item]["Attr"][attr] = variable["Attr"][attr]
+    return dsc
 
 def ParseL6ControlFile(cf, ds):
     """

@@ -13,6 +13,7 @@ from scripts import pfp_func_units
 from scripts import pfp_func_stats
 from scripts import pfp_gfALT
 from scripts import pfp_gfSOLO
+from scripts import pfp_io
 from scripts import pfp_plot
 from scripts import pfp_utils
 
@@ -348,7 +349,7 @@ class file_explore(QtWidgets.QWidget):
             section = model.item(i)
             key1 = str(section.text())
             if key1 in ["Global attributes"]:
-                # sections with only 1 level
+                # global attributes
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
@@ -362,9 +363,31 @@ class file_explore(QtWidgets.QWidget):
                         val2 = str(variable_section.child(k, 1).text())
                         self.ds.root["Variables"][label]["Attr"][key2] = val2
             else:
-                msg = " Unrecognised object (" + key1 + ") in netCDF file"
-                msg += ", skipping ..."
-                logger.warning(msg)
+                # this is a netCDF file with groups
+                group_attributes = {}
+                variables = {}
+                for j in range(section.rowCount()):
+                    if section.child(j).text() in ["Group attributes"]:
+                        for k in range(section.child(j).rowCount()):
+                            key = str(section.child(j).child(k, 0).text())
+                            value = str(section.child(j).child(k, 1).text())
+                            group_attributes[key] = value
+                    else:
+                        label = section.child(j).text()
+                        group = getattr(self.ds, key1)
+                        variables[label] = {"Data": group["Variables"][label]["Data"],
+                                            "Flag": group["Variables"][label]["Flag"],
+                                            "Attr": group["Variables"][label]["Attr"]}
+                        for k in range(section.child(j).rowCount()):
+                            key = str(section.child(j).child(k, 0).text())
+                            value = str(section.child(j).child(k, 1).text())
+                            variables[label]["Attr"][key] = value
+                # create the group as an attribute in the data structure
+                setattr(self.ds, key1, {"Attributes": group_attributes,
+                                        "Variables": variables})
+                #msg = " Unrecognised object (" + key1 + ") in netCDF file"
+                #msg += ", skipping ..."
+                #logger.warning(msg)
         return self.ds
 
     def get_model_from_data(self):

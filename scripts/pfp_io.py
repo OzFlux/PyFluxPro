@@ -2621,7 +2621,22 @@ def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3):
     logger.info(msg)
     try:
         nc_file = netCDF4.Dataset(nc_file_path, "w", format=nc_type)
-        nc_write_series(nc_file, ds, outputlist=None, ndims=3)
+        groups = list(vars(ds))
+        if "info" in groups:
+            groups.remove("info")
+        if len(groups) == 1:
+            # write the global attributes to the netCDF file
+            nc_write_globalattributes(nc_file, ds)
+            nc_write_series(nc_file, ds, outputlist=None, ndims=3)
+        elif len(groups) > 1:
+            # write the global attributes to the netCDF file
+            nc_write_globalattributes(nc_file, ds)
+            for group in groups:
+                dsg = getattr(ds, group)
+                if len(dsg["Variables"]) == 0:
+                    continue
+                nc_group = nc_file.createGroup(group)
+                nc_write_group(nc_group, ds, group)
         nc_file.close()
     except Exception:
         msg = " Unable to write netCDF file " + file_name[1]
@@ -2683,10 +2698,11 @@ def nc_write_globalattributes(nc_file, ds, flag_defs=True):
         msg += ", got " + type(ds)
         logger.error(msg)
         raise RuntimeError(msg)
-    ldt = lds["variables"]["DateTime"]["Data"]
     lds["globalattributes"]["pyfluxpro_version"] = str(cfg.version_name)+' '+str(cfg.version_number)
-    lds["globalattributes"]["time_coverage_start"] = str(ldt[0])
-    lds["globalattributes"]["time_coverage_end"] = str(ldt[-1])
+    if "DateTime" in lds["variables"]:
+        ldt = lds["variables"]["DateTime"]["Data"]
+        lds["globalattributes"]["time_coverage_start"] = str(ldt[0])
+        lds["globalattributes"]["time_coverage_end"] = str(ldt[-1])
     t = time.localtime()
     lds["globalattributes"]["date_created"] = str(datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]))
     gattrs = sorted(list(lds["globalattributes"].keys()))
@@ -2712,6 +2728,72 @@ def nc_write_globalattributes(nc_file, ds, flag_defs=True):
             setattr(nc_file, item, attr)
     return
 
+def nc_write_group(nc_obj, ds, group):
+    """
+    Purpose:
+     Write the L6 summary statistics (daily, monthly, annual and cumulative)
+     to a single netCDF file with different groups for each time period.
+    Usage:
+    Author: PRI
+    Date: January 2018
+    """
+    dsr = getattr(ds, "root")
+    dsg = getattr(ds, group)
+    # sanity check
+    if "Attributes" not in list(dsg.keys()):
+        msg = " Data structure group " + group + " has no 'Attributes'"
+        logger.error(msg)
+        raise RuntimeError(msg)
+    if "Variables" not in list(dsg.keys()):
+        msg = " Data structure group " + group + " has no 'Variables'"
+        logger.error(msg)
+        raise RuntimeError(msg)
+    # write the group attributes
+    gattrs = sorted(list(dsg["Attributes"].keys()))
+    for gattr in gattrs:
+        setattr(nc_obj, gattr, dsg["Attributes"][gattr])
+    # write the group variables
+    gvars = sorted(list(dsg["Variables"].keys()))
+    if len(gvars) == 0:
+        return
+    dt = dsg["Variables"]["DateTime"]["Data"]
+    nrecs = len(dt)
+    # and give it dimensions of time, latitude and longitude
+    nc_obj.createDimension("time", nrecs)
+    nc_obj.createDimension("latitude", 1)
+    nc_obj.createDimension("longitude", 1)
+    dims = ("time", "latitude", "longitude")
+    # write the time variable to the netCDF object
+    nc_time_units = "days since 1800-01-01 00:00:00.0"
+    nc_time = pfp_utils.get_nctime_from_datetime_data(dt, nc_time_units=nc_time_units)
+    nc_var = nc_obj.createVariable("time", "d", ("time",))
+    nc_var[:] = nc_time
+    nc_var.setncattr("long_name", "time")
+    nc_var.setncattr("standard_name", "time")
+    nc_var.setncattr("units", nc_time_units)
+    # write the latitude and longitude variables to the group
+    nc_var = nc_obj.createVariable("latitude", "d", ("latitude",))
+    nc_var[:] = float(dsr["Attributes"]["latitude"])
+    nc_var.setncattr('long_name', 'latitude')
+    nc_var.setncattr('standard_name', 'latitude')
+    nc_var.setncattr('units', 'degrees north')
+    nc_var = nc_obj.createVariable("longitude", "d", ("longitude",))
+    nc_var[:] = float(dsr["Attributes"]["longitude"])
+    nc_var.setncattr('long_name', 'longitude')
+    nc_var.setncattr('standard_name', 'longitude')
+    nc_var.setncattr('units', 'degrees east')
+    # get a list of variables to write to the netCDF file
+    labels = sorted([l for l in list(dsg["Variables"].keys()) if l not in ["DateTime", "time"]])
+    # write the variables to the netCDF file object
+    for label in labels:
+        nc_var = nc_obj.createVariable(label, "d", dims)
+        nc_var[:, 0, 0] = dsg["Variables"][label]["Data"].tolist()
+        for attr_key in dsg["Variables"][label]["Attr"]:
+            if attr_key not in ["format"]:
+                attr_value = dsg["Variables"][label]["Attr"][attr_key]
+                nc_var.setncattr(attr_key, attr_value)
+    return
+
 def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
     """
     Purpose:
@@ -2724,8 +2806,6 @@ def nc_write_series(ncFile, ds, outputlist=None, ndims=3):
     Author: PRI
     Date: Back in the day
     """
-    # write the global attributes to the netCDF file
-    nc_write_globalattributes(ncFile, ds)
     # we specify the size of the Time dimension because netCDF4 is slow to write files
     # when the Time dimension is unlimited
     nRecs = int(ds.root["Attributes"]['nc_nrecs'])
@@ -3032,7 +3112,7 @@ def xl_write_ISD_timesteps(xl_file_path, data):
 
     return
 
-def xl_write_data(xl_sheet, data, xlCol=0):
+def xl_write_data(xl_sheet, dsg, labels=None, xlCol=0):
     """
     Purpose:
      Writes a dictionary to a worksheet in an Excel workbook.
@@ -3061,25 +3141,27 @@ def xl_write_data(xl_sheet, data, xlCol=0):
     """
     #xlCol = 0
     # write the data to the xl file
-    series_list = list(data.keys())
-    xl_sheet.write(1,xlCol,data["DateTime"]["Attr"]["units"])
-    nrows = len(data["DateTime"]["Data"])
-    d_xf = xlwt.easyxf(num_format_str=data["DateTime"]["Attr"]["format"])
+    if labels is None:
+        labels = list(dsg["Variables"].keys())
+    xl_sheet.write(1, xlCol, dsg["Variables"]["DateTime"]["Attr"]["units"])
+    nrows = len(dsg["Variables"]["DateTime"]["Data"])
+    d_xf = xlwt.easyxf(num_format_str=dsg["Variables"]["DateTime"]["Attr"]["format"])
     for j in range(nrows):
-        xl_sheet.write(j+2,xlCol,data["DateTime"]["Data"][j],d_xf)
-    series_list.remove("DateTime")
-    series_list.sort()
-    for item in series_list:
+        xl_sheet.write(j+2, xlCol, dsg["Variables"]["DateTime"]["Data"][j], d_xf)
+    if "DateTime" in labels:
+        labels.remove("DateTime")
+    labels.sort()
+    for item in labels:
         xlCol = xlCol + 1
-        xl_sheet.write(0,xlCol,data[item]["Attr"]["units"])
-        xl_sheet.write(1,xlCol,item)
-        d_xf = xlwt.easyxf(num_format_str=data[item]["Attr"]["format"])
-        if numpy.ma.isMA(data[item]["Data"]):
-            tmp = numpy.ma.filled(data[item]["Data"],fill_value=numpy.NaN)
+        xl_sheet.write(0, xlCol, dsg["Variables"][item]["Attr"]["units"])
+        xl_sheet.write(1, xlCol, item)
+        d_xf = xlwt.easyxf(num_format_str=dsg["Variables"][item]["Attr"]["format"])
+        if numpy.ma.isMA(dsg["Variables"][item]["Data"]):
+            tmp = numpy.ma.filled(dsg["Variables"][item]["Data"],fill_value=numpy.NaN)
         else:
-            tmp = data[item]["Data"]
+            tmp = dsg["Variables"][item]["Data"]
         for j in range(nrows):
-            xl_sheet.write(j+2,xlCol,tmp[j],d_xf)
+            xl_sheet.write(j+2, xlCol, tmp[j], d_xf)
     return
 
 def xl_write_series(ds, xlfullname, outputlist=None):

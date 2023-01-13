@@ -1,5 +1,8 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.9"
+version_number = "V3.4.10"
+# V3.4.10 - January 2023
+#         - extended the ability to edit netCDF attribute values to L6 summary
+#           files containing groups
 # V3.4.9 - December 2022
 #        - implement XY plot on zoom of grouped time series plot with 2 variables
 #        - implement ability to read EddyPro stats files
