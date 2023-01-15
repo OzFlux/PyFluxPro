@@ -1677,6 +1677,8 @@ def NetCDFConcatenate(info):
     pfp_utils.get_coverage_groups(ds_out)
     # remove intermediate series
     pfp_ts.RemoveIntermediateSeries(ds_out, info)
+    # keep only a subset of variables
+    netcdf_concatenate_keep_subset(ds_out, info)
     # rename if output file is the same as one of the input files
     netcdf_concatenate_rename_output(data, inc["out_file_name"])
     logger.info(" Writing data to " + os.path.split(inc["out_file_name"])[1])
@@ -1871,6 +1873,28 @@ def netcdf_concatenate_create_ds_out(data, info):
     # update the global attributes
     ds_out.root["Attributes"]["nc_nrecs"] = nrecs
     return ds_out
+
+def netcdf_concatenate_keep_subset(ds_out, info):
+    """
+    Purpose:
+     Delete variables from the data structure except for those specified in the
+     SeriesToKeep option.
+    Usage:
+    Author: PRI
+    Date: January 2023
+    """
+    inc = info["NetCDFConcatenate"]
+    if "SeriesToKeep" not in inc:
+        return
+    msg = " Removing variables not listed in SeriesToKeep"
+    logger.info(msg)
+    inc_labels = inc["SeriesToKeep"]
+    inc_labels.append("DateTime")
+    labels = list(ds_out.root["Variables"].keys())
+    exc_labels = [l for l in labels if l not in inc_labels]
+    for label in exc_labels:
+        pfp_utils.DeleteVariable(ds_out, label)
+    return
 
 def netcdf_concatenate_variable_attributes(ds_out, attr_out, info):
     """
