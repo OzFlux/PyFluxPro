@@ -1,5 +1,9 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.10"
+version_number = "V3.4.11"
+# V3.4.11 - January 2023
+#         - add 'SeriesToKeep' to [Options] at concatenate
+#           - allows user to specify the variable that will be written to the
+#             concatenated file
 # V3.4.10 - January 2023
 #         - extended the ability to edit netCDF attribute values to L6 summary
 #           files containing groups
