@@ -351,7 +351,7 @@ def csv_read_series(cf):
     s = os.stat(info["csv_filename"])
     t = time.localtime(s.st_mtime)
     ds.root["Attributes"]['csv_moddatetime'] = str(datetime.datetime(t[0],t[1],t[2],t[3],t[4],t[5]))
-    ds.returncodes = {"value":0,"message":"OK"}
+    ds.info["returncodes"] = {"value":0,"message":"OK"}
     return ds
 
 def DataFrameToDataStructure(df, l1_info):

@@ -241,7 +241,7 @@ def gfalternate_done(alt_gui):
     alt_gui.close()
     # write Excel spreadsheet with fit statistics
     pfp_io.xl_write_AlternateStats(alt_gui.ds4, alt_gui.l4_info)
-    # put the return code into ds.returncodes
+    # put the return code into ds.info["returncodes"]
     alt_gui.ds4.info["returncodes"]["message"] = "normal"
 
 def gfalternate_getalternatevaratmaxr(ds_tower, ds_alternate, l4a, mode="verbose"):
@@ -1060,7 +1060,7 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
 
 def gfalternate_quit(alt_gui):
     """ Quit the GapFillFromAlternate GUI."""
-    # put the return code into ds.returncodes
+    # put the return code into ds.info["returncodes"]
     alt_gui.ds4.info["returncodes"]["message"] = "quit"
     alt_gui.ds4.info["returncodes"]["value"] = 1
     # destroy the alternate GUI
