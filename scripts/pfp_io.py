@@ -637,8 +637,23 @@ def ReadExcelWorkbook(l1_info):
     first_data_row = int(l1ire["Files"]["in_firstdatarow"]) - 1
     skiprows = list(range(header_row_number+1, first_data_row))
     na_values = ["NAN"]
+    # check that the requested sheets are available in the Excel file
+    # open the Excel file
+    xl_file = pandas.ExcelFile(file_name)
+    # get the available sheets
+    xl_sheets_available = xl_file.sheet_names
+    # remove requested sheets that are not in the Excel file
+    for xl_sheet in list(xl_sheets_requested):
+        if xl_sheet not in xl_sheets_available:
+            msg = " Sheet " + xl_sheet + " not in " + basename + ", skipping ..."
+            logger.warning(msg)
+            xl_sheets_requested.remove(xl_sheet)
+    if len(xl_sheets_requested) == 0:
+        msg = " No requested sheets found in " + basename
+        logger.error(msg)
+        raise RuntimeError(msg)
     # read the Excel file
-    dfs = pandas.read_excel(file_name, sheet_name=xl_sheets_requested,
+    dfs = pandas.read_excel(xl_file, sheet_name=xl_sheets_requested,
                             engine=engine, header=header_row_number,
                             skiprows=skiprows,
                             na_values=na_values)
@@ -704,7 +719,7 @@ def ReadExcelWorkbook(l1_info):
         # coerce all columns with dtype "object" to "float64"
         cols = dfs[df_name].columns[dfs[df_name].dtypes.eq(object)]
         dfs[df_name][cols] = dfs[df_name][cols].apply(pandas.to_numeric, errors='coerce')
-    # rename the pandas dataframe columns from the Excel variable names to the netCDF
+    # rename the pandas dataframe columns from the Excel variable names to theobj netCDF
     # variable names
     # loop over the sheets in the Excel workbook
     for df_name in df_names:
