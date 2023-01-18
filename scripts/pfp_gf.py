@@ -41,14 +41,14 @@ def CheckL5Drivers(ds, l5_info):
     if len(drivers_with_missing) == 0:
         msg = "  No missing data found in drivers"
         logger.info(msg)
-        ds.returncodes = {"value": 0, "message": msg}
+        ds.info["returncodes"] = {"value": 0, "message": msg}
     else:
         dwm = ",".join(drivers_with_missing)
         msg = " Drivers " + dwm + " have missing data, aborting L5 ..."
         logger.error("!!!!!")
         logger.error(msg)
         logger.error("!!!!!")
-        ds.returncodes = {"value": 1, "message": msg}
+        ds.info["returncodes"] = {"value": 1, "message": msg}
     return
 
 def CheckGapLengths(cf, ds, l5_info):
@@ -165,14 +165,14 @@ def CheckL5Targets(ds, l5_info):
     if len(series_with_missing_data) == 0:
         msg = "  No missing data found in targets"
         logger.info(msg)
-        ds.returncodes = {"value": 0, "message": msg}
+        ds.info["returncodes"] = {"value": 0, "message": msg}
     else:
         s = ",".join(series_with_missing_data)
         msg = " Targets " + s + " contain missing data, aborting L5 ..."
         logger.error("!!!!!")
         logger.error(msg)
         logger.error("!!!!!")
-        ds.returncodes = {"value": 1, "message": msg}
+        ds.info["returncodes"] = {"value": 1, "message": msg}
     return
 
 def ParseL4ControlFile(cf, ds):
