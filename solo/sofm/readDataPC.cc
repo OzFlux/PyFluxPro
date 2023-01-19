@@ -120,8 +120,7 @@ void readDataPC::  getNumRowsNumCols
   for (i = 1; i < nda; i++)
     if (nvar!=(int)all_data[i].size())
       {
-      	string result = static_cast<ostringstream*>( &(ostringstream() << i) )->str();
-      	std::cout << "Wrong number of fields on line " << result << std::endl;
+      	std::cout << "Wrong number of fields on line " << i << std::endl;
       	exit(1);
       }
   	range   = M2D_alloc(2,  nvar);
