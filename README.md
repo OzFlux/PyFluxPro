@@ -54,8 +54,8 @@ Miniconda3 installs a minimal version of Python that does not include all of the
   * b) On Linux and Mac OSX, type "conda activate pfp_env" at the command prompt in the PyFluxPro directory.
 * 4. PyFluxPro should now be ready to use.
 
-## Building the executable files for Linux and Mac OSX
-This step is only required if you are using PyFuxPro on Linux or Mac OSX.  The executable files are downloaded when the PyFluxPro repository is cloned under the Windows operating system.  Building the executable files for use on Linux and Mac OSX requires the GNU Compiler Collection (C and C++) and the GNU make utility to be installed.  These are usually installed by default for common Linux distributions.  On MacOS, you may nee to install XCode, including the command line tools.
+## Building the executable files for Linux
+This step is only required if you are using PyFuxPro on Linux.  The executable files are downloaded when the PyFluxPro repository is cloned under the Windows and MacOS operating systems.  Building the executable files for use on Linux requires the GNU Compiler Collection (C and C++) and the GNU make utility to be installed.  These are usually installed by default for common Linux distributions.
 
 The build process is controlled by the "make_nix" shell script file in the PyFluxPro directory.  To run the script file:
 * 1. Use "cd" to navigate to the PyFluxPro directory.
