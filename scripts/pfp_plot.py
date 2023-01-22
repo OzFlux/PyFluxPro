@@ -1143,7 +1143,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
                 plt.setp(bar_ax.get_xticklabels(), visible=False)
             #if n > 0: plt.setp(bar_ax.get_xticklabels(), visible=False)
         else:
-            logger.error('  plttimeseries: series '+ThisOne+' not in data structure')
+            logger.warning("  Variable " + ThisOne + " not in data structure")
         # get the plot path and save a hard copy of the plot
         plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
         if not os.path.exists(plot_path):
