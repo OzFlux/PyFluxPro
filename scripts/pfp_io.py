@@ -639,7 +639,7 @@ def ReadExcelWorkbook(l1_info):
     na_values = ["NAN"]
     # check that the requested sheets are available in the Excel file
     # open the Excel file
-    xl_file = pandas.ExcelFile(file_name)
+    xl_file = pandas.ExcelFile(file_name, engine=engine)
     # get the available sheets
     xl_sheets_available = xl_file.sheet_names
     # remove requested sheets that are not in the Excel file
