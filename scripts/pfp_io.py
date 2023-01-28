@@ -17,6 +17,7 @@ import dateutil
 import netCDF4
 import numpy
 import pandas
+import xarray
 import xlwt
 import xlsxwriter
 from PyQt5 import QtWidgets
@@ -24,80 +25,12 @@ from PyQt5 import QtWidgets
 from scripts import cfg
 from scripts import constants as c
 from scripts import meteorologicalfunctions as pfp_mf
+from scripts import pfp_classes
 from scripts import pfp_log
 from scripts import pfp_ts
 from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
-
-class DataStructure(object):
-    """
-    This is the main data structure used throughout PyFluxPro.
-
-    A data structure is used to hold all of the data and metadata used by
-    PyFluxPro during data procssing.  It is basically a representation in
-    Python of a netCDF file.
-
-    Creating a data structure:
-     A data structure can be created directly using;
-      ds = pfp_io.Datastructure()
-
-    Attributes of a data structure:
-     ds.root["Attributes"] - a dictionary containing the global attributes read from
-                           or written to a netCDF file.
-     ds.root["Variables"] - a dictionary containing the variables read from or written to a
-                            netCDF file.
-
-    Variables in a data structure:
-     Each variable in the ds.root["Variables"] dictionary is another dictionary that
-     contains the data, the quality control flag and the attributes.
-     For example, the air temperature variable (Ta) is stored in the data
-     structure as follows;
-      ds.root["Variables"]["Ta"]["Data"] - a 1D numpy array containing the data values
-      ds.root["Variables"]["Ta"]["Flag"] - a 1D numpy array containing the quality
-                                control flag values
-      ds.root["Variables"]["Ta"]["Attr"] - a dictionary containing the variable attributes
-
-    Reading a data structure from file:
-     A data structure is returned when a netCDF file is read e.g.;
-      ds = pfp_io.NetCDFRead(file_name)
-      where file_name is the name of the netCDF file.
-
-    Writing a data structure to file:
-     A data structure can be written to a netCDF file using;
-      pfp_io.NetCDFWrite(file_name, ds)
-      where file_name is the name of the netCDF file to be created
-            ds is the data structure to be written to the file
-
-    Accessing variables in a data structure:
-     Variables in a data structure can be accessed using the GetVariable
-     helper function as follows;
-      Ta = pfp_utils.GetVariable(ds, "Ta")
-     where "Ta" is the label of the variable.
-           ds is the data structure containing the variable.
-           Ta is a dictionary containing the data, quality control flag
-              and attributes for the air temperature.
-
-    Useful functions:
-     pfp_utils.GetVariable(ds, label)
-     pfp_utils.CreateVariable(ds, variable)
-
-    Date: Way back in the day
-    Author: PRI
-    """
-    def __init__(self, groups=[], global_attributes={}):
-        assert isinstance(groups, list), "groups must be list"
-        assert isinstance(global_attributes, dict), "global_attributes must be dict"
-        self.info = {"returncodes": {"value": 0,"message": "OK"},
-                      "filepath": "", "groups": ["root"],
-                      "mergeserieslist": [],
-                      "averageserieslist": [],
-                      "intermediate": []}
-        self.root = {"Attributes": copy.deepcopy(global_attributes), "Variables": {}}
-        if len(groups) != 0:
-            for group in groups:
-                setattr(self, group, {"Attributes": {}, "Variables": {}})
-                self.info["groups"].append(group)
 
 def coerce_to_numeric(value):
     if isinstance(value, numbers.Number):
@@ -289,7 +222,7 @@ def csv_read_series(cf):
     Mods: February 2018 (PRI) - rewrite
     """
     # get a data structure
-    ds = DataStructure()
+    ds = pfp_classes.DataStructure()
     # add the global atributes
     for gattr in list(cf['Global'].keys()):
         ds.root["Attributes"][gattr] = cf['Global'][gattr]
@@ -364,7 +297,7 @@ def DataFrameToDataStructure(df, l1_info):
     logger.info(msg)
     l1ire = l1_info["read_excel"]
     # create a data structure
-    ds = DataStructure()
+    ds = pfp_classes.DataStructure()
     # add the global attributes to the data structure
     ds.root["Attributes"] = copy.deepcopy(l1ire["Global"])
     # get the number of records in the data frame
@@ -452,7 +385,7 @@ def PadDataStructure(ds_original, pad_to="whole_years"):
         msg += "(" + pad_to + ")"
         raise RuntimeError(msg)
     # create the padded data structure
-    ds_padded = DataStructure()
+    ds_padded = pfp_classes.DataStructure()
     # copy over the global attributes
     for gattr in list(ds_original.root["Attributes"].keys()):
         ds_padded.root["Attributes"][gattr] = ds_original.root["Attributes"][gattr]
@@ -757,7 +690,7 @@ def ReadInputFile(l1_info):
     return data
 
 def read_eddypro_full(csvname):
-    ds = DataStructure()
+    ds = pfp_classes.DataStructure()
     csvfile = open(csvname,'r')
     csvreader = csv.reader(csvfile)
     n = 0
@@ -1838,7 +1771,7 @@ def netcdf_concatenate_create_ds_out(data, info):
     nrecs = len(dt_out)
     zeros = numpy.zeros(nrecs, dtype=numpy.int32)
     # get the output data structure
-    ds_out = DataStructure()
+    ds_out = pfp_classes.DataStructure()
     ds_out.root["Attributes"]["nc_nrecs"] = nrecs
     ds_out.root["Attributes"]["time_step"] = ts
     ds_out.root["Attributes"]["processing_level"] = level
@@ -2169,7 +2102,7 @@ def MergeDataStructures(ds_dict, l1_info):
     logger.info(msg)
     l1ire = l1_info["read_excel"]
     # data structure to hold all data
-    ds = DataStructure()
+    ds = pfp_classes.DataStructure()
     ds.root["Attributes"] = copy.deepcopy(l1ire["Global"])
     # get the earliest start datetime and the latest datetime
     start = []
@@ -2249,7 +2182,7 @@ def ncsplit_run(split_gui):
     ldt_in = ds_in.root["Variables"]["DateTime"]["Data"]
     ldt_in_flag = ds_in.root["Variables"]["DateTime"]["Flag"]
     # create the output data structure
-    ds_out = DataStructure()
+    ds_out = pfp_classes.DataStructure()
     # copy the global attributes
     for item in list(ds_in.root["Attributes"].keys()):
         ds_out.root["Attributes"][item] = ds_in.root["Attributes"][item]
@@ -2297,7 +2230,7 @@ def nc_read_groups(nc_file):
     logger.info(msg)
     # disable automatic masking of data when valid_range specified
     nc_file.set_auto_mask(False)
-    ds = DataStructure(groups=groups)
+    ds = pfp_classes.DataStructure(groups=groups)
     ds.info["filepath"] = nc_file.filepath()
     # now deal with the global attributes
     gattrs = nc_file.ncattrs()
@@ -2351,7 +2284,7 @@ def nc_read_series(nc_file, checktimestep=True, fixtimestepmethod="round"):
     """
     Purpose:
      Reads a netCDF file and returns the meta-data and data in a DataStructure.
-     The returned data structure is an instance of pfp_io.DataStructure().
+     The returned data structure is an instance of pfp_classes.DataStructure().
      The data structure consists of:
       1) ds.root["Attributes"]
          A dictionary containing the global attributes of the netCDF file.
@@ -2388,7 +2321,7 @@ def nc_read_series(nc_file, checktimestep=True, fixtimestepmethod="round"):
     # disable automatic masking of data when valid_range specified
     nc_file.set_auto_mask(False)
     # get an instance of a PFP data structure
-    ds = DataStructure()
+    ds = pfp_classes.DataStructure()
     ds.info["filepath"] = nc_file.filepath()
     # now deal with the global attributes
     gattrlist = nc_file.ncattrs()
@@ -2613,7 +2546,7 @@ def ds_update_statistic_type(variable):
         pass
     return variable_changed
 
-def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", update=False):
+def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", update=False, engine="netcdf4"):
     """
     Purpose:
      Wrapper for the pfp_io.nc_read_series() routine so we have a nice name
@@ -2626,20 +2559,34 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", updat
     Author: PRI
     Date: June 2021
     """
-    if not os.path.isfile(nc_file_uri):
-        msg = nc_file_uri + " not found"
-        logger.error(msg)
-        raise RuntimeError(msg)
-    # file probably exists, so let's read it
-    nc_file = netCDF4.Dataset(nc_file_uri, "r")
-    if len(nc_file.groups.keys()) == 0:
-        ds = nc_read_series(nc_file,
-                            checktimestep=checktimestep,
-                            fixtimestepmethod=fixtimestepmethod)
-    else:
-        ds = nc_read_groups(nc_file)
-    if update:
-        ds = ds_update(ds)
+    if engine.lower() == "netcdf4":
+        if not os.path.isfile(nc_file_uri):
+            msg = nc_file_uri + " not found"
+            logger.error(msg)
+            raise RuntimeError(msg)
+        # file probably exists, so let's read it
+        nc_file = netCDF4.Dataset(nc_file_uri, "r")
+        if len(nc_file.groups.keys()) == 0:
+            ds = nc_read_series(nc_file,
+                                checktimestep=checktimestep,
+                                fixtimestepmethod=fixtimestepmethod)
+        else:
+            ds = nc_read_groups(nc_file)
+        if update:
+            ds = ds_update(ds)
+    elif engine.lower() == "xarray":
+        nc_file = netCDF4.Dataset(nc_file_uri, "r")
+        groups = nc_file.groups.keys()
+        nc_file.close()
+        ds = {}
+        if len(groups) == 0:
+            ds["root"] = xarray.open_dataset(nc_file_uri)
+            ds["root"] = ds["root"].squeeze()
+        else:
+            ds["root"] = xarray.open_dataset(nc_file_uri)
+            for group in groups:
+                ds[group] = xarray.open_dataset(nc_file_uri, group=group)
+                ds[group] = ds[group].squeeze()
     return ds
 
 def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3):
@@ -2718,7 +2665,7 @@ def nc_write_globalattributes(nc_file, ds, flag_defs=True):
     Date: Back in the day
     """
     # check to see if we have a DataStructure or a dictionary
-    if isinstance(ds, DataStructure):
+    if isinstance(ds, pfp_classes.DataStructure):
         # get a local dictionary from a DataStructure
         lds = {"globalattributes": ds.root["Attributes"],
                "variables": ds.root["Variables"]}

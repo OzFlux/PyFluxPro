@@ -26,7 +26,7 @@ version_number = "V3.4.11"
 #        - see pfp_part.partition.estimate_Eo()
 # V3.4.5 - July/August 2022
 #        - implement the ability to read L6 summary files
-#          - needed a major rewrite of pfp_io.DataStructure(), all of
+#          - needed a major rewrite of pfp_classes.DataStructure(), all of
 #            the associated routines for dealing with data structures
 #            and a global search and replace to change ds.series to
 #            ds.root so that netCDF V3 files have a group called

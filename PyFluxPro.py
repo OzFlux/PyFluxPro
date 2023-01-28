@@ -12,14 +12,12 @@ from configobj import ConfigObj
 import netCDF4
 import matplotlib
 matplotlib.use("QT5Agg")
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt5 import QtCore, QtGui, QtWidgets
 from siphon.catalog import TDSCatalog
-import xarray
 # PFP modules
 sys.path.insert(0, 'scripts')
 from scripts import cfg
+from scripts import pfp_classes
 from scripts import pfp_compliance
 from scripts import pfp_gui
 from scripts import pfp_io
@@ -46,117 +44,128 @@ log_file_name = "pfp_" + now.strftime("%Y%m%d%H%M") + ".log"
 log_file_name = os.path.join(logfiles_path, log_file_name)
 logger = pfp_log.CreateLogger(logger_name, log_file_name=log_file_name)
 
-class pfp_main_ui(QWidget):
+class pfp_main_ui(QtWidgets.QWidget):
     def __init__(self, pfp_version, textBox):
         super(pfp_main_ui, self).__init__()
         # set the mode attribute
         self.mode = "interactive"
+        # create a dictionary for general information
+        self.info = {"THREDDS": {"base_url": "", "catalog_name": "catalog.xml",
+                                 "server_name": "", "dodoC_url": ""}}
         # menu bar
-        self.menubar = QMenuBar(self)
+        self.menubar = QtWidgets.QMenuBar(self)
         # File menu
-        self.menuFile = QMenu(self.menubar)
+        self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setTitle("File")
         # File/Convert submenu
-        self.menuFileConvert = QMenu(self.menuFile)
+        self.menuFileConvert = QtWidgets.QMenu(self.menuFile)
         self.menuFileConvert.setTitle("Convert")
         # Edit menu
-        self.menuEdit = QMenu(self.menubar)
+        self.menuEdit = QtWidgets.QMenu(self.menubar)
         self.menuEdit.setTitle("Edit")
         # Run menu
-        self.menuRun = QMenu(self.menubar)
+        self.menuRun = QtWidgets.QMenu(self.menubar)
         self.menuRun.setTitle("Run")
         # Plot menu
-        self.menuPlot = QMenu(self.menubar)
+        self.menuPlot = QtWidgets.QMenu(self.menubar)
         self.menuPlot.setTitle("Plot")
         # Utilities menu
-        self.menuUtilities = QMenu(self.menubar)
+        self.menuUtilities = QtWidgets.QMenu(self.menubar)
         self.menuUtilities.setTitle("Utilities")
         # Utilities/u* threshold submenu
-        self.menuUtilitiesUstar = QMenu(self.menuUtilities)
+        self.menuUtilitiesUstar = QtWidgets.QMenu(self.menuUtilities)
         self.menuUtilitiesUstar.setTitle("u* threshold")
         # Help menu
-        self.menuHelp = QMenu(self.menubar)
+        self.menuHelp = QtWidgets.QMenu(self.menubar)
         self.menuHelp.setTitle("Help")
         # File menu items: menu actions for control files
-        self.actionFileOpen = QAction(self)
+        self.actionFileOpen = QtWidgets.QAction(self)
         self.actionFileOpen.setText("Open")
         self.actionFileOpen.setShortcut('Ctrl+O')
-        self.actionFileOpenTHREDDS = QAction(self)
-        self.actionFileOpenTHREDDS.setText("THREDDS")
-        self.actionFileOpenTHREDDS.setShortcut('Ctrl+T')
-        self.actionFileSave = QAction(self)
+        # THREDDS submenu: menu actions to browse a THREDDS server
+        self.menuFileTHREDDS = QtWidgets.QMenu(self.menuFile)
+        self.menuFileTHREDDS.setTitle("THREDDS")
+        self.actionFileTHREDDSTERN = QtWidgets.QAction(self)
+        self.actionFileTHREDDSTERN.setText("TERN")
+        self.actionFileTHREDDSOzFlux = QtWidgets.QAction(self)
+        self.actionFileTHREDDSOzFlux.setText("OzFlux")
+        self.actionFileTHREDDSOther = QtWidgets.QAction(self)
+        self.actionFileTHREDDSOther.setText("Other")
+        self.menuFileTHREDDS.addAction(self.actionFileTHREDDSTERN)
+        self.menuFileTHREDDS.addAction(self.actionFileTHREDDSOzFlux)
+        self.menuFileTHREDDS.addAction(self.actionFileTHREDDSOther)
+        # File/Save and Flie/Save As
+        self.actionFileSave = QtWidgets.QAction(self)
         self.actionFileSave.setText("Save")
         self.actionFileSave.setShortcut('Ctrl+S')
-        self.actionFileSaveAs = QAction(self)
+        self.actionFileSaveAs = QtWidgets.QAction(self)
         self.actionFileSaveAs.setText("Save As...")
         self.actionFileSaveAs.setShortcut('Shift+Ctrl+S')
         # File/Convert submenu
-        self.actionFileConvertnc2biomet = QAction(self)
+        self.actionFileConvertnc2biomet = QtWidgets.QAction(self)
         self.actionFileConvertnc2biomet.setText("nc to Biomet")
-        self.actionFileConvertnc2xls = QAction(self)
+        self.actionFileConvertnc2xls = QtWidgets.QAction(self)
         self.actionFileConvertnc2xls.setText("nc to Excel")
-        self.actionFileConvertnc2reddyproc = QAction(self)
+        self.actionFileConvertnc2reddyproc = QtWidgets.QAction(self)
         self.actionFileConvertnc2reddyproc.setText("nc to REddyProc")
         # File menu item: split netCDF
-        self.actionFileSplit = QAction(self)
+        self.actionFileSplit = QtWidgets.QAction(self)
         self.actionFileSplit.setText("Split")
         self.actionFileSplit.setShortcut('Ctrl+P')
         # File menu item: Quit
-        self.actionFileQuit = QAction(self)
+        self.actionFileQuit = QtWidgets.QAction(self)
         self.actionFileQuit.setText("Quit")
         # the Vinod mod ...
         self.actionFileQuit.setShortcut('Ctrl+Q')
         # Edit menu items
-        self.actionEditPreferences = QAction(self)
+        self.actionEditPreferences = QtWidgets.QAction(self)
         self.actionEditPreferences.setText("Preferences...")
         # Run menu items
-        self.actionRunCurrent = QAction(self)
+        self.actionRunCurrent = QtWidgets.QAction(self)
         self.actionRunCurrent.setText("Current...")
         self.actionRunCurrent.setShortcut('Ctrl+R')
-        self.actionRunClearLogWindow = QAction(self)
+        self.actionRunClearLogWindow = QtWidgets.QAction(self)
         self.actionRunClearLogWindow.setText("Clear log window")
-        self.actionStopCurrent = QAction(self)
+        self.actionStopCurrent = QtWidgets.QAction(self)
         self.actionStopCurrent.setText("Stop run")
         # Plot menu items
-        #self.actionPlotFcVersusUstar = QAction(self)
-        #self.actionPlotFcVersusUstar.setText("Fco2 vs u*")
         # Plot Fco2 vs u* submenu
-        self.menuPlotFco2vsUstar = QMenu(self.menuPlot)
+        self.menuPlotFco2vsUstar = QtWidgets.QMenu(self.menuPlot)
         self.menuPlotFco2vsUstar.setTitle("Fco2 vs u*")
-        self.actionPlotFingerprints = QAction(self)
+        self.actionPlotFingerprints = QtWidgets.QAction(self)
         self.actionPlotFingerprints.setText("Fingerprints")
-        self.actionPlotQuickCheck = QAction(self)
+        self.actionPlotQuickCheck = QtWidgets.QAction(self)
         self.actionPlotQuickCheck.setText("Summary")
-        self.actionPlotTimeSeries = QAction(self)
+        self.actionPlotTimeSeries = QtWidgets.QAction(self)
         self.actionPlotTimeSeries.setText("Time series")
-        self.actionPlotWindrose = QAction(self)
+        self.actionPlotWindrose = QtWidgets.QAction(self)
         self.actionPlotWindrose.setText("Windrose")
-        self.actionPlotClosePlots = QAction(self)
+        self.actionPlotClosePlots = QtWidgets.QAction(self)
         self.actionPlotClosePlots.setText("Close plots")
         # Plot Fco2 vs u* submenu
-        self.actionPlotFco2vsUstar_annual = QAction(self)
+        self.actionPlotFco2vsUstar_annual = QtWidgets.QAction(self)
         self.actionPlotFco2vsUstar_annual.setText("Annual")
-        self.actionPlotFco2vsUstar_seasonal = QAction(self)
+        self.actionPlotFco2vsUstar_seasonal = QtWidgets.QAction(self)
         self.actionPlotFco2vsUstar_seasonal.setText("Seasonal")
-        self.actionPlotFco2vsUstar_monthly = QAction(self)
+        self.actionPlotFco2vsUstar_monthly = QtWidgets.QAction(self)
         self.actionPlotFco2vsUstar_monthly.setText("Monthly")
         # Utilities menu
-        self.actionUtilitiesClimatology = QAction(self)
+        self.actionUtilitiesClimatology = QtWidgets.QAction(self)
         self.actionUtilitiesClimatology.setText("Climatology")
-        self.actionUtilitiesUstarCPDBarr = QAction(self)
+        self.actionUtilitiesUstarCPDBarr = QtWidgets.QAction(self)
         self.actionUtilitiesUstarCPDBarr.setText("CPD (Barr)")
-        self.actionUtilitiesUstarCPDMcHugh = QAction(self)
+        self.actionUtilitiesUstarCPDMcHugh = QtWidgets.QAction(self)
         self.actionUtilitiesUstarCPDMcHugh.setText("CPD (McHugh)")
-        self.actionUtilitiesUstarCPDMcNew = QAction(self)
+        self.actionUtilitiesUstarCPDMcNew = QtWidgets.QAction(self)
         self.actionUtilitiesUstarCPDMcNew.setText("CPD (McNew)")
-        self.actionUtilitiesUstarMPT = QAction(self)
+        self.actionUtilitiesUstarMPT = QtWidgets.QAction(self)
         self.actionUtilitiesUstarMPT.setText("MPT")
         #self.actionUtilitiesCFCheck = QAction(self)
         #self.actionUtilitiesCFCheck.setText("CF check")
         # Help menu
-        self.actionHelpWiki = QAction(self)
+        self.actionHelpWiki = QtWidgets.QAction(self)
         self.actionHelpWiki.setText("Wiki")
-        self.actionHelpAbout = QAction(self)
+        self.actionHelpAbout = QtWidgets.QAction(self)
         self.actionHelpAbout.setText("About")
         # add the actions to the menus
         # File/Convert submenu
@@ -165,7 +174,7 @@ class pfp_main_ui(QWidget):
         self.menuFileConvert.addAction(self.actionFileConvertnc2reddyproc)
         # File menu
         self.menuFile.addAction(self.actionFileOpen)
-        self.menuFile.addAction(self.actionFileOpenTHREDDS)
+        self.menuFile.addAction(self.menuFileTHREDDS.menuAction())
         self.menuFile.addAction(self.actionFileSave)
         self.menuFile.addAction(self.actionFileSaveAs)
         self.menuFile.addSeparator()
@@ -210,9 +219,8 @@ class pfp_main_ui(QWidget):
         # Help menu
         self.menuHelp.addAction(self.actionHelpWiki)
         self.menuHelp.addAction(self.actionHelpAbout)
-
         # create a tab bar
-        self.tabs = QTabWidget(self)
+        self.tabs = QtWidgets.QTabWidget(self)
         self.tabs.tab_index_all = 0
         self.tabs.tab_index_current = 0
         self.tabs.tab_dict = {}
@@ -223,32 +231,32 @@ class pfp_main_ui(QWidget):
         self.tabs.addTab(textBox, "Log")
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         # hide the tab close icon for the console tab
-        self.tabs.tabBar().setTabButton(0, QTabBar.RightSide, None)
+        self.tabs.tabBar().setTabButton(0, QtWidgets.QTabBar.RightSide, None)
         # connect the tab-in-focus signal to the appropriate slot
         self.tabs.currentChanged[int].connect(self.tabSelected)
-
         # use VBoxLayout to position widgets so they resize with main window
-        layout = QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         # add widgets to the layout
         layout.addWidget(self.menubar)
         layout.addWidget(self.tabs)
         self.setLayout(layout)
         self.setGeometry(50,50,800, 600)
         self.setWindowTitle(pfp_version)
-
-        self.threadpool = QThreadPool()
-
+        # thread pool
+        self.threadpool = QtCore.QThreadPool()
         # Connect signals to slots
         # File menu actions
         self.actionFileConvertnc2biomet.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2biomet(None, mode="standard"))
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
         self.actionFileConvertnc2reddyproc.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard"))
         self.actionFileOpen.triggered.connect(self.file_open)
-        self.actionFileOpenTHREDDS.triggered.connect(self.file_open_thredds_catalog)
+        self.actionFileTHREDDSTERN.triggered.connect(self.file_open_tern_thredds_catalog)
+        self.actionFileTHREDDSOzFlux.triggered.connect(self.file_open_ozflux_thredds_catalog)
+        self.actionFileTHREDDSOther.triggered.connect(self.file_open_other_thredds_catalog)
         self.actionFileSave.triggered.connect(self.file_save)
         self.actionFileSaveAs.triggered.connect(self.file_save_as)
         self.actionFileSplit.triggered.connect(pfp_top_level.do_file_split)
-        self.actionFileQuit.triggered.connect(QApplication.quit)
+        self.actionFileQuit.triggered.connect(QtWidgets.QApplication.quit)
         # Edit menu actions
         self.actionEditPreferences.triggered.connect(self.edit_preferences)
         # Run menu actions
@@ -288,7 +296,7 @@ class pfp_main_ui(QWidget):
         logger = logging.getLogger(name="pfp_log")
         # get the control file path
         if not file_uri:
-            file_uri = QFileDialog.getOpenFileName(caption="Choose a file ...")[0]
+            file_uri = QtWidgets.QFileDialog.getOpenFileName(caption="Choose a file ...")[0]
             # check to see if file open was cancelled
             if len(str(file_uri)) == 0:
                 return
@@ -350,35 +358,54 @@ class pfp_main_ui(QWidget):
             logger.error(error_message)
         return
 
-    def file_open_thredds_catalog(self):
-        #text, ok = QInputDialog.getText(self, 'Open THREDDS server', 'Enter THREDDS URL:')
-        text = "https://dap.tern.org.au/thredds/catalog/ecosystem_process/ozflux/catalog.html"
-        #text = "https://dap.ozflux.org.au/thredds/catalog/ozflux/sites/catalog.html"
-        ok = True
+    def file_open_other_thredds_catalog(self):
+        """ Set up to open a THREDDS server via a dialog box for the URL."""
+        text, ok = QtWidgets.QInputDialog.getText(self,
+                                                  'Open THREDDS server',
+                                                  'Enter THREDDS URL:')
         if not ok:
             return
-        info = {"base_url": text.replace("catalog.html", ""),
-                "catalog_name": "catalog.xml"}
-        info["dodsC_url"] = info["base_url"].replace("catalog", "dodsC")
-        url_sites = os.path.join(info["base_url"], info["catalog_name"])
-        catalogs = {"sites": TDSCatalog(url_sites)}
-        #thredds = {"files": {}, "urls": {}}
-        #sites = list(catalogs["sites"].catalog_refs)
-        #for site in sites:
-            #thredds["files"][site] = {"version": {"level": {"default": "dummy.nc"}}}
-            #thredds["urls"][site] = {"version": {"level": {"default": "https://"}}}
+        self.info["THREDDS"]["base_url"] = text
+        self.info["THREDDS"]["server_name"] = "Other"
+        self.file_open_thredds_catalog(self)
+        return
+
+    def file_open_ozflux_thredds_catalog(self):
+        """ Set up to open the OzFlux THREDDS server."""
+        text = "https://dap.ozflux.org.au/thredds/catalog/ozflux/sites"
+        self.info["THREDDS"]["base_url"] = text
+        self.info["THREDDS"]["server_name"] = "OzFlux"
+        self.file_open_thredds_catalog(self)
+        return
+
+    def file_open_tern_thredds_catalog(self):
+        """ Set up to open the TERN THREDDS server."""
+        text = "https://dap.tern.org.au/thredds/catalog/ecosystem_process/ozflux"
+        self.info["THREDDS"]["base_url"] = text
+        self.info["THREDDS"]["server_name"] = "TERN"
+        self.file_open_thredds_catalog(self)
+        return
+
+    def file_open_thredds_catalog(self, base_url):
+        """ Open a THREDDS server."""
+        self.info["THREDDS"]["dodsC_url"] = self.info["THREDDS"]["base_url"].replace("catalog", "dodsC")
+        url = os.path.join(self.info["THREDDS"]["base_url"], self.info["THREDDS"]["catalog_name"])
+        self.catalogs = {"sites": TDSCatalog(url)}
         # display the THREDDS catalog in the GUI
-        #self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.display_thredds_tree(self, catalogs, thredds, info)
-        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.display_thredds_tree(self, catalogs, info)
-        # add a tab for the netCDF file contents
-        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], "THREDDS server")
+        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.display_thredds_tree(self)
+        # add a tab for the THREDDS server tree
+        tab_title = self.info["THREDDS"]["server_name"]
+        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         return
 
     def file_open_thredds_file(self, file_url):
         # read the netCDF file to a data structure
-        self.ds = xarray.open_dataset(file_url)
+        # we use xarray here because it will only read data from the remote netCDF
+        # file when it is needed instead of all at once making GUI response better
+        #self.xrds = xarray.open_dataset(file_url, decode_times=False)
+        self.ds = pfp_io.NetCDFRead(file_url, engine="xarray")
         # display the netcdf file in the GUI
         self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore_thredds(self)
         # add a tab for the netCDF file contents
@@ -523,7 +550,7 @@ class pfp_main_ui(QWidget):
             self.file["level"] = "L6"
         else:
             logger.info(" Unable to detect level, enter manually ...")
-            text, ok = QInputDialog.getText(self, 'Processing level', 'Enter the processing level:')
+            text, ok = QtWidgets.QInputDialog.getText(self, 'Processing level', 'Enter the processing level:')
             if ok:
                 self.file["level"] = text
         return self.file["level"]
@@ -673,7 +700,7 @@ class pfp_main_ui(QWidget):
         if isinstance(content, ConfigObj):
             # we are saving a control file
             self.save_control_file()
-        elif isinstance(content, pfp_io.DataStructure):
+        elif isinstance(content, pfp_classes.DataStructure):
             # we are saving a data structure
             self.save_netcdf_file()
         else:
@@ -695,7 +722,7 @@ class pfp_main_ui(QWidget):
             msg = msg + "Please save this control file to a different location."
             pfp_gui.myMessageBox(msg)
             # put up a "Save as ..." dialog
-            cfg_filename = QFileDialog.getSaveFileName(self, "Save as ...")[0]
+            cfg_filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save as ...")[0]
             # return without doing anything if cancel used
             if len(str(cfg_filename)) == 0:
                 return
@@ -738,15 +765,15 @@ class pfp_main_ui(QWidget):
         if isinstance(content, ConfigObj):
             # we are saving a control file
             file_uri = content.filename
-            file_uri = QFileDialog.getSaveFileName(self, "Save as ...", file_uri)[0]
+            file_uri = QtWidgets.QFileDialog.getSaveFileName(self, "Save as ...", file_uri)[0]
             if len(str(file_uri)) == 0:
                 return
             content.filename = file_uri
             self.save_as_control_file(content)
-        elif isinstance(content, pfp_io.DataStructure):
+        elif isinstance(content, pfp_classes.DataStructure):
             # we are opening a netCDF file
             file_uri = content.info["filepath"]
-            file_uri = QFileDialog.getSaveFileName(self, "Save as ...", file_uri)[0]
+            file_uri = QtWidgets.QFileDialog.getSaveFileName(self, "Save as ...", file_uri)[0]
             if len(str(file_uri)) == 0:
                 return
             content.info["filepath"] = file_uri
@@ -897,9 +924,10 @@ class pfp_main_ui(QWidget):
         tab_text = str(self.tabs.tabText(currentIndex))
         if "*" in tab_text:
             msg = "Save control file?"
-            reply = QMessageBox.question(self, 'Message', msg,
-                                               QMessageBox.Yes, QMessageBox.No)
-            if reply == QMessageBox.Yes:
+            reply = QtWidgets.QMessageBox.question(self, 'Message', msg,
+                                               QtWidgets.QMessageBox.Yes,
+                                               QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
                 self.file_save()
         # get the current tab from its index
         currentQWidget = self.tabs.widget(currentIndex)
@@ -1017,9 +1045,9 @@ class pfp_main_ui(QWidget):
 if (__name__ == '__main__'):
     # get the application name and version
     pfp_version = cfg.version_name + " " + cfg.version_number
-    app = QApplication(["PyFluxPro"])
+    app = QtWidgets.QApplication(["PyFluxPro"])
     # get a text editor for the log window
-    textBox = QTextEdit()
+    textBox = QtWidgets.QTextEdit()
     textBox.setReadOnly(True)
     logger.consoleHandler.sigLog.connect(textBox.append)
     # instance the main GUI

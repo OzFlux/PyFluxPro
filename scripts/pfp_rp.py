@@ -12,6 +12,7 @@ import pandas
 import pylab
 # PFP modules
 from scripts import constants as c
+from scripts import pfp_classes
 from scripts import pfp_gf
 from scripts import pfp_gfSOLO
 from scripts import pfp_gui
@@ -435,7 +436,7 @@ def L6_summary(ds, l6_info):
         logger.error(" L6_summary: error opening Excel file "+xl_name)
         return 0
     # open the netCDF files for the summary results
-    ds_summary = pfp_io.DataStructure()
+    ds_summary = pfp_classes.DataStructure()
     ds_summary.root["Attributes"] = copy.deepcopy(ds.root["Attributes"])
     # all data as groups in one netCDF4 file
     nc_name = out_name.replace(".nc", "_Summary.nc")
@@ -836,7 +837,7 @@ def L6_summary_daily(ds, series_dict):
     f0 = numpy.zeros(nDays, dtype=numpy.int32)
     ldt_daily = [ldt[0]+datetime.timedelta(days=i) for i in range(0,nDays)]
     # create a dictionary to hold the daily statistics
-    ds_daily = pfp_io.DataStructure()
+    ds_daily = pfp_classes.DataStructure()
     setattr(ds_daily, "Daily", {"Attributes": {}, "Variables": {}})
     ds_daily.root["Attributes"] = copy.deepcopy(ds.root["Attributes"])
     #daily_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]),
@@ -919,7 +920,7 @@ def L6_summary_monthly(ds, series_dict):
     ts = int(float(ds.root["Attributes"]["time_step"]))
     si = pfp_utils.GetDateIndex(dt, str(dt[0]), ts=ts, default=0, match="startnextmonth")
     ldt = dt[si:]
-    ds_monthly = pfp_io.DataStructure()
+    ds_monthly = pfp_classes.DataStructure()
     setattr(ds_monthly, "Monthly", {"Attributes": {}, "Variables": {}})
     ds_monthly.root["Attributes"] = copy.deepcopy(ds.root["Attributes"])
     #monthly_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]),
@@ -1007,7 +1008,7 @@ def L6_summary_annual(ds, series_dict):
     year_list = list(range(start_year, end_year+1, 1))
     nYears = len(year_list)
     # create a dictionary to hold the annual statistics
-    ds_annual = pfp_io.DataStructure()
+    ds_annual = pfp_classes.DataStructure()
     setattr(ds_annual, "Annual", {"Attributes": {}, "Variables": {}})
     ds_annual.root["Attributes"] = copy.deepcopy(ds.root["Attributes"])
     #annual_dict = {"globalattributes": copy.deepcopy(ds.root["Attributes"]), "variables": {}}
@@ -1094,7 +1095,7 @@ def L6_summary_cumulative(ds, series_dict, year="all"):
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     series_list = list(series_dict["cumulative"].keys())
 
-    dsc = pfp_io.DataStructure()
+    dsc = pfp_classes.DataStructure()
     setattr(dsc, "Cumulative", {"Attributes": copy.deepcopy(ds.root["Attributes"]), "Variables": {}})
 
     cda = dsc.Cumulative["Attributes"]

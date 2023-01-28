@@ -5,6 +5,7 @@ import logging
 import pandas
 # PFP modules
 from scripts import pfp_ck
+from scripts import pfp_classes
 from scripts import pfp_compliance
 from scripts import pfp_gf
 from scripts import pfp_gfALT
@@ -38,7 +39,7 @@ def l1qc(cfg):
         if len(dfs[key]) == 0:
             dfs.pop(key)
     if len(list(dfs.keys())) == 0:
-        ds = pfp_io.DataStructure()
+        ds = pfp_classes.DataStructure()
         ds.info["returncodes"]["value"] = 1
         ds.info["returncodes"]["message"] = "An error occured reading the input file"
         return ds

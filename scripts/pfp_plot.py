@@ -618,13 +618,13 @@ def plot_explore_fingerprints(ds, selections):
     Author: PRI
     Date: April 2020
     """
+    site_name = ds["root"].attrs["site_name"]
     groups = sorted(list(selections.keys()))
     labels = []
     for group in groups:
         labels += selections[group]
     msg = " Plotting fingerprint for " + ", ".join(labels)
     logger.info(msg)
-    site_name = ds.root["Attributes"]["site_name"]
     # number of columns, each column will be 1 fingerprint
     ncols = len(labels)
     # create the figure
@@ -637,30 +637,29 @@ def plot_explore_fingerprints(ds, selections):
     fig.canvas.manager.set_window_title(site_name)
     n = 0
     for group in groups:
-        gattr = getattr(ds, group)["Attributes"]
+        gattr = ds[group].attrs
         # get the time step
         ts = int(float(gattr["time_step"]))
         # get the start and end dates for whole days
-        dt = pfp_utils.GetVariable(ds, "DateTime", group=group)
-        si = pfp_utils.GetDateIndex(dt["Data"], dt["Data"][0], ts=ts,
-                                    default=0, match='startnextday')
-        ei = pfp_utils.GetDateIndex(dt["Data"], dt["Data"][-1], ts=ts,
-                                    default=-1, match='endpreviousday')
-        # subset the datetime to whole days
-        ldt = dt["Data"][si:ei + 1]
+        dt = pfp_utils.GetVariable(ds, "time", group=group)
+        td = numpy.timedelta64(1, 'D') + numpy.timedelta64(ts, 'm')
+        sdt = dt["Data"][0].astype('datetime64[D]') + td
+        td =  + numpy.timedelta64(0, 'm')
+        edt = dt["Data"][-1].astype('datetime64[D]') + td
+        ldt = pfp_utils.GetVariable(ds, "time", group=group, start=sdt, end=edt)
         if n == 0:
             # put a title on the figure
-            title_str = site_name + ": " + ldt[0].strftime("%Y-%m-%d") + " to "
-            title_str += ldt[-1].strftime("%Y-%m-%d")
+            title_str = site_name + ": " + numpy.datetime_as_string(sdt, "D") + " to "
+            title_str += numpy.datetime_as_string(edt, "D")
             fig.suptitle(title_str, fontsize=16)
         # get the number of records per day and the number of whole days
         nPerHr = int(float(60)/ts + 0.5)
         nPerDay = int(float(24)*nPerHr + 0.5)
-        nDays = len(ldt)//nPerDay
+        nDays = len(ldt["Data"])//nPerDay
         # loop over variables to be plotted
         for label in labels:
             # get the data
-            var = pfp_utils.GetVariable(ds, label, group=group, start=si, end=ei)
+            var = pfp_utils.GetVariable(ds, label, group=group, start=sdt, end=edt)
             if numpy.ma.count(var["Data"]) == 0:
                 msg = label + ": no data found, skipping..."
                 logger.warning(msg)
@@ -672,8 +671,8 @@ def plot_explore_fingerprints(ds, selections):
             vmin = numpy.percentile(numpy.ma.compressed(data_daily), 0.25)
             vmax = numpy.percentile(numpy.ma.compressed(data_daily), 99.75)
             # get the start and end dates as numbers
-            sd = mdt.date2num(ldt[0])
-            ed = mdt.date2num(ldt[-1])
+            sd = mdt.date2num(sdt)
+            ed = mdt.date2num(edt)
             # render the image
             im = axs[n].imshow(data_daily, extent=[0, 24, sd, ed], aspect='auto',
                                origin='lower', interpolation="none",
@@ -803,7 +802,7 @@ def plot_explore_percentiles(ds, selections):
 
 def plot_explore_timeseries(ds, selections):
     """ Plot time series of selected variables."""
-    site_name = ds.root["Attributes"]["site_name"]
+    site_name = ds["root"].attrs["site_name"]
     groups = sorted(list(selections.keys()))
     nrows = 0
     for group in groups:
@@ -828,8 +827,8 @@ def plot_explore_timeseries(ds, selections):
             axs[n].legend()
             axs[n].set_xlim([sdt, edt])
             if n == 0:
-                title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
-                title_str += edt.strftime("%Y-%m-%d")
+                title_str = site_name + ": " + numpy.datetime_as_string(sdt, "D") + " to "
+                title_str += numpy.datetime_as_string(edt, "D")
                 axs[n].set_title(title_str)
             if n == nrows-1:
                 axs[n].set_xlabel("Date")
@@ -867,7 +866,7 @@ def plot_explore_timeseries_grouped(ds, selections):
     # colours for the lines
     colors = ["blue","red","green","yellow","magenta","black","cyan","brown"]
     # site name for the title
-    site_name = ds.root["Attributes"]["site_name"]
+    site_name = ds["root"].attrs["site_name"]
     # get the groups to be plotted
     groups = sorted(list(selections.keys()))
     # find all of the labels to be plotted
@@ -934,8 +933,8 @@ def plot_explore_timeseries_grouped(ds, selections):
             axs[i].set_xlim([sdt, edt])
             # only add the title to the first axes
             if i == 0:
-                title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
-                title_str += edt.strftime("%Y-%m-%d")
+                title_str = site_name + ": " + numpy.datetime_as_string(sdt, "D") + " to "
+                title_str += numpy.datetime_as_string(edt, "D")
                 axs[i].set_title(title_str)
             # only label the X axis of the last axes
             if i == nrows-1:
@@ -989,15 +988,16 @@ def xy_xlims_changed(event_ax, fig, var):
     # get the date when the mouse button was released at the end of the zoom
     release_date = mdt.num2date(event_ax.get_xlim()[1]).replace(tzinfo=None)
     # make sure the start date is the earliest of the 2
-    start = min([press_date, release_date])
+    start = numpy.datetime64(min([press_date, release_date]))
     # and the end date is the latest of the 2
-    end = max([press_date, release_date])
+    end = numpy.datetime64(max([press_date, release_date]))
     # get the indices of the datetimes nearest to the start and end
     si = pfp_utils.find_nearest_value(var[0]["DateTime"], start)
     ei = pfp_utils.find_nearest_value(var[0]["DateTime"], end)
     plot_start = var[0]["DateTime"][si]
     plot_end = var[0]["DateTime"][ei-1]
-    title = plot_start.strftime("%Y-%m-%d %H:%M") + " to " + plot_end.strftime("%Y-%m-%d %H:%M")
+    title = numpy.datetime_as_string(plot_start, "m") + " to "
+    title += numpy.datetime_as_string(plot_end, "m")
     plt.ion()
     fig_xy, ax_xy = plt.subplots(nrows=1, ncols=1)
     fig_xy.suptitle(title)
