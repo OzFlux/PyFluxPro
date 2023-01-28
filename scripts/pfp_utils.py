@@ -17,6 +17,7 @@ import xlrd
 # PFP modules
 from scripts import constants as c
 from scripts import meteorologicalfunctions as pfp_mf
+from scripts import pfp_classes
 
 logger = logging.getLogger("pfp_log")
 
@@ -2066,15 +2067,22 @@ def GetVariable(ds, label, group="root", start=0, end=-1, mode="truncate", out_t
       Fsd = pfp_utils.GetVariable(ds, "Fsd")
     Author: PRI
     """
-    try:
-        gvars = getattr(ds, group)["Variables"]
-    except:
-        print("oi va vei")
+    if isinstance(ds, pfp_classes.DataStructure):
+        variable = get_variable_pfpds(ds, label, group=group,
+                                      start=start, end=end,
+                                      mode=mode, out_type=out_type, match=match)
+    elif isinstance(ds, dict):
+        variable = get_variable_xarray(ds, label, group=group,
+                                       start=start, end=end)
+    return variable
+
+def get_variable_pfpds(ds, label, group="root", start=0, end=-1,
+                       mode="truncate", out_type="ma", match="exact"):
+    gvars = getattr(ds, group)["Variables"]
     gattr = getattr(ds, group)["Attributes"]
     dt = gvars["DateTime"]["Data"]
     # get the data, flag and attributes for this variable from the data structure
     data, flag, attr = GetSeries(ds, label, group=group, out_type=out_type)
-
     nrecs = int(float(gattr["nc_nrecs"]))
     ts = gattr["time_step"]
     if ts in ["daily", "monthly", "annual"]:
@@ -2113,6 +2121,27 @@ def GetVariable(ds, label, group="root", start=0, end=-1, mode="truncate", out_t
     # make sure there is a value for the long_name attribute
     if "long_name" not in variable["Attr"]:
         variable["Attr"]["long_name"] = label
+    return variable
+
+def get_variable_xarray(ds, label, group="root", start=0, end=-1):
+    if not isinstance(start, numpy.datetime64):
+        start = ds[group]["time"].values[0]
+    if not isinstance(end, numpy.datetime64):
+        end = ds[group]["time"].values[-1]
+    data = ds[group][label].sel(time=slice(start, end)).values
+    if label not in ["time"]:
+        data = numpy.ma.masked_values(data, c.missing_value)
+    if label + "_QCFlag" in list(ds[group].keys()):
+        flag = ds[group][label+"_QCFlag"].sel(time=slice(start, end)).values
+    else:
+        flag = numpy.zeros(len(data), dtype=numpy.int32)
+    dt = ds[group]["time"].sel(time=slice(start, end)).values
+    attr = ds[group][label].attrs
+    variable = {"Label": label,
+                "Data": data,
+                "Flag": flag,
+                "Attr": attr,
+                "DateTime": dt}
     return variable
 
 def GetUnitsFromds(ds, ThisOne):

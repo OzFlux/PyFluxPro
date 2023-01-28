@@ -9,6 +9,7 @@ import numpy
 import xlrd
 # PFP modules
 from scripts import constants as c
+from scripts import pfp_classes
 from scripts import pfp_gui
 from scripts import pfp_io
 from scripts import pfp_ts
@@ -542,7 +543,7 @@ def gfalternate_matchstartendtimes(ds, ds_alternate):
     nRecs_tower = int(ds.root["Attributes"]["nc_nrecs"])
     # create new data strucure to hold alternate data spanning period of tower data
     gattrs = ds_alternate.root["Attributes"]
-    ds_matched = pfp_io.DataStructure(global_attributes=gattrs)
+    ds_matched = pfp_classes.DataStructure(global_attributes=gattrs)
     # force the matched datetime to be the tower datetime
     ds_matched.root["Variables"]["DateTime"] = copy.deepcopy(ds.root["Variables"]["DateTime"])
     # update the number of records in the file

@@ -10,6 +10,7 @@ from scipy import interpolate
 # PFP
 from scripts import constants as c
 from scripts import meteorologicalfunctions as pfp_mf
+from scripts import pfp_classes
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
 from scripts import pfp_io
@@ -2202,7 +2203,7 @@ def InterpolateDataStructure(ds_old, labels=None, new_time_step=30, interpolatio
         ds_new = copy.deepcopy(ds_old)
         return ds_new
     # create a new data structure
-    ds_new = pfp_io.DataStructure()
+    ds_new = pfp_classes.DataStructure()
     # copy the global attributes
     ds_new.root["Attributes"] = copy.deepcopy(ds_old.root["Attributes"])
     # update the time step global attribute

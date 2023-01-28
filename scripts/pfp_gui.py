@@ -7,8 +7,8 @@ import os
 import traceback
 # 3rd party modules
 from configobj import ConfigObj
+import numpy
 from PyQt5 import QtCore, QtGui, QtWidgets
-from siphon.catalog import TDSCatalog
 # PFP modules
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
@@ -21,15 +21,13 @@ from scripts import pfp_utils
 logger = logging.getLogger("pfp_log")
 
 class display_thredds_tree(QtWidgets.QWidget):
-    def __init__(self, main_gui, catalogs, info):
+    def __init__(self, main_gui):
         super(display_thredds_tree, self).__init__()
 
         self.main_gui = main_gui
-        self.catalogs = catalogs
-        #self.thredds = thredds
-        self.info = info
+        self.catalogs = main_gui.catalogs
+        self.info = main_gui.info
 
-        self.view = QtWidgets.QTreeView()
         self.view = QtWidgets.QTreeView()
         self.model = QtGui.QStandardItemModel()
         self.view.setModel(self.model)
@@ -49,57 +47,106 @@ class display_thredds_tree(QtWidgets.QWidget):
         self.get_model_from_data()
         self.view.setColumnWidth(0, 200)
 
+    def add_subsection(self, section, dict_to_add):
+        for key in dict_to_add:
+            val = str(dict_to_add[key])
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(val)
+            section.appendRow([child0, child1])
+        return
+
+    def add_subsubsection(self, subsection, dict_to_add):
+        """ Add a subsubsection to the model."""
+        for key in dict_to_add:
+            subsubsection = QtGui.QStandardItem(key)
+            self.add_subsection(subsubsection, dict_to_add[key])
+            subsection.appendRow(subsubsection)
+        return
+
     def context_menu(self, position):
-        """ Right click context menu."""
-        # get a menu
         self.context_menu = QtWidgets.QMenu()
-        # get the index of the selected item
         if len(self.view.selectedIndexes()) == 0:
-            # trap right click when nothing is selected
             return
         idx = self.view.selectedIndexes()[0]
-        # get the selected item
         selected_item = idx.model().itemFromIndex(idx)
-        # get the level of the selected item
-        level = self.get_level_selected_item()
-        if level == 1:
-            pass
-        elif level == 2:
-            pass
-        elif level == 3 and selected_item.column() == 1:
+        if ".nc" in selected_item.text():
             self.context_menu.actionOpenTHREDDSFile = QtWidgets.QAction(self)
             self.context_menu.actionOpenTHREDDSFile.setText("Open")
             self.context_menu.addAction(self.context_menu.actionOpenTHREDDSFile)
             file_url = self.get_dodsC_file_url()
-            #print(file_url)
             arg = lambda: self.main_gui.file_open_thredds_file(file_url)
             self.context_menu.actionOpenTHREDDSFile.triggered.connect(arg)
-        else:
-            pass
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
         return
 
     def double_click(self):
-        pass
+        return
 
     def expanded(self, idx):
-        #print(idx.data())
-        cat = self.current_catalog[str(idx.data())].follow().catalog_refs
-        #print(type(cat), cat)
-        names = sorted(list(cat))
-        #print(names)
-        dict_to_add = {}
-        for name in names:
-            dict_to_add[name] = {"dummy": "dummy"}
-        selected_item = idx.model().itemFromIndex(idx)
-        child0 = QtGui.QStandardItem("hello")
-        child1 = QtGui.QStandardItem("sailor")
-        selected_item.appendRow([child0, child1])
+        if str(idx.data()) in self.current_catalog:
+            self.expand_current_catalog(idx)
+        elif str(idx.data()) in self.sites:
+            self.current_catalog = self.catalogs["sites"].catalog_refs
+            self.expand_current_catalog(idx)
+        else:
+            levels = [str(idx.data())]
+            lidx = idx
+            while lidx.parent().isValid():
+                lidx = lidx.parent()
+                levels.append(str(lidx.data()))
+            levels = list(reversed(levels))
+            cat_ref = self.catalogs["sites"].catalog_refs[levels[0]]
+            self.current_catalog = self.catalogs["sites"].catalog_refs[levels[0]].follow().catalog_refs
+            for level in levels[1:]:
+                cat_ref = cat_ref.follow().catalog_refs[level]
+                self.current_catalog = self.current_catalog[level].follow().catalog_refs
+                if len(cat_ref.follow().catalog_refs) > 0:
+                    cat_refs = sorted(list(cat_ref.follow().catalog_refs))
+                    dict_to_add = {}
+                    for cr in cat_refs:
+                        dict_to_add[cr] = {"dummy": "dummy"}
+                    subsection = idx.model().itemFromIndex(idx)
+                    subsection.removeRows(0, subsection.rowCount())
+                    for key in dict_to_add:
+                        subsubsection = QtGui.QStandardItem(key)
+                        self.add_subsection(subsubsection, dict_to_add[key])
+                        subsection.appendRow(subsubsection)
+                else:
+                    dss = self.current_catalog[str(idx.data())].follow().datasets
+                    dss_refs = sorted(list(dss))
+                    subsection = idx.model().itemFromIndex(idx)
+                    subsection.removeRows(0, subsection.rowCount())
+                    for n, dss_ref in enumerate(dss_refs):
+                        dict_to_add = {str(n): str(dss_ref)}
+                        self.add_subsection(subsection, dict_to_add)
+        return
 
-        #elif idx.data() in self.versions:
-            #self.get_levels_for_version(idx)
-        #elif idx.data() in self.levels:
-            #self.get_proc_type_for_level(idx)
+    def expand_current_catalog(self, idx):
+        cat = self.current_catalog[str(idx.data())].follow().catalog_refs
+        cat_refs = sorted(list(cat))
+        if len(cat_refs) > 0:
+            dict_to_add = {}
+            for cat_ref in cat_refs:
+                dict_to_add[cat_ref] = {"dummy": "dummy"}
+            subsection = idx.model().itemFromIndex(idx)
+            subsection.removeRows(0, subsection.rowCount())
+            for key in dict_to_add:
+                subsubsection = QtGui.QStandardItem(key)
+                self.add_subsection(subsubsection, dict_to_add[key])
+                subsection.appendRow(subsubsection)
+            self.current_catalog = cat
+        else:
+            dss = self.current_catalog[str(idx.data())].follow().datasets
+            dss_refs = sorted(list(dss))
+            subsection = idx.model().itemFromIndex(idx)
+            subsection.removeRows(0, subsection.rowCount())
+            for n, dss_ref in enumerate(dss_refs):
+                dict_to_add = {str(n): str(dss_ref)}
+                self.add_subsection(subsection, dict_to_add)
+        return
+
+    def get_list_of_levels(self):
+        return
 
     def get_level_selected_item(self):
         """ Get the level of the selected item."""
@@ -111,18 +158,19 @@ class display_thredds_tree(QtWidgets.QWidget):
         return level
 
     def get_dodsC_file_url(self):
-        """ Get the level of the selected item."""
-        level = 0
+        """ Get the dodsC path of the selected item."""
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
-        #local_path = [selected_item.parent().child(selected_item.row(), 0).text()]
-        local_path = [selected_item.parent().child(0, 0).text()]
+        file_index_number = selected_item.parent().child(0, 0).text()
+        local_path = [file_index_number]
         while idx.parent().isValid():
             idx = idx.parent()
             local_path.append(idx.data())
-            level += 1
         local_path.reverse()
-        file_url = self.info["dodsC_url"] + "/".join(local_path) + "/" + selected_item.text()
+        if file_index_number in local_path:
+            local_path.remove(file_index_number)
+        local_path.append(selected_item.text())
+        file_url = os.path.join(self.info["THREDDS"]["dodsC_url"], *local_path)
         return file_url
 
     def get_model_from_data(self):
@@ -137,137 +185,6 @@ class display_thredds_tree(QtWidgets.QWidget):
             self.current_section.appendRow([key, value])
             self.model.appendRow(self.current_section)
         return
-
-    #def get_model_from_data(self):
-        #self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
-        #sites = sorted(list(self.thredds["files"].keys()))
-        #for site in sites:
-            #self.site_section = QtGui.QStandardItem(site)
-            #self.site_section.setEditable(False)
-            #versions = sorted(list(self.thredds["files"][site].keys()))
-            #for version in versions:
-                #self.version_section = QtGui.QStandardItem(version)
-                #self.version_section.setEditable(False)
-                #levels = sorted(list(self.thredds["files"][site][version].keys()))
-                #for level in levels:
-                    #self.level_section = QtGui.QStandardItem(level)
-                    #self.level_section.setEditable(False)
-                    #processings = sorted(list(self.thredds["files"][site][version][level].keys()))
-                    #for processing in processings:
-                        #file_name = self.thredds["files"][site][version][level][processing]
-                        #if isinstance(file_name, list):
-                            #file_name = file_name[0]
-                        #if len(file_name) == 0:
-                            #continue
-                        #child0 = QtGui.QStandardItem(processing)
-                        #child0.setEditable(False)
-                        #child1 = QtGui.QStandardItem(file_name)
-                        #child1.setEditable(False)
-                        #self.level_section.appendRow([child0, child1])
-                    #self.version_section.appendRow(self.level_section)
-                #self.site_section.appendRow(self.version_section)
-            #self.model.appendRow(self.site_section)
-
-    def get_versions_for_site(self, idx):
-        selected_item = idx.model().itemFromIndex(idx)
-        selected_item.removeRows(0, selected_item.rowCount())
-        site = selected_item.text()
-        self.thredds["files"][site] = {}
-        self.thredds["urls"][site] = {}
-        self.catalogs[site] = {"catalog": self.catalogs["sites"].catalog_refs[site], "versions": {}}
-        self.versions = self.catalogs[site]["catalog"].follow().catalog_refs
-        for version in self.versions:
-            self.thredds["files"][site][version] = {"level": {"default": "dummy.nc"}}
-            self.thredds["urls"][site][version] = {"level": {"default": "https://"}}
-            self.version_section = QtGui.QStandardItem(version)
-            self.version_section.setEditable(False)
-            levels = sorted(list(self.thredds["files"][site][version].keys()))
-            for level in levels:
-                self.level_section = QtGui.QStandardItem(level)
-                self.level_section.setEditable(False)
-                processings = sorted(list(self.thredds["files"][site][version][level].keys()))
-                for processing in processings:
-                    file_name = self.thredds["files"][site][version][level][processing]
-                    if isinstance(file_name, list):
-                        file_name = file_name[0]
-                    if len(file_name) == 0:
-                        continue
-                    child0 = QtGui.QStandardItem(processing)
-                    child0.setEditable(False)
-                    child1 = QtGui.QStandardItem(file_name)
-                    child1.setEditable(False)
-                    self.level_section.appendRow([child0, child1])
-                self.version_section.appendRow(self.level_section)
-            selected_item.appendRow(self.version_section)
-        return
-
-    def get_levels_for_version(self, idx):
-        selected_item = idx.model().itemFromIndex(idx)
-        selected_item.removeRows(0, selected_item.rowCount())
-        version = selected_item.text()
-        site = selected_item.parent().text()
-        catalog = self.catalogs[site]["catalog"].follow().catalog_refs[version]
-        self.catalogs[site]["versions"][version] = {"catalog": catalog, "levels": {}}
-        self.levels = self.catalogs[site]["versions"][version]["catalog"].follow().catalog_refs
-        for level in self.levels:
-            self.thredds["files"][site][version] = {level: {"default": "dummy.nc"}}
-            self.thredds["urls"][site][version] = {level: {"default": "https://"}}
-            self.level_section = QtGui.QStandardItem(level)
-            self.level_section.setEditable(False)
-            processings = sorted(list(self.thredds["files"][site][version][level].keys()))
-            for processing in processings:
-                file_name = self.thredds["files"][site][version][level][processing]
-                if isinstance(file_name, list):
-                    file_name = file_name[0]
-                if len(file_name) == 0:
-                    continue
-                child0 = QtGui.QStandardItem(processing)
-                child0.setEditable(False)
-                child1 = QtGui.QStandardItem(file_name)
-                child1.setEditable(False)
-                self.level_section.appendRow([child0, child1])
-            selected_item.appendRow(self.level_section)
-        return
-
-    def get_proc_type_for_level(self, idx):
-        selected_item = idx.model().itemFromIndex(idx)
-        selected_item.removeRows(0, selected_item.rowCount())
-        level = selected_item.text()
-        version = selected_item.parent().text()
-        site = selected_item.parent().parent().text()
-        self.thredds["files"][site][version][level] = {}
-        self.thredds["urls"][site][version][level] = {}
-        cat_versions = self.catalogs[site]["versions"]
-        cat_levels = self.catalogs[site]["versions"][version]["levels"]
-        catalog = cat_versions[version]["catalog"].follow().catalog_refs[level]
-        cat_levels[level] = {"catalog": catalog, "proc": {}}
-        procs = self.catalogs[site]["versions"][version]["levels"][level]
-        processings = procs["catalog"].follow().catalog_refs
-        for processing in processings:
-            file_names = procs["catalog"].follow().catalog_refs[processing].follow().datasets
-            if len(file_names) == 0:
-                continue
-            url = self.info["base_url"] + site + "/" + version + "/" + level + "/" + processing + "/"
-            procs["proc"][processing] = {"file_names": list(file_names)}
-            #if len(procs["proc"][processing]["file_names"]) > 0:
-                #self.thredds["files"][site][version][level][processing] = procs["proc"][processing]["file_names"][0]
-                #self.thredds["urls"][site][version][level][processing] = url
-            #child0 = QtGui.QStandardItem(processing)
-            #child0.setEditable(False)
-            #child1 = QtGui.QStandardItem(self.thredds["files"][site][version][level][processing])
-            #child1.setEditable(False)
-            #selected_item.appendRow([child0, child1])
-            self.thredds["files"][site][version][level][processing] = procs["proc"][processing]["file_names"]
-            self.thredds["urls"][site][version][level][processing] = url
-            for n, file_name in enumerate(procs["proc"][processing]["file_names"]):
-                if n == 0:
-                    child0 = QtGui.QStandardItem(processing)
-                else:
-                    child0 = QtGui.QStandardItem("")
-                child0.setEditable(False)
-                child1 = QtGui.QStandardItem(file_name)
-                child1.setEditable(False)
-                selected_item.appendRow([child0, child1])
 
 class edit_cfg_batch(QtWidgets.QWidget):
     def __init__(self, main_gui):
@@ -10813,15 +10730,13 @@ class file_explore_thredds(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(file_explore_thredds, self).__init__()
         self.ds = main_gui.ds
-        self.labels = sorted([l for l in list(self.ds.keys())
-                              if "_QCFlag" not in l and "time" in self.ds[l].dims])
         self.tabs = main_gui.tabs
         self.figure_number = 0
         self.view = QtWidgets.QTreeView()
         self.model = QtGui.QStandardItemModel()
         self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.view.customContextMenuRequested.connect(self.context_menu)
-        #self.view.doubleClicked.connect(self.double_click)
+        self.view.doubleClicked.connect(self.double_click)
         vbox = QtWidgets.QVBoxLayout()
         vbox.addWidget(self.view)
         self.setLayout(vbox)
@@ -10836,88 +10751,151 @@ class file_explore_thredds(QtWidgets.QWidget):
         # expand the "Variables" section
         for row in range(self.model.rowCount()):
             section = self.model.item(row)
-            if section.text() in ["Variables"]:
+            if section.text() not in ["Global attributes", "Group attributes"]:
                 idx = self.model.index(row, 0)
                 self.view.expand(idx)
+
+    def double_click(self):
+        """ Save the selected text on double click events."""
+        idx = self.view.selectedIndexes()
+        self.double_click_selected_text = idx[0].data()
+        return
 
     def context_menu(self, position):
         self.context_menu = QtWidgets.QMenu()
         if len(self.view.selectedIndexes()) == 0:
             # trap right click when nothing is selected
             return
+        # get the indices of selected items
         idx = self.view.selectedIndexes()
-        selected_text = sorted([i.data() for i in idx])
+        # get the group labels of selected items
+        groups = list(set([i.parent().data() for i in idx]))
+        # dictionary to hold the labels of selected variables for each group
+        selections = {}
+        # add the selected variable labels to the right group in selections
+        for i in idx:
+            # get the group label of this selected item
+            group = i.parent().data()
+            # skip anything selected in 'Global attributes'
+            if (group in ["Global attributes"]):
+                continue
+            # add the group to selections if not there
+            if group not in selections:
+                selections[group] = []
+            # append the label of the selected variable to the group
+            selections[i.parent().data()].append(i.data())
+        # rename the 'Variables' group to 'root'
+        for key in list(selections.keys()):
+            #if key is None or key == "Variables":
+            if key == "Variables":
+                selections["root"] = selections.pop(key)
+                break
+        # return if selections is empty (no variables selected)
+        if len(list(selections.keys())) == 0:
+            return
         # plot time series, separate axes or grouped
         menuPlotTimeSeries = QtWidgets.QMenu(self)
         menuPlotTimeSeries.setTitle("Plot time series")
         actionPlotTimeSeriesSeparate = QtWidgets.QAction(self)
         actionPlotTimeSeriesSeparate.setText("Separate")
-        actionPlotTimeSeriesSeparate.triggered.connect(lambda: self.plot_timeseries(selected_text))
+        actionPlotTimeSeriesSeparate.triggered.connect(lambda: self.plot_timeseries(selections))
         actionPlotTimeSeriesGrouped = QtWidgets.QAction(self)
         actionPlotTimeSeriesGrouped.setText("Grouped")
-        actionPlotTimeSeriesGrouped.triggered.connect(lambda: self.plot_timeseries_grouped(selected_text))
+        actionPlotTimeSeriesGrouped.triggered.connect(lambda: self.plot_timeseries_grouped(selections))
         menuPlotTimeSeries.addAction(actionPlotTimeSeriesSeparate)
         menuPlotTimeSeries.addAction(actionPlotTimeSeriesGrouped)
         self.context_menu.addMenu(menuPlotTimeSeries)
-        ## plot time series of percentiles
-        #self.context_menu.actionPlotPercentiles = QtWidgets.QAction(self)
-        #self.context_menu.actionPlotPercentiles.setText("Plot percentiles")
-        #self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
-        #self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selected_text))
+        # plot time series of percentiles
+        self.context_menu.actionPlotPercentiles = QtWidgets.QAction(self)
+        self.context_menu.actionPlotPercentiles.setText("Plot percentiles")
+        self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
+        self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selections))
         # plot fingerprints
-        if self.ds.attrs["time_step"] not in ["daily", "monthly", "annual"]:
+        # check the time steps for all groups containing selected variables
+        groups = list(selections.keys())
+        groups = ["root" if i == "Global attributes" else i for i in groups]
+        time_steps = []
+        for group in groups:
+            time_steps.append(str(self.ds[group].attrs["time_step"]))
+        # all time steps for selected variables must be 30 or 60 to plot fingerprints
+        if all([True if ts in ["30", "60"] else False for ts in time_steps]):
             self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
             self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
             self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
-            self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selected_text))
+            self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selections))
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
         return
     def get_model_from_data(self):
-        #print("this is where we display the variables")
-        self.model.setHorizontalHeaderLabels(['Variable', 'long_name'])
-
-        gattrs = sorted(list(self.ds.attrs.keys()))
+        self.model.setHorizontalHeaderLabels(["Variable", "long_name"])
+        #self.model.itemChanged.connect(self.handleItemChanged)
+        gattrs = sorted(list(self.ds["root"].attrs.keys()))
         long_name = QtGui.QStandardItem("")
         section = QtGui.QStandardItem("Global attributes")
         section.setEditable(False)
         for gattr in gattrs:
-            value = str(self.ds.attrs[gattr])
+            value = str(self.ds["root"].attrs[gattr])
             child0 = QtGui.QStandardItem(gattr)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(value)
             section.appendRow([child0, child1])
         self.model.appendRow([section, long_name])
-
-        variables_section = QtGui.QStandardItem("Variables")
-        variables_section.setEditable(False)
-        for label in self.labels:
-            #var = pfp_utils.GetVariable(self.ds, label)
-            long_name = QtGui.QStandardItem(self.ds[label].attrs["long_name"])
-            variable_section = QtGui.QStandardItem(label)
-            # some variable names are not editable
-            if label in ["DateTime", "time"]:
-                variable_section.setEditable(False)
-            for attr in self.ds[label].attrs:
-                value = str(self.ds[label].attrs[attr])
-                child0 = QtGui.QStandardItem(attr)
-                child1 = QtGui.QStandardItem(value)
-                variable_section.appendRow([child0, child1])
-            variables_section.appendRow([variable_section, long_name])
-        self.model.appendRow([variables_section, QtGui.QStandardItem("")])
+        groups = list(self.ds.keys())
+        if "info" in groups:
+            groups.remove("info")
+        for group in groups:
+            if group == "root":
+                group_section = QtGui.QStandardItem("Variables")
+            else:
+                group_section = QtGui.QStandardItem(group)
+                attr_section = QtGui.QStandardItem("Group attributes")
+                gattrs = sorted(list(self.ds[group].attrs.keys()))
+                for gattr in gattrs:
+                    value = str(gattrs[gattr])
+                    child0 = QtGui.QStandardItem(gattr)
+                    child1 = QtGui.QStandardItem(value)
+                    attr_section.appendRow([child0, child1])
+                group_section.appendRow([attr_section, QtGui.QStandardItem("")])
+            group_section.setEditable(False)
+            labels = sorted([l for l in list(self.ds[group]) if "_QCFlag" not in l])
+            if len(labels) == 0:
+                continue
+            for label in labels:
+                attrs = self.ds[group][label].attrs
+                long_name = QtGui.QStandardItem(attrs["long_name"])
+                variable_section = QtGui.QStandardItem(label)
+                # some variable names are not editable
+                if label in ["DateTime", "time"]:
+                    variable_section.setEditable(False)
+                for attr in attrs:
+                    value = str(attrs[attr])
+                    child0 = QtGui.QStandardItem(attr)
+                    child1 = QtGui.QStandardItem(value)
+                    variable_section.appendRow([child0, child1])
+                group_section.appendRow([variable_section, long_name])
+            self.model.appendRow([group_section, QtGui.QStandardItem("")])
         return
-    def plot_fingerprints(self, labels):
+    def plot_fingerprints(self, selections):
         """ Wrapper for plot fingerprints function."""
         # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.labels):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
+        groups = sorted(list(selections.keys()))
+        for group in groups:
+            gvars = list(self.ds[group].keys())
+            labels = sorted(selections[group])
+            for label in labels:
+                if label not in gvars:
+                    selections[group].remove(label)
+            # check to make sure there is something left to plot
+            if len(selections[group]) == 0:
+                msg = " No variables in group " + group + " to plot"
+                logger.warning(msg)
+                selections.pop(group)
+        if len(selections.keys()) == 0:
+            msg = " Nothing to plot"
             logger.warning(msg)
             return
         # go ahead and plot
         try:
-            pfp_plot.plot_explore_fingerprints(self.ds, labels)
+            pfp_plot.plot_explore_fingerprints(self.ds, selections)
             # increment the figure number
             self.figure_number += 1
         except Exception:
@@ -10926,20 +10904,29 @@ class file_explore_thredds(QtWidgets.QWidget):
             error_message = traceback.format_exc()
             logger.error(error_message)
         return
-    def plot_timeseries(self, labels):
+    def plot_timeseries(self, selections):
         """ Wrapper for plot time series function."""
         # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.labels):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
+        groups = sorted(list(selections.keys()))
+        for group in groups:
+            gvars = list(self.ds[group].keys())
+            labels = sorted(selections[group])
+            for label in labels:
+                if label not in gvars:
+                    selections[group].remove(label)
+            # check to make sure there is something left to plot
+            if len(selections[group]) == 0:
+                msg = " No variables in group " + group + " to plot"
+                logger.warning(msg)
+                selections.pop(group)
+        if len(selections.keys()) == 0:
+            msg = " Nothing to plot"
             logger.warning(msg)
             return
         # go ahead and plot
         try:
-            pfp_plot.plot_explore_timeseries(self.ds, labels)
+            # do the plots
+            pfp_plot.plot_explore_timeseries(self.ds, selections)
             # increment the figure number
             self.figure_number += 1
         except Exception:
@@ -10948,20 +10935,28 @@ class file_explore_thredds(QtWidgets.QWidget):
             error_message = traceback.format_exc()
             logger.error(error_message)
         return
-    def plot_timeseries_grouped(self, labels):
+    def plot_timeseries_grouped(self, selections):
         """ Wrapper for plot time series function."""
         # remove anything that is not the label of a variable in self.ds
-        for label in list(labels):
-            if label not in list(self.labels):
-                labels.remove(label)
-        # check to make sure there is something left to plot
-        if len(labels) == 0:
-            msg = " No variables to plot"
+        groups = sorted(list(selections.keys()))
+        for group in groups:
+            gvars = list(self.ds[group].keys())
+            labels = sorted(selections[group])
+            for label in labels:
+                if label not in gvars:
+                    selections[group].remove(label)
+            # check to make sure there is something left to plot
+            if len(selections[group]) == 0:
+                msg = " No variables in group " + group + " to plot"
+                logger.warning(msg)
+                selections.pop(group)
+        if len(selections.keys()) == 0:
+            msg = " Nothing to plot"
             logger.warning(msg)
             return
         # go ahead and plot
         try:
-            pfp_plot.plot_explore_timeseries_grouped(self.ds, labels)
+            pfp_plot.plot_explore_timeseries_grouped(self.ds, selections)
             # increment the figure number
             self.figure_number += 1
         except Exception:
