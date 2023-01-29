@@ -40,6 +40,11 @@ class CreateLogger(logging.getLoggerClass()):
         logger_level = logging.INFO
         # create the logger and set the level
         self.logger = logging.getLogger(name=logger_name)
+        # prevent this logger propagating messages to the root logger
+        # NOTE: siphon use logging.basicConfig() which sets up a root logger
+        #       without the lne below, PFP logging messages appear in the
+        #       terminal window
+        self.logger.propagate = False
         self.logger.setLevel(logger_level)
         # default is to log to the application "Log" window
         if to_log_window:

@@ -702,46 +702,6 @@ def plot_explore_fingerprints(ds, selections):
     plt.ioff()
     return
 
-def plot_explore_histograms(ds, labels):
-    """ Plot histograms of selected variables."""
-    # set up a dictionary with the percentiles of the histograms to be plotted
-    p = {0: {"lwr": 0.0, "upr": 100.0},
-         1: {"lwr": 0.1, "upr": 99.9},
-         2: {"lwr": 0.5, "upr": 99.5},
-         3: {"lwr": 1.0, "upr": 99.0},
-         4: {"lwr": 2.5, "upr": 97.5}}
-    site_name = ds.root["Attributes"]["site_name"]
-    plt.ion()
-    for label in labels:
-        var = pfp_utils.GetVariable(ds, label)
-        sdt = var["DateTime"][0]
-        edt = var["DateTime"][-1]
-        fig = plt.figure(figsize=(11, 8), tight_layout=True)
-        window_title = site_name + ": " + var["Label"]
-        fig.canvas.manager.set_window_title(window_title)
-        gs = gridspec.GridSpec(2, 5, height_ratios=[1, 0.5])
-        ax_ts = fig.add_subplot(gs[0, :])
-        title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
-        title_str += edt.strftime("%Y-%m-%d")
-        ax_ts.set_title(title_str)
-        ax_ts.plot(var["DateTime"], var["Data"], 'b.', label=var["Label"])
-        ax_ts.legend()
-        for n in p:
-            d = plot_explore_do_histogram(var, p[n]["lwr"], p[n]["upr"])
-            lwrs = str(pfp_utils.round2significant(d["lwr"], 4))
-            uprs = str(pfp_utils.round2significant(d["upr"], 4))
-            x = numpy.arange(len(d["hist"]))
-            ax_hist = fig.add_subplot(gs[1, n])
-            label = str(p[n]["lwr"]) + "," + str(p[n]["upr"])
-            ax_hist.bar(x, d["hist"])
-            ax_hist.text(0.5, 0.9, label, transform=ax_hist.transAxes,
-                        horizontalalignment='center')
-            ax_hist.set_xticks([x[1], x[-2]])
-            ax_hist.set_xticklabels([lwrs, uprs])
-        plt.draw()
-        pfp_utils.mypause(0.5)
-    return
-
 def plot_explore_do_histogram(var, plwr, pupr):
     """ Return a dictionary with the histogram results for given percentiles."""
     d = {}
@@ -763,7 +723,7 @@ def plot_explore_percentiles(ds, selections):
          2: {"lwr": 0.5, "upr": 99.5},
          3: {"lwr": 1.0, "upr": 99.0},
          4: {"lwr": 2.5, "upr": 97.5}}
-    site_name = ds.root["Attributes"]["site_name"]
+    site_name = ds["root"].attrs["site_name"]
     groups = sorted(list(selections.keys()))
     plt.ion()
     for group in groups:
@@ -780,8 +740,8 @@ def plot_explore_percentiles(ds, selections):
                 d = plot_explore_do_histogram(var, p[n]["lwr"], p[n]["upr"])
                 ax_ts = fig.add_subplot(gs[n, 0])
                 if n == 0:
-                    title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
-                    title_str += edt.strftime("%Y-%m-%d") + "; " + label
+                    title_str = site_name + ": " + numpy.datetime_as_string(sdt, "D") + " to "
+                    title_str += numpy.datetime_as_string(edt, "D") + "; " + label
                     ax_ts.set_title(title_str)
                 legend = str(p[n]["lwr"]) + "," + str(p[n]["upr"])
                 ax_ts.plot(var["DateTime"][d["idx"]], var["Data"][d["idx"]], 'b.', label=legend)
