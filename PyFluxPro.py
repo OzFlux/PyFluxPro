@@ -51,7 +51,9 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.mode = "interactive"
         # create a dictionary for general information
         self.info = {"THREDDS": {"base_url": "", "catalog_name": "catalog.xml",
-                                 "server_name": "", "dodoC_url": ""}}
+                                 "server_name": "", "dodoC_url": ""},
+                     "Files": {"file_name": ""},
+                     "returncodes": {"value": 0, "message": ""}}
         # menu bar
         self.menubar = QtWidgets.QMenuBar(self)
         # File menu
@@ -406,8 +408,9 @@ class pfp_main_ui(QtWidgets.QWidget):
         # file when it is needed instead of all at once making GUI response better
         #self.xrds = xarray.open_dataset(file_url, decode_times=False)
         self.ds = pfp_io.NetCDFRead(file_url, engine="xarray")
+        self.ds["info"]["source"] = "thredds"
         # display the netcdf file in the GUI
-        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore_thredds(self)
+        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
         # add a tab for the netCDF file contents
         tab_title = os.path.basename(os.path.split(file_url)[1])
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
@@ -501,16 +504,12 @@ class pfp_main_ui(QtWidgets.QWidget):
         # close the netCDF file
         self.file.close()
         # read the netCDF file to a data structure
-        self.ds = pfp_io.NetCDFRead(file_uri, checktimestep=False)
-        if self.ds.info["returncodes"]["value"] != 0:
-            return
+        self.ds = pfp_io.NetCDFRead(file_uri, checktimestep=False, engine="xarray")
+        self.ds["info"]["source"] = "local"
         # display the netcdf file in the GUI
         self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
-        # return if something went wrong
-        if self.tabs.tab_dict[self.tabs.tab_index_all].ds.info["returncodes"]["value"] != 0:
-            return
         # add a tab for the netCDF file contents
-        tab_title = os.path.basename(self.ds.info["filepath"])
+        tab_title = os.path.basename(file_uri)
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
@@ -700,12 +699,14 @@ class pfp_main_ui(QtWidgets.QWidget):
         if isinstance(content, ConfigObj):
             # we are saving a control file
             self.save_control_file()
-        elif isinstance(content, pfp_classes.DataStructure):
+        elif ((isinstance(content, pfp_classes.DataStructure)) or
+              (isinstance(content, dict))):
             # we are saving a data structure
             self.save_netcdf_file()
         else:
             # unrecognised content type
-            msg = "Object must be either a control file or a data structure"
+            msg = "Object must be either a control file, a PFP data structure "
+            msg += "or a dictionary of xarray datasets"
             logger.error(msg)
         return
 
@@ -744,7 +745,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # get the updated control file data
         ds = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # write the data structure to file
-        pfp_io.NetCDFWrite(ds.info["filepath"], ds)
+        pfp_io.NetCDFWrite(ds["info"]["filepath"], ds, engine="xarray")
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
@@ -770,13 +771,14 @@ class pfp_main_ui(QtWidgets.QWidget):
                 return
             content.filename = file_uri
             self.save_as_control_file(content)
-        elif isinstance(content, pfp_classes.DataStructure):
-            # we are opening a netCDF file
-            file_uri = content.info["filepath"]
+        elif ((isinstance(content, pfp_classes.DataStructure)) or
+              (isinstance(content, dict))):
+            # we are saving a netCDF file
+            file_uri = content["info"]["filepath"]
             file_uri = QtWidgets.QFileDialog.getSaveFileName(self, "Save as ...", file_uri)[0]
             if len(str(file_uri)) == 0:
                 return
-            content.info["filepath"] = file_uri
+            content["info"]["filepath"] = file_uri
             self.save_as_netcdf_file(content)
         else:
             # unrecognised file type
@@ -801,9 +803,9 @@ class pfp_main_ui(QtWidgets.QWidget):
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
         # write the data structure to file
-        pfp_io.NetCDFWrite(ds.info["filepath"], ds)
+        pfp_io.NetCDFWrite(ds["info"]["filepath"], ds, engine="xarray")
         # update the tab text
-        tab_title = os.path.basename(str(ds.info["filepath"]))
+        tab_title = os.path.basename(str(ds["info"]["filepath"]))
         self.tabs.setTabText(tab_index_current, tab_title)
         return
 

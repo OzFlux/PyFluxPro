@@ -2575,10 +2575,13 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", updat
         if update:
             ds = ds_update(ds)
     elif engine.lower() == "xarray":
+        ds = {"info": {"filepath": ""}}
+        # xarray does not report groups in a netCDF file, we must open the file using
+        # netCDF4, check for groups and then close the file again, an overhead of ~450 ms.
         nc_file = netCDF4.Dataset(nc_file_uri, "r")
+        ds["info"]["filepath"] = nc_file.filepath()
         groups = nc_file.groups.keys()
         nc_file.close()
-        ds = {}
         if len(groups) == 0:
             ds["root"] = xarray.open_dataset(nc_file_uri)
             ds["root"] = ds["root"].squeeze()
@@ -2589,7 +2592,7 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", updat
                 ds[group] = ds[group].squeeze()
     return ds
 
-def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3):
+def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3, engine="netcdf4"):
     """
     Purpose:
      Wrapper for the pfp_io.nc_write_series() routine so we have a nice name
@@ -2605,32 +2608,36 @@ def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3):
     file_name = os.path.split(nc_file_path)
     msg = " Writing netCDF file " + file_name[1]
     logger.info(msg)
-    try:
-        nc_file = netCDF4.Dataset(nc_file_path, "w", format=nc_type)
-        groups = list(vars(ds))
-        if "info" in groups:
-            groups.remove("info")
-        if len(groups) == 1:
-            # write the global attributes to the netCDF file
-            nc_write_globalattributes(nc_file, ds)
-            nc_write_series(nc_file, ds, outputlist=None, ndims=3)
-        elif len(groups) > 1:
-            # write the global attributes to the netCDF file
-            nc_write_globalattributes(nc_file, ds)
-            for group in groups:
-                dsg = getattr(ds, group)
-                if len(dsg["Variables"]) == 0:
-                    continue
-                nc_group = nc_file.createGroup(group)
-                nc_write_group(nc_group, ds, group)
-        nc_file.close()
-    except Exception:
-        msg = " Unable to write netCDF file " + file_name[1]
-        logger.error(msg)
-        error_message = traceback.format_exc()
-        logger.error(error_message)
-        nc_file.close()
-        return
+    if engine.lower() == "netcdf4":
+        try:
+            nc_file = netCDF4.Dataset(nc_file_path, "w", format=nc_type)
+            groups = list(vars(ds))
+            if "info" in groups:
+                groups.remove("info")
+            if len(groups) == 1:
+                # write the global attributes to the netCDF file
+                nc_write_globalattributes(nc_file, ds)
+                nc_write_series(nc_file, ds, outputlist=None, ndims=3)
+            elif len(groups) > 1:
+                # write the global attributes to the netCDF file
+                nc_write_globalattributes(nc_file, ds)
+                for group in groups:
+                    dsg = getattr(ds, group)
+                    if len(dsg["Variables"]) == 0:
+                        continue
+                    nc_group = nc_file.createGroup(group)
+                    nc_write_group(nc_group, ds, group)
+            nc_file.close()
+        except Exception:
+            msg = " Unable to write netCDF file " + file_name[1]
+            logger.error(msg)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+            nc_file.close()
+            return
+    elif engine.lower() == "xarray":
+        ds["root"] = ds["root"].expand_dims({"latitude": 1, "longitude": 1})
+        ds["root"].to_netcdf(nc_file_path, "w", format="NETCDF4")
     return
 
 def nc_open_write(ncFullName, nctype='NETCDF4', mode="verbose"):
