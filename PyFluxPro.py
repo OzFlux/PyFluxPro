@@ -348,10 +348,10 @@ class pfp_main_ui(QtWidgets.QWidget):
         # do the business depending on the file type
         if isinstance(self.file, ConfigObj):
             # we are opening a control file
-            self.open_control_file()
+            self.file_open_control_file()
         elif isinstance(self.file, netCDF4._netCDF4.Dataset):
             # we are opening a netCDF file
-            self.open_netcdf_file()
+            self.file_open_netcdf_file()
         else:
             # unrecognised file type
             msg = "File must be either a control file or a netCDF file"
@@ -430,7 +430,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         browser.open_new("https://github.com/OzFlux/PyFluxPro/wiki")
         return
 
-    def open_control_file(self):
+    def file_open_control_file(self):
         logger = logging.getLogger(name="pfp_log")
         # check to see if the processing level is defined in the control file
         if "level" not in self.file:
@@ -499,7 +499,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         return
 
-    def open_netcdf_file(self):
+    def file_open_netcdf_file(self):
         file_uri = self.file.filepath()
         # close the netCDF file
         self.file.close()
@@ -698,11 +698,11 @@ class pfp_main_ui(QtWidgets.QWidget):
         content = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         if isinstance(content, ConfigObj):
             # we are saving a control file
-            self.save_control_file()
+            self.file_save_control_file()
         elif ((isinstance(content, pfp_classes.DataStructure)) or
               (isinstance(content, dict))):
             # we are saving a data structure
-            self.save_netcdf_file()
+            self.file_save_netcdf_file()
         else:
             # unrecognised content type
             msg = "Object must be either a control file, a PFP data structure "
@@ -710,7 +710,7 @@ class pfp_main_ui(QtWidgets.QWidget):
             logger.error(msg)
         return
 
-    def save_control_file(self):
+    def file_save_control_file(self):
         """ Save the current tab as a control file."""
         logger = logging.getLogger(name="pfp_log")
         # get the current tab index
@@ -738,7 +738,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
         return
 
-    def save_netcdf_file(self):
+    def file_save_netcdf_file(self):
         """Save the current tab as a netCDF file."""
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
@@ -770,7 +770,7 @@ class pfp_main_ui(QtWidgets.QWidget):
             if len(str(file_uri)) == 0:
                 return
             content.filename = file_uri
-            self.save_as_control_file(content)
+            self.file_save_as_control_file(content)
         elif ((isinstance(content, pfp_classes.DataStructure)) or
               (isinstance(content, dict))):
             # we are saving a netCDF file
@@ -779,14 +779,14 @@ class pfp_main_ui(QtWidgets.QWidget):
             if len(str(file_uri)) == 0:
                 return
             content["info"]["filepath"] = file_uri
-            self.save_as_netcdf_file(content)
+            self.file_save_as_netcdf_file(content)
         else:
             # unrecognised file type
             msg = "File must be either a control file or a netCDF file"
             logger.error(msg)
         return
 
-    def save_as_control_file(self, cfg):
+    def file_save_as_control_file(self, cfg):
         """ Save the current tab with a different name."""
         tab_index_current = self.tabs.tab_index_current
         logger = logging.getLogger(name="pfp_log")
@@ -798,7 +798,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.setTabText(tab_index_current, tab_title)
         return
 
-    def save_as_netcdf_file(self, ds):
+    def file_save_as_netcdf_file(self, ds):
         """ Save the current tab with a different name."""
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
