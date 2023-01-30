@@ -687,18 +687,10 @@ def ReadExcelWorkbook(l1_info):
                 del l1ire["xl_sheets"][xl_sheet]["nc_labels"][nc_label]
     df_names = list(dfs)
     for df_name in df_names:
-        timestamps = list(dfs[df_name].select_dtypes(include=['datetime64']))
-        if len(timestamps) < 1:
-            msg = " Did not find a time stamp for sheet " + df_name + ", deleting sheet ..."
-            logger.error(msg)
-            del dfs[df_name]
-            del l1_info["read_excel"]["xl_sheets"][df_name]
+        # get the column name of the timestamp
+        timestamp = read_excel_workbook_get_timestamp(dfs, df_name, l1_info)
+        if timestamp is None:
             continue
-        elif len(timestamps) > 1:
-            msg = " more than 1 time stamp found for sheet " + df_name + ", using " + timestamps[0]
-            logger.warning(msg)
-        # choose the first datetime column
-        timestamp = timestamps[0]
         # remove rows with no timestamp
         # time stamp as an array
         lts = dfs[df_name][timestamp].to_numpy()
@@ -714,13 +706,25 @@ def ReadExcelWorkbook(l1_info):
         dfs[df_name].index = dfs[df_name].index.round('1S')
         # drop columns except those wanted by the user
         dfs[df_name] = dfs[df_name][~dfs[df_name].index.duplicated(keep='first')]
+        # check the time step of this worksheet against the value in the global attributes
+        pdts = pandas.infer_freq(dfs[df_name].index)
+        pdts = pfp_utils.strip_non_numeric(pdts)
+        gats = l1ire["Global"]["time_step"]
+        if int(pdts) != int(gats):
+            msg = " " + df_name + " time step is " + pdts + ", expected " + gats
+            logger.error(msg)
+            continue
         # drop columns except those wanted by the user
-        dfs[df_name] = dfs[df_name][list(l1_info["read_excel"]["xl_sheets"][df_name]["xl_labels"])]
+        dfs[df_name] = dfs[df_name][list(l1ire["xl_sheets"][df_name]["xl_labels"])]
         # coerce all columns with dtype "object" to "float64"
         cols = dfs[df_name].columns[dfs[df_name].dtypes.eq(object)]
         dfs[df_name][cols] = dfs[df_name][cols].apply(pandas.to_numeric, errors='coerce')
-    # rename the pandas dataframe columns from the Excel variable names to theobj netCDF
-    # variable names
+    # check to see if we have anything left to work with
+    if len(df_names) < 1:
+        msg = " No sheets to process in workbook " + l1ire["Files"]["in_filename"]
+        logger.error(msg)
+        raise RuntimeError(msg)
+    # rename the pandas dataframe columns from the Excel variable names to the netCDF variable names
     # loop over the sheets in the Excel workbook
     for df_name in df_names:
         # create an empty dataframe with the index
@@ -732,6 +736,30 @@ def ReadExcelWorkbook(l1_info):
         dfs[df_name] = tmp.copy()
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     return dfs
+
+def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
+    """ Get the timestamp column name."""
+    df = dfs[df_name]
+    # is_datetime64_dtype should trap '<M8[ns]' and '>M8[ns]' as well
+    # as datetim64[ns]
+    if pandas.api.types.is_datetime64_dtype(df[df.columns[0]]):
+        timestamp = df.columns[0]
+    # pandas sometimes returns a column that can be interpreted as
+    # datetime as dtype object
+    elif pandas.api.types.is_object_dtype(df[df.columns[0]]):
+        # convert dtype object to datetime64[ns]
+        df[df.columns[0]] = pandas.to_datetime(df[df.columns[0]],
+                                               infer_datetime_format=True,
+                                               errors='coerce')
+        timestamp = df.columns[0]
+    else:
+        # can't interpret column 0 as a datetime so delete sheet
+        msg = " Unable to convert column " + df.columns[0] + " to a time stamp"
+        logger.error(msg)
+        del dfs[df_name]
+        del l1_info["read_excel"]["xl_sheets"][df_name]
+        timestamp = None
+    return timestamp
 
 def ReadInputFile(l1_info):
     """

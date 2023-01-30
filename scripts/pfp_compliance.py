@@ -738,7 +738,7 @@ def check_l1_controlfile(cfg):
         # check IRGA and sonic instrument type
         l1_check_irga_sonic_type(cfg, messages)
         # display and messages
-        display_messages_interactive(messages)
+        display_messages_interactive(messages, mode="CloseOrIgnore")
         if len(messages["ERROR"]) > 0:
             ok = False
     except Exception:
@@ -1296,7 +1296,7 @@ def l1_check_global_forced(cfg, std, messages):
     for item in forced:
         cfg["Global"][item] = forced[item]
         msg = "Global: setting " + item + " to " + forced[item]
-        #messages["INFO"].append(msg)
+        messages["INFO"].append(msg)
     # and do the time zone
     lon = float(cfg["Global"]["longitude"])
     lat = float(cfg["Global"]["latitude"])
@@ -1484,6 +1484,12 @@ def l1_check_irga_sonic_type(cfg, messages):
     sonic_only_labels = sonic_labels + t_covars + m_covars + fh_labels + fm_labels
     # sonic and fast IRGA
     sonic_irga_labels = h2o_covars + co2_covars + fco2_labels + fh2o_labels + fe_labels
+    # all sonic or IRGA related variables
+    all_sonic_irga_labels = fast_irga_only_labels + slow_irga_only_labels + sonic_only_labels + sonic_irga_labels
+    # check to see if we have any sonic and IRGA related variables
+    if set(cfg_labels).isdisjoint(set(all_sonic_irga_labels)):
+        # no sonic or IRGA variables in control file so skip checks
+        return
     # call the check routines
     l1_check_irga_only(cfg, fast_irga_only_labels, messages)
     l1_check_irga_only(cfg, slow_irga_only_labels, messages)
