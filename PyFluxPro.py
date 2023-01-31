@@ -86,7 +86,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionFileOpen.setShortcut('Ctrl+O')
         # THREDDS submenu: menu actions to browse a THREDDS server
         self.menuFileTHREDDS = QtWidgets.QMenu(self.menuFile)
-        self.menuFileTHREDDS.setTitle("THREDDS")
+        self.menuFileTHREDDS.setTitle("Remote")
         self.actionFileTHREDDSTERN = QtWidgets.QAction(self)
         self.actionFileTHREDDSTERN.setText("TERN")
         self.actionFileTHREDDSOzFlux = QtWidgets.QAction(self)

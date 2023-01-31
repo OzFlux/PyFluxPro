@@ -95,30 +95,10 @@ class display_thredds_tree(QtWidgets.QWidget):
                 lidx = lidx.parent()
                 levels.append(str(lidx.data()))
             levels = list(reversed(levels))
-            cat_ref = self.catalogs["sites"].catalog_refs[levels[0]]
-            self.current_catalog = self.catalogs["sites"].catalog_refs[levels[0]].follow().catalog_refs
-            for level in levels[1:]:
-                cat_ref = cat_ref.follow().catalog_refs[level]
+            self.current_catalog = self.catalogs["sites"].catalog_refs
+            for level in levels[0:-1]:
                 self.current_catalog = self.current_catalog[level].follow().catalog_refs
-                if len(cat_ref.follow().catalog_refs) > 0:
-                    cat_refs = sorted(list(cat_ref.follow().catalog_refs))
-                    dict_to_add = {}
-                    for cr in cat_refs:
-                        dict_to_add[cr] = {"dummy": "dummy"}
-                    subsection = idx.model().itemFromIndex(idx)
-                    subsection.removeRows(0, subsection.rowCount())
-                    for key in dict_to_add:
-                        subsubsection = QtGui.QStandardItem(key)
-                        self.add_subsection(subsubsection, dict_to_add[key])
-                        subsection.appendRow(subsubsection)
-                else:
-                    dss = self.current_catalog[str(idx.data())].follow().datasets
-                    dss_refs = sorted(list(dss))
-                    subsection = idx.model().itemFromIndex(idx)
-                    subsection.removeRows(0, subsection.rowCount())
-                    for n, dss_ref in enumerate(dss_refs):
-                        dict_to_add = {str(n): str(dss_ref)}
-                        self.add_subsection(subsection, dict_to_add)
+            self.expand_current_catalog(idx)
         return
 
     def expand_current_catalog(self, idx):
@@ -126,8 +106,8 @@ class display_thredds_tree(QtWidgets.QWidget):
         cat_refs = sorted(list(cat))
         if len(cat_refs) > 0:
             dict_to_add = {}
-            for cat_ref in cat_refs:
-                dict_to_add[cat_ref] = {"dummy": "dummy"}
+            for cr in cat_refs:
+                dict_to_add[cr] = {"dummy": "dummy"}
             subsection = idx.model().itemFromIndex(idx)
             subsection.removeRows(0, subsection.rowCount())
             for key in dict_to_add:
@@ -141,8 +121,11 @@ class display_thredds_tree(QtWidgets.QWidget):
             subsection = idx.model().itemFromIndex(idx)
             subsection.removeRows(0, subsection.rowCount())
             for n, dss_ref in enumerate(dss_refs):
-                dict_to_add = {str(n): str(dss_ref)}
-                self.add_subsection(subsection, dict_to_add)
+                # L6 summry files contain groups which are not currently
+                # supported by the TERN and OzFlux DAP servers
+                if "Summary" not in dss_ref:
+                    dict_to_add = {str(n): str(dss_ref)}
+                    self.add_subsection(subsection, dict_to_add)
         return
 
     def get_list_of_levels(self):
