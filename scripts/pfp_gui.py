@@ -7,31 +7,25 @@ import os
 import traceback
 # 3rd party modules
 from configobj import ConfigObj
-import numpy
 from PyQt5 import QtCore, QtGui, QtWidgets
 # PFP modules
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
 from scripts import pfp_gfALT
 from scripts import pfp_gfSOLO
-from scripts import pfp_io
 from scripts import pfp_plot
-from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
 class display_thredds_tree(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(display_thredds_tree, self).__init__()
-
         self.main_gui = main_gui
         self.catalogs = main_gui.catalogs
         self.info = main_gui.info
-
         self.view = QtWidgets.QTreeView()
         self.model = QtGui.QStandardItemModel()
         self.view.setModel(self.model)
-
         self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.view.customContextMenuRequested.connect(self.context_menu)
         self.view.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -46,7 +40,7 @@ class display_thredds_tree(QtWidgets.QWidget):
         self.setGeometry(300, 300, 600, 400)
         self.get_model_from_data()
         self.view.setColumnWidth(0, 200)
-
+        return
     def add_subsection(self, section, dict_to_add):
         for key in dict_to_add:
             val = str(dict_to_add[key])
@@ -54,7 +48,6 @@ class display_thredds_tree(QtWidgets.QWidget):
             child1 = QtGui.QStandardItem(val)
             section.appendRow([child0, child1])
         return
-
     def add_subsubsection(self, subsection, dict_to_add):
         """ Add a subsubsection to the model."""
         for key in dict_to_add:
@@ -62,7 +55,6 @@ class display_thredds_tree(QtWidgets.QWidget):
             self.add_subsection(subsubsection, dict_to_add[key])
             subsection.appendRow(subsubsection)
         return
-
     def context_menu(self, position):
         self.context_menu = QtWidgets.QMenu()
         if len(self.view.selectedIndexes()) == 0:
@@ -78,29 +70,56 @@ class display_thredds_tree(QtWidgets.QWidget):
             self.context_menu.actionOpenTHREDDSFile.triggered.connect(arg)
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
         return
-
     def double_click(self):
         return
-
     def expanded(self, idx):
+        """
+        Purpose:
+         Handle requests to expand THREDDS catalog level.
+         The current catalog is stored in self.current_catalog and this is
+         updated everytime a section is expanded.
+         The process is as follows:
+          1) if the section to be expanded is in the current catalog then
+             we simply call self.expand_current_catalog() to handle the
+             request
+          2) if the section to be expended is not in the current catalog
+             then we reset the current catalog by working back up the tree
+             to the section parent and then back down again updating the
+             current catalog as we go.
+        Improvements:
+         Populate a dictionary of catalog references every time a section
+         is expanded.  This avoids using siphon to get the same catalog
+         references every time a section not in the current catalog is expended.
+        Author: PRI
+        Date: January 2023
+        """
+        self.main_gui.setCursor(QtCore.Qt.WaitCursor)
+        # check to see if the selected section is in the current catalog
         if str(idx.data()) in self.current_catalog:
-            self.expand_current_catalog(idx)
-        elif str(idx.data()) in self.sites:
-            self.current_catalog = self.catalogs["sites"].catalog_refs
+            # section is in the current catalog
             self.expand_current_catalog(idx)
         else:
+            # section not in the current catalog
+            # initialise a list to hold the cascade of section levels
             levels = [str(idx.data())]
+            # get a copy of the index so we don't modify the original
             lidx = idx
+            # iterate up the nested tree structure until we get to the top
+            # and add the section levels to a list as we go
             while lidx.parent().isValid():
                 lidx = lidx.parent()
                 levels.append(str(lidx.data()))
+            # reverse the list of section levels so top level is first
             levels = list(reversed(levels))
+            # reset the current catalog to the top level
             self.current_catalog = self.catalogs["sites"].catalog_refs
+            # iterate back down the tree updating the current catalog as we go
             for level in levels[0:-1]:
                 self.current_catalog = self.current_catalog[level].follow().catalog_refs
+            # and then expand the selected section with the updated current catalog
             self.expand_current_catalog(idx)
+        self.main_gui.unsetCursor()
         return
-
     def expand_current_catalog(self, idx):
         cat = self.current_catalog[str(idx.data())].follow().catalog_refs
         cat_refs = sorted(list(cat))
@@ -127,19 +146,6 @@ class display_thredds_tree(QtWidgets.QWidget):
                     dict_to_add = {str(n): str(dss_ref)}
                     self.add_subsection(subsection, dict_to_add)
         return
-
-    def get_list_of_levels(self):
-        return
-
-    def get_level_selected_item(self):
-        """ Get the level of the selected item."""
-        level = 0
-        idx = self.view.selectedIndexes()[0]
-        while idx.parent().isValid():
-            idx = idx.parent()
-            level += 1
-        return level
-
     def get_dodsC_file_url(self):
         """ Get the dodsC path of the selected item."""
         idx = self.view.selectedIndexes()[0]
@@ -155,7 +161,6 @@ class display_thredds_tree(QtWidgets.QWidget):
         local_path.append(selected_item.text())
         file_url = os.path.join(self.info["THREDDS"]["dodsC_url"], *local_path)
         return file_url
-
     def get_model_from_data(self):
         self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
         self.current_catalog = self.catalogs["sites"].catalog_refs
@@ -10338,6 +10343,7 @@ class edit_cfg_windrose(QtWidgets.QWidget):
 class file_explore(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(file_explore, self).__init__()
+        self.main_gui = main_gui
         self.ds = main_gui.ds
         self.tabs = main_gui.tabs
         self.figure_number = 0
@@ -10561,6 +10567,7 @@ class file_explore(QtWidgets.QWidget):
         return
     def plot_fingerprints(self, selections):
         """ Wrapper for plot fingerprints function."""
+        self.main_gui.setCursor(QtCore.Qt.WaitCursor)
         # remove anything that is not the label of a variable in self.ds
         groups = sorted(list(selections.keys()))
         for group in groups:
@@ -10588,9 +10595,11 @@ class file_explore(QtWidgets.QWidget):
             logger.error(error_message)
             error_message = traceback.format_exc()
             logger.error(error_message)
+        self.main_gui.unsetCursor()
         return
     def plot_percentiles(self, selections):
         """ Wrapper for plot percentiles function."""
+        self.main_gui.setCursor(QtCore.Qt.WaitCursor)
         # remove anything that is not the label of a variable in self.ds
         groups = sorted(list(selections.keys()))
         for group in groups:
@@ -10618,9 +10627,11 @@ class file_explore(QtWidgets.QWidget):
             logger.error(error_message)
             error_message = traceback.format_exc()
             logger.error(error_message)
+        self.main_gui.unsetCursor()
         return
     def plot_timeseries_grouped(self, selections):
         """ Wrapper for plot time series function."""
+        self.main_gui.setCursor(QtCore.Qt.WaitCursor)
         # remove anything that is not the label of a variable in self.ds
         groups = sorted(list(selections.keys()))
         for group in groups:
@@ -10648,9 +10659,11 @@ class file_explore(QtWidgets.QWidget):
             logger.error(error_message)
             error_message = traceback.format_exc()
             logger.error(error_message)
+        self.main_gui.unsetCursor()
         return
     def plot_timeseries_separate(self, selections):
         """ Wrapper for plot time series function."""
+        self.main_gui.setCursor(QtCore.Qt.WaitCursor)
         # remove anything that is not the label of a variable in self.ds
         groups = sorted(list(selections.keys()))
         for group in groups:
@@ -10679,6 +10692,7 @@ class file_explore(QtWidgets.QWidget):
             logger.error(error_message)
             error_message = traceback.format_exc()
             logger.error(error_message)
+        self.main_gui.unsetCursor()
         return
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
