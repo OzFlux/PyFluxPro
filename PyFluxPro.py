@@ -390,6 +390,7 @@ class pfp_main_ui(QtWidgets.QWidget):
 
     def file_open_thredds_catalog(self, base_url):
         """ Open a THREDDS server."""
+        self.setCursor(QtCore.Qt.WaitCursor)
         self.info["THREDDS"]["dodsC_url"] = self.info["THREDDS"]["base_url"].replace("catalog", "dodsC")
         #url = os.path.join(self.info["THREDDS"]["base_url"], self.info["THREDDS"]["catalog_name"])
         # siphon seems to only accept URLs with a forward slash ('/') as the delimiter
@@ -402,13 +403,14 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
+        self.unsetCursor()
         return
 
     def file_open_thredds_file(self, file_url):
+        self.setCursor(QtCore.Qt.WaitCursor)
         # read the netCDF file to a data structure
         # we use xarray here because it will only read data from the remote netCDF
         # file when it is needed instead of all at once making GUI response better
-        #self.xrds = xarray.open_dataset(file_url, decode_times=False)
         self.ds = pfp_io.NetCDFRead(file_url, engine="xarray")
         self.ds["info"]["source"] = "thredds"
         # display the netcdf file in the GUI
@@ -418,6 +420,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
+        self.unsetCursor()
         return
 
     def help_about(self):
