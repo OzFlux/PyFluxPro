@@ -159,7 +159,8 @@ class display_thredds_tree(QtWidgets.QWidget):
         if file_index_number in local_path:
             local_path.remove(file_index_number)
         local_path.append(selected_item.text())
-        file_url = os.path.join(self.info["THREDDS"]["dodsC_url"], *local_path)
+        # siphon seems to only accept URLs with a forward slash ('/') as the delimiter
+        file_url = self.info["THREDDS"]["dodsC_url"] + "/" + "/".join(local_path)
         return file_url
     def get_model_from_data(self):
         self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])

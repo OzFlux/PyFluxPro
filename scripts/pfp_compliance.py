@@ -8,7 +8,7 @@ import traceback
 # 3rd party modules
 from configobj import ConfigObj
 #import numpy
-import timezonefinder
+#import timezonefinder
 # PFP modules
 from scripts import constants as c
 from scripts import pfp_func_units
