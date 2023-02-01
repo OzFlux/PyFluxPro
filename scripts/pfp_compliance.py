@@ -1298,19 +1298,19 @@ def l1_check_global_forced(cfg, std, messages):
         msg = "Global: setting " + item + " to " + forced[item]
         messages["INFO"].append(msg)
     # and do the time zone
-    lon = float(cfg["Global"]["longitude"])
-    lat = float(cfg["Global"]["latitude"])
-    tf = timezonefinder.TimezoneFinder()
-    time_zone = tf.timezone_at(lng=lon, lat=lat)
-    if "time_zone" in cfg["Global"]:
-        if cfg["Global"]["time_zone"] != time_zone:
-            cfg["Global"]["time_zone"] = time_zone
-            msg = "Global: existing time zone replaced with " + time_zone
-            messages["WARNING"].append(msg)
-        else:
-            pass
-    else:
-        cfg["Global"]["time_zone"] = time_zone
+    #lon = float(cfg["Global"]["longitude"])
+    #lat = float(cfg["Global"]["latitude"])
+    #tf = timezonefinder.TimezoneFinder()
+    #time_zone = tf.timezone_at(lng=lon, lat=lat)
+    #if "time_zone" in cfg["Global"]:
+        #if cfg["Global"]["time_zone"] != time_zone:
+            #cfg["Global"]["time_zone"] = time_zone
+            #msg = "Global: existing time zone replaced with " + time_zone
+            #messages["WARNING"].append(msg)
+        #else:
+            #pass
+    #else:
+        #cfg["Global"]["time_zone"] = time_zone
     return
 def l1_check_global_recommended(cfg, std, messages):
     recommended = std["Global"]["Recommended"]
