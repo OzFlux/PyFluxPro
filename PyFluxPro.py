@@ -391,7 +391,9 @@ class pfp_main_ui(QtWidgets.QWidget):
     def file_open_thredds_catalog(self, base_url):
         """ Open a THREDDS server."""
         self.info["THREDDS"]["dodsC_url"] = self.info["THREDDS"]["base_url"].replace("catalog", "dodsC")
-        url = os.path.join(self.info["THREDDS"]["base_url"], self.info["THREDDS"]["catalog_name"])
+        #url = os.path.join(self.info["THREDDS"]["base_url"], self.info["THREDDS"]["catalog_name"])
+        # siphon seems to only accept URLs with a forward slash ('/') as the delimiter
+        url = self.info["THREDDS"]["base_url"] + "/" + self.info["THREDDS"]["catalog_name"]
         self.catalogs = {"sites": TDSCatalog(url)}
         # display the THREDDS catalog in the GUI
         self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.display_thredds_tree(self)
