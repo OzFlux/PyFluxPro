@@ -704,7 +704,8 @@ def check_l1_controlfile(cfg):
         cfg_labels = sorted(list(cfg["Variables"].keys()))
         base_path = pfp_utils.get_base_path()
         std_name = os.path.join(base_path, "controlfiles", "standard", "check_l1_controlfile.txt")
-        std = ConfigObj(std_name, indent_type="    ", list_values=False, write_empty_values=True)
+        std = ConfigObj(std_name, indent_type="    ", list_values=False,
+                        write_empty_values=True, encoding="UTF8")
         std_labels = sorted(list(std["Variables"].keys()))
         # initialise the messages dictionary
         messages = {"ERROR":[], "WARNING": [], "INFO": []}
@@ -739,7 +740,8 @@ def check_l1_controlfile(cfg):
         l1_check_irga_sonic_type(cfg, messages)
         # display and messages
         display_messages_interactive(messages, mode="CloseOrIgnore")
-        if len(messages["ERROR"]) > 0:
+        if ((len(messages["ERROR"]) > 0) and
+            (messages["RESULT"].lower() != "ignore")):
             ok = False
     except Exception:
         ok = False

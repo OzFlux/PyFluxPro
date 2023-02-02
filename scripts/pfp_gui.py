@@ -382,7 +382,7 @@ class edit_cfg_batch(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "batch"
         model = self.model
@@ -738,7 +738,7 @@ class edit_cfg_climatology(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "climatology"
         model = self.model
@@ -966,7 +966,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "concatenate"
         model = self.model
@@ -1595,7 +1595,7 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "cpd_barr"
         model = self.model
@@ -1937,7 +1937,7 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "cpd_mchugh"
         model = self.model
@@ -2279,7 +2279,7 @@ class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "cpd_mcnew"
         model = self.model
@@ -2800,7 +2800,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "L1"
         model = self.model
@@ -4021,7 +4021,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "L2"
         model = self.model
@@ -5167,7 +5167,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         # create a new control file object
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         # set the control file level
         cfg["level"] = "L3"
@@ -6175,7 +6175,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "L4"
         model = self.model
@@ -7388,7 +7388,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "L5"
         model = self.model
@@ -8184,7 +8184,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "L6"
         model = self.model
@@ -8665,7 +8665,7 @@ class edit_cfg_mpt(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "mpt"
         model = self.model
@@ -8885,7 +8885,7 @@ class edit_cfg_nc2csv_biomet(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "nc2csv_biomet"
         model = self.model
@@ -9175,7 +9175,7 @@ class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "nc2csv_ecostress"
         model = self.model
@@ -9475,7 +9475,7 @@ class edit_cfg_nc2csv_fluxnet(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "nc2csv_fluxnet"
         model = self.model
@@ -9775,7 +9775,7 @@ class edit_cfg_nc2csv_reddyproc(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "nc2csv_reddyproc"
         model = self.model
@@ -10189,7 +10189,7 @@ class edit_cfg_windrose(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
         cfg.filename = self.cfg.filename
         cfg["level"] = "windrose"
         model = self.model

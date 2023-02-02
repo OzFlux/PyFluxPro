@@ -310,7 +310,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         if not file_open_success:
             try:
                 self.file = ConfigObj(self.file_uri, indent_type="    ", list_values=False,
-                                      write_empty_values=True)
+                                      write_empty_values=True, encoding="UTF8")
                 file_open_success = True
             except Exception:
                 # trying to open a netCDF file will throw UnicodeDecodeError

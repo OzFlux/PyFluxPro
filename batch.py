@@ -37,7 +37,7 @@ if (__name__ == '__main__'):
         sys.exit()
 
     cfg_batch = ConfigObj(cfg_file_name, indent_type="    ", list_values=False,
-                          write_empty_values=True)
+                          write_empty_values=True, encoding="UTF8")
 
     main_ui = Bunch(stop_flag=False, cfg=cfg_batch, mode="batch")
 

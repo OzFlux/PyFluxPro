@@ -1493,7 +1493,7 @@ def get_controlfilecontents(cfg_file_uri, mode="verbose"):
     if mode != "quiet":
         logger.info(" Processing the control file")
     try:
-        cfg = ConfigObj(cfg_file_uri, indent_type="    ", list_values=False)
+        cfg = ConfigObj(cfg_file_uri, indent_type="    ", list_values=False, encoding="UTF8")
     except Exception:
         raise RuntimeError("Unable to open control file")
     return cfg
