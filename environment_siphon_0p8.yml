@@ -1,0 +1,24 @@
+name: pfp_env_siphon0p8
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - configobj
+  - python-dateutil
+  - lmfit
+  - matplotlib
+  - netcdf4
+  - numpy
+  - openpyxl
+  - pandas
+  - pyqt
+  - pytz
+  - scipy
+  - siphon=0.8
+  - statsmodels
+  - timezonefinder
+  - windrose
+  - xarray
+  - xlwt
+  - xlrd
+  - xlsxwriter
