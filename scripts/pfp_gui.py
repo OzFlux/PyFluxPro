@@ -23,6 +23,7 @@ class display_thredds_tree(QtWidgets.QWidget):
         self.main_gui = main_gui
         self.catalogs = main_gui.catalogs
         self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.view = QtWidgets.QTreeView()
         self.model = QtGui.QStandardItemModel()
         self.view.setModel(self.model)
@@ -181,6 +182,8 @@ class edit_cfg_batch(QtWidgets.QWidget):
         self.cfg = copy.deepcopy(main_gui.file)
         self.main_gui = main_gui
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.implemented_levels = ["L1", "L2", "L3",
                                    "concatenate", "climatology",
                                    "cpd_barr", "cpd_mchugh", "cpd_mcnew", "mpt",
@@ -579,6 +582,8 @@ class edit_cfg_climatology(QtWidgets.QWidget):
         super(edit_cfg_climatology, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_climatology_gui()
 
     def add_general_item(self):
@@ -895,6 +900,8 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         super(edit_cfg_concatenate, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_concatenate_gui()
 
     def edit_concatenate_gui(self):
@@ -1410,6 +1417,8 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
         super(edit_cfg_cpd_barr, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_cpd_barr_gui()
 
     def add_new_variable(self):
@@ -1752,6 +1761,8 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
         super(edit_cfg_cpd_mchugh, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_cpd_mchugh_gui()
 
     def add_new_variable(self):
@@ -2094,6 +2105,8 @@ class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
         super(edit_cfg_cpd_mcnew, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_cpd_mcnew_gui()
 
     def add_new_variable(self):
@@ -2436,6 +2449,8 @@ class edit_cfg_L1(QtWidgets.QWidget):
         super(edit_cfg_L1, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         # disable editing of essential entries in Files
         self.files_essential = ["file_path", "in_filename", "in_firstdatarow",
                                 "in_headerrow", "out_filename"]
@@ -3193,6 +3208,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
         super(edit_cfg_L2, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_L2_gui()
 
     def add_dependencycheck(self):
@@ -4331,6 +4348,8 @@ class edit_cfg_L3(QtWidgets.QWidget):
         super(edit_cfg_L3, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_L3_gui()
 
     def add_2dcoordrotation(self):
@@ -5414,6 +5433,8 @@ class edit_cfg_L4(QtWidgets.QWidget):
         super(edit_cfg_L4, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_l4_gui()
 
     def add_alternate(self):
@@ -6460,6 +6481,8 @@ class edit_cfg_L5(QtWidgets.QWidget):
         super(edit_cfg_L5, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_l5_gui()
 
     def add_acceptdaytimes(self):
@@ -7691,6 +7714,8 @@ class edit_cfg_L6(QtWidgets.QWidget):
         super(edit_cfg_L6, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_l6_gui()
 
     def add_fileentry(self, item):
@@ -8480,6 +8505,8 @@ class edit_cfg_mpt(QtWidgets.QWidget):
         super(edit_cfg_mpt, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_mpt_gui()
 
     def add_new_variable(self):
@@ -8822,6 +8849,8 @@ class edit_cfg_nc2csv_biomet(QtWidgets.QWidget):
         super(edit_cfg_nc2csv_biomet, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_nc2csv_biomet_gui()
 
     def edit_nc2csv_biomet_gui(self):
@@ -9112,6 +9141,8 @@ class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
         super(edit_cfg_nc2csv_ecostress, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_nc2csv_ecostress_gui()
 
     def edit_nc2csv_ecostress_gui(self):
@@ -9412,6 +9443,8 @@ class edit_cfg_nc2csv_fluxnet(QtWidgets.QWidget):
         super(edit_cfg_nc2csv_fluxnet, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_nc2csv_fluxnet_gui()
 
     def edit_nc2csv_fluxnet_gui(self):
@@ -9712,6 +9745,8 @@ class edit_cfg_nc2csv_reddyproc(QtWidgets.QWidget):
         super(edit_cfg_nc2csv_reddyproc, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_nc2csv_reddyproc_gui()
 
     def edit_nc2csv_reddyproc_gui(self):
@@ -10002,6 +10037,8 @@ class edit_cfg_windrose(QtWidgets.QWidget):
         super(edit_cfg_windrose, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_windrose_gui()
 
     #def add_new_variable(self):
@@ -10345,6 +10382,8 @@ class file_explore(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(file_explore, self).__init__()
         self.main_gui = main_gui
+        self.info = main_gui.info
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.ds = main_gui.ds
         self.tabs = main_gui.tabs
         self.figure_number = 0
@@ -10489,7 +10528,7 @@ class file_explore(QtWidgets.QWidget):
         return self.ds
     def get_model_from_data(self):
         # disable editing of the netCDF file if it is not on the local file system
-        if self.ds["info"]["source"] != "local":
+        if self.info["tab"]["source"] != "local":
             self.view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.model.setHorizontalHeaderLabels(["Variable", "long_name"])
         self.model.itemChanged.connect(self.handleItemChanged)
