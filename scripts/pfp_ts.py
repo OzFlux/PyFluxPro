@@ -150,6 +150,35 @@ def CalculateAvailableEnergy(ds, Fa_out="Fa", Fn_in="Fn", Fg_in="Fg"):
     pfp_utils.CreateVariable(ds, Fa)
     return
 
+def CalculateET(ds):
+    """
+    Purpose:
+     Calculate ET from Fe
+    Usage:
+     pfp_rp.CalculateET(ds)
+      where ds is a data structure
+    Side effects:
+     Series to hold the ET data are created in ds.
+    Author: PRI
+    Date: June 2015
+    """
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+    labels = list(ds.root["Variables"].keys())
+    labels = [l for l in labels if l[0:2] == "Fe" and
+              ds.root["Variables"][l]["Attr"]["units"] == "W/m^2"]
+    msg = " Calculating evapotranspiration from " + ",".join(labels)
+    logger.info(msg)
+    for label in labels:
+        Fe = pfp_utils.GetVariable(ds, label)
+        ET = pfp_utils.CreateEmptyVariable(label.replace("Fe", "ET"), nrecs)
+        ET["Data"] = Fe["Data"]/c.Lv
+        ET["Flag"] = Fe["Flag"]
+        ET["Attr"]["long_name"] = "Evapo-transpiration"
+        ET["Attr"]["standard_name"] = "water_evapotranspiration_flux"
+        ET["Attr"]["units"] = "kg/m^2/s"
+        pfp_utils.CreateVariable(ds, ET)
+    return
+
 def CalculateFluxes(cf, ds):
     """
         Calculate the fluxes from the rotated covariances.

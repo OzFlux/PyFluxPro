@@ -204,6 +204,8 @@ def l3qc(cf, ds2):
         pfp_ts.CorrectFgForStorage(cf, ds3, l3_info)
     # calculate the available energy
     pfp_ts.CalculateAvailableEnergy(ds3)
+    # calculate ET from Fe
+    pfp_ts.CalculateET(ds3)
     # create new series using MergeSeries or AverageSeries
     pfp_ck.CreateNewSeries(cf, ds3)
     # Calculate Monin-Obukhov length
@@ -395,7 +397,7 @@ def l6qc(main_gui, cf, ds5):
     # calculate NEP from NEE
     pfp_rp.CalculateNEP(ds6, l6_info)
     # calculate ET from Fe
-    pfp_rp.CalculateET(ds6)
+    pfp_ts.CalculateET(ds6)
     # partition NEE into GPP and ER
     pfp_rp.PartitionNEE(ds6, l6_info)
     # write the percentage of good data as a variable attribute

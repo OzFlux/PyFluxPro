@@ -23,31 +23,6 @@ from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def CalculateET(ds):
-    """
-    Purpose:
-     Calculate ET from Fe
-    Usage:
-     pfp_rp.CalculateET(ds)
-      where ds is a data structure
-    Side effects:
-     Series to hold the ET data are created in ds.
-    Author: PRI
-    Date: June 2015
-    """
-    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
-    series_list = list(ds.root["Variables"].keys())
-    Fe_list = [item for item in series_list if "Fe" in item[0:2]]
-    for label in Fe_list:
-        Fe = pfp_utils.GetVariable(ds, label)
-        ET = pfp_utils.CreateEmptyVariable(label.replace("Fe","ET"), nrecs)
-        ET["Data"] = Fe["Data"]/c.Lv
-        ET["Attr"]["long_name"] = "Evapo-transpiration"
-        ET["Attr"]["standard_name"] = "water_evapotranspiration_flux"
-        ET["Attr"]["units"] = "kg/m^2/s"
-        pfp_utils.CreateVariable(ds, ET)
-    return
-
 def CalculateNEE(ds, l6_info):
     """
     Purpose:
