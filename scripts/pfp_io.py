@@ -2665,7 +2665,10 @@ def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3, e
             return
     elif engine.lower() == "xarray":
         ds["root"] = ds["root"].expand_dims({"latitude": 1, "longitude": 1})
-        ds["root"].to_netcdf(nc_file_path, "w", format="NETCDF4")
+        # seems to be a bugin xarray or netCDF4, throws AttributeError when format='NETCDF4'
+        #ds["root"].to_netcdf(nc_file_path, "w", format="NETCDF4")
+        # so for now we use format='NETCDF3_64BIT'
+        ds["root"].to_netcdf(nc_file_path, "w", format="NETCDF3_64BIT")
     return
 
 def nc_open_write(ncFullName, nctype='NETCDF4', mode="verbose"):

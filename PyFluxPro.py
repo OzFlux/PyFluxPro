@@ -295,6 +295,19 @@ class pfp_main_ui(QtWidgets.QWidget):
         # add the L5 GUI
         self.solo_gui = pfp_gui.solo_gui(self)
 
+    def file_download_thredds_file(self, file_url):
+        """ Download a file from a THREDDS server using siphon."""
+        self.setCursor(QtCore.Qt.WaitCursor)
+        file_url_parts = file_url.split("/")
+        file_name = file_url_parts[-1]
+        catalog_url = file_url.replace("dodsC", "catalog").replace(file_name, "catalog.xml")
+        catalog = TDSCatalog(catalog_url)
+        ds = catalog.datasets[file_name]
+        local_file_uri = QtWidgets.QFileDialog.getSaveFileName(self, "Save as ...", file_name)[0]
+        ds.download(filename=local_file_uri)
+        self.unsetCursor()
+        return
+
     def file_open(self, file_uri=None):
         """
         Purpose:
@@ -437,7 +450,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # set menu item status for tab type
         self.actionRunCurrent.setDisabled(True)
         self.actionFileSave.setDisabled(True)
-        self.actionFileSaveAs.setDisabled(True)
+        self.actionFileSaveAs.setDisabled(False)
         self.unsetCursor()
         return
 
@@ -459,10 +472,14 @@ class pfp_main_ui(QtWidgets.QWidget):
         Date: February 2023
         """
         tab_type = self.tabs.tab_dict[idx].tab_type
-        if tab_type in ["log", "thredds_catalog", "thredds_netcdf"]:
+        if tab_type in ["log", "thredds_catalog"]:
             self.actionRunCurrent.setDisabled(True)
             self.actionFileSave.setDisabled(True)
             self.actionFileSaveAs.setDisabled(True)
+        elif tab_type in ["thredds_netcdf"]:
+            self.actionRunCurrent.setDisabled(True)
+            self.actionFileSave.setDisabled(True)
+            self.actionFileSaveAs.setDisabled(False)
         elif tab_type in ["local_controlfile"]:
             self.actionRunCurrent.setDisabled(False)
             self.actionFileSave.setDisabled(False)
@@ -862,6 +879,7 @@ class pfp_main_ui(QtWidgets.QWidget):
 
     def file_save_as_netcdf_file(self, ds):
         """ Save the current tab with a different name."""
+        self.setCursor(QtCore.Qt.WaitCursor)
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
         # write the data structure to file
@@ -869,6 +887,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # update the tab text
         tab_title = os.path.basename(str(ds["info"]["filepath"]))
         self.tabs.setTabText(tab_index_current, tab_title)
+        self.unsetCursor()
         return
 
     def edit_preferences(self):

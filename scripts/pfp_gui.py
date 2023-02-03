@@ -69,6 +69,12 @@ class display_thredds_tree(QtWidgets.QWidget):
             file_url = self.get_dodsC_file_url()
             arg = lambda: self.main_gui.file_open_thredds_file(file_url)
             self.context_menu.actionOpenTHREDDSFile.triggered.connect(arg)
+            self.context_menu.actionDownloadTHREDDSFile = QtWidgets.QAction(self)
+            self.context_menu.actionDownloadTHREDDSFile.setText("Download")
+            self.context_menu.addAction(self.context_menu.actionDownloadTHREDDSFile)
+            file_url = self.get_dodsC_file_url()
+            arg = lambda: self.main_gui.file_download_thredds_file(file_url)
+            self.context_menu.actionDownloadTHREDDSFile.triggered.connect(arg)
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
         return
     def double_click(self):
