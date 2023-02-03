@@ -3233,7 +3233,7 @@ def SeriestoMA(Series):
     if Series.dtype == "float64":
         if not numpy.ma.isMA(Series):
             WasND = True
-            Series = numpy.ma.masked_where(abs(Series-numpy.float(c.missing_value)) < c.eps, Series)
+            Series = numpy.ma.masked_where(abs(Series-float(c.missing_value)) < c.eps, Series)
     return Series, WasND
 
 def SetUnitsInds(ds, ThisOne, units):

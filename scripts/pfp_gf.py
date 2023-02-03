@@ -1197,8 +1197,8 @@ def gfClimatology_monthly(ds, series, output, xlbook):
         xlCol = m*5 + 2
         values[:, m] = thissheet.col_values(xlCol)[2:50]
     for i in range(len(ds.root["Variables"][series]["Data"])):
-        h = numpy.int(2*Hdh[i])
-        m = numpy.int(Month[i])
+        h = int(2*Hdh[i])
+        m = int(Month[i])
         val1d[i] = values[h, m-1]
     index = numpy.where(abs(ds.root["Variables"][output]["Data"] - c.missing_value) < c.eps)[0]
     ds.root["Variables"][output]["Data"][index] = val1d[index]

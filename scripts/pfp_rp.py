@@ -371,7 +371,7 @@ def GetERFromFco2(ds, l6_info):
     notok = numpy.ones(nrecs)
     for flag_value in [0, 10]:
         idx = numpy.where(Fco2["Flag"] == flag_value)[0]
-        notok[idx] = numpy.int(0)
+        notok[idx] = int(0)
     Fco2["Data"] = numpy.ma.masked_where((notok == 1), Fco2["Data"])
     ER["Flag"] = numpy.where((notok == 1), numpy.full(nrecs, 501), numpy.zeros(nrecs))
     # get the indicator series
@@ -722,14 +722,18 @@ def L6_summary_createseriesdict(ds, l6_info):
     # create a dictionary to hold the data being summarised
     series_dict = {"daily":{},"annual":{},"cumulative":{},"lists":{}}
     sdl = series_dict["lists"]
-    sdl["nee"] = [item for item in l6is["NetEcosystemExchange"]
-                  if "NEE" in item[0:3] and item in list(ds.root["Variables"].keys())]
-    sdl["gpp"] = [item for item in l6is["GrossPrimaryProductivity"]
-                  if "GPP" in item[0:3] and item in list(ds.root["Variables"].keys())]
-    sdl["er"] = [item for item in l6is["EcosystemRespiration"]
-                  if "ER" in item[0:2] and item in list(ds.root["Variables"].keys())]
-    sdl["nep"] = [item.replace("NEE","NEP") for item in sdl["nee"]]
-    sdl["nep"] = [item for item in sdl["nep"] if item in list(ds.root["Variables"].keys())]
+    dsv = ds.root["Variables"]
+    l6ne = l6is["NetEcosystemExchange"]
+    l6gp = l6is["GrossPrimaryProductivity"]
+    l6er = l6is["EcosystemRespiration"]
+    labels = list(ds.root["Variables"].keys())
+    sdl["nee"] = [l for l in l6ne if l[0:3]=="NEE" and
+                  ((l in labels) and (dsv[l]["Attr"]["units"]=="umol/m^2/s"))]
+    sdl["gpp"] = [l for l in l6gp if l[0:3]=="GPP" and
+                  ((l in labels) and (dsv[l]["Attr"]["units"]=="umol/m^2/s"))]
+    sdl["er"] = [l for l in l6er if l[0:2]=="ER" and
+                  ((l in labels) and (dsv[l]["Attr"]["units"]=="umol/m^2/s"))]
+    sdl["nep"] = [l.replace("NEE","NEP") for l in sdl["nee"] if l in labels]
     sdl["co2"] = sdl["nee"]+sdl["nep"]+sdl["gpp"]+sdl["er"]
     for item in sdl["co2"]:
         series_dict["daily"][item] = {}
@@ -738,51 +742,53 @@ def L6_summary_createseriesdict(ds, l6_info):
         series_dict["daily"][item]["format"] = "0.00"
         series_dict["cumulative"][item]["operator"] = "sum"
         series_dict["cumulative"][item]["format"] = "0.00"
-    sdl["ET"] = [item for item in list(ds.root["Variables"].keys()) if "ET" in item[0:2]]
-    sdl["Precip"] = [item for item in list(ds.root["Variables"].keys()) if "Precip" in item[0:6]]
+    sdl["ET"] = [l for l in labels if l[0:2]=="ET" and dsv[l]["Attr"]["units"]=="kg/m^2/s"]
+    sdl["Precip"] = [l for l in labels if l[0:6]=="Precip" and dsv[l]["Attr"]["units"]=="mm"]
     sdl["h2o"] = sdl["ET"]+sdl["Precip"]
     for item in sdl["h2o"]:
         series_dict["daily"][item] = {"operator":"sum","format":"0.00"}
         series_dict["cumulative"][item] = {"operator":"sum","format":"0.00"}
-    if "AH" in list(ds.root["Variables"].keys()):
+    if "AH" in labels:
         series_dict["daily"]["AH"] = {"operator":"average","format":"0.00"}
-    if "CO2" in list(ds.root["Variables"].keys()):
+    if "CO2" in labels:
         series_dict["daily"]["CO2"] = {"operator":"average","format":"0.0"}
-    if "Fco2" in list(ds.root["Variables"].keys()):
+    if "Fco2" in labels:
         series_dict["daily"]["Fco2"] = {"operator":"average","format":"0.00"}
-    if "Fe" in list(ds.root["Variables"].keys()):
+    if "Fch4" in labels:
+        series_dict["daily"]["Fch4"] = {"operator":"average","format":"0.00"}
+    if "Fe" in labels:
         series_dict["daily"]["Fe"] = {"operator":"average","format":"0.0"}
-    if "Fh" in list(ds.root["Variables"].keys()):
+    if "Fh" in labels:
         series_dict["daily"]["Fh"] = {"operator":"average","format":"0.0"}
-    if "Fg" in list(ds.root["Variables"].keys()):
+    if "Fg" in labels:
         series_dict["daily"]["Fg"] = {"operator":"average","format":"0.0"}
-    if "Fn" in list(ds.root["Variables"].keys()):
+    if "Fn" in labels:
         series_dict["daily"]["Fn"] = {"operator":"average","format":"0.0"}
-    if "Fsd" in list(ds.root["Variables"].keys()):
+    if "Fsd" in labels:
         series_dict["daily"]["Fsd"] = {"operator":"average","format":"0.0"}
-    if "Fsu" in list(ds.root["Variables"].keys()):
+    if "Fsu" in labels:
         series_dict["daily"]["Fsu"] = {"operator":"average","format":"0.0"}
-    if "Fld" in list(ds.root["Variables"].keys()):
+    if "Fld" in labels:
         series_dict["daily"]["Fld"] = {"operator":"average","format":"0.0"}
-    if "Flu" in list(ds.root["Variables"].keys()):
+    if "Flu" in labels:
         series_dict["daily"]["Flu"] = {"operator":"average","format":"0.0"}
-    if "ps" in list(ds.root["Variables"].keys()):
+    if "ps" in labels:
         series_dict["daily"]["ps"] = {"operator":"average","format":"0.00"}
-    if "RH" in list(ds.root["Variables"].keys()):
+    if "RH" in labels:
         series_dict["daily"]["RH"] = {"operator":"average","format":"0"}
-    if "SH" in list(ds.root["Variables"].keys()):
+    if "SH" in labels:
         series_dict["daily"]["SH"] = {"operator":"average","format":"0.0000"}
-    if "Sws" in list(ds.root["Variables"].keys()):
+    if "Sws" in labels:
         series_dict["daily"]["Sws"] = {"operator":"average","format":"0.000"}
-    if "Ta" in list(ds.root["Variables"].keys()):
+    if "Ta" in labels:
         series_dict["daily"]["Ta"] = {"operator":"average","format":"0.00"}
-    if "Ts" in list(ds.root["Variables"].keys()):
+    if "Ts" in labels:
         series_dict["daily"]["Ts"] = {"operator":"average","format":"0.00"}
-    if "ustar" in list(ds.root["Variables"].keys()):
+    if "ustar" in labels:
         series_dict["daily"]["ustar"] = {"operator":"average","format":"0.00"}
-    if "VP" in list(ds.root["Variables"].keys()):
+    if "VP" in labels:
         series_dict["daily"]["VP"] = {"operator":"average","format":"0.000"}
-    if "Ws" in list(ds.root["Variables"].keys()):
+    if "Ws" in labels:
         series_dict["daily"]["Ws"] = {"operator":"average","format":"0.00"}
     series_dict["annual"] = series_dict["daily"]
     series_dict["monthly"] = series_dict["daily"]

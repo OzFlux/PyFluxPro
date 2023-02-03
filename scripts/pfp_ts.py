@@ -2441,10 +2441,10 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
           "east_separation" in cf["Massman"]):
         # the following is the definition of lateral and longitudinal separation
         # used in EddyPro, it is not equivalent to the one used above
-        nsep = numpy.float(cf["Massman"]["north_separation"])
-        esep = numpy.float(cf["Massman"]["east_separation"])
+        nsep = float(cf["Massman"]["north_separation"])
+        esep = float(cf["Massman"]["east_separation"])
         lLat = numpy.sqrt(nsep*nsep + esep*esep)
-        lLong = numpy.float(0)
+        lLong = float(0)
     else:
         msg = " Required separation information not found in Massman section of control file"
         logger.error(msg)
@@ -2883,8 +2883,8 @@ def ReplaceWhenDiffExceedsRange(DateTime,Destination,Primary,Secondary,RList):
 def savitzky_golay(y, window_size, order, deriv=0):
     ''' Apply Savitsky-Golay low-pass filter to data.'''
     try:
-        window_size = numpy.abs(numpy.int(window_size))
-        order = numpy.abs(numpy.int(order))
+        window_size = numpy.abs(int(window_size))
+        order = numpy.abs(int(order))
     except ValueError:
         raise ValueError("window_size and order have to be of type int")
     if window_size % 2 != 1 or window_size < 1:
