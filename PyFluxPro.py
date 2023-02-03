@@ -444,6 +444,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
         # add a tab for the netCDF file contents
         tab_title = os.path.basename(os.path.split(file_url)[1])
+        tab_title = self.info["THREDDS"]["server_name"] + ": " + tab_title
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
