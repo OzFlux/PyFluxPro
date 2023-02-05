@@ -63,11 +63,11 @@ def cpd_barr_main(cf):
     ds = pfp_io.NetCDFRead(file_in)
     if ds.info["returncodes"]["value"] != 0: return
     # get the single-point storage, Fc_single, if available
-    if apply_storage and "Fco2_storage" not in list(ds.root["Variables"].keys()):
-        pfp_ts.CalculateFco2StorageSinglePoint(cf, ds)
-        Fco2_single = pfp_utils.GetVariable(ds, "Fco2_single")
-        Fco2_single["Label"] = "Fco2_storage"
-        pfp_utils.CreateVariable(ds, Fco2_single)
+    if apply_storage and "Sco2_storage" not in list(ds.root["Variables"].keys()):
+        pfp_ts.CalculateSco2SinglePoint(cf, ds)
+        Sco2_single = pfp_utils.GetVariable(ds, "Sco2_single")
+        Sco2_single["Label"] = "Sco2_storage"
+        pfp_utils.CreateVariable(ds, Sco2_single)
     cSiteYr = ds.root["Attributes"]["site_name"]
     ts = int(float(ds.root["Attributes"]["time_step"]))
     dt = pfp_utils.GetVariable(ds, "DateTime")

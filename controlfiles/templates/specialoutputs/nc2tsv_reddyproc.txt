@@ -1,0 +1,30 @@
+level = nc2tsv_reddyproc
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.nc)
+    out_filename = Right click to browse (*.csv)
+[Variables]
+    [[NEE]]
+        name = Fco2
+        format = 0.00
+    [[Ustar]]
+        name = ustar
+        format = 0.00
+    [[Rg]]
+        name = Fsd
+        format = 0
+    [[Tair]]
+        name = Ta
+        format = 0.00
+    [[rH]]
+        name = RH
+        format = 0
+    [[LE]]
+        name = Fe
+        format = 0
+    [[H]]
+        name = Fh
+        format = 0
+    [[Tsoil]]
+        name = Ts
+        format = 0.00

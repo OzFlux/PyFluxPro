@@ -1263,14 +1263,13 @@ def l1_check_global_required(cfg, std, messages):
             messages["ERROR"].append(msg)
     # check time step is present and makes sense
     if "time_step" in cfg["Global"]:
-        try:
-            ts = int(cfg["Global"]["time_step"])
-        except ValueError:
-            msg = "Global: 'time_step' is not a number"
+        ts = cfg["Global"]["time_step"]
+        if str(ts) not in ["30", "60", "daily", "monthly", "annual"]:
+            msg = "Global: 'time_step' must be 30, 60, daily, monthly or annual"
             messages["ERROR"].append(msg)
-        if ts not in [15, 20, 30, 60]:
-            msg = "Global : 'time_step' must be 15, 20, 30 or 60"
-            messages["ERROR"].append(msg)
+    else:
+        msg = "Global: 'time_step' not in global attributes"
+        messages["ERROR"].append(msg)
     # check latitude is present and makes sense
     if "latitude" in cfg["Global"]:
         try:
@@ -1352,7 +1351,7 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
             messages["ERROR"].append(msg)
         # check height given for CO2 value
         if "CO2" in cfg_label:
-            l1_check_variables_height(cfg, cfg_label, messages)
+            l1_check_variables_height(cfg, std, cfg_label, messages)
         else:
             pass
     else:
@@ -1671,7 +1670,7 @@ def l1_check_nc_labels(cfg, messages):
         msg += str(duplicate_labels.count(duplicate_label)) + " times"
         messages["ERROR"].append(msg)
     return
-def l1_check_variables_height(cfg, cfg_label, messages):
+def l1_check_variables_height(cfg, std, cfg_label, messages):
     cfg_attr = cfg["Variables"][cfg_label]["Attr"]
     if "height" in cfg_attr:
         height = pfp_utils.strip_non_numeric(cfg_attr["height"])
@@ -1681,8 +1680,18 @@ def l1_check_variables_height(cfg, cfg_label, messages):
             msg = cfg_label + ": 'height' attribute not a number"
             messages["ERROR"].append(msg)
     else:
-        msg = cfg_label + ": no 'height' attribute found"
-        messages["ERROR"].append(msg)
+        if cfg_label in std["Variables"]:
+            statistic_type = cfg["Variables"][cfg_label]["Attr"]["statistic_type"]
+            units = cfg["Variables"][cfg_label]["Attr"]["units"]
+            sections = ["Variables", cfg_label, statistic_type, units]
+            opt = pfp_utils.get_keyvaluefromcf(std, sections, "not_required", default=None)
+            if opt is not None:
+                not_required = opt.split(",")
+                if "height" in not_required:
+                    pass
+        else:
+            msg = cfg_label + ": no 'height' attribute found"
+            messages["ERROR"].append(msg)
     return
 def l1_check_variables_statistic_type(cfg, std, cfg_label, std_label, messages):
     cfg_attr = cfg["Variables"][cfg_label]["Attr"]

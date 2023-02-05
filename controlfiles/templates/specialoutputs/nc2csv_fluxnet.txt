@@ -1,9 +1,8 @@
 level = nc2csv_fluxnet
 [Files]
-    file_path = ../Sites/<site_name>/Data/Processed/<year>/
-    in_filename = <site_name>_<year>_L3.nc
-    out_filename = <site_name>_<year>_FluxNet.csv
-
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.nc)
+    out_filename = Right click to browse (*.csv)
 [General]
     CanopyHeight = 
     DataPolicy = OzFlux (http://data.ozflux.org.au/portal/site/licenceinfo.jspx)
@@ -25,7 +24,6 @@ level = nc2csv_fluxnet
     TS1Depth = <TS1_depth>
     start_datetime = <year>-<month>-<day> <hour>:<minute>
     end_datetime = <year>-<month>-<day> <hour>:<minute>
-
 [Variables]
     [[FC]]
         name = Fc

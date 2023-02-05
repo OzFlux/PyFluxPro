@@ -89,6 +89,17 @@
                 long_name = CO2 concentration
             [[[[umol^2/mol^2]]]]
                 long_name = CO2 concentration
+    [[CO2_F_MDS]]
+        [[[average]]]
+            [[[[umol/mol]]]]
+                long_name = CO2 concentration
+                standard_name = mole_fraction_of_carbon_dioxide_in_air
+                not_required = height
+    [[CO2_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 flux quality control flag
+                not_required = height
     [[CO2_Samples]]
         [[[sum]]]
             [[[[1]]]]
@@ -260,6 +271,54 @@
         [[[average]]]
             [[[[m]]]]
                 long_name = Monin-Obukhov length
+    [[LE]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_CORR]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_CORR_25]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_CORR_75]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_F_MDS]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Latent heat flux quality control flag
+    [[LE_RANDUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LW_IN_F]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Down-welling longwave radiation
+                standard_name = surface_downwelling_longwave_flux_in_air
+    [[LW_IN_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling longwave radiation quality control flag
+    [[LW_OUT]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Up-welling longwave radiation
+                standard_name = surface_upwelling_longwave_flux_in_air
     [[PAR]]
         [[[average]]]
             [[[[umol/m^2/s]]]]
@@ -527,6 +586,18 @@
             [[[[kPa]]]]
                 long_name = Vapour pressure deficit
                 standard_name = water_vapor_saturation_deficit_in_air
+    [[VPD_F]]
+        [[[average]]]
+            [[[[hPa]]]]
+                long_name = Vapour pressure deficit
+                standard_name = water_vapor_saturation_deficit_in_air
+            [[[[kPa]]]]
+                long_name = Vapour pressure deficit
+                standard_name = water_vapor_saturation_deficit_in_air
+    [[VPD_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Vapour pressure deficit quality control flag
     [[VPsat]]
         [[[average]]]
             [[[[hPa]]]]

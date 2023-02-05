@@ -109,6 +109,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionFileConvertnc2biomet.setText("nc to Biomet")
         self.actionFileConvertnc2xls = QtWidgets.QAction(self)
         self.actionFileConvertnc2xls.setText("nc to Excel")
+        self.actionFileConvertnc2oneflux = QtWidgets.QAction(self)
+        self.actionFileConvertnc2oneflux.setText("nc to ONEFlux")
         self.actionFileConvertnc2reddyproc = QtWidgets.QAction(self)
         self.actionFileConvertnc2reddyproc.setText("nc to REddyProc")
         # File menu item: split netCDF
@@ -174,6 +176,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
         self.menuFileConvert.addAction(self.actionFileConvertnc2biomet)
+        self.menuFileConvert.addAction(self.actionFileConvertnc2oneflux)
         self.menuFileConvert.addAction(self.actionFileConvertnc2reddyproc)
         # File menu
         self.menuFile.addAction(self.actionFileOpen)
@@ -255,9 +258,13 @@ class pfp_main_ui(QtWidgets.QWidget):
         # Connect signals to slots
         self.tabs.tabBarClicked.connect(self.handle_tabbar_clicked)
         # File menu actions
-        self.actionFileConvertnc2biomet.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2biomet(None, mode="standard"))
+        arg = lambda: pfp_top_level.do_file_convert_nc2biomet(None, mode="standard")
+        self.actionFileConvertnc2biomet.triggered.connect(arg)
+        arg = lambda: pfp_top_level.do_file_convert_nc2oneflux(None, mode="standard")
+        self.actionFileConvertnc2oneflux.triggered.connect(arg)
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
-        self.actionFileConvertnc2reddyproc.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard"))
+        arg = lambda: pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard")
+        self.actionFileConvertnc2reddyproc.triggered.connect(arg)
         self.actionFileOpen.triggered.connect(self.file_open)
         self.actionFileTHREDDSTERN.triggered.connect(self.file_open_tern_thredds_catalog)
         self.actionFileTHREDDSOzFlux.triggered.connect(self.file_open_ozflux_thredds_catalog)
@@ -554,14 +561,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         elif self.file["level"] in ["L6"]:
             if not pfp_compliance.l6_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L6(self)
-        elif self.file["level"] in ["nc2csv_biomet"]:
-            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_biomet(self)
-        elif self.file["level"] in ["nc2csv_ecostress"]:
-            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_ecostress(self)
-        elif self.file["level"] in ["nc2csv_fluxnet"]:
-            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_fluxnet(self)
-        elif self.file["level"] in ["nc2csv_reddyproc"]:
-            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_reddyproc(self)
+        elif self.file["level"] in ["nc2csv_biomet", "nc2csv_fluxnet", "nc2csv_oneflux", "nc2csv_reddyproc"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv(self)
         elif self.file["level"] in ["batch"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_batch(self)
         elif self.file["level"] in ["windrose"]:
@@ -796,23 +797,27 @@ class pfp_main_ui(QtWidgets.QWidget):
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
         # get the updated control file data
-        cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
+        # PRI 4/2/2023
+        #cfg = self.tabs.tab_dict[tab_index_current].get_data_from_model()
+        self.file = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         # check to make sure we are not overwriting the template version
-        if "template" in cfg.filename:
+        if "template" in self.file.filename:
             msg = " You are trying to write to the template folder.\n"
             msg = msg + "Please save this control file to a different location."
             pfp_gui.myMessageBox(msg)
             # put up a "Save as ..." dialog
-            cfg_filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save as ...")[0]
+            cfg_filename = QtWidgets.QFileDialog.getSaveFileName(self,
+                                                                 "Save as ...",
+                                                                 os.path.basename(self.file.filename))[0]
             # return without doing anything if cancel used
             if len(str(cfg_filename)) == 0:
                 return
             # set the control file name
-            cfg.filename = str(cfg_filename)
+            self.file.filename = str(cfg_filename)
         # write the control file
-        msg = " Saving " + cfg.filename
+        msg = " Saving " + self.file.filename
         logger.info(msg)
-        cfg.write()
+        self.file.write()
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
@@ -971,16 +976,16 @@ class pfp_main_ui(QtWidgets.QWidget):
                 pfp_top_level.do_run_l6(self)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_biomet":
-            pfp_top_level.do_file_convert_nc2biomet(self, mode="custom")
-            self.actionRunCurrent.setDisabled(False)
-        elif cfg["level"] == "nc2csv_ecostress":
-            pfp_top_level.do_file_convert_nc2ecostress(self)
+            pfp_top_level.do_file_convert_nc2biomet(self.file, mode="custom")
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_fluxnet":
             pfp_top_level.do_file_convert_nc2fluxnet(self)
             self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "nc2csv_oneflux":
+            pfp_top_level.do_file_convert_nc2oneflux(self.file, mode="custom")
+            self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_reddyproc":
-            pfp_top_level.do_file_convert_nc2reddyproc(self, mode="custom")
+            pfp_top_level.do_file_convert_nc2reddyproc(self.file, mode="custom")
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "windrose":
             if pfp_compliance.check_windrose_controlfile(cfg):

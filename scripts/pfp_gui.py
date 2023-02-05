@@ -185,7 +185,7 @@ class display_thredds_tree(QtWidgets.QWidget):
 class edit_cfg_batch(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_batch, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.main_gui = main_gui
         self.tabs = main_gui.tabs
         self.info = main_gui.info
@@ -391,32 +391,29 @@ class edit_cfg_batch(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "batch"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Levels"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -586,7 +583,7 @@ class edit_cfg_batch(QtWidgets.QWidget):
 class edit_cfg_climatology(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_climatology, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -749,33 +746,29 @@ class edit_cfg_climatology(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "climatology"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -904,7 +897,7 @@ class edit_cfg_climatology(QtWidgets.QWidget):
 class edit_cfg_concatenate(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_concatenate, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -979,35 +972,32 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "concatenate"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Files"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
                     if key2 in ["plot_path"]:
-                        cfg[key1][key2] = section.child(j,1).text()
+                        self.cfg[key1][key2] = section.child(j,1).text()
                     else:
-                        cfg[key1][key2] = {}
+                        self.cfg[key1][key2] = {}
                         for k in range(subsection.rowCount()):
                             key3 = str(subsection.child(k, 0).text())
                             val3 = str(subsection.child(k, 1).text())
-                            cfg[key1][key2][key3] = val3
-        return cfg
+                            self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
@@ -1421,7 +1411,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
 class edit_cfg_cpd_barr(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_cpd_barr, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -1610,33 +1600,29 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "cpd_barr"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -1765,7 +1751,7 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
 class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_cpd_mchugh, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -1954,33 +1940,29 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "cpd_mchugh"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -2109,7 +2091,7 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
 class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_cpd_mcnew, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -2298,33 +2280,29 @@ class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "cpd_mcnew"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -2453,7 +2431,7 @@ class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
 class edit_cfg_L1(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_L1, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -2821,34 +2799,31 @@ class edit_cfg_L1(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "L1"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]:
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         for l in range(subsubsection.rowCount()):
                             key4 = str(subsubsection.child(l, 0).text())
                             val4 = str(subsubsection.child(l, 1).text())
-                            cfg[key1][key2][key3][key4] = val4
-        return cfg
+                            self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -3212,7 +3187,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
 class edit_cfg_L2(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_L2, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -4044,43 +4019,40 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "L2"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Plots"]:
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
             elif key1 in ["Variables"]:
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         for l in range(subsubsection.rowCount()):
                             key4 = str(subsubsection.child(l, 0).text())
                             val4 = str(subsubsection.child(l, 1).text())
-                            cfg[key1][key2][key3][key4] = val4
-        return cfg
+                            self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -4352,7 +4324,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 class edit_cfg_L3(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_L3, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -5191,48 +5163,43 @@ class edit_cfg_L3(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        # create a new control file object
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        # set the control file level
-        cfg["level"] = "L3"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Global", "Options", "Soil", "Massman"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Plots", "Imports"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
             elif key1 in ["Variables"]:
                 # sections with 3 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         for l in range(subsubsection.rowCount()):
                             key4 = str(subsubsection.child(l, 0).text())
                             val4 = str(subsubsection.child(l, 1).text())
-                            cfg[key1][key2][key3][key4] = val4
-        return cfg
+                            self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def enable_plot(self):
         """ Enable a plot by removing '[disabled]' from the title."""
@@ -5437,7 +5404,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
 class edit_cfg_L4(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_L4, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -6202,31 +6169,28 @@ class edit_cfg_L4(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "L4"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Global", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["GUI", "Imports"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
             elif key1 in []:
                 # sections with 3 levels
                 pass
@@ -6236,28 +6200,27 @@ class edit_cfg_L4(QtWidgets.QWidget):
                     # subsections are variables
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         # subsubsections are GapFillFromAlternate, GapFillFromClimatology and MergeSeries
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         if key3 in ["GapFillFromAlternate", "GapFillFromClimatology", "GapFillUsingMDS"]:
                             for l in range(subsubsection.rowCount()):
                                 subsubsubsection = subsubsection.child(l)
                                 key4 = str(subsubsubsection.text())
-                                cfg[key1][key2][key3][key4] = {}
+                                self.cfg[key1][key2][key3][key4] = {}
                                 for m in range(subsubsubsection.rowCount()):
                                     key5 = str(subsubsubsection.child(m, 0).text())
                                     val5 = str(subsubsubsection.child(m, 1).text())
-                                    cfg[key1][key2][key3][key4][key5] = val5
+                                    self.cfg[key1][key2][key3][key4][key5] = val5
                         elif key3 in ["MergeSeries", "RangeCheck", "DiurnalCheck", "DependencyCheck", "ExcludeDates"]:
                             for l in range(subsubsection.rowCount()):
                                 key4 = str(subsubsection.child(l, 0).text())
                                 val4 = str(subsubsection.child(l, 1).text())
-                                cfg[key1][key2][key3][key4] = val4
-
-        return cfg
+                                self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -6485,7 +6448,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
 class edit_cfg_L5(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_L5, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -7417,31 +7380,28 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "L5"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Global", "Output", "Options", "ustar_threshold"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Imports", "GUI"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
             elif key1 in []:
                 # sections with 3 levels
                 pass
@@ -7451,28 +7411,27 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     # subsections are variables
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         # subsubsections are GapFillUsingSOLO, GapFillUsingMDS and MergeSeries
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         if key3 in ["GapFillUsingSOLO", "GapFillLongSOLO", "GapFillUsingMDS"]:
                             for l in range(subsubsection.rowCount()):
                                 subsubsubsection = subsubsection.child(l)
                                 key4 = str(subsubsubsection.text())
-                                cfg[key1][key2][key3][key4] = {}
+                                self.cfg[key1][key2][key3][key4] = {}
                                 for m in range(subsubsubsection.rowCount()):
                                     key5 = str(subsubsubsection.child(m, 0).text())
                                     val5 = str(subsubsubsection.child(m, 1).text())
-                                    cfg[key1][key2][key3][key4][key5] = val5
+                                    self.cfg[key1][key2][key3][key4][key5] = val5
                         elif key3 in ["MergeSeries", "RangeCheck", "DiurnalCheck", "DependencyCheck", "ExcludeDates"]:
                             for l in range(subsubsection.rowCount()):
                                 key4 = str(subsubsection.child(l, 0).text())
                                 val4 = str(subsubsection.child(l, 1).text())
-                                cfg[key1][key2][key3][key4] = val4
-
-        return cfg
+                                self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -7718,7 +7677,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
 class edit_cfg_L6(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_L6, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -8215,57 +8174,53 @@ class edit_cfg_L6(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "L6"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Global", "Output", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity", "GUI"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
             elif key1 in ["EcosystemRespiration"]:
                 # sections with 4 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         if key3 in ["ERUsingSOLO", "ERUsingFFNET", "ERUsingLloydTaylor", "ERUsingLasslop"]:
                             for l in range(subsubsection.rowCount()):
                                 subsubsubsection = subsubsection.child(l)
                                 key4 = str(subsubsubsection.text())
-                                cfg[key1][key2][key3][key4] = {}
+                                self.cfg[key1][key2][key3][key4] = {}
                                 for m in range(subsubsubsection.rowCount()):
                                     key5 = str(subsubsubsection.child(m, 0).text())
                                     val5 = str(subsubsubsection.child(m, 1).text())
-                                    cfg[key1][key2][key3][key4][key5] = val5
+                                    self.cfg[key1][key2][key3][key4][key5] = val5
                         elif key3 in ["MergeSeries"]:
                             for l in range(subsubsection.rowCount()):
                                 key4 = str(subsubsection.child(l, 0).text())
                                 val4 = str(subsubsection.child(l, 1).text())
-                                cfg[key1][key2][key3][key4] = val4
-
-        return cfg
+                                self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -8509,7 +8464,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
 class edit_cfg_mpt(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_mpt, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -8698,33 +8653,29 @@ class edit_cfg_mpt(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "mpt"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -8850,309 +8801,17 @@ class edit_cfg_mpt(QtWidgets.QWidget):
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
-class edit_cfg_nc2csv_biomet(QtWidgets.QWidget):
+class edit_cfg_nc2csv(QtWidgets.QWidget):
     def __init__(self, main_gui):
-        super(edit_cfg_nc2csv_biomet, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        super(edit_cfg_nc2csv, self).__init__()
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
-        self.edit_nc2csv_biomet_gui()
+        self.edit_nc2csv_gui()
 
-    def edit_nc2csv_biomet_gui(self):
-        """ Edit an nc2csv_biomet control file GUI."""
-        # get a QTreeView and a standard model
-        self.view = myTreeView()
-        # get a QStandardItemModel
-        self.model = QtGui.QStandardItemModel()
-        # add the model to the view
-        self.view.setModel(self.model)
-        # set the context menu policy
-        self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        # connect the context menu requested signal to appropriate slot
-        self.view.customContextMenuRequested.connect(self.context_menu)
-        # do the QTreeView layout
-        vbox = QtWidgets.QVBoxLayout()
-        vbox.addWidget(self.view)
-        self.setLayout(vbox)
-        self.setGeometry(300, 300, 600, 400)
-        # build the model
-        self.get_model_from_data()
-        # set the default width for the first column
-        self.view.setColumnWidth(0, 200)
-        # expand the top level of the sections
-        for row in range(self.model.rowCount()):
-            idx = self.model.index(row, 0)
-            self.view.expand(idx)
-
-    def get_model_from_data(self):
-        """ Build the data model."""
-        self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
-        self.model.itemChanged.connect(self.handleItemChanged)
-        # there must be someway outa here, said the Joker to the Thief ...
-        self.sections = {}
-        for key1 in self.cfg:
-            if not self.cfg[key1]:
-                continue
-            if key1 in ["Files"]:
-                # sections with only 1 level
-                self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg[key1]:
-                    val = self.cfg[key1][key2]
-                    child0 = QtGui.QStandardItem(key2)
-                    child1 = QtGui.QStandardItem(val)
-                    self.sections[key1].appendRow([child0, child1])
-                self.model.appendRow(self.sections[key1])
-            elif key1 in ["Variables"]:
-                # sections with 2 levels
-                self.sections[key1] = QtGui.QStandardItem(key1)
-                # key2 is the variable name
-                for key2 in self.cfg[key1]:
-                    parent2 = QtGui.QStandardItem(key2)
-                    # key3 is the variable options
-                    for key3 in self.cfg[key1][key2]:
-                        val = self.cfg[key1][key2][key3]
-                        child0 = QtGui.QStandardItem(key3)
-                        child1 = QtGui.QStandardItem(val)
-                        parent2.appendRow([child0, child1])
-                    self.sections[key1].appendRow(parent2)
-                self.model.appendRow(self.sections[key1])
-
-    def get_data_from_model(self):
-        """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "nc2csv_biomet"
-        model = self.model
-        # there must be a way to do this recursively
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            key1 = str(section.text())
-            cfg[key1] = {}
-            if key1 in ["Files"]:
-                # sections with only 1 level
-                for j in range(section.rowCount()):
-                    key2 = str(section.child(j, 0).text())
-                    val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
-            elif key1 in ["Variables"]:
-                # sections with 2 levels
-                for j in range(section.rowCount()):
-                    subsection = section.child(j)
-                    key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
-                    for k in range(subsection.rowCount()):
-                        key3 = str(subsection.child(k, 0).text())
-                        val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-
-        return cfg
-
-    def context_menu(self, position):
-        """ Right click context menu."""
-        # get a menu
-        self.context_menu = QtWidgets.QMenu()
-        # get the index of the selected item
-        if len(self.view.selectedIndexes()) == 0:
-            # trap right click when nothing is selected
-            return
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item text
-        selected_text = str(idx.data())
-        # get the selected item
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the level of the selected item
-        level = self.get_level_selected_item()
-        # initialise logical for inserting a separator
-        if level == 0:
-            if selected_text in ["Variables"]:
-                self.context_menu.actionAddVariable = QtWidgets.QAction(self)
-                self.context_menu.actionAddVariable.setText("Add variable")
-                self.context_menu.addAction(self.context_menu.actionAddVariable)
-                self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
-        elif level == 1:
-            # sections with 2 levels
-            # get the parent of the selected item
-            parent = selected_item.parent()
-            if (str(parent.text()) == "Files") and (selected_item.column() == 1):
-                key = str(parent.child(selected_item.row(),0).text())
-                if key in ["file_path"]:
-                    self.context_menu.actionBrowseFilePath = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseFilePath.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
-                    self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
-                elif key in ["in_filename"]:
-                    self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseInputFile.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
-                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
-                elif key in ["out_filename"]:
-                    self.context_menu.actionBrowseOutputFile = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseOutputFile.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
-                    self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
-            elif (str(parent.text()) == "Variables") and (selected_item.column() == 0):
-                self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveOption.setText("Remove variable")
-                self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
-        elif level == 2:
-            # sections with 3 levels
-            pass
-
-        self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
-
-    def add_general_item(self):
-        """ Add a new entry to the [Files] section."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        section = idx.model().itemFromIndex(idx)
-        dict_to_add = {"New item":""}
-        # add the subsection
-        self.add_subsection(section, dict_to_add)
-
-    def add_new_variable(self):
-        """ Add a new variable to the 'Variables' section."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        parent = idx.model().itemFromIndex(idx)
-        dict_to_add = {"in_name": "", "out_units": "", "out_format": ""}
-        subsection = QtGui.QStandardItem("New variable")
-        self.add_subsection(subsection, dict_to_add)
-        parent.appendRow(subsection)
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        self.update_tab_text()
-
-    def add_subsection(self, section, dict_to_add):
-        """ Add a subsection to the model."""
-        for key in dict_to_add:
-            val = str(dict_to_add[key])
-            child0 = QtGui.QStandardItem(key)
-            child1 = QtGui.QStandardItem(val)
-            section.appendRow([child0, child1])
-
-    def browse_file_path(self):
-        """ Browse for the data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the selected entry text
-        file_path = str(idx.data())
-        # dialog for new directory
-        new_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose a folder",
-                                                             file_path, QtWidgets.QFileDialog.ShowDirsOnly)
-        # quit if cancel button pressed
-        if len(str(new_dir)) > 0:
-            # make sure the string ends with a path delimiter
-            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
-            new_dir = os.path.join(tmp_dir, "")
-            # update the model
-            parent.child(selected_item.row(), 1).setText(new_dir)
-
-    def browse_input_file(self):
-        """ Browse for the input data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
-        # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
-        # update the model
-        if len(str(new_file_path)) > 0:
-            new_file_parts = os.path.split(str(new_file_path))
-            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
-
-    def browse_output_file(self):
-        """ Browse for the output data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the top level and sub sections
-        # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
-        # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
-                                                              directory=file_path, filter="*.csv")[0]
-        # update the model
-        if len(str(new_file_path)) > 0:
-            new_file_parts = os.path.split(str(new_file_path))
-            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
-
-    def get_keyval_by_key_name(self, section, key):
-        """ Get the value from a section based on the key name."""
-        found = False
-        val_child = ""
-        key_child = ""
-        for i in range(section.rowCount()):
-            if str(section.child(i, 0).text()) == str(key):
-                found = True
-                key_child = str(section.child(i, 0).text())
-                val_child = str(section.child(i, 1).text())
-                break
-        return key_child, val_child, found, i
-
-    def get_level_selected_item(self):
-        """ Get the level of the selected item."""
-        indexes = self.view.selectedIndexes()
-        level = -1
-        if len(indexes) > 0:
-            level = 0
-            index = indexes[0]
-            while index.parent().isValid():
-                index = index.parent()
-                level += 1
-        return level
-
-    def handleItemChanged(self, item):
-        """ Handler for when view items are edited."""
-        # update the control file contents
-        self.cfg = self.get_data_from_model()
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        self.update_tab_text()
-
-    def remove_item(self):
-        """ Remove an item from the view."""
-        # loop over selected items in the tree
-        for idx in self.view.selectedIndexes():
-            # get the selected item from the index
-            selected_item = idx.model().itemFromIndex(idx)
-            # get the parent of the selected item
-            parent = selected_item.parent()
-            # remove the row
-            parent.removeRow(selected_item.row())
-        self.update_tab_text()
-
-    def update_tab_text(self):
-        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-
-class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
-    def __init__(self, main_gui):
-        super(edit_cfg_nc2csv_ecostress, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
-        self.tabs = main_gui.tabs
-        self.info = main_gui.info
-        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
-        self.edit_nc2csv_ecostress_gui()
-
-    def edit_nc2csv_ecostress_gui(self):
-        """ Edit an nc2csv_ecostress control file GUI."""
+    def edit_nc2csv_gui(self):
+        """ Edit an nc2csv control file GUI."""
         # get a QTreeView and a standard model
         self.view = myTreeView()
         # get a QStandardItemModel
@@ -9212,33 +8871,29 @@ class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "nc2csv_ecostress"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "General"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def context_menu(self, position):
         """ Right click context menu."""
@@ -9298,600 +8953,6 @@ class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
                 self.context_menu.actionRemoveItem.setText("Remove item")
                 self.context_menu.addAction(self.context_menu.actionRemoveItem)
                 self.context_menu.actionRemoveItem.triggered.connect(self.remove_item)
-        elif level == 2:
-            # sections with 3 levels
-            pass
-
-        self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
-
-    def add_general_item(self):
-        """ Add a new entry to the [Files] section."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        section = idx.model().itemFromIndex(idx)
-        dict_to_add = {"New item":""}
-        # add the subsection
-        self.add_subsection(section, dict_to_add)
-
-    def add_new_variable(self):
-        """ Add a new variable to the 'Variables' section."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        parent = idx.model().itemFromIndex(idx)
-        dict_to_add = {"in_name": "", "out_units": "", "out_format": ""}
-        subsection = QtGui.QStandardItem("New variable")
-        self.add_subsection(subsection, dict_to_add)
-        parent.appendRow(subsection)
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        self.update_tab_text()
-
-    def add_subsection(self, section, dict_to_add):
-        """ Add a subsection to the model."""
-        for key in dict_to_add:
-            val = str(dict_to_add[key])
-            child0 = QtGui.QStandardItem(key)
-            child1 = QtGui.QStandardItem(val)
-            section.appendRow([child0, child1])
-
-    def browse_file_path(self):
-        """ Browse for the data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the selected entry text
-        file_path = str(idx.data())
-        # dialog for new directory
-        new_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose a folder",
-                                                             file_path, QtWidgets.QFileDialog.ShowDirsOnly)
-        # quit if cancel button pressed
-        if len(str(new_dir)) > 0:
-            # make sure the string ends with a path delimiter
-            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
-            new_dir = os.path.join(tmp_dir, "")
-            # update the model
-            parent.child(selected_item.row(), 1).setText(new_dir)
-
-    def browse_input_file(self):
-        """ Browse for the input data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
-        # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
-        # update the model
-        if len(str(new_file_path)) > 0:
-            new_file_parts = os.path.split(str(new_file_path))
-            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
-
-    def browse_output_file(self):
-        """ Browse for the output data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the top level and sub sections
-        # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
-        # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
-                                                              directory=file_path, filter="*.csv")[0]
-        # update the model
-        if len(str(new_file_path)) > 0:
-            new_file_parts = os.path.split(str(new_file_path))
-            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
-
-    def get_keyval_by_key_name(self, section, key):
-        """ Get the value from a section based on the key name."""
-        found = False
-        val_child = ""
-        key_child = ""
-        for i in range(section.rowCount()):
-            if str(section.child(i, 0).text()) == str(key):
-                found = True
-                key_child = str(section.child(i, 0).text())
-                val_child = str(section.child(i, 1).text())
-                break
-        return key_child, val_child, found, i
-
-    def get_level_selected_item(self):
-        """ Get the level of the selected item."""
-        indexes = self.view.selectedIndexes()
-        level = -1
-        if len(indexes) > 0:
-            level = 0
-            index = indexes[0]
-            while index.parent().isValid():
-                index = index.parent()
-                level += 1
-        return level
-
-    def handleItemChanged(self, item):
-        """ Handler for when view items are edited."""
-        # update the control file contents
-        self.cfg = self.get_data_from_model()
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        self.update_tab_text()
-
-    def remove_item(self):
-        """ Remove an item from the view."""
-        # loop over selected items in the tree
-        for idx in self.view.selectedIndexes():
-            # get the selected item from the index
-            selected_item = idx.model().itemFromIndex(idx)
-            # get the parent of the selected item
-            parent = selected_item.parent()
-            # remove the row
-            parent.removeRow(selected_item.row())
-        self.update_tab_text()
-
-    def update_tab_text(self):
-        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-
-class edit_cfg_nc2csv_fluxnet(QtWidgets.QWidget):
-    def __init__(self, main_gui):
-        super(edit_cfg_nc2csv_fluxnet, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
-        self.tabs = main_gui.tabs
-        self.info = main_gui.info
-        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
-        self.edit_nc2csv_fluxnet_gui()
-
-    def edit_nc2csv_fluxnet_gui(self):
-        """ Edit an nc2csv_fluxnet control file GUI."""
-        # get a QTreeView and a standard model
-        self.view = myTreeView()
-        # get a QStandardItemModel
-        self.model = QtGui.QStandardItemModel()
-        # add the model to the view
-        self.view.setModel(self.model)
-        # set the context menu policy
-        self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        # connect the context menu requested signal to appropriate slot
-        self.view.customContextMenuRequested.connect(self.context_menu)
-        # do the QTreeView layout
-        vbox = QtWidgets.QVBoxLayout()
-        vbox.addWidget(self.view)
-        self.setLayout(vbox)
-        self.setGeometry(300, 300, 600, 400)
-        # build the model
-        self.get_model_from_data()
-        # set the default width for the first column
-        self.view.setColumnWidth(0, 200)
-        # expand the top level of the sections
-        for row in range(self.model.rowCount()):
-            idx = self.model.index(row, 0)
-            self.view.expand(idx)
-
-    def get_model_from_data(self):
-        """ Build the data model."""
-        self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
-        self.model.itemChanged.connect(self.handleItemChanged)
-        # there must be someway outa here, said the Joker to the Thief ...
-        self.sections = {}
-        for key1 in self.cfg:
-            if not self.cfg[key1]:
-                continue
-            if key1 in ["Files", "General"]:
-                # sections with only 1 level
-                self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg[key1]:
-                    val = self.cfg[key1][key2]
-                    child0 = QtGui.QStandardItem(key2)
-                    child1 = QtGui.QStandardItem(val)
-                    self.sections[key1].appendRow([child0, child1])
-                self.model.appendRow(self.sections[key1])
-            elif key1 in ["Variables"]:
-                # sections with 2 levels
-                self.sections[key1] = QtGui.QStandardItem(key1)
-                # key2 is the variable name
-                for key2 in self.cfg[key1]:
-                    parent2 = QtGui.QStandardItem(key2)
-                    # key3 is the variable options
-                    for key3 in self.cfg[key1][key2]:
-                        val = self.cfg[key1][key2][key3]
-                        child0 = QtGui.QStandardItem(key3)
-                        child1 = QtGui.QStandardItem(val)
-                        parent2.appendRow([child0, child1])
-                    self.sections[key1].appendRow(parent2)
-                self.model.appendRow(self.sections[key1])
-
-    def get_data_from_model(self):
-        """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "nc2csv_fluxnet"
-        model = self.model
-        # there must be a way to do this recursively
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            key1 = str(section.text())
-            cfg[key1] = {}
-            if key1 in ["Files", "General"]:
-                # sections with only 1 level
-                for j in range(section.rowCount()):
-                    key2 = str(section.child(j, 0).text())
-                    val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
-            elif key1 in ["Variables"]:
-                # sections with 2 levels
-                for j in range(section.rowCount()):
-                    subsection = section.child(j)
-                    key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
-                    for k in range(subsection.rowCount()):
-                        key3 = str(subsection.child(k, 0).text())
-                        val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-
-        return cfg
-
-    def context_menu(self, position):
-        """ Right click context menu."""
-        # get a menu
-        self.context_menu = QtWidgets.QMenu()
-        # get the index of the selected item
-        if len(self.view.selectedIndexes()) == 0:
-            # trap right click when nothing is selected
-            return
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item text
-        selected_text = str(idx.data())
-        # get the selected item
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the level of the selected item
-        level = self.get_level_selected_item()
-        # initialise logical for inserting a separator
-        if level == 0:
-            if selected_text in ["Variables"]:
-                self.context_menu.actionAddVariable = QtWidgets.QAction(self)
-                self.context_menu.actionAddVariable.setText("Add variable")
-                self.context_menu.addAction(self.context_menu.actionAddVariable)
-                self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
-            elif selected_text in ["General"]:
-                self.context_menu.actionAddItem = QtWidgets.QAction(self)
-                self.context_menu.actionAddItem.setText("Add item")
-                self.context_menu.addAction(self.context_menu.actionAddItem)
-                self.context_menu.actionAddItem.triggered.connect(self.add_general_item)
-        elif level == 1:
-            # sections with 2 levels
-            # get the parent of the selected item
-            parent = selected_item.parent()
-            if (str(parent.text()) == "Files") and (selected_item.column() == 1):
-                key = str(parent.child(selected_item.row(),0).text())
-                if key in ["file_path"]:
-                    self.context_menu.actionBrowseFilePath = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseFilePath.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
-                    self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
-                elif key in ["in_filename"]:
-                    self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseInputFile.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
-                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
-                elif key in ["out_filename"]:
-                    self.context_menu.actionBrowseOutputFile = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseOutputFile.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
-                    self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
-            elif (str(parent.text()) == "Variables") and (selected_item.column() == 0):
-                self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveOption.setText("Remove variable")
-                self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
-            elif (str(parent.text()) == "General") and (selected_item.column() == 0):
-                self.context_menu.actionRemoveItem = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveItem.setText("Remove item")
-                self.context_menu.addAction(self.context_menu.actionRemoveItem)
-                self.context_menu.actionRemoveItem.triggered.connect(self.remove_item)
-        elif level == 2:
-            # sections with 3 levels
-            pass
-
-        self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
-
-    def add_general_item(self):
-        """ Add a new entry to the [Files] section."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        section = idx.model().itemFromIndex(idx)
-        dict_to_add = {"New item":""}
-        # add the subsection
-        self.add_subsection(section, dict_to_add)
-
-    def add_new_variable(self):
-        """ Add a new variable to the 'Variables' section."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        parent = idx.model().itemFromIndex(idx)
-        dict_to_add = {"in_name": "", "out_units": "", "out_format": ""}
-        subsection = QtGui.QStandardItem("New variable")
-        self.add_subsection(subsection, dict_to_add)
-        parent.appendRow(subsection)
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        self.update_tab_text()
-
-    def add_subsection(self, section, dict_to_add):
-        """ Add a subsection to the model."""
-        for key in dict_to_add:
-            val = str(dict_to_add[key])
-            child0 = QtGui.QStandardItem(key)
-            child1 = QtGui.QStandardItem(val)
-            section.appendRow([child0, child1])
-
-    def browse_file_path(self):
-        """ Browse for the data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the selected entry text
-        file_path = str(idx.data())
-        # dialog for new directory
-        new_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose a folder",
-                                                             file_path, QtWidgets.QFileDialog.ShowDirsOnly)
-        # quit if cancel button pressed
-        if len(str(new_dir)) > 0:
-            # make sure the string ends with a path delimiter
-            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
-            new_dir = os.path.join(tmp_dir, "")
-            # update the model
-            parent.child(selected_item.row(), 1).setText(new_dir)
-
-    def browse_input_file(self):
-        """ Browse for the input data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
-        # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
-        # update the model
-        if len(str(new_file_path)) > 0:
-            new_file_parts = os.path.split(str(new_file_path))
-            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
-
-    def browse_output_file(self):
-        """ Browse for the output data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the top level and sub sections
-        # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
-        # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
-                                                              directory=file_path, filter="*.csv")[0]
-        # update the model
-        if len(str(new_file_path)) > 0:
-            new_file_parts = os.path.split(str(new_file_path))
-            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
-
-    def get_keyval_by_key_name(self, section, key):
-        """ Get the value from a section based on the key name."""
-        found = False
-        val_child = ""
-        key_child = ""
-        for i in range(section.rowCount()):
-            if str(section.child(i, 0).text()) == str(key):
-                found = True
-                key_child = str(section.child(i, 0).text())
-                val_child = str(section.child(i, 1).text())
-                break
-        return key_child, val_child, found, i
-
-    def get_level_selected_item(self):
-        """ Get the level of the selected item."""
-        indexes = self.view.selectedIndexes()
-        level = -1
-        if len(indexes) > 0:
-            level = 0
-            index = indexes[0]
-            while index.parent().isValid():
-                index = index.parent()
-                level += 1
-        return level
-
-    def handleItemChanged(self, item):
-        """ Handler for when view items are edited."""
-        # update the control file contents
-        self.cfg = self.get_data_from_model()
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        self.update_tab_text()
-
-    def remove_item(self):
-        """ Remove an item from the view."""
-        # loop over selected items in the tree
-        for idx in self.view.selectedIndexes():
-            # get the selected item from the index
-            selected_item = idx.model().itemFromIndex(idx)
-            # get the parent of the selected item
-            parent = selected_item.parent()
-            # remove the row
-            parent.removeRow(selected_item.row())
-        self.update_tab_text()
-
-    def update_tab_text(self):
-        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-
-class edit_cfg_nc2csv_reddyproc(QtWidgets.QWidget):
-    def __init__(self, main_gui):
-        super(edit_cfg_nc2csv_reddyproc, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
-        self.tabs = main_gui.tabs
-        self.info = main_gui.info
-        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
-        self.edit_nc2csv_reddyproc_gui()
-
-    def edit_nc2csv_reddyproc_gui(self):
-        """ Edit an nc2csv_reddyproc control file GUI."""
-        # get a QTreeView and a standard model
-        self.view = myTreeView()
-        # get a QStandardItemModel
-        self.model = QtGui.QStandardItemModel()
-        # add the model to the view
-        self.view.setModel(self.model)
-        # set the context menu policy
-        self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        # connect the context menu requested signal to appropriate slot
-        self.view.customContextMenuRequested.connect(self.context_menu)
-        # do the QTreeView layout
-        vbox = QtWidgets.QVBoxLayout()
-        vbox.addWidget(self.view)
-        self.setLayout(vbox)
-        self.setGeometry(300, 300, 600, 400)
-        # build the model
-        self.get_model_from_data()
-        # set the default width for the first column
-        self.view.setColumnWidth(0, 200)
-        # expand the top level of the sections
-        for row in range(self.model.rowCount()):
-            idx = self.model.index(row, 0)
-            self.view.expand(idx)
-
-    def get_model_from_data(self):
-        """ Build the data model."""
-        self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
-        self.model.itemChanged.connect(self.handleItemChanged)
-        # there must be someway outa here, said the Joker to the Thief ...
-        self.sections = {}
-        for key1 in self.cfg:
-            if not self.cfg[key1]:
-                continue
-            if key1 in ["Files"]:
-                # sections with only 1 level
-                self.sections[key1] = QtGui.QStandardItem(key1)
-                for key2 in self.cfg[key1]:
-                    val = self.cfg[key1][key2]
-                    child0 = QtGui.QStandardItem(key2)
-                    child1 = QtGui.QStandardItem(val)
-                    self.sections[key1].appendRow([child0, child1])
-                self.model.appendRow(self.sections[key1])
-            elif key1 in ["Variables"]:
-                # sections with 2 levels
-                self.sections[key1] = QtGui.QStandardItem(key1)
-                # key2 is the variable name
-                for key2 in self.cfg[key1]:
-                    parent2 = QtGui.QStandardItem(key2)
-                    # key3 is the variable options
-                    for key3 in self.cfg[key1][key2]:
-                        val = self.cfg[key1][key2][key3]
-                        child0 = QtGui.QStandardItem(key3)
-                        child1 = QtGui.QStandardItem(val)
-                        parent2.appendRow([child0, child1])
-                    self.sections[key1].appendRow(parent2)
-                self.model.appendRow(self.sections[key1])
-
-    def get_data_from_model(self):
-        """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "nc2csv_reddyproc"
-        model = self.model
-        # there must be a way to do this recursively
-        for i in range(model.rowCount()):
-            section = model.item(i)
-            key1 = str(section.text())
-            cfg[key1] = {}
-            if key1 in ["Files"]:
-                # sections with only 1 level
-                for j in range(section.rowCount()):
-                    key2 = str(section.child(j, 0).text())
-                    val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
-            elif key1 in ["Variables"]:
-                # sections with 2 levels
-                for j in range(section.rowCount()):
-                    subsection = section.child(j)
-                    key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
-                    for k in range(subsection.rowCount()):
-                        key3 = str(subsection.child(k, 0).text())
-                        val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-
-        return cfg
-
-    def context_menu(self, position):
-        """ Right click context menu."""
-        # get a menu
-        self.context_menu = QtWidgets.QMenu()
-        # get the index of the selected item
-        if len(self.view.selectedIndexes()) == 0:
-            # trap right click when nothing is selected
-            return
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item text
-        selected_text = str(idx.data())
-        # get the selected item
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the level of the selected item
-        level = self.get_level_selected_item()
-        # initialise logical for inserting a separator
-        if level == 0:
-            if selected_text in ["Variables"]:
-                self.context_menu.actionAddVariable = QtWidgets.QAction(self)
-                self.context_menu.actionAddVariable.setText("Add variable")
-                self.context_menu.addAction(self.context_menu.actionAddVariable)
-                self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
-        elif level == 1:
-            # sections with 2 levels
-            # get the parent of the selected item
-            parent = selected_item.parent()
-            if (str(parent.text()) == "Files") and (selected_item.column() == 1):
-                key = str(parent.child(selected_item.row(),0).text())
-                if key in ["file_path"]:
-                    self.context_menu.actionBrowseFilePath = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseFilePath.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
-                    self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
-                elif key in ["in_filename"]:
-                    self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseInputFile.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
-                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
-                elif key in ["out_filename"]:
-                    self.context_menu.actionBrowseOutputFile = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseOutputFile.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
-                    self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
-            elif (str(parent.text()) == "Variables") and (selected_item.column() == 0):
-                self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveOption.setText("Remove variable")
-                self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
         elif level == 2:
             # sections with 3 levels
             pass
@@ -10041,7 +9102,7 @@ class edit_cfg_nc2csv_reddyproc(QtWidgets.QWidget):
 class edit_cfg_windrose(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_windrose, self).__init__()
-        self.cfg = copy.deepcopy(main_gui.file)
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
@@ -10232,33 +9293,29 @@ class edit_cfg_windrose(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False, encoding="UTF8")
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "windrose"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""

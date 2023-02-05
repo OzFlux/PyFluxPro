@@ -2078,6 +2078,13 @@ def GetVariable(ds, label, group="root", start=0, end=-1, mode="truncate", out_t
 
 def get_variable_pfpds(ds, label, group="root", start=0, end=-1,
                        mode="truncate", out_type="ma", match="exact"):
+    """
+    Purpose:
+     Return a variable from a PFP data structure.
+    Usage:
+    Author: PRI
+    Date: Back in the day
+    """
     gvars = getattr(ds, group)["Variables"]
     gattr = getattr(ds, group)["Attributes"]
     dt = gvars["DateTime"]["Data"]
@@ -2124,6 +2131,14 @@ def get_variable_pfpds(ds, label, group="root", start=0, end=-1,
     return variable
 
 def get_variable_xarray(ds, label, group="root", start=0, end=-1):
+    """
+    Purpose:
+     Return a variable from an xarray dataset.
+    Usage:
+    Author: PRI
+    Date: January 2023
+    """
+    time_step = ds[group].attrs["time_step"]
     if not isinstance(start, numpy.datetime64):
         start = ds[group]["time"].values[0]
     if not isinstance(end, numpy.datetime64):
@@ -2141,7 +2156,8 @@ def get_variable_xarray(ds, label, group="root", start=0, end=-1):
                 "Data": data,
                 "Flag": flag,
                 "Attr": attr,
-                "DateTime": dt}
+                "DateTime": dt,
+                "time_step": time_step}
     return variable
 
 def GetUnitsFromds(ds, ThisOne):
