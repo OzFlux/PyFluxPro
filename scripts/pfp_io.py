@@ -1462,11 +1462,25 @@ def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3, e
             nc_file.close()
             return
     elif engine.lower() == "xarray":
-        ds["root"] = ds["root"].expand_dims({"latitude": 1, "longitude": 1})
-        # seems to be a bugin xarray or netCDF4, throws AttributeError when format='NETCDF4'
-        #ds["root"].to_netcdf(nc_file_path, "w", format="NETCDF4")
-        # so for now we use format='NETCDF3_64BIT'
-        ds["root"].to_netcdf(nc_file_path, "w", format="NETCDF3_64BIT")
+        # xarray datasets are used for netCDF files opened from the local
+        # file system and THREDDS servers for display in the PFP GUI.
+        # In this case, ds is a dictionary of xarray Datasets and not
+        # a PFP data structure.
+        # Get a list of groups in the xarray Dataset
+        groups = [g for g in sorted(list(ds.keys()))
+                  if isinstance(ds[g], xarray.core.dataset.Dataset)]
+        # loop over the groups and add the latitude and longitude dimensions
+        for group in groups:
+            for dim in ["latitude", "longitude"]:
+                if dim not in ds[group].dims:
+                    # only add if not already present
+                    ds[group] = ds[group].expand_dims({dim: 1})
+        # write the root group to the netCDF file
+        ds["root"].to_netcdf(nc_file_path, "w", format="NETCDF4")
+        groups.remove("root")
+        # write the remaining groups to the netCDF file
+        for group in groups:
+            ds[group].to_netcdf(nc_file_path, "a", group=group, format="NETCDF4")
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):

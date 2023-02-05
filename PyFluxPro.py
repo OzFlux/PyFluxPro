@@ -825,6 +825,7 @@ class pfp_main_ui(QtWidgets.QWidget):
 
     def file_save_netcdf_file(self):
         """Save the current tab as a netCDF file."""
+        self.setCursor(QtCore.Qt.WaitCursor)
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
         # get the updated control file data
@@ -834,6 +835,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # remove the asterisk in the tab text
         tab_text = str(self.tabs.tabText(tab_index_current))
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
+        self.unsetCursor()
         return
 
     def file_save_as(self):

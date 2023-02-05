@@ -9565,29 +9565,18 @@ class file_explore(QtWidgets.QWidget):
                         self.ds["root"][label].attrs[key2] = val2
             else:
                 # this is a netCDF file with groups
-                group_attributes = {}
-                variables = {}
                 for j in range(section.rowCount()):
                     if section.child(j).text() in ["Group attributes"]:
                         for k in range(section.child(j).rowCount()):
                             key = str(section.child(j).child(k, 0).text())
                             value = str(section.child(j).child(k, 1).text())
-                            group_attributes[key] = value
+                            self.ds[key1].attrs[key] = value
                     else:
                         label = section.child(j).text()
-                        group = getattr(self.ds, key1)
-                        variables[label] = {"Data": group["Variables"][label]["Data"],
-                                            "Flag": group["Variables"][label]["Flag"],
-                                            "Attr": group["Variables"][label]["Attr"]}
                         for k in range(section.child(j).rowCount()):
                             key = str(section.child(j).child(k, 0).text())
                             value = str(section.child(j).child(k, 1).text())
-                            variables[label]["Attr"][key] = value
-                # create the group as an attribute in the data structure
-                self.ds[key1].attrs = group_attributes
-                labels = list(variables.keys())
-                for label in labels:
-                    self.ds[key1][label] = variables[label]
+                            self.ds[key1][label].attrs[key] = value
         return self.ds
     def get_model_from_data(self):
         # disable editing of the netCDF file if it is not on the local file system
