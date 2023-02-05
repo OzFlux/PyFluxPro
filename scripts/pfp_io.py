@@ -706,14 +706,14 @@ def ReadExcelWorkbook(l1_info):
         dfs[df_name].index = dfs[df_name].index.round('1S')
         # drop columns except those wanted by the user
         dfs[df_name] = dfs[df_name][~dfs[df_name].index.duplicated(keep='first')]
-        # check the time step of this worksheet against the value in the global attributes
-        pdts = pandas.infer_freq(dfs[df_name].index)
-        pdts = pfp_utils.strip_non_numeric(pdts)
-        gats = l1ire["Global"]["time_step"]
-        if int(pdts) != int(gats):
-            msg = " " + df_name + " time step is " + pdts + ", expected " + gats
-            logger.error(msg)
-            continue
+        ## check the time step of this worksheet against the value in the global attributes
+        #pdts = pandas.infer_freq(dfs[df_name].index)
+        #pdts = pfp_utils.strip_non_numeric(pdts)
+        #gats = l1ire["Global"]["time_step"]
+        #if int(pdts) != int(gats):
+            #msg = " " + df_name + " time step is " + pdts + ", expected " + gats
+            #logger.error(msg)
+            #continue
         # drop columns except those wanted by the user
         dfs[df_name] = dfs[df_name][list(l1ire["xl_sheets"][df_name]["xl_labels"])]
         # coerce all columns with dtype "object" to "float64"
