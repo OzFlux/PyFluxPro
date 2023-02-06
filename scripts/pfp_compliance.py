@@ -708,7 +708,7 @@ def check_l1_controlfile(cfg):
                         write_empty_values=True, encoding="UTF8")
         std_labels = sorted(list(std["Variables"].keys()))
         # initialise the messages dictionary
-        messages = {"ERROR":[], "WARNING": [], "INFO": []}
+        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": []}
         # check the files section
         l1_check_files(cfg, std, messages)
         # check the global attributes section
@@ -764,7 +764,7 @@ def check_l2_controlfile(cfg):
     try:
         ok = True
         # initialise the messages dictionary
-        messages = {"ERROR":[], "WARNING": [], "INFO": []}
+        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": []}
         # check the files section
         l2_check_files(cfg, messages)
         # check the options section
@@ -810,16 +810,16 @@ def check_l2_options(cfg, ds):
     Author: PRI
     Date: October 2022
     """
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": []}
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     irga_types = open_path_irgas + closed_path_irgas
     nc_irga_type = None
     cfg_irga_type = None
-    if ("irga_type" in ds.root["Attributes"]):
-        nc_irga_type = str(ds.root["Attributes"]["irga_type"])
-    if ("irga_type" in cfg["Options"]):
-        cfg_irga_type = str(cfg["Options"]["irga_type"])
+    if ("irga_flux" in ds.root["Attributes"]):
+        nc_irga_type = str(ds.root["Attributes"]["irga_flux"])
+    if ("irga_flux" in cfg["Options"]):
+        cfg_irga_type = str(cfg["Options"]["irga_flux"])
     if ((nc_irga_type is None) and (cfg_irga_type is None)):
         # IRGA type not found in the L1 netCDF file or the control file
         msg = "IRGA type not specified in L1 netCDF file or L2 control file"
@@ -833,7 +833,7 @@ def check_l2_options(cfg, ds):
             messages["ERROR"].append(msg)
             ds.info["returncodes"]["value"] = 1
         else:
-            ds.root["Attributes"]["irga_type"] = cfg_irga_type
+            ds.root["Attributes"]["irga_flux"] = cfg_irga_type
     elif ((nc_irga_type is not None) and (cfg_irga_type is None)):
         # IRGA type found in the L1 netCDF file but not found in the L2 control file
         if (nc_irga_type not in irga_types):
@@ -857,11 +857,11 @@ def check_l2_options(cfg, ds):
     nc_sonic_type = None
     cfg_sonic_type = None
     # is sonic_type in the global attributes?
-    if ("sonic_type" in ds.root["Attributes"]):
-        nc_sonic_type = str(ds.root["Attributes"]["sonic_type"])
+    if ("sonic_flux" in ds.root["Attributes"]):
+        nc_sonic_type = str(ds.root["Attributes"]["sonic_flux"])
     # is sonic_type in the [Options] section of the control file
-    if ("sonic_type" in cfg["Options"]):
-        cfg_sonic_type = str(cfg["Options"]["sonic_type"])
+    if ("sonic_flux" in cfg["Options"]):
+        cfg_sonic_type = str(cfg["Options"]["sonic_flux"])
     if ((nc_sonic_type is None) and (cfg_sonic_type is None)):
         # sonic type not found in the L1 netCDF file or the control file
         msg = "Sonic type not specified in L1 netCDF file or L2 control file"
@@ -875,7 +875,7 @@ def check_l2_options(cfg, ds):
             messages["ERROR"].append(msg)
             ds.info["returncodes"]["value"] = 1
         else:
-            ds.root["Attributes"]["sonic_type"] = cfg_sonic_type
+            ds.root["Attributes"]["sonic_flux"] = cfg_sonic_type
     elif ((nc_sonic_type is not None) and (cfg_sonic_type is None)):
         # sonic type found in the L1 netCDF file but not found in the L2 control file
         if (nc_sonic_type not in sonic_types):
@@ -911,7 +911,7 @@ def check_l3_options(cfg, ds):
     Author: PRI
     Date: October 2022
     """
-    messages = {"ERROR":[], "WARNING": [], "INFO": [], "RESULT": "ignore"}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
     check_l3_options_wpl(cfg, ds, messages)
     check_l3_options_rotation(cfg, ds, messages)
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
@@ -958,7 +958,7 @@ def check_l3_options_wpl(cfg, ds, messages):
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     # get the IRGA type from the global attributes
-    irga_type = str(ds.root["Attributes"]["irga_type"])
+    irga_type = str(ds.root["Attributes"]["irga_flux"])
     # get the ApplyWPL setting from the L3 [Options] section
     apply_wpl_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "ApplyWPL", default="Yes")
     # check to see if the IRGA type and ApplyWPL option are consistent
@@ -985,7 +985,7 @@ def check_l5_controlfile(cfg):
     """
     ok = True
     # initialise the messages dictionary
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": []}
     # check to see if both cpd_filename and ustar_threshold section exist
     if "ustar_threshold"in cfg:
         if "cpd_filename" in cfg["Files"]:
@@ -1007,7 +1007,7 @@ def check_l6_controlfile(cfg):
     """
     ok = True
     # initialise the messages dictionary
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": []}
     l6_check_files(cfg, messages)
     l6_check_options(cfg, messages)
     l6_check_ecosystemrespiration(cfg, messages)
@@ -1034,7 +1034,7 @@ def check_windrose_controlfile(cfg):
     """
     ok = True
     # initialise the messages dictionary
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": []}
     check_windrose_files_section(cfg, messages)
     check_windrose_options_section(cfg, messages)
     check_windrose_variables_section(cfg, messages)
@@ -1148,10 +1148,10 @@ def display_messages_interactive(messages, mode="Close"):
             error_messages.append(item)
         logger.error("!!!!!")
     if len(messages["WARNING"]) > 0:
-        logger.warning("?????")
+        #logger.warning("?????")
         for item in messages["WARNING"]:
             logger.warning(item)
-        logger.warning("?????")
+        #logger.warning("?????")
     for item in messages["INFO"]:
         logger.info(item)
     # convert error list to a comma separated string
@@ -1297,7 +1297,7 @@ def l1_check_global_forced(cfg, std, messages):
     for item in forced:
         cfg["Global"][item] = forced[item]
         msg = "Global: setting " + item + " to " + forced[item]
-        messages["INFO"].append(msg)
+        messages["DEBUG"].append(msg)
     # and do the time zone
     #lon = float(cfg["Global"]["longitude"])
     #lat = float(cfg["Global"]["latitude"])
@@ -1493,7 +1493,7 @@ def l1_check_irga_sonic_type(cfg, messages):
         return
     # call the check routines
     l1_check_irga_only(cfg, fast_irga_only_labels, messages)
-    l1_check_irga_only(cfg, slow_irga_only_labels, messages)
+    #l1_check_irga_only(cfg, slow_irga_only_labels, messages)
     l1_check_sonic_only(cfg, sonic_only_labels, messages)
     l1_check_sonic_irga(cfg, sonic_irga_labels, messages)
     return
@@ -1510,7 +1510,18 @@ def l1_check_irga_only(cfg, irga_only_labels, messages):
             irga_only_labels.remove(label)
     irga_check = {}
     for label in irga_only_labels:
-        if "instrument" in cfg["Variables"][label]["Attr"]:
+        if "irga_flux" in cfg["Global"]:
+            irga_type = cfg["Global"]["irga_flux"]
+            if irga_type not in irga_check:
+                irga_check[irga_type] = []
+            instr_type = cfg["Variables"][label]["Attr"]["instrument"]
+            if instr_type != irga_type:
+                msg = "'instrument' attribute for " + label + " (" + instr_type
+                msg += ") forced to " + irga_type
+                messages["WARNING"].append(msg)
+                cfg["Variables"][label]["Attr"]["instrument"] = irga_type
+            irga_check[irga_type].append(label)
+        elif "instrument" in cfg["Variables"][label]["Attr"]:
             irga_type = cfg["Variables"][label]["Attr"]["instrument"]
             if irga_type in known_irgas:
                 # IRGA type is something we know
@@ -1549,6 +1560,8 @@ def l1_check_sonic_only(cfg, sonic_only_labels, messages):
     for label in sonic_only_labels:
         if "instrument" in cfg["Variables"][label]["Attr"]:
             sonic_type = cfg["Variables"][label]["Attr"]["instrument"]
+            if sonic_type not in sonic_check:
+                sonic_check[sonic_type] = []
             if sonic_type in known_sonics:
                 # sonic type is something we know
                 if sonic_type not in sonic_check:
@@ -1636,8 +1649,8 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
         msg = "No known sonic types found"
         messages["ERROR"].append(msg)
     elif len(sonic_types) == 1:
-        cfg["Global"]["sonic_type"] = str(sonic_types[0])
-        msg = "Sonic type set to " + cfg["Global"]["sonic_type"]
+        cfg["Global"]["sonic_flux"] = str(sonic_types[0])
+        msg = "Sonic type set to " + cfg["Global"]["sonic_flux"]
         logger.info(msg)
     else:
         msg = "More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
@@ -1650,8 +1663,8 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
         msg = "No known IRGA types found"
         messages["ERROR"].append(msg)
     elif len(irga_types) == 1:
-        cfg["Global"]["irga_type"] = str(irga_types[0])
-        msg = "IRGA type set to " + cfg["Global"]["irga_type"]
+        cfg["Global"]["irga_flux"] = str(irga_types[0])
+        msg = "IRGA type set to " + cfg["Global"]["irga_flux"]
         logger.info(msg)
     else:
         msg = "More than 1 IRGA type specified (" + ",".join(irga_types) + ")"
@@ -2526,10 +2539,10 @@ def update_cfg_options(cfg, std):
     # update the units in the Options section
     if cfg["level"] == "L2":
         if "Options" in cfg:
-            if "irga_type" in cfg["Options"]:
-                irga_type = cfg["Options"]["irga_type"]
+            if "irga_flux" in cfg["Options"]:
+                irga_type = cfg["Options"]["irga_flux"]
                 if irga_type in ["Li-7500A (<V6.5)", "Li-7500A (>=V6.5)"]:
-                    cfg["Options"]["irga_type"] = "Li-7500A"
+                    cfg["Options"]["irga_flux"] = "Li-7500A"
     elif cfg["level"] == "L3":
         if "Options" in cfg:
             for item in list(cfg["Options"].keys()):

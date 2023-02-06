@@ -1,14 +1,13 @@
 # standard modules
 from collections import OrderedDict
-import copy
 import inspect
 import logging
 import os
 import traceback
 # 3rd party modules
-from configobj import ConfigObj
 from PyQt5 import QtCore, QtGui, QtWidgets
 # PFP modules
+from scripts import constants as c
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
 from scripts import pfp_gfALT
@@ -2434,11 +2433,55 @@ class edit_cfg_L1(QtWidgets.QWidget):
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
+        self.update_info()
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         # disable editing of essential entries in Files
         self.files_essential = ["file_path", "in_filename", "in_firstdatarow",
                                 "in_headerrow", "out_filename"]
         self.edit_L1_gui()
+
+    def update_info(self):
+        self.info["edit_cfg_L1"] = {"irga_flux": "Li-7500RS", "sonic_flux": "CSAT3B"}
+        self.update_info_sonic_irga_lists()
+
+    def update_info_sonic_irga_lists(self):
+        cfg_labels = sorted(list(self.cfg["Variables"].keys()))
+        # IRGA signal strengths
+        signal_labels = ["Signal_CO2", "Signal_H2O"]
+        # PFP covariances
+        h2o_covars = ["UxA", "UyA", "UzA"]
+        co2_covars = ["UxC", "UyC", "UzC"]
+        t_covars = ["UxT", "UyT", "UzT"]
+        m_covars = ["UxUy", "UxUz", "UyUz"]
+        # anything with 'IRGA' in the variable name
+        irga_labels = [l for l in self.cfg["Variables"].keys() if "IRGA" in l]
+        # anything with 'SONIC' in the variable name
+        sonic_labels = [l for l in cfg_labels if "SONIC" in l]
+        # fluxes from EddyPro, EasyFlux and the like
+        fco2_labels = [l for l in cfg_labels if l[0:4] == "Fco2"]
+        sco2_labels = [l for l in cfg_labels if l[0:4] == "Sco2"]
+        fh2o_labels = [l for l in cfg_labels if l[0:4] == "Fh2o"]
+        fe_labels = [l for l in cfg_labels if l[0:2] == "Fe"]
+        fh_labels = [l for l in cfg_labels if l[0:2] == "Fh"]
+        fm_labels = [l for l in cfg_labels if l[0:2] == "Fm"]
+        us_labels = [l for l in cfg_labels if l[0:5] == "ustar"]
+        # lists of variables by instrument
+        # fast IRGAs e.g. Li-7500RS etc used for turbulence measurements
+        sieL1 = self.info["edit_cfg_L1"]
+        sieL1["fast_irga_only_labels"] = irga_labels + signal_labels
+        # slow IRGAs e.g. Li-840 used for profile measurements
+        sieL1["slow_irga_only_labels"] = sco2_labels
+        # IRGA only
+        sieL1["irga_only_labels"] = irga_labels + signal_labels + sco2_labels
+        # sonic anemometer only
+        sieL1["sonic_only_labels"] = sonic_labels + t_covars + m_covars + fh_labels + fm_labels + us_labels
+        # sonic and fast IRGA
+        sieL1["sonic_irga_labels"] = h2o_covars + co2_covars + fco2_labels + fh2o_labels + fe_labels
+        # all sonic or IRGA related variables
+        sieL1["all_sonic_irga_labels"] = list(sieL1["fast_irga_only_labels"])
+        sieL1["all_sonic_irga_labels"] += sieL1["slow_irga_only_labels"]
+        sieL1["all_sonic_irga_labels"] += sieL1["sonic_only_labels"]
+        sieL1["all_sonic_irga_labels"] += sieL1["sonic_irga_labels"]
 
     def add_attribute(self):
         """ Add a variable attribute to a variable in the [Variables] section."""
@@ -2532,17 +2575,62 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # change the text of the selected item
         item.setText(function_string)
 
-    def add_global(self):
+    def add_global(self, dict_to_add):
         """ Add a new entry to the [Global] section."""
+        update = False
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
         # get the new children
-        child0 = QtGui.QStandardItem("New item")
-        child1 = QtGui.QStandardItem("")
-        selected_item.appendRow([child0, child1])
+        existing_entries = self.get_existing_entries(selected_item)
+        keys = sorted(list(dict_to_add.keys()))
+        for key in keys:
+            if key in existing_entries:
+                continue
+            value = dict_to_add[key]
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(value)
+            selected_item.appendRow([child0, child1])
+            if key in ["irga_flux", "sonic_flux"]:
+                update = True
+        if update:
+            # update the control file in case variables have been added
+            #self.cfg = self.get_data_from_model()
+            # update the IRGA and sonic label lists in case variables have been added
+            #self.update_info_sonic_irga_lists()
+            # update the model with the IRGA and sonic type
+            self.update_instrument_variable_attribute()
         # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_global_attribute_above(self, key, value):
+        """ Add a global attribute above the selected item."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get a list of the existing entries
+        existing_entries = self.get_existing_entries(selected_item)
+        # check to see if the item being added is already in the existing entries
+        if key in existing_entries:
+            # if it is then return without doing anything
+            return
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the items on the new row
+        child0 = QtGui.QStandardItem(key)
+        child1 = QtGui.QStandardItem(value)
+        # insert the new row above the selected item
+        parent.insertRow(idx.row(), [child0, child1])
+        if key in ["irga_flux", "sonic_flux"]:
+            # update the control file in case variables have been added
+            #self.cfg = self.get_data_from_model()
+            # update the IRGA and sonic label lists in case variables have been added
+            #self.update_info_sonic_irga_lists()
+            # update the model with the IRGA and sonic type
+            self.update_instrument_variable_attribute()
+        # put an asterix in the tab title to show the content has changed
         self.update_tab_text()
 
     def add_linear(self):
@@ -2825,17 +2913,13 @@ class edit_cfg_L1(QtWidgets.QWidget):
                             self.cfg[key1][key2][key3][key4] = val4
         return self.cfg
 
-    def get_existing_entries(self):
+    def get_existing_entries(self, section):
         """ Get a list of existing entries in the current section."""
-        # index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from its index
-        selected_item = idx.model().itemFromIndex(idx)
         # build a list of existing QC checks
         existing_entries = []
-        if selected_item.hasChildren():
-            for i in range(selected_item.rowCount()):
-                existing_entries.append(str(selected_item.child(i, 0).text()))
+        if section.hasChildren():
+            for i in range(section.rowCount()):
+                existing_entries.append(str(section.child(i, 0).text()))
         return existing_entries
 
     def get_keyval_by_key_name(self, section, key):
@@ -2968,7 +3052,13 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.context_menu.actionAddGlobal = QtWidgets.QAction(self)
                 self.context_menu.actionAddGlobal.setText("Add attribute")
                 self.context_menu.addAction(self.context_menu.actionAddGlobal)
-                self.context_menu.actionAddGlobal.triggered.connect(self.add_global)
+                arg = lambda: self.add_global({"New attribute", ""})
+                self.context_menu.actionAddGlobal.triggered.connect(arg)
+                self.context_menu.actionAddIRGASonic = QtWidgets.QAction(self)
+                self.context_menu.actionAddIRGASonic.setText("Add IRGA/sonic type")
+                self.context_menu.addAction(self.context_menu.actionAddIRGASonic)
+                arg = lambda: self.add_global({"irga_flux": "Li-7500RS", "sonic_flux": "CSAT3B"})
+                self.context_menu.actionAddIRGASonic.triggered.connect(arg)
             elif selected_text == "Variables":
                 if src == "xl":
                     self.context_menu.actionAddxlVariable = QtWidgets.QAction(self)
@@ -3009,16 +3099,50 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveItem)
                 self.context_menu.actionRemoveItem.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Global":
-                exclude = ["latitude", "longitude", "site_name", "time_step", "time_zone",
-                           "Conventions", "data_link", "featureType", "license_name", "license",
-                           "publisher_name", "ozflux_link"]
-                if selected_item.text() not in exclude:
-                    self.context_menu.actionRemoveGlobal = QtWidgets.QAction(self)
-                    self.context_menu.actionRemoveGlobal.setText("Remove attribute")
-                    self.context_menu.addAction(self.context_menu.actionRemoveGlobal)
-                    self.context_menu.actionRemoveGlobal.triggered.connect(self.remove_item)
+                if ((parent.child(idx.row(), 0).text() == "irga_flux") and
+                    (idx.column() == 1)):
+                    open_path = list(c.instruments["irgas"]["open_path"].keys())
+                    closed_path = list(c.instruments["irgas"]["closed_path"].keys())
+                    irga_types = open_path + closed_path
+                    for irga_type in irga_types:
+                        if irga_type != selected_item.text():
+                            self.context_menu.SetIRGAType = QtWidgets.QAction(self)
+                            self.context_menu.SetIRGAType.setText(irga_type)
+                            self.context_menu.addAction(self.context_menu.SetIRGAType)
+                            self.context_menu.SetIRGAType.triggered.connect(self.set_irga_sonic)
+                elif ((parent.child(idx.row(), 0).text() == "sonic_flux") and
+                      (idx.column() == 1)):
+                    sonic_types = list(c.instruments["sonics"].keys())
+                    for sonic_type in sonic_types:
+                        if sonic_type != selected_item.text():
+                            self.context_menu.SetSonicType = QtWidgets.QAction(self)
+                            self.context_menu.SetSonicType.setText(sonic_type)
+                            self.context_menu.addAction(self.context_menu.SetSonicType)
+                            self.context_menu.SetSonicType.triggered.connect(self.set_irga_sonic)
+                else:
+                    existing_entries = self.get_existing_entries(parent)
+                    if "irga_flux" not in existing_entries:
+                        self.context_menu.actionAddIRGAType = QtWidgets.QAction(self)
+                        self.context_menu.actionAddIRGAType.setText("Add irga_type")
+                        self.context_menu.addAction(self.context_menu.actionAddIRGAType)
+                        arg = lambda: self.add_global_attribute_above("irga_flux", "Li-7500RS")
+                        self.context_menu.actionAddIRGAType.triggered.connect(arg)
+                    if "sonic_flux" not in existing_entries:
+                        self.context_menu.actionAddSonicType = QtWidgets.QAction(self)
+                        self.context_menu.actionAddSonicType.setText("Add sonic_type")
+                        self.context_menu.addAction(self.context_menu.actionAddSonicType)
+                        arg = lambda: self.add_global_attribute_above("sonic_flux", "CSAT3B")
+                        self.context_menu.actionAddSonicType.triggered.connect(arg)
+                    exclude = ["latitude", "longitude", "site_name", "time_step", "time_zone",
+                               "Conventions", "data_link", "featureType", "license_name", "license",
+                               "publisher_name", "ozflux_link"]
+                    if selected_item.text() not in exclude:
+                        self.context_menu.actionRemoveGlobal = QtWidgets.QAction(self)
+                        self.context_menu.actionRemoveGlobal.setText("Remove attribute")
+                        self.context_menu.addAction(self.context_menu.actionRemoveGlobal)
+                        self.context_menu.actionRemoveGlobal.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Variables":
-                existing_entries = self.get_existing_entries()
+                existing_entries = self.get_existing_entries(selected_item)
                 if "xl" not in existing_entries and "csv" not in existing_entries:
                     if src == "xl":
                         self.context_menu.actionAddxlSection = QtWidgets.QAction(self)
@@ -3139,6 +3263,51 @@ class edit_cfg_L1(QtWidgets.QWidget):
             # remove the row
             parent.removeRow(selected_item.row())
         self.update_tab_text()
+
+    def set_irga_sonic(self):
+        """ Set the value of a global attribute."""
+        sender = str(self.context_menu.sender().text())
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText(sender)
+        key = parent.child(selected_item.row(), 0).text()
+        self.info["edit_cfg_L1"][key] = sender
+        # update the control file in case variables have been added
+        #self.cfg = self.get_data_from_model()
+        # update the IRGA and sonic label lists in case variables have been added
+        #self.update_info_sonic_irga_lists()
+        # update the model with the IRGA and sonic type
+        self.update_instrument_variable_attribute()
+
+    def update_instrument_variable_attribute(self):
+        sieL1 = self.info["edit_cfg_L1"]
+        # find the 'Variables' section
+        for i in range(self.model.rowCount()):
+            variables_section = self.model.item(i)
+            if variables_section.text() == "Variables":
+                break
+        # iterate through the variables
+        for i in range(variables_section.rowCount()):
+            variable_section = variables_section.child(i,0)
+            # check to see if this variable is in the irga_only list
+            if (variable_section.text() in sieL1["fast_irga_only_labels"]):
+                instrument_type = sieL1["irga_flux"]
+            elif (variable_section.text() in sieL1["sonic_only_labels"]):
+                instrument_type = sieL1["sonic_flux"]
+            elif (variable_section.text() in sieL1["sonic_irga_labels"]):
+                instrument_type = ",".join([sieL1["sonic_flux"], sieL1["irga_flux"]])
+            else:
+                continue
+            # iterate through the variable subsections 'Attr', 'xl' or 'csv'
+            for j in range(variable_section.rowCount()):
+                variable_subsection = variable_section.child(j,0)
+                # check to see if this is the 'Attr' subsection
+                if variable_subsection.text() == "Attr":
+                    # find the 'instrument' attribute
+                    for k in range(variable_subsection.rowCount()):
+                        if variable_subsection.child(k,0).text() == "instrument":
+                            variable_subsection.child(k,1).setText(instrument_type)
 
     def update_header_rows(self, new_file_names):
         """
@@ -3298,7 +3467,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_irga_type(self):
         """ Add irga_type to Options section."""
-        new_options = {"irga_type": "Li-7500RS"}
+        new_options = {"irga_flux": "Li-7500RS"}
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
@@ -3358,7 +3527,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
     def add_options_section(self):
         """ Add an Options section."""
         self.sections["Options"] = QtGui.QStandardItem("Options")
-        new_options = {"irga_type": "Li-7500RS", "sonic_type": "CSAT3B",
+        new_options = {"irga_flux": "Li-7500RS", "sonic_flux": "CSAT3B",
                        "SONIC_Check": "Yes", "IRGA_Check": "Yes"}
         for key in new_options:
             value = new_options[key]
@@ -3442,7 +3611,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def add_sonic_type(self):
         """ Add sonic_type to Options section."""
-        new_options = {"sonic_type": "CSAT3B"}
+        new_options = {"sonic_flux": "CSAT3B"}
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
@@ -3683,15 +3852,15 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
             elif selected_text == "Options":
                 existing_entries = self.get_existing_entries()
-                if "irga_type" not in existing_entries:
+                if "irga_flux" not in existing_entries:
                     self.context_menu.actionirgatype = QtWidgets.QAction(self)
-                    self.context_menu.actionirgatype.setText("irga_type")
+                    self.context_menu.actionirgatype.setText("irga_flux")
                     self.context_menu.addAction(self.context_menu.actionirgatype)
                     self.context_menu.actionirgatype.triggered.connect(self.add_irga_type)
                     add_separator = True
-                if "sonic_type" not in existing_entries:
+                if "sonic_flux" not in existing_entries:
                     self.context_menu.actionsonictype = QtWidgets.QAction(self)
-                    self.context_menu.actionsonictype.setText("sonic_type")
+                    self.context_menu.actionsonictype.setText("sonic_flux")
                     self.context_menu.addAction(self.context_menu.actionsonictype)
                     self.context_menu.actionsonictype.triggered.connect(self.add_sonic_type)
                     add_separator = True
@@ -3758,7 +3927,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     pass
             elif (str(parent.text()) == "Options") and (selected_item.column() == 1):
                 key = str(parent.child(selected_item.row(),0).text())
-                if key == "irga_type":
+                if key == "irga_flux":
                     existing_entry = str(parent.child(selected_item.row(),1).text())
                     if existing_entry != "Li-7500":
                         self.context_menu.actionSetIRGATypeLi7500 = QtWidgets.QAction(self)
@@ -3800,7 +3969,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.actionSetIRGATypeIRGASON.setText("IRGASON")
                         self.context_menu.addAction(self.context_menu.actionSetIRGATypeIRGASON)
                         self.context_menu.actionSetIRGATypeIRGASON.triggered.connect(self.set_irga_irgason)
-                elif key == "sonic_type":
+                elif key == "sonic_flux":
                     existing_entry = str(parent.child(selected_item.row(),1).text())
                     if existing_entry != "CSAT3":
                         self.context_menu.actionSetSonicTypeCSAT3 = QtWidgets.QAction(self)
@@ -3830,7 +3999,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.addAction(self.context_menu.actionSetCheckNo)
                         self.context_menu.actionSetCheckNo.triggered.connect(self.set_check_no)
             elif (str(parent.text()) == "Options") and (selected_item.column() == 0):
-                if selected_item.text() in ["irga_type", "sonic_type", "SONIC_Check", "IRGA_Check"]:
+                if selected_item.text() in ["irga_flux", "sonic_flux", "SONIC_Check", "IRGA_Check"]:
                     self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)

@@ -1790,13 +1790,13 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
 
         Accepts meteorological constants or variables
         """
-    irga_type = str(ds.root["Attributes"]["irga_type"])
+    irga_type = str(ds.root["Attributes"]["irga_flux"])
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
     if (opt.lower() == "no"):
         msg = " WPL correction for Fco2 disabled in control file (" + irga_type + ")"
         logger.warning(msg)
         return 0
-    irga_type = str(ds.root["Attributes"]["irga_type"])
+    irga_type = str(ds.root["Attributes"]["irga_flux"])
     msg = " Applying WPL correction to Fco2 (IRGA type is " + irga_type + ")"
     logger.info(msg)
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -1859,13 +1859,13 @@ def Fe_WPL(cf, ds):
 
         Accepts meteorological constants or variables
         """
-    irga_type = str(ds.root["Attributes"]["irga_type"])
+    irga_type = str(ds.root["Attributes"]["irga_flux"])
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
     if (opt.lower() == "no"):
         msg = " WPL correction for Fe disabled in control file (" + irga_type + ")"
         logger.warning(msg)
         return 0
-    irga_type = str(ds.root["Attributes"]["irga_type"])
+    irga_type = str(ds.root["Attributes"]["irga_flux"])
     msg = " Applying WPL correction to Fe (IRGA type is " + irga_type + ")"
     logger.info(msg)
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -2454,8 +2454,8 @@ def MassmanStandard(cf, ds, Ta_in='Ta', AH_in='AH', ps_in='ps', u_in="U_SONIC_Av
     #  same and put into a loop to reduce the number of lines in this function.
     # calculate ustar and Monin-Obukhov length from rotated but otherwise uncorrected covariances
     # get some instrument specific constants
-    sonic_type = str(ds.root["Attributes"]["sonic_type"])
-    irga_type = str(ds.root["Attributes"]["irga_type"])
+    sonic_type = str(ds.root["Attributes"]["sonic_flux"])
+    irga_type = str(ds.root["Attributes"]["irga_flux"])
     lwVert = c.instruments["sonics"][sonic_type]["lwVert"]
     lwHor = c.instruments["sonics"][sonic_type]["lwHor"]
     lTv = c.instruments["sonics"][sonic_type]["lTv"]

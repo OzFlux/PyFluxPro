@@ -513,7 +513,7 @@ def do_EC155check(cf, ds, code=4):
     Author: PRI
     Date: October 2020 (rewrite of original)
     """
-    irga_type = str(ds.root["Attributes"]["irga_type"])
+    irga_type = str(ds.root["Attributes"]["irga_flux"])
     msg = " Doing the IRGA (" + irga_type + ") check"
     logger.info(msg)
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
@@ -722,7 +722,7 @@ def do_IRGAcheck(cf,ds):
     """
     Purpose:
      Decide which IRGA check routine to use depending on the setting
-     of the "irga_type" key in the global attributes or the [Options]
+     of the "irga_flux" key in the global attributes or the [Options]
      section of the control file.  The default is Li-7500.
     Usage:
     Author: PRI
@@ -735,20 +735,20 @@ def do_IRGAcheck(cf,ds):
         logger.warning(msg)
         return
     # get the IRGA type from the global attributes or the control file
-    if "irga_type" in ds.root["Attributes"]:
-        irga_type = str(ds.root["Attributes"]["irga_type"])
+    if "irga_flux" in ds.root["Attributes"]:
+        irga_type = str(ds.root["Attributes"]["irga_flux"])
     else:
-        irga_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "irga_type", default="not found")
+        irga_type = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "irga_flux", default="not found")
         if irga_type == "not found":
             msg = " IRGA type not in global attributes or Options section, using Li-7500"
             logger.warning(msg)
             irga_type = "Li-7500"
     # do the IRGA checks
     if irga_type in ["Li-7500", "Li-7500A", "Li-7500RS", "Li-7200", "Li-7200RS"]:
-        ds.root["Attributes"]["irga_type"] = irga_type
+        ds.root["Attributes"]["irga_flux"] = irga_type
         do_li7500check(cf, ds)
     elif irga_type in ["EC150", "EC155", "IRGASON"]:
-        ds.root["Attributes"]["irga_type"] = irga_type
+        ds.root["Attributes"]["irga_flux"] = irga_type
         do_EC155check(cf, ds)
     else:
         msg = " Unsupported IRGA type " + irga_type + ", contact the developer ..."
@@ -779,7 +779,7 @@ def do_li7500check(cf, ds, code=4):
     Author: PRI
     Date: October 2020 (rewrite of original)
     """
-    irga_type = str(ds.root["Attributes"]["irga_type"])
+    irga_type = str(ds.root["Attributes"]["irga_flux"])
     msg = " Doing the IRGA (" + irga_type + ") check"
     logger.info(msg)
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
