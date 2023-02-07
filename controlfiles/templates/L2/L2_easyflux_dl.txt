@@ -5,7 +5,6 @@ level = L2
     out_filename = Right click to browse (*.nc)
     plot_path = Right click to browse
 [Options]
-    irga_type = EC150
     SONIC_Check = Yes
     IRGA_Check = Yes
 [Variables]

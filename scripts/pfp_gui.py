@@ -2591,9 +2591,11 @@ class edit_cfg_L1(QtWidgets.QWidget):
             value = dict_to_add[key]
             child0 = QtGui.QStandardItem(key)
             child1 = QtGui.QStandardItem(value)
-            selected_item.appendRow([child0, child1])
             if key in ["irga_flux", "sonic_flux"]:
                 update = True
+                child0.setEditable(False)
+                child1.setEditable(False)
+            selected_item.appendRow([child0, child1])
         if update:
             # update the control file in case variables have been added
             #self.cfg = self.get_data_from_model()
@@ -2606,6 +2608,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
 
     def add_global_attribute_above(self, key, value):
         """ Add a global attribute above the selected item."""
+        update = False
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
@@ -2621,9 +2624,13 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # get the items on the new row
         child0 = QtGui.QStandardItem(key)
         child1 = QtGui.QStandardItem(value)
+        if key in ["irga_flux", "sonic_flux"]:
+            update = True
+            child0.setEditable(False)
+            child1.setEditable(False)
         # insert the new row above the selected item
         parent.insertRow(idx.row(), [child0, child1])
-        if key in ["irga_flux", "sonic_flux"]:
+        if update:
             # update the control file in case variables have been added
             #self.cfg = self.get_data_from_model()
             # update the IRGA and sonic label lists in case variables have been added
@@ -9661,6 +9668,8 @@ class file_explore(QtWidgets.QWidget):
         selections = {}
         # add the selected variable labels to the right group in selections
         for i in idx:
+            if i.column() != 0:
+                continue
             # get the group label of this selected item
             group = i.parent().data()
             # skip anything selected in 'Global attributes'
@@ -9676,7 +9685,8 @@ class file_explore(QtWidgets.QWidget):
             #if key is None or key == "Variables":
             if key == "Variables":
                 selections["root"] = selections.pop(key)
-                break
+            if key is None:
+                selections.pop(key)
         # return if selections is empty (no variables selected)
         if len(list(selections.keys())) == 0:
             return

@@ -1568,6 +1568,9 @@ def l1_check_sonic_only(cfg, sonic_only_labels, messages):
                     sonic_check[sonic_type] = []
                 sonic_check[sonic_type].append(label)
             else:
+                if sonic_type not in sonic_check:
+                    sonic_check[sonic_type] = []
+                sonic_check[sonic_type].append(label)
                 msg = "Unknown sonic type (" + sonic_type + ") for " + label
                 messages["ERROR"].append(msg)
         else:
@@ -1580,7 +1583,7 @@ def l1_check_sonic_only(cfg, sonic_only_labels, messages):
     elif len(sonic_types) == 1:
         pass
     else:
-        msg = "More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
+        msg = "1 More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
         messages["ERROR"].append(msg)
         for sonic_type in sonic_types:
             msg = sonic_type + " is used for " + ",".join(sonic_check[sonic_type])
@@ -1641,6 +1644,9 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
                 msg = "'instrument' attribute must have 2 entries separated by a comma, got "
                 msg += instrument_type + " for " + sonic_irga_label
                 messages["ERROR"].append(msg)
+                if instrument_type not in sonic_check:
+                    sonic_check[instrument_type] = []
+                sonic_check[instrument_type].append(sonic_irga_label)
         else:
             msg = "'instrument' attribute missing for " + sonic_irga_label
             messages["ERROR"].append(msg)
@@ -1653,7 +1659,7 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
         msg = "Sonic type set to " + cfg["Global"]["sonic_flux"]
         logger.info(msg)
     else:
-        msg = "More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
+        msg = "2 More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
         messages["ERROR"].append(msg)
         for sonic_type in sonic_types:
             msg = sonic_type + " is used for " + ",".join(sonic_check[sonic_type])
