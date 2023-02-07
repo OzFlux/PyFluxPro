@@ -3472,17 +3472,6 @@ class edit_cfg_L2(QtWidgets.QWidget):
             self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
-    def add_irga_type(self):
-        """ Add irga_type to Options section."""
-        new_options = {"irga_flux": "Li-7500RS"}
-        for key in new_options:
-            value = new_options[key]
-            child0 = QtGui.QStandardItem(key)
-            child0.setEditable(False)
-            child1 = QtGui.QStandardItem(value)
-            self.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
-
     def add_linear(self):
         """ Add a linear correction to a variable."""
         new_qc = {"Linear": {"0": "YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 1.0, 0.0"}}
@@ -3608,17 +3597,6 @@ class edit_cfg_L2(QtWidgets.QWidget):
     def add_sonic_check(self):
         """ Add sonic check to Options section."""
         new_options = {"SONIC_Check": "Yes"}
-        for key in new_options:
-            value = new_options[key]
-            child0 = QtGui.QStandardItem(key)
-            child0.setEditable(False)
-            child1 = QtGui.QStandardItem(value)
-            self.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
-
-    def add_sonic_type(self):
-        """ Add sonic_type to Options section."""
-        new_options = {"sonic_flux": "CSAT3B"}
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
@@ -3859,18 +3837,6 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
             elif selected_text == "Options":
                 existing_entries = self.get_existing_entries()
-                if "irga_flux" not in existing_entries:
-                    self.context_menu.actionirgatype = QtWidgets.QAction(self)
-                    self.context_menu.actionirgatype.setText("irga_flux")
-                    self.context_menu.addAction(self.context_menu.actionirgatype)
-                    self.context_menu.actionirgatype.triggered.connect(self.add_irga_type)
-                    add_separator = True
-                if "sonic_flux" not in existing_entries:
-                    self.context_menu.actionsonictype = QtWidgets.QAction(self)
-                    self.context_menu.actionsonictype.setText("sonic_flux")
-                    self.context_menu.addAction(self.context_menu.actionsonictype)
-                    self.context_menu.actionsonictype.triggered.connect(self.add_sonic_type)
-                    add_separator = True
                 if "SONIC_Check" not in existing_entries:
                     self.context_menu.actionSonicCheck = QtWidgets.QAction(self)
                     self.context_menu.actionSonicCheck.setText("SONIC_Check")
@@ -3934,66 +3900,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     pass
             elif (str(parent.text()) == "Options") and (selected_item.column() == 1):
                 key = str(parent.child(selected_item.row(),0).text())
-                if key == "irga_flux":
-                    existing_entry = str(parent.child(selected_item.row(),1).text())
-                    if existing_entry != "Li-7500":
-                        self.context_menu.actionSetIRGATypeLi7500 = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeLi7500.setText("Li-7500")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500)
-                        self.context_menu.actionSetIRGATypeLi7500.triggered.connect(self.set_irga_li7500)
-                    if existing_entry != "Li-7500A":
-                        self.context_menu.actionSetIRGATypeLi7500A = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeLi7500A.setText("Li-7500A")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500A)
-                        self.context_menu.actionSetIRGATypeLi7500A.triggered.connect(self.set_irga_li7500a)
-                    if existing_entry != "Li-7500RS":
-                        self.context_menu.actionSetIRGATypeLi7500RS = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeLi7500RS.setText("Li-7500RS")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7500RS)
-                        self.context_menu.actionSetIRGATypeLi7500RS.triggered.connect(self.set_irga_li7500rs)
-                    if existing_entry != "Li-7200":
-                        self.context_menu.actionSetIRGATypeLi7200 = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeLi7200.setText("Li-7200")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7200)
-                        self.context_menu.actionSetIRGATypeLi7200.triggered.connect(self.set_irga_li7200)
-                    if existing_entry != "Li-7200RS":
-                        self.context_menu.actionSetIRGATypeLi7200RS = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeLi7200RS.setText("Li-7200RS")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeLi7200RS)
-                        self.context_menu.actionSetIRGATypeLi7200RS.triggered.connect(self.set_irga_li7200RS)
-                    if existing_entry != "EC150":
-                        self.context_menu.actionSetIRGATypeEC150 = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeEC150.setText("EC150")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeEC150)
-                        self.context_menu.actionSetIRGATypeEC150.triggered.connect(self.set_irga_ec150)
-                    if existing_entry != "EC155":
-                        self.context_menu.actionSetIRGATypeEC155 = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeEC155.setText("EC155")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeEC155)
-                        self.context_menu.actionSetIRGATypeEC155.triggered.connect(self.set_irga_ec155)
-                    if existing_entry != "IRGASON":
-                        self.context_menu.actionSetIRGATypeIRGASON = QtWidgets.QAction(self)
-                        self.context_menu.actionSetIRGATypeIRGASON.setText("IRGASON")
-                        self.context_menu.addAction(self.context_menu.actionSetIRGATypeIRGASON)
-                        self.context_menu.actionSetIRGATypeIRGASON.triggered.connect(self.set_irga_irgason)
-                elif key == "sonic_flux":
-                    existing_entry = str(parent.child(selected_item.row(),1).text())
-                    if existing_entry != "CSAT3":
-                        self.context_menu.actionSetSonicTypeCSAT3 = QtWidgets.QAction(self)
-                        self.context_menu.actionSetSonicTypeCSAT3.setText("CSAT3")
-                        self.context_menu.addAction(self.context_menu.actionSetSonicTypeCSAT3)
-                        self.context_menu.actionSetSonicTypeCSAT3.triggered.connect(self.set_sonic_csat3)
-                    if existing_entry != "CSAT3A":
-                        self.context_menu.actionSetSonicTypeCSAT3A = QtWidgets.QAction(self)
-                        self.context_menu.actionSetSonicTypeCSAT3A.setText("CSAT3A")
-                        self.context_menu.addAction(self.context_menu.actionSetSonicTypeCSAT3A)
-                        self.context_menu.actionSetSonicTypeCSAT3A.triggered.connect(self.set_sonic_csat3a)
-                    if existing_entry != "CSAT3B":
-                        self.context_menu.actionSetSonicTypeCSAT3B = QtWidgets.QAction(self)
-                        self.context_menu.actionSetSonicTypeCSAT3B.setText("CSAT3B")
-                        self.context_menu.addAction(self.context_menu.actionSetSonicTypeCSAT3B)
-                        self.context_menu.actionSetSonicTypeCSAT3B.triggered.connect(self.set_sonic_csat3b)
-                elif key in ["SONIC_Check", "IRGA_Check"]:
+                if key in ["SONIC_Check", "IRGA_Check"]:
                     existing_entry = str(parent.child(selected_item.row(),1).text())
                     if existing_entry != "Yes":
                         self.context_menu.actionSetCheckYes = QtWidgets.QAction(self)
@@ -4006,7 +3913,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         self.context_menu.addAction(self.context_menu.actionSetCheckNo)
                         self.context_menu.actionSetCheckNo.triggered.connect(self.set_check_no)
             elif (str(parent.text()) == "Options") and (selected_item.column() == 0):
-                if selected_item.text() in ["irga_flux", "sonic_flux", "SONIC_Check", "IRGA_Check"]:
+                if selected_item.text() in ["SONIC_Check", "IRGA_Check"]:
                     self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
@@ -4142,12 +4049,13 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def disable_plot(self):
         """ Disable a plot by adding '[disabled]' to the title."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        selected_text = selected_item.text()
-        if "(disabled)" not in selected_text:
-            selected_text = "(disabled)" + selected_text
-        selected_item.setText(selected_text)
+        idxs = self.view.selectedIndexes()
+        for idx in idxs:
+            selected_item = idxs.model().itemFromIndex(idx)
+            selected_text = selected_item.text()
+            if "(disabled)" not in selected_text:
+                selected_text = "(disabled)" + selected_text
+            selected_item.setText(selected_text)
         return
 
     def double_click(self):
@@ -4412,83 +4320,6 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("Yes")
-
-    def set_irga_ec150(self):
-        """ Set the IRGA type to EC150."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("EC150")
-
-    def set_irga_ec155(self):
-        """ Set the IRGA type to EC155."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("EC155")
-
-    def set_irga_irgason(self):
-        """ Set the IRGA type to IRGASON."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("IRGASON")
-
-    def set_irga_li7500(self):
-        """ Set the IRGA type to Li-7500."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("Li-7500")
-
-    def set_irga_li7500a(self):
-        """ Set the IRGA type to Li-7500A (pre and post V6.5)."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("Li-7500A")
-
-    def set_irga_li7500rs(self):
-        """ Set the IRGA type to Li-7500RS."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("Li-7500RS")
-
-    def set_irga_li7200(self):
-        """ Set the IRGA type to Li-7200."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("Li-7200")
-
-    def set_irga_li7200RS(self):
-        """ Set the IRGA type to Li-7200RS."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("Li-7200RS")
-
-    def set_sonic_csat3(self):
-        """ Set the sonic type to CSAT3."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("CSAT3")
-
-    def set_sonic_csat3a(self):
-        """ Set the sonic type to CSAT3A."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("CSAT3A")
-
-    def set_sonic_csat3b(self):
-        """ Set the sonic type to CSAT3B."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        parent = selected_item.parent()
-        parent.child(selected_item.row(), 1).setText("CSAT3B")
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
