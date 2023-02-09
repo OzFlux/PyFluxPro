@@ -3758,7 +3758,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         if idx.column() != 1:
             return
         key = idx.sibling(idx.row(), 0).data()
-        if key in ["SONIC_check", "IRGA_check"]:
+        if key.lower() in ["sonic_check", "irga_check"]:
             if idx.data() != "Yes":
                 self.context_menu.actionSetCheckYes = QtWidgets.QAction(self)
                 self.context_menu.actionSetCheckYes.setText("Yes")
@@ -3780,6 +3780,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
         return
 
     def context_menu_plots_0(self):
+        if len(self.view.selectedIndexes()) != 1:
+            return
         self.context_menu.actionAddTimeSeries = QtWidgets.QAction(self)
         self.context_menu.actionAddTimeSeries.setText("Add time series")
         self.context_menu.addAction(self.context_menu.actionAddTimeSeries)
@@ -3897,37 +3899,37 @@ class edit_cfg_L2(QtWidgets.QWidget):
         add_separator = False
         idx = self.context_menu.idxs[0]
         selected_item = idx.model().itemFromIndex(idx)
-        if selected_item.data() in ["ExcludeDates"]:
+        if selected_item.text() in ["ExcludeDates"]:
             self.context_menu.actionAddExcludeDateRange = QtWidgets.QAction(self)
             self.context_menu.actionAddExcludeDateRange.setText("Add date range")
             self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
             self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
             add_separator = True
-        if selected_item.data() in ["ExcludeHours"]:
+        if selected_item.text() in ["ExcludeHours"]:
             self.context_menu.actionAddExcludeHourRange = QtWidgets.QAction(self)
             self.context_menu.actionAddExcludeHourRange.setText("Add hour range")
             self.context_menu.addAction(self.context_menu.actionAddExcludeHourRange)
             self.context_menu.actionAddExcludeHourRange.triggered.connect(self.add_excludehourrange)
             add_separator = True
-        if selected_item.data() in ["LowerCheck"]:
+        if selected_item.text() in ["LowerCheck"]:
             self.context_menu.actionAddLowerCheckRange = QtWidgets.QAction(self)
             self.context_menu.actionAddLowerCheckRange.setText("Add date range")
             self.context_menu.addAction(self.context_menu.actionAddLowerCheckRange)
             self.context_menu.actionAddLowerCheckRange.triggered.connect(self.add_lowercheckrange)
             add_separator = True
-        if selected_item.data() in ["UpperCheck"]:
+        if selected_item.text() in ["UpperCheck"]:
             self.context_menu.actionAddUpperCheckRange = QtWidgets.QAction(self)
             self.context_menu.actionAddUpperCheckRange.setText("Add date range")
             self.context_menu.addAction(self.context_menu.actionAddUpperCheckRange)
             self.context_menu.actionAddUpperCheckRange.triggered.connect(self.add_uppercheckrange)
             add_separator = True
-        if selected_item.data() in ["CorrectWindDirection"]:
+        if selected_item.text() in ["CorrectWindDirection"]:
             self.context_menu.actionAddWindDirectionCorrectionRange = QtWidgets.QAction(self)
             self.context_menu.actionAddWindDirectionCorrectionRange.setText("Add date range")
             self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrectionRange)
             self.context_menu.actionAddWindDirectionCorrectionRange.triggered.connect(self.add_winddirectioncorrectionrange)
             add_separator = True
-        if selected_item.data() in ["Linear"]:
+        if selected_item.text() in ["Linear"]:
             self.context_menu.actionAddLinearRange = QtWidgets.QAction(self)
             self.context_menu.actionAddLinearRange.setText("Add date range")
             self.context_menu.addAction(self.context_menu.actionAddLinearRange)
@@ -3936,7 +3938,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         if add_separator:
             self.context_menu.addSeparator()
             add_separator = False
-        if selected_item.data() in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
+        if selected_item.text() in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
                                     "ExcludeHours", "LowerCheck", "UpperCheck", "CorrectWindDirection",
                                     "Linear"]:
             self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
@@ -3947,6 +3949,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def context_menu_variables_3(self):
         idx = self.context_menu.idxs[0]
+        if idx.column() != 0:
+            return
         parent = idx.parent()
         if ((parent.data() in ["ExcludeDates", "ExcludeHours", "LowerCheck", "UpperCheck", "Linear"]) and
             (idx.data() != "0")):
@@ -4147,7 +4151,10 @@ class edit_cfg_L2(QtWidgets.QWidget):
         """ Handler for when view items are edited."""
         # here we trap attempts by the user to add duplicate entries
         # index of selected item
-        idx = self.view.selectedIndexes()[0]
+        idxs = self.view.selectedIndexes()
+        if len(idxs) < 1:
+            return
+        idx = idxs[0]
         # selected item from index
         selected_item = idx.model().itemFromIndex(idx)
         # text of selected item, this will be the name of the item the user
@@ -4179,14 +4186,14 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def remove_daterange(self):
         """ Remove a date range from the ustar_threshold section."""
-        # remove the date range
-        self.remove_item()
         # index of selected item
         idx = self.view.selectedIndexes()[0]
         # item from index
         selected_item = idx.model().itemFromIndex(idx)
         # parent of selected item
         parent = selected_item.parent()
+        # remove the date range
+        self.remove_item()
         # renumber the subsections
         for i in range(parent.rowCount()):
             parent.child(i, 0).setText(str(i))
