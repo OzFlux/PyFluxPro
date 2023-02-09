@@ -3437,41 +3437,6 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
-    def add_file_path(self):
-        """ Add file_path to the 'Files' section."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        parent = idx.model().itemFromIndex(idx)
-        child0 = QtGui.QStandardItem("file_path")
-        child1 = QtGui.QStandardItem("Right click to browse")
-        parent.appendRow([child0, child1])
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        self.update_tab_text()
-
-    def add_in_filename(self):
-        """ Add in_filename to the 'Files' section."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        parent = idx.model().itemFromIndex(idx)
-        child0 = QtGui.QStandardItem("in_filename")
-        child1 = QtGui.QStandardItem("Right click to browse")
-        parent.appendRow([child0, child1])
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        self.update_tab_text()
-
-    def add_irga_check(self):
-        """ Add IRGA check to Options section."""
-        new_options = {"IRGA_Check": "Yes"}
-        for key in new_options:
-            value = new_options[key]
-            child0 = QtGui.QStandardItem(key)
-            child0.setEditable(False)
-            child1 = QtGui.QStandardItem(value)
-            self.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
-
     def add_linear(self):
         """ Add a linear correction to a variable."""
         new_qc = {"Linear": {"0": "YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 1.0, 0.0"}}
@@ -3534,18 +3499,6 @@ class edit_cfg_L2(QtWidgets.QWidget):
         self.model.insertRow(self.section_headings.index("Variables"), self.sections["Options"])
         self.update_tab_text()
 
-    def add_out_filename(self):
-        """ Add out_filename to the 'Files' section."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        parent = idx.model().itemFromIndex(idx)
-        child0 = QtGui.QStandardItem("out_filename")
-        child1 = QtGui.QStandardItem("Right click to browse")
-        parent.appendRow([child0, child1])
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        self.update_tab_text()
-
     def add_plot_path(self):
         """ Add plot_path to the 'Files' section."""
         # get the index of the selected item
@@ -3592,17 +3545,6 @@ class edit_cfg_L2(QtWidgets.QWidget):
             child1 = QtGui.QStandardItem(str(val))
             parent.appendRow([child0, child1])
         self.sections["Plots"].appendRow(parent)
-        self.update_tab_text()
-
-    def add_sonic_check(self):
-        """ Add sonic check to Options section."""
-        new_options = {"SONIC_Check": "Yes"}
-        for key in new_options:
-            value = new_options[key]
-            child0 = QtGui.QStandardItem(key)
-            child0.setEditable(False)
-            child1 = QtGui.QStandardItem(value)
-            self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
     def add_subsection(self, section, dict_to_add):
@@ -3707,6 +3649,24 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
+    def browse_file_name(self):
+        """ Browse for the input data file path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
+        # dialog for open file
+        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
+                                                          directory=file_path)[0]
+        # update the model
+        if len(str(new_file_path)) > 0:
+            new_file_parts = os.path.split(str(new_file_path))
+            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
+
     def browse_file_path(self):
         """ Browse for the data file path."""
         # get the index of the selected item
@@ -3728,330 +3688,279 @@ class edit_cfg_L2(QtWidgets.QWidget):
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
 
-    def browse_input_file(self):
-        """ Browse for the input data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
-        # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                          directory=file_path)[0]
-        # update the model
-        if len(str(new_file_path)) > 0:
-            new_file_parts = os.path.split(str(new_file_path))
-            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
-
-    def browse_output_file(self):
-        """ Browse for the output data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the top level and sub sections
-        # get the file_path so it can be used as a default directory
-        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
-        # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
-                                                          directory=file_path, filter="*.nc")[0]
-        # update the model
-        if len(str(new_file_path)) > 0:
-            new_file_parts = os.path.split(str(new_file_path))
-            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
-
-    def browse_plot_path(self):
-        """ Browse for the plot path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # get the selected entry text
-        file_path = str(idx.data())
-        # dialog for new directory
-        new_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose a folder ...",
-                                                         file_path, QtWidgets.QFileDialog.ShowDirsOnly)
-        # quit if cancel button pressed
-        if len(str(new_dir)) > 0:
-            # make sure the string ends with a path delimiter
-            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
-            new_dir = os.path.join(tmp_dir, "")
-            # update the model
-            parent.child(selected_item.row(), 1).setText(new_dir)
-
     def context_menu(self, position):
         """ Right click context menu."""
+        # we need to explore the selectionChanged() signal.
         # get a menu
         self.context_menu = QtWidgets.QMenu()
         # get the index of the selected item
-        if len(self.view.selectedIndexes()) == 0:
-            # trap right click when nothing is selected
+        self.context_menu.idxs = self.view.selectedIndexes()
+        if len(self.context_menu.idxs) == 0:
             return
-        idx = self.view.selectedIndexes()[0]
-        # get the level of the selected item
-        level = self.get_level_selected_item()
-        if level == 0:
-            add_separator = False
-            selected_text = str(idx.data())
-            self.section_headings = []
-            root = self.model.invisibleRootItem()
-            for i in range(root.rowCount()):
-                self.section_headings.append(str(root.child(i).text()))
-            if "Options" not in self.section_headings and selected_text == "Files":
-                self.context_menu.actionAddOptionsSection = QtWidgets.QAction(self)
-                self.context_menu.actionAddOptionsSection.setText("Add Options section")
-                self.context_menu.addAction(self.context_menu.actionAddOptionsSection)
-                self.context_menu.actionAddOptionsSection.triggered.connect(self.add_options_section)
-                add_separator = True
-            if selected_text == "Files":
-                if add_separator:
-                    self.context_menu.addSeparator()
-                    add_separator = False
-                existing_entries = self.get_existing_entries()
-                if "file_path" not in existing_entries:
-                    self.context_menu.actionAddfile_path = QtWidgets.QAction(self)
-                    self.context_menu.actionAddfile_path.setText("Add file_path")
-                    self.context_menu.addAction(self.context_menu.actionAddfile_path)
-                    self.context_menu.actionAddfile_path.triggered.connect(self.add_file_path)
-                if "in_filename" not in existing_entries:
-                    self.context_menu.actionAddin_filename = QtWidgets.QAction(self)
-                    self.context_menu.actionAddin_filename.setText("Add in_filename")
-                    self.context_menu.addAction(self.context_menu.actionAddin_filename)
-                    self.context_menu.actionAddin_filename.triggered.connect(self.add_in_filename)
-                if "out_filename" not in existing_entries:
-                    self.context_menu.actionAddout_filename = QtWidgets.QAction(self)
-                    self.context_menu.actionAddout_filename.setText("Add out_filename")
-                    self.context_menu.addAction(self.context_menu.actionAddout_filename)
-                    self.context_menu.actionAddout_filename.triggered.connect(self.add_out_filename)
-                if "plot_path" not in existing_entries:
-                    self.context_menu.actionAddplot_path = QtWidgets.QAction(self)
-                    self.context_menu.actionAddplot_path.setText("Add plot_path")
-                    self.context_menu.addAction(self.context_menu.actionAddplot_path)
-                    self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
-            elif selected_text == "Options":
-                existing_entries = self.get_existing_entries()
-                if "SONIC_Check" not in existing_entries:
-                    self.context_menu.actionSonicCheck = QtWidgets.QAction(self)
-                    self.context_menu.actionSonicCheck.setText("SONIC_Check")
-                    self.context_menu.addAction(self.context_menu.actionSonicCheck)
-                    self.context_menu.actionSonicCheck.triggered.connect(self.add_sonic_check)
-                    add_separator = True
-                if "IRGA_Check" not in existing_entries:
-                    self.context_menu.actionIRGACheck = QtWidgets.QAction(self)
-                    self.context_menu.actionIRGACheck.setText("IRGA_Check")
-                    self.context_menu.addAction(self.context_menu.actionIRGACheck)
-                    self.context_menu.actionIRGACheck.triggered.connect(self.add_irga_check)
-                    add_separator = True
-                if add_separator:
-                    self.context_menu.addSeparator()
-                    add_separator = False
-                self.context_menu.actionRemoveOptionsSection = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveOptionsSection.setText("Remove section")
-                self.context_menu.addAction(self.context_menu.actionRemoveOptionsSection)
-                self.context_menu.actionRemoveOptionsSection.triggered.connect(self.remove_section)
-            elif selected_text == "Variables":
-                self.context_menu.actionAddVariable = QtWidgets.QAction(self)
-                self.context_menu.actionAddVariable.setText("Add variable")
-                self.context_menu.addAction(self.context_menu.actionAddVariable)
-                self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
-            elif selected_text == "Plots":
-                self.context_menu.actionAddTimeSeries = QtWidgets.QAction(self)
-                self.context_menu.actionAddTimeSeries.setText("Add time series")
-                self.context_menu.addAction(self.context_menu.actionAddTimeSeries)
-                self.context_menu.actionAddTimeSeries.triggered.connect(self.add_timeseries)
-                self.context_menu.actionAddScatterPlot = QtWidgets.QAction(self)
-                self.context_menu.actionAddScatterPlot.setText("Add scatter plot")
-                self.context_menu.addAction(self.context_menu.actionAddScatterPlot)
-                self.context_menu.actionAddScatterPlot.triggered.connect(self.add_scatterplot)
-        elif level == 1:
-            selected_item = idx.model().itemFromIndex(idx)
-            parent = selected_item.parent()
-            if (str(parent.text()) == "Files") and (selected_item.column() == 1):
-                key = str(parent.child(selected_item.row(),0).text())
-                # check to see if we have the selected subsection
-                if key == "file_path":
-                    self.context_menu.actionBrowseFilePath = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseFilePath.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
-                    self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
-                elif key == "in_filename":
-                    self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseInputFile.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
-                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
-                elif key == "out_filename":
-                    self.context_menu.actionBrowseOutputFile = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowseOutputFile.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
-                    self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
-                elif key == "plot_path":
-                    self.context_menu.actionBrowsePlotPath = QtWidgets.QAction(self)
-                    self.context_menu.actionBrowsePlotPath.setText("Browse...")
-                    self.context_menu.addAction(self.context_menu.actionBrowsePlotPath)
-                    self.context_menu.actionBrowsePlotPath.triggered.connect(self.browse_plot_path)
-                else:
-                    pass
-            elif (str(parent.text()) == "Options") and (selected_item.column() == 1):
-                key = str(parent.child(selected_item.row(),0).text())
-                if key in ["SONIC_Check", "IRGA_Check"]:
-                    existing_entry = str(parent.child(selected_item.row(),1).text())
-                    if existing_entry != "Yes":
-                        self.context_menu.actionSetCheckYes = QtWidgets.QAction(self)
-                        self.context_menu.actionSetCheckYes.setText("Yes")
-                        self.context_menu.addAction(self.context_menu.actionSetCheckYes)
-                        self.context_menu.actionSetCheckYes.triggered.connect(self.set_check_yes)
-                    if existing_entry != "No":
-                        self.context_menu.actionSetCheckNo = QtWidgets.QAction(self)
-                        self.context_menu.actionSetCheckNo.setText("No")
-                        self.context_menu.addAction(self.context_menu.actionSetCheckNo)
-                        self.context_menu.actionSetCheckNo.triggered.connect(self.set_check_no)
-            elif (str(parent.text()) == "Options") and (selected_item.column() == 0):
-                if selected_item.text() in ["SONIC_Check", "IRGA_Check"]:
-                    self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
-                    self.context_menu.actionRemoveOption.setText("Remove option")
-                    self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                    self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
-            elif str(parent.text()) == "Variables":
-                # get a list of existing entries
-                existing_entries = self.get_existing_entries()
-                # only put a QC check in the context menu if it is not already present
-                if "RangeCheck" not in existing_entries:
-                    self.context_menu.actionAddRangeCheck = QtWidgets.QAction(self)
-                    self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
-                    self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
-                    self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
-                if "DependencyCheck" not in existing_entries:
-                    self.context_menu.actionAddDependencyCheck = QtWidgets.QAction(self)
-                    self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
-                    self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
-                    self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
-                if "DiurnalCheck" not in existing_entries:
-                    self.context_menu.actionAddDiurnalCheck = QtWidgets.QAction(self)
-                    self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
-                    self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
-                    self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
-                if "ExcludeDates" not in existing_entries:
-                    self.context_menu.actionAddExcludeDates = QtWidgets.QAction(self)
-                    self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
-                    self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
-                    self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
-                if "ExcludeHours" not in existing_entries:
-                    self.context_menu.actionAddExcludeHours = QtWidgets.QAction(self)
-                    self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
-                    self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
-                    self.context_menu.actionAddExcludeHours.triggered.connect(self.add_excludehours)
-                if "LowerCheck" not in existing_entries:
-                    self.context_menu.actionAddLowerCheck = QtWidgets.QAction(self)
-                    self.context_menu.actionAddLowerCheck.setText("Add LowerCheck")
-                    self.context_menu.addAction(self.context_menu.actionAddLowerCheck)
-                    self.context_menu.actionAddLowerCheck.triggered.connect(self.add_lowercheck)
-                if "UpperCheck" not in existing_entries:
-                    self.context_menu.actionAddUpperCheck = QtWidgets.QAction(self)
-                    self.context_menu.actionAddUpperCheck.setText("Add UpperCheck")
-                    self.context_menu.addAction(self.context_menu.actionAddUpperCheck)
-                    self.context_menu.actionAddUpperCheck.triggered.connect(self.add_uppercheck)
-                if "CorrectWindDirection" not in existing_entries:
-                    self.context_menu.actionAddWindDirectionCorrection = QtWidgets.QAction(self)
-                    self.context_menu.actionAddWindDirectionCorrection.setText("Add CorrectWindDirection")
-                    self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrection)
-                    self.context_menu.actionAddWindDirectionCorrection.triggered.connect(self.add_winddirectioncorrection)
-                if "Linear" not in existing_entries:
-                    self.context_menu.actionAddLinear = QtWidgets.QAction(self)
-                    self.context_menu.actionAddLinear.setText("Add Linear")
-                    self.context_menu.addAction(self.context_menu.actionAddLinear)
-                    self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
-                self.context_menu.addSeparator()
-                self.context_menu.actionAddVariableAbove = QtWidgets.QAction(self)
-                self.context_menu.actionAddVariableAbove.setText("New variable")
-                self.context_menu.addAction(self.context_menu.actionAddVariableAbove)
-                self.context_menu.actionAddVariableAbove.triggered.connect(self.add_variable_above)
-                self.context_menu.actionRemoveVariable = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveVariable.setText("Remove variable")
-                self.context_menu.addAction(self.context_menu.actionRemoveVariable)
-                self.context_menu.actionRemoveVariable.triggered.connect(self.remove_item)
-            elif str(parent.text()) == "Plots":
-                self.context_menu.actionDisablePlot = QtWidgets.QAction(self)
-                self.context_menu.actionDisablePlot.setText("Disable plot")
-                self.context_menu.addAction(self.context_menu.actionDisablePlot)
-                self.context_menu.actionDisablePlot.triggered.connect(self.disable_plot)
-                self.context_menu.actionEnablePlot = QtWidgets.QAction(self)
-                self.context_menu.actionEnablePlot.setText("Enable plot")
-                self.context_menu.addAction(self.context_menu.actionEnablePlot)
-                self.context_menu.actionEnablePlot.triggered.connect(self.enable_plot)
-                self.context_menu.actionRemovePlot = QtWidgets.QAction(self)
-                self.context_menu.actionRemovePlot.setText("Remove plot")
-                self.context_menu.addAction(self.context_menu.actionRemovePlot)
-                self.context_menu.actionRemovePlot.triggered.connect(self.remove_item)
-        elif level == 2:
-            add_separator = False
-            if str(idx.data()) in ["ExcludeDates"]:
-                self.context_menu.actionAddExcludeDateRange = QtWidgets.QAction(self)
-                self.context_menu.actionAddExcludeDateRange.setText("Add date range")
-                self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
-                self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
-                add_separator = True
-            if str(idx.data()) in ["ExcludeHours"]:
-                self.context_menu.actionAddExcludeHourRange = QtWidgets.QAction(self)
-                self.context_menu.actionAddExcludeHourRange.setText("Add hour range")
-                self.context_menu.addAction(self.context_menu.actionAddExcludeHourRange)
-                self.context_menu.actionAddExcludeHourRange.triggered.connect(self.add_excludehourrange)
-                add_separator = True
-            if str(idx.data()) in ["LowerCheck"]:
-                self.context_menu.actionAddLowerCheckRange = QtWidgets.QAction(self)
-                self.context_menu.actionAddLowerCheckRange.setText("Add date range")
-                self.context_menu.addAction(self.context_menu.actionAddLowerCheckRange)
-                self.context_menu.actionAddLowerCheckRange.triggered.connect(self.add_lowercheckrange)
-                add_separator = True
-            if str(idx.data()) in ["UpperCheck"]:
-                self.context_menu.actionAddUpperCheckRange = QtWidgets.QAction(self)
-                self.context_menu.actionAddUpperCheckRange.setText("Add date range")
-                self.context_menu.addAction(self.context_menu.actionAddUpperCheckRange)
-                self.context_menu.actionAddUpperCheckRange.triggered.connect(self.add_uppercheckrange)
-                add_separator = True
-            if str(idx.data()) in ["CorrectWindDirection"]:
-                self.context_menu.actionAddWindDirectionCorrectionRange = QtWidgets.QAction(self)
-                self.context_menu.actionAddWindDirectionCorrectionRange.setText("Add date range")
-                self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrectionRange)
-                self.context_menu.actionAddWindDirectionCorrectionRange.triggered.connect(self.add_winddirectioncorrectionrange)
-                add_separator = True
-            if str(idx.data()) in ["Linear"]:
-                self.context_menu.actionAddLinearRange = QtWidgets.QAction(self)
-                self.context_menu.actionAddLinearRange.setText("Add date range")
-                self.context_menu.addAction(self.context_menu.actionAddLinearRange)
-                self.context_menu.actionAddLinearRange.triggered.connect(self.add_linearrange)
-                add_separator = True
-            if add_separator:
-                self.context_menu.addSeparator()
-                add_separator = False
-            if str(idx.data()) in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
-                                   "ExcludeHours", "LowerCheck", "UpperCheck"]:
-                self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
-                self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
-                self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
-        elif level == 3:
-            if (str(idx.parent().data()) in ["ExcludeDates", "ExcludeHours", "LowerCheck",
-                                             "UpperCheck", "Linear"] and
-                str(idx.data()) != "0"):
-                self.context_menu.actionRemoveExcludeDateRange = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
-                self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
-                self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_daterange)
-
+        self.context_menu_get_level_indices()
+        if len(self.context_menu.top_levels.keys()) > 1:
+            # selection spans more than 1 section so do nothing
+            return
+        top_level_names = list(self.context_menu.top_levels.keys())
+        if top_level_names[0] == "Files":
+            self.context_menu_files()
+        elif top_level_names[0] == "Options":
+            self.context_menu_options()
+        elif top_level_names[0] =="Variables":
+            self.context_menu_variables()
+        elif top_level_names[0] in ["Plots"]:
+            self.context_menu_plots()
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
+
+    def context_menu_files(self):
+        idxs = self.context_menu.idxs
+        if len(idxs) > 1:
+            # multiple selections not allowed in 'Files' section
+            return
+        idx = idxs[0]
+        if idx.column() != 1:
+            return
+        # check to see if we have the selected subsection
+        key = idx.sibling(idx.row(), 0).data()
+        if key in ["file_path", "plot_path"]:
+            self.context_menu.actionBrowseFilePath = QtWidgets.QAction(self)
+            self.context_menu.actionBrowseFilePath.setText("Browse...")
+            self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
+            self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
+        elif key in ["in_filename", "out_filename"]:
+            self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
+            self.context_menu.actionBrowseInputFile.setText("Browse...")
+            self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
+            self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_file_name)
+        else:
+            pass
+        return
+
+    def context_menu_get_level_indices(self):
+        idxs = self.context_menu.idxs
+        top_levels = {}
+        for idx in idxs:
+            levels = [idx]
+            while idx.parent().isValid():
+                levels.append(idx.parent())
+                idx = idx.parent()
+            levels = list(reversed(levels))
+            top_levels[levels[0].data()] = levels
+        setattr(self.context_menu, "top_levels", top_levels)
+        return
+
+    def context_menu_options(self):
+        idxs = self.context_menu.idxs
+        if len(idxs) > 1:
+            # multiple selections not allowed in 'Options' section
+            return
+        idx = idxs[0]
+        if idx.column() != 1:
+            return
+        key = idx.sibling(idx.row(), 0).data()
+        if key in ["SONIC_check", "IRGA_check"]:
+            if idx.data() != "Yes":
+                self.context_menu.actionSetCheckYes = QtWidgets.QAction(self)
+                self.context_menu.actionSetCheckYes.setText("Yes")
+                self.context_menu.addAction(self.context_menu.actionSetCheckYes)
+                self.context_menu.actionSetCheckYes.triggered.connect(self.set_check_yes)
+            if idx.data() != "No":
+                self.context_menu.actionSetCheckNo = QtWidgets.QAction(self)
+                self.context_menu.actionSetCheckNo.setText("No")
+                self.context_menu.addAction(self.context_menu.actionSetCheckNo)
+                self.context_menu.actionSetCheckNo.triggered.connect(self.set_check_no)
+        return
+
+    def context_menu_plots(self):
+        top_level_names = list(self.context_menu.top_levels.keys())
+        if len(self.context_menu.top_levels[top_level_names[0]]) == 1:
+            self.context_menu_plots_0()
+        elif len(self.context_menu.top_levels[top_level_names[0]]) == 2:
+            self.context_menu_plots_1()
+        return
+
+    def context_menu_plots_0(self):
+        self.context_menu.actionAddTimeSeries = QtWidgets.QAction(self)
+        self.context_menu.actionAddTimeSeries.setText("Add time series")
+        self.context_menu.addAction(self.context_menu.actionAddTimeSeries)
+        self.context_menu.actionAddTimeSeries.triggered.connect(self.add_timeseries)
+        self.context_menu.actionAddScatterPlot = QtWidgets.QAction(self)
+        self.context_menu.actionAddScatterPlot.setText("Add scatter plot")
+        self.context_menu.addAction(self.context_menu.actionAddScatterPlot)
+        self.context_menu.actionAddScatterPlot.triggered.connect(self.add_scatterplot)
+        return
+
+    def context_menu_plots_1(self):
+        self.context_menu.actionDisablePlot = QtWidgets.QAction(self)
+        self.context_menu.actionDisablePlot.setText("Disable plot")
+        self.context_menu.addAction(self.context_menu.actionDisablePlot)
+        arg = lambda :self.disable_plot()
+        self.context_menu.actionDisablePlot.triggered.connect(arg)
+        self.context_menu.actionEnablePlot = QtWidgets.QAction(self)
+        self.context_menu.actionEnablePlot.setText("Enable plot")
+        self.context_menu.addAction(self.context_menu.actionEnablePlot)
+        arg = lambda :self.enable_plot()
+        self.context_menu.actionEnablePlot.triggered.connect(arg)
+        self.context_menu.actionRemovePlot = QtWidgets.QAction(self)
+        self.context_menu.actionRemovePlot.setText("Remove plot")
+        self.context_menu.addAction(self.context_menu.actionRemovePlot)
+        arg = lambda: self.remove_item()
+        self.context_menu.actionRemovePlot.triggered.connect(arg)
+        return
+
+    def context_menu_variables(self):
+        idxs = self.context_menu.idxs
+        if len(idxs) == 1:
+            il = self.get_indices_list(idxs[0])
+            level = len(il) - 1
+            if level == 0:
+                self.context_menu_variables_0()
+            elif level == 1:
+                self.context_menu_variables_1()
+            elif level == 2:
+                self.context_menu_variables_2()
+            elif level == 3:
+                self.context_menu_variables_3()
+        return
+
+    def context_menu_variables_0(self):
+        self.context_menu.actionAddVariable = QtWidgets.QAction(self)
+        self.context_menu.actionAddVariable.setText("Add variable")
+        self.context_menu.addAction(self.context_menu.actionAddVariable)
+        self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
+        return
+
+    def context_menu_variables_1(self):
+        idx = self.context_menu.idxs[0]
+        if not self.view.isExpanded(idx):
+            self.view.expand(idx)
+        # get a list of existing entries
+        existing_entries = self.get_existing_entries()
+        # only put a QC check in the context menu if it is not already present
+        if "RangeCheck" not in existing_entries:
+            self.context_menu.actionAddRangeCheck = QtWidgets.QAction(self)
+            self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
+            self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
+            self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
+        if "DependencyCheck" not in existing_entries:
+            self.context_menu.actionAddDependencyCheck = QtWidgets.QAction(self)
+            self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
+            self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
+            self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
+        if "DiurnalCheck" not in existing_entries:
+            self.context_menu.actionAddDiurnalCheck = QtWidgets.QAction(self)
+            self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
+            self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
+            self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+        if "ExcludeDates" not in existing_entries:
+            self.context_menu.actionAddExcludeDates = QtWidgets.QAction(self)
+            self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
+            self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
+            self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
+        if "ExcludeHours" not in existing_entries:
+            self.context_menu.actionAddExcludeHours = QtWidgets.QAction(self)
+            self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
+            self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
+            self.context_menu.actionAddExcludeHours.triggered.connect(self.add_excludehours)
+        if "LowerCheck" not in existing_entries:
+            self.context_menu.actionAddLowerCheck = QtWidgets.QAction(self)
+            self.context_menu.actionAddLowerCheck.setText("Add LowerCheck")
+            self.context_menu.addAction(self.context_menu.actionAddLowerCheck)
+            self.context_menu.actionAddLowerCheck.triggered.connect(self.add_lowercheck)
+        if "UpperCheck" not in existing_entries:
+            self.context_menu.actionAddUpperCheck = QtWidgets.QAction(self)
+            self.context_menu.actionAddUpperCheck.setText("Add UpperCheck")
+            self.context_menu.addAction(self.context_menu.actionAddUpperCheck)
+            self.context_menu.actionAddUpperCheck.triggered.connect(self.add_uppercheck)
+        if "CorrectWindDirection" not in existing_entries:
+            self.context_menu.actionAddWindDirectionCorrection = QtWidgets.QAction(self)
+            self.context_menu.actionAddWindDirectionCorrection.setText("Add CorrectWindDirection")
+            self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrection)
+            self.context_menu.actionAddWindDirectionCorrection.triggered.connect(self.add_winddirectioncorrection)
+        if "Linear" not in existing_entries:
+            self.context_menu.actionAddLinear = QtWidgets.QAction(self)
+            self.context_menu.actionAddLinear.setText("Add Linear")
+            self.context_menu.addAction(self.context_menu.actionAddLinear)
+            self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
+        self.context_menu.addSeparator()
+        self.context_menu.actionAddVariableAbove = QtWidgets.QAction(self)
+        self.context_menu.actionAddVariableAbove.setText("New variable")
+        self.context_menu.addAction(self.context_menu.actionAddVariableAbove)
+        self.context_menu.actionAddVariableAbove.triggered.connect(self.add_variable_above)
+        self.context_menu.actionRemoveVariable = QtWidgets.QAction(self)
+        self.context_menu.actionRemoveVariable.setText("Remove variable")
+        self.context_menu.addAction(self.context_menu.actionRemoveVariable)
+        self.context_menu.actionRemoveVariable.triggered.connect(self.remove_item)
+        return
+
+    def context_menu_variables_2(self):
+        add_separator = False
+        idx = self.context_menu.idxs[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        if selected_item.data() in ["ExcludeDates"]:
+            self.context_menu.actionAddExcludeDateRange = QtWidgets.QAction(self)
+            self.context_menu.actionAddExcludeDateRange.setText("Add date range")
+            self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
+            self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
+            add_separator = True
+        if selected_item.data() in ["ExcludeHours"]:
+            self.context_menu.actionAddExcludeHourRange = QtWidgets.QAction(self)
+            self.context_menu.actionAddExcludeHourRange.setText("Add hour range")
+            self.context_menu.addAction(self.context_menu.actionAddExcludeHourRange)
+            self.context_menu.actionAddExcludeHourRange.triggered.connect(self.add_excludehourrange)
+            add_separator = True
+        if selected_item.data() in ["LowerCheck"]:
+            self.context_menu.actionAddLowerCheckRange = QtWidgets.QAction(self)
+            self.context_menu.actionAddLowerCheckRange.setText("Add date range")
+            self.context_menu.addAction(self.context_menu.actionAddLowerCheckRange)
+            self.context_menu.actionAddLowerCheckRange.triggered.connect(self.add_lowercheckrange)
+            add_separator = True
+        if selected_item.data() in ["UpperCheck"]:
+            self.context_menu.actionAddUpperCheckRange = QtWidgets.QAction(self)
+            self.context_menu.actionAddUpperCheckRange.setText("Add date range")
+            self.context_menu.addAction(self.context_menu.actionAddUpperCheckRange)
+            self.context_menu.actionAddUpperCheckRange.triggered.connect(self.add_uppercheckrange)
+            add_separator = True
+        if selected_item.data() in ["CorrectWindDirection"]:
+            self.context_menu.actionAddWindDirectionCorrectionRange = QtWidgets.QAction(self)
+            self.context_menu.actionAddWindDirectionCorrectionRange.setText("Add date range")
+            self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrectionRange)
+            self.context_menu.actionAddWindDirectionCorrectionRange.triggered.connect(self.add_winddirectioncorrectionrange)
+            add_separator = True
+        if selected_item.data() in ["Linear"]:
+            self.context_menu.actionAddLinearRange = QtWidgets.QAction(self)
+            self.context_menu.actionAddLinearRange.setText("Add date range")
+            self.context_menu.addAction(self.context_menu.actionAddLinearRange)
+            self.context_menu.actionAddLinearRange.triggered.connect(self.add_linearrange)
+            add_separator = True
+        if add_separator:
+            self.context_menu.addSeparator()
+            add_separator = False
+        if selected_item.data() in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
+                                    "ExcludeHours", "LowerCheck", "UpperCheck", "CorrectWindDirection",
+                                    "Linear"]:
+            self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
+            self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
+            self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
+            self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
+        return
+
+    def context_menu_variables_3(self):
+        idx = self.context_menu.idxs[0]
+        parent = idx.parent()
+        if ((parent.data() in ["ExcludeDates", "ExcludeHours", "LowerCheck", "UpperCheck", "Linear"]) and
+            (idx.data() != "0")):
+            self.context_menu.actionRemoveExcludeDateRange = QtWidgets.QAction(self)
+            self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
+            self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
+            self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_daterange)
+        return
 
     def disable_plot(self):
         """ Disable a plot by adding '[disabled]' to the title."""
         idxs = self.view.selectedIndexes()
         for idx in idxs:
-            selected_item = idxs.model().itemFromIndex(idx)
+            selected_item = idx.model().itemFromIndex(idx)
             selected_text = selected_item.text()
             if "(disabled)" not in selected_text:
                 selected_text = "(disabled)" + selected_text
@@ -4070,18 +3979,21 @@ class edit_cfg_L2(QtWidgets.QWidget):
         self.view = myTreeView()
         # get a QStandardItemModel
         self.model = QtGui.QStandardItemModel()
-        # add the model to the view
-        self.view.setModel(self.model)
         # set the context menu policy
         self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         # connect the context menu requested signal to appropriate slot
         self.view.customContextMenuRequested.connect(self.context_menu)
         self.view.doubleClicked.connect(self.double_click)
+        # allow selection of multiple items
+        self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         # do the QTreeView layout
         vbox = QtWidgets.QVBoxLayout()
         vbox.addWidget(self.view)
         self.setLayout(vbox)
         self.setGeometry(300, 300, 600, 400)
+        # add the model to the view
+        self.view.setModel(self.model)
         # build the model
         self.get_model_from_data()
         # set the default width for the first column
@@ -4092,13 +4004,14 @@ class edit_cfg_L2(QtWidgets.QWidget):
             self.view.expand(idx)
 
     def enable_plot(self):
-        """ Enable a plot by removing '[disabled]' from the title."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        selected_text = selected_item.text()
-        if "(disabled)" in selected_text:
-            selected_text = selected_text.replace("(disabled)", "")
-        selected_item.setText(selected_text)
+        """ Enable a plot by removing '(disabled)' from the title."""
+        idxs = self.view.selectedIndexes()
+        for idx in idxs:
+            selected_item = idx.model().itemFromIndex(idx)
+            selected_text = selected_item.text()
+            if "(disabled)" in selected_text:
+                selected_text = selected_text.replace("(disabled)", "")
+            selected_item.setText(selected_text)
         return
 
     def get_data_from_model(self):
@@ -4164,17 +4077,12 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 break
         return key_child, val_child, found, i
 
-    def get_level_selected_item(self):
-        """ Get the level of the selected item in the model."""
-        indexes = self.view.selectedIndexes()
-        level = -1
-        if len(indexes) > 0:
-            level = 0
-            idx = indexes[0]
-            while idx.parent().isValid():
-                idx = idx.parent()
-                level += 1
-        return level
+    def get_indices_list(self, idx):
+        indices = [idx]
+        while idx.parent().isValid():
+            indices.append(idx.parent())
+            idx = idx.parent()
+        return list(reversed(indices))
 
     def get_model_from_data(self):
         """ Build the data model."""
@@ -4286,13 +4194,14 @@ class edit_cfg_L2(QtWidgets.QWidget):
     def remove_item(self):
         """ Remove an item from the view."""
         # loop over selected items in the tree
-        for idx in self.view.selectedIndexes():
-            # get the selected item from the index
-            selected_item = idx.model().itemFromIndex(idx)
+        idxs = self.view.selectedIndexes()
+        while len(idxs) > 0:
+            selected_item = idxs[0].model().itemFromIndex(idxs[0])
             # get the parent of the selected item
             parent = selected_item.parent()
             # remove the row
-            parent.removeRow(selected_item.row())
+            parent.removeRow(idxs[0].row())
+            idxs = self.view.selectedIndexes()
         self.update_tab_text()
 
     def remove_section(self):

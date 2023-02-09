@@ -1848,6 +1848,17 @@ def l1_update_controlfile(cfg):
         logger.error(error_message)
     return ok
 
+def update_cfg_files(cfg, std):
+    if "Files" not in cfg:
+        cfg["Files"] = {}
+    if "file_path" not in cfg["Files"]:
+        cfg["Files"]["file_path"] = "Right click to browse"
+    if "in_filename" not in cfg["Files"]:
+        cfg["Files"]["in_filename"] = "Right click to browse (*.nc)"
+    if "out_filename" not in cfg["Files"]:
+        cfg["Files"]["out_filename"] = "Right click to browse (*.nc)"
+    return cfg
+
 def update_cfg_global_attributes(cfg, std):
     """
     Purpose:
@@ -2263,6 +2274,12 @@ def l2_update_controlfile(cfg):
     except Exception:
         ok = False
         msg = " An error occurred while updating the L2 control file syntax"
+    # clean up the Files section
+    try:
+        cfg = update_cfg_files(cfg, std)
+    except Exception:
+        ok = False
+        msg = " An error occurred while updating the L2 control file Files section"
     # clean up the Options section
     try:
         cfg = update_cfg_options(cfg, std)
@@ -2270,13 +2287,13 @@ def l2_update_controlfile(cfg):
         ok = False
         msg = " An error occurred while updating the L2 control file Options section"
     # clean up the variable names
-    try:
-        cfg = update_cfg_variables_deprecated(cfg, std)
-        cfg = update_cfg_variables_rename(cfg, std)
-        cfg = update_cfg_variable_attributes(cfg, std)
-    except Exception:
-        ok = False
-        msg = " An error occurred updating the L2 control file contents"
+    #try:
+    cfg = update_cfg_variables_deprecated(cfg, std)
+    cfg = update_cfg_variables_rename(cfg, std)
+    cfg = update_cfg_variable_attributes(cfg, std)
+    #except Exception:
+        #ok = False
+        #msg = " An error occurred updating the L2 control file contents"
     if ok:
         # check to see if the control file object has been changed
         if cfg != cfg_original:
@@ -2544,11 +2561,16 @@ def update_cfg_options(cfg, std):
         del cfg["General"]
     # update the units in the Options section
     if cfg["level"] == "L2":
-        if "Options" in cfg:
-            if "irga_flux" in cfg["Options"]:
-                irga_type = cfg["Options"]["irga_flux"]
-                if irga_type in ["Li-7500A (<V6.5)", "Li-7500A (>=V6.5)"]:
-                    cfg["Options"]["irga_flux"] = "Li-7500A"
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        if "irga_flux" in cfg["Options"]:
+            irga_type = cfg["Options"]["irga_flux"]
+            if irga_type in ["Li-7500A (<V6.5)", "Li-7500A (>=V6.5)"]:
+                cfg["Options"]["irga_flux"] = "Li-7500A"
+        if "SONIC_Check" not in cfg["Options"]:
+            cfg["Options"]["SONIC_check"] = "Yes"
+        if "IRGA_Check" not in cfg["Options"]:
+            cfg["Options"]["IRGA_check"] = "Yes"
     elif cfg["level"] == "L3":
         if "Options" in cfg:
             for item in list(cfg["Options"].keys()):
