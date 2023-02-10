@@ -3988,9 +3988,9 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # connect the context menu requested signal to appropriate slot
         self.view.customContextMenuRequested.connect(self.context_menu)
         self.view.doubleClicked.connect(self.double_click)
-        # allow selection of multiple items
-        self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
-        self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        ## allow selection of multiple items
+        #self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        #self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         # do the QTreeView layout
         vbox = QtWidgets.QVBoxLayout()
         vbox.addWidget(self.view)
@@ -4006,6 +4006,9 @@ class edit_cfg_L2(QtWidgets.QWidget):
         for row in range(self.model.rowCount()):
             idx = self.model.index(row, 0)
             self.view.expand(idx)
+        # connect the selectionChanged signal
+        selModel = self.view.selectionModel()
+        selModel.selectionChanged.connect(self.handleSelection)
 
     def enable_plot(self):
         """ Enable a plot by removing '(disabled)' from the title."""
@@ -4183,6 +4186,31 @@ class edit_cfg_L2(QtWidgets.QWidget):
         self.update_tab_text()
         # update the control file contents
         self.cfg = self.get_data_from_model()
+
+    def handleSelection(self, selected, deselected):
+        for index in selected.indexes():
+            item = self.model.itemFromIndex(index)
+            if index.parent().isValid():
+                parent = item.parent()
+                print('SEL: row: %s, col: %s, text: %s, parent: %s' % (
+                    index.row(), index.column(), item.text(), parent.text()))
+                if parent.text() == "Plots":
+                    # allow selection of multiple items
+                    self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+                    self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+            else:
+                print('SEL: row: %s, col: %s, text: %s' % (
+                    index.row(), index.column(), item.text()))
+        for index in deselected.indexes():
+            item = self.model.itemFromIndex(index)
+            if index.parent().isValid():
+                parent = item.parent()
+                print('DESEL: row: %s, col: %s, text: %s, parent: %s' % (
+                    index.row(), index.column(), item.text(), parent.text()))
+            else:
+                print('DESEL: row: %s, col: %s, text: %s' % (
+                    index.row(), index.column(), item.text()))
+        return
 
     def remove_daterange(self):
         """ Remove a date range from the ustar_threshold section."""
