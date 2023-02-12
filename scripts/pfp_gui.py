@@ -3059,7 +3059,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.context_menu.actionAddGlobal = QtWidgets.QAction(self)
                 self.context_menu.actionAddGlobal.setText("Add attribute")
                 self.context_menu.addAction(self.context_menu.actionAddGlobal)
-                arg = lambda: self.add_global({"New attribute", ""})
+                arg = lambda: self.add_global({"New attribute": ""})
                 self.context_menu.actionAddGlobal.triggered.connect(arg)
                 self.context_menu.actionAddIRGASonic = QtWidgets.QAction(self)
                 self.context_menu.actionAddIRGASonic.setText("Add IRGA/sonic type")
@@ -3366,6 +3366,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = main_gui.info
+        self.not_selectable = []
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_L2_gui()
 
@@ -3961,7 +3962,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         return
 
     def disable_plot(self):
-        """ Disable a plot by adding '[disabled]' to the title."""
+        """ Disable a plot by adding '(disabled)' to the title."""
         idxs = self.view.selectedIndexes()
         for idx in idxs:
             selected_item = idx.model().itemFromIndex(idx)
@@ -3969,12 +3970,15 @@ class edit_cfg_L2(QtWidgets.QWidget):
             if "(disabled)" not in selected_text:
                 selected_text = "(disabled)" + selected_text
             selected_item.setText(selected_text)
+        self.reset_selection_mode()
+        self.update_tab_text()
         return
 
     def double_click(self):
         """ Save the selected text on double click events."""
-        idx = self.view.selectedIndexes()
-        self.double_click_selected_text = idx[0].data()
+        if len(self.view.selectedIndexes()) == 1:
+            idx = self.view.selectedIndexes()
+            self.double_click_selected_text = idx[0].data()
         return
 
     def edit_L2_gui(self):
@@ -3988,9 +3992,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # connect the context menu requested signal to appropriate slot
         self.view.customContextMenuRequested.connect(self.context_menu)
         self.view.doubleClicked.connect(self.double_click)
-        ## allow selection of multiple items
-        #self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
-        #self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        # only allow selection of single items by default
+        self.view.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         # do the QTreeView layout
         vbox = QtWidgets.QVBoxLayout()
         vbox.addWidget(self.view)
@@ -4019,6 +4022,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
             if "(disabled)" in selected_text:
                 selected_text = selected_text.replace("(disabled)", "")
             selected_item.setText(selected_text)
+        self.reset_selection_mode()
+        self.update_tab_text()
         return
 
     def get_data_from_model(self):
@@ -4186,32 +4191,26 @@ class edit_cfg_L2(QtWidgets.QWidget):
         self.update_tab_text()
         # update the control file contents
         self.cfg = self.get_data_from_model()
-
-    def handleSelection(self, selected, deselected):
-        for index in selected.indexes():
-            item = self.model.itemFromIndex(index)
-            if index.parent().isValid():
-                parent = item.parent()
-                print('SEL: row: %s, col: %s, text: %s, parent: %s' % (
-                    index.row(), index.column(), item.text(), parent.text()))
-                if parent.text() == "Plots":
-                    # allow selection of multiple items
-                    self.view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
-                    self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-            else:
-                print('SEL: row: %s, col: %s, text: %s' % (
-                    index.row(), index.column(), item.text()))
-        for index in deselected.indexes():
-            item = self.model.itemFromIndex(index)
-            if index.parent().isValid():
-                parent = item.parent()
-                print('DESEL: row: %s, col: %s, text: %s, parent: %s' % (
-                    index.row(), index.column(), item.text(), parent.text()))
-            else:
-                print('DESEL: row: %s, col: %s, text: %s' % (
-                    index.row(), index.column(), item.text()))
         return
-
+    def handleSelection(self, selected, deselected):
+        if len(self.view.selectedIndexes()) == 1:
+            self.reset_selection_mode()
+        for idx in selected.indexes():
+            item = idx.model().itemFromIndex(idx)
+            if idx.parent().isValid():
+                if idx.parent().data() == "Plots":
+                    # allow selection of multiple items
+                    self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+                    self.view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+                else:
+                    if self.view.selectionMode() == 3:
+                        item.setSelectable(False)
+                        self.not_selectable.append(item)
+            else:
+                if self.view.selectionMode() == 3:
+                    item.setSelectable(False)
+                    self.not_selectable.append(item)
+        return
     def remove_daterange(self):
         """ Remove a date range from the ustar_threshold section."""
         # index of selected item
@@ -4230,15 +4229,14 @@ class edit_cfg_L2(QtWidgets.QWidget):
         """ Remove an item from the view."""
         # loop over selected items in the tree
         idxs = self.view.selectedIndexes()
-        while len(idxs) > 0:
-            selected_item = idxs[0].model().itemFromIndex(idxs[0])
-            # get the parent of the selected item
-            parent = selected_item.parent()
-            # remove the row
-            parent.removeRow(idxs[0].row())
-            idxs = self.view.selectedIndexes()
+        for idx in idxs:
+            if idx.parent().isValid():
+                selected_item = idx.model().itemFromIndex(idx)
+                parent = selected_item.parent()
+                parent.removeRow(idx.row())
+        self.reset_selection_mode()
         self.update_tab_text()
-
+        return
     def remove_section(self):
         """ Remove a section from the view."""
         # loop over selected items in the tree
@@ -4250,27 +4248,50 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # remove the row
         root.removeRow(selected_item.row())
         self.update_tab_text()
-
+        return
+    def reset_selection_mode(self):
+        """
+        Reset the not_selectable list, the selection mode and the edit triggers.
+        """
+        # loop over items in the not_selectable list, this list is
+        # populated in handleSelection
+        for item in list(self.not_selectable):
+            # set item to be selectable
+            item.setSelectable(True)
+            # if the item index is in the list of selected indexes
+            if item.index() in self.view.selectedIndexes():
+                # deselect item so it will not be highlighted in view
+                selectionModel = self.view.selectionModel()
+                selectionModel.select(item.index(),
+                                      QtCore.QItemSelectionModel.Deselect)
+        # clear the not_selectable list
+        self.not_selectable = []
+        # reset the selection mode to single item
+        self.view.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        # reset the edit trigger to double click
+        self.view.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked)
+        return
     def set_check_no(self):
         """ Set the Sonic check to No."""
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("No")
-
+        return
     def set_check_yes(self):
         """ Set the Sonic check to Yes."""
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText("Yes")
-
+        return
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
         # add an asterisk to the tab text to indicate the tab contents have changed
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+        return
 
 class edit_cfg_L3(QtWidgets.QWidget):
     def __init__(self, main_gui):
