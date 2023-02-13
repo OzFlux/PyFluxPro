@@ -1,0 +1,16 @@
+level = footprint
+[Options]
+    Fsd_threshold = 10
+[Variables]
+    [[Fsd]]
+        name = Fsd
+    [[ol]]
+        name = L
+    [[ustar]]
+        name = ustar
+    [[Vsd]]
+        name = V_SONIC_Sd
+    [[Wd]]
+        name = Wd
+    [[Ws]]
+        name = Ws
