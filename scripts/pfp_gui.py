@@ -45,13 +45,16 @@ class display_thredds_tree(QtWidgets.QWidget):
         for key in dict_to_add:
             val = str(dict_to_add[key])
             child0 = QtGui.QStandardItem(key)
+            child0.setEditable(False)
             child1 = QtGui.QStandardItem(val)
+            child1.setEditable(False)
             section.appendRow([child0, child1])
         return
     def add_subsubsection(self, subsection, dict_to_add):
         """ Add a subsubsection to the model."""
         for key in dict_to_add:
             subsubsection = QtGui.QStandardItem(key)
+            subsubsection.setEditable(False)
             self.add_subsection(subsubsection, dict_to_add[key])
             subsection.appendRow(subsubsection)
         return
@@ -77,6 +80,11 @@ class display_thredds_tree(QtWidgets.QWidget):
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
         return
     def double_click(self):
+        idx = self.view.selectedIndexes()[0]
+        if ((idx.data() is None) or ".nc" not in idx.data()):
+            return
+        file_url = self.get_dodsC_file_url()
+        self.main_gui.file_open_thredds_file(file_url)
         return
     def expanded(self, idx):
         """
@@ -137,6 +145,7 @@ class display_thredds_tree(QtWidgets.QWidget):
             subsection.removeRows(0, subsection.rowCount())
             for key in dict_to_add:
                 subsubsection = QtGui.QStandardItem(key)
+                subsubsection.setEditable(False)
                 self.add_subsection(subsubsection, dict_to_add[key])
                 subsection.appendRow(subsubsection)
             self.current_catalog = cat
