@@ -8,7 +8,6 @@
         featureType = timeSeries
         license_name = CC BY 4.0
         license = https://creativecommons.org/licenses/by/4.0/
-        history = June 2021 processing
         publisher_name = TERN Ecosystem Processes,OzFlux
         ozflux_link = http://ozflux.org.au/
         acknowledgement = """This work used eddy covariance data collected by the TERN Ecosystem 
