@@ -165,6 +165,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionUtilitiesUstarCPDMcNew.setText("CPD (McNew)")
         self.actionUtilitiesUstarMPT = QtWidgets.QAction(self)
         self.actionUtilitiesUstarMPT.setText("MPT")
+        self.actionUtilitiesFP = QtWidgets.QAction(self)
+        self.actionUtilitiesFP.setText("Footprint")
         #self.actionUtilitiesCFCheck = QAction(self)
         #self.actionUtilitiesCFCheck.setText("CF check")
         # Help menu
@@ -214,6 +216,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # Utilities menu
         self.menuUtilities.addAction(self.actionUtilitiesClimatology)
         self.menuUtilities.addAction(self.menuUtilitiesUstar.menuAction())
+        self.menuUtilities.addAction(self.actionUtilitiesFP)
         #self.menuUtilities.addAction(self.actionUtilitiesCFCheck)
         # add individual menus to menu bar
         self.menubar.addAction(self.menuFile.menuAction())
@@ -293,6 +296,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.actionUtilitiesUstarCPDMcHugh.triggered.connect(self.utilities_ustar_cpd_mchugh_standard)
         self.actionUtilitiesUstarCPDMcNew.triggered.connect(self.utilities_ustar_cpd_mcnew_standard)
         self.actionUtilitiesUstarMPT.triggered.connect(self.utilities_ustar_mpt_standard)
+        self.actionUtilitiesFP.triggered.connect(self.utilities_footprint_standard)
         #self.actionUtilitiesCFCheck.triggered.connect(self.utilities_cfcheck)
         # Help menu actions
         self.actionHelpWiki.triggered.connect(self.help_wiki)
@@ -552,6 +556,9 @@ class pfp_main_ui(QtWidgets.QWidget):
         elif self.file["level"] in ["mpt"]:
             if not pfp_compliance.mpt_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_mpt(self)
+        elif self.file["level"] in ["footprint"]:
+            if not pfp_compliance.footprint_update_controlfile(self.file): return
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_footprint(self)
         elif self.file["level"] in ["L4"]:
             if not pfp_compliance.l4_update_controlfile(self.file): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L4(self)
@@ -966,6 +973,8 @@ class pfp_main_ui(QtWidgets.QWidget):
             self.utilities_ustar_cpd_mcnew_custom()
         elif cfg["level"] == "mpt":
             self.utilities_ustar_mpt_custom()
+        elif cfg["level"] == "footprint":
+            self.utilities_footprint_custom()
         elif cfg["level"] == "L4":
             pfp_top_level.do_run_l4(self)
             self.actionRunCurrent.setDisabled(False)
@@ -1120,6 +1129,24 @@ class pfp_main_ui(QtWidgets.QWidget):
             logger.info( " CPD (MPT): no netCDF file chosen")
             return
         worker = pfp_threading.Worker(pfp_top_level.do_utilities_ustar_mpt_standard,
+                                      self, nc_file_uri)
+        self.threadpool.start(worker)
+        return
+    def utilities_footprint_custom(self):
+        # run footprint from a control file
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_footprint_custom, self)
+        self.threadpool.start(worker)
+        return
+    def utilities_footprint_standard(self):
+        # run footprint from the Utilities menu
+        # disable the Run/Current menu option
+        self.actionRunCurrent.setDisabled(True)
+        logger = logging.getLogger(name="pfp_log")
+        nc_file_uri = pfp_io.get_filename_dialog(title="Choose a netCDF file", ext="*.nc")
+        if not os.path.exists(nc_file_uri):
+            logger.info( " Footprint: no netCDF file chosen")
+            return
+        worker = pfp_threading.Worker(pfp_top_level.do_utilities_footprint_standard,
                                       self, nc_file_uri)
         self.threadpool.start(worker)
         return

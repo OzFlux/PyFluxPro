@@ -14,6 +14,7 @@ from scripts import pfp_cpd_barr
 from scripts import pfp_cpd_mchugh
 from scripts import pfp_cpd_mcnew
 from scripts import pfp_mpt
+from scripts import pfp_footprint
 from scripts import pfp_io
 from scripts import pfp_levels
 from scripts import pfp_plot
@@ -1280,6 +1281,46 @@ def do_utilities_ustar_mpt_standard(main_ui, nc_file_uri):
         logger.info("")
     except Exception:
         error_message = " An error occured while doing MPT u* threshold, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
+    return
+def do_utilities_footprint_custom(main_ui):
+    try:
+        cfg = main_ui.tabs.tab_dict[main_ui.tabs.tab_index_running].get_data_from_model()
+        logger.info("Starting footprint")
+        pfp_footprint.calculate_footprint(cfg)
+        logger.info("Finished footprint")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing footprint, see below for details ..."
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    main_ui.actionRunCurrent.setDisabled(False)
+    return
+def do_utilities_footprint_standard(main_ui, nc_file_uri):
+    try:
+        logger.info("Starting footprint")
+        # get the base path of script or Pyinstaller application
+        base_path = pfp_utils.get_base_path()
+        stdname = os.path.join(base_path, "controlfiles", "standard", "footprint.txt")
+        if not os.path.exists(stdname):
+            msg = " Footprint: unable to find standard control file footprint.txt"
+            logger.error(msg)
+            return
+        cfg = pfp_io.get_controlfilecontents(stdname)
+        file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
+        in_filename = os.path.split(nc_file_uri)[1]
+        out_filename = in_filename.replace(".nc", "_Footprint.xls")
+        cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
+                        "out_filename": out_filename}
+        pfp_footprint.calculate_footprint(cfg)
+        logger.info("Finished footprint")
+        logger.info("")
+    except Exception:
+        error_message = " An error occured while doing footprint, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)

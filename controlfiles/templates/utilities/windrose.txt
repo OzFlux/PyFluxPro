@@ -1,4 +1,8 @@
-level = footprint
+level = windrose
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse
+    out_filename = Right click to browse
 [Options]
     number_sectors = 16
     number_speed_bins = 8
@@ -7,12 +11,6 @@ level = footprint
 [Variables]
     [[Fsd]]
         name = Fsd
-    [[ol]]
-        name = L
-    [[ustar]]
-        name = ustar
-    [[Vsd]]
-        name = V_SONIC_Sd
     [[Wd]]
         name = Wd
     [[Ws]]

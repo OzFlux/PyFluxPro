@@ -635,6 +635,10 @@ def do_levels_batch(main_ui):
             # ustar threshold from change point detection
             if not do_mpt_batch(main_ui, cf_batch["Levels"][level]):
                 break
+        elif level.lower() == "footprint":
+            # ustar threshold from change point detection
+            if not do_mpt_batch(main_ui, cf_batch["Levels"][level]):
+                break
         elif level.lower() == "l4":
             # L4 processing
             if not do_L4_batch(main_ui, cf_batch["Levels"][level]):

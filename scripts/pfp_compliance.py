@@ -394,6 +394,60 @@ def mpt_update_controlfile(cfg):
         logger.error(error_message)
     return ok
 
+def footprint_update_controlfile(cfg):
+    """
+    Purpose:
+     Parse the footprint control file to update the syntax from earlier OFQC/PFP
+     versions to the syntax used by this version.
+    Usage:
+     result = pfp_compliance.footprint_update_controlfile(cfg)
+     where cfg is a ConfigObj object
+           result is True if the concatenate control file was updated successfully
+                     False if it couldn't be updated
+    Side effects:
+    Author: PRI/CME
+    Date: February 2023
+    Comment: this is a straight copy from the footprint version
+    """
+    # copy the control file
+    cfg_original = copy.deepcopy(cfg)
+    cfg["level"] = "footprint"
+    ok = True
+    # check to see if we can load the update_control_files.txt standard control file
+    try:
+        # get the base path of script or Pyinstaller application
+        base_path = pfp_utils.get_base_path()
+        stdname = os.path.join(base_path, "controlfiles", "standard", "update_control_files.txt")
+        std = pfp_io.get_controlfilecontents(stdname, mode="quiet")
+    except Exception:
+        ok = False
+        msg = " Unable to load standard control file " + stdname
+    # initialise the return logical
+    ok = True
+    try:
+        cfg = update_cfg_syntax(cfg, std)
+    except Exception:
+        ok = False
+        msg = " An error occurred while updating the footprint control file syntax"
+    # clean up the variable names
+    try:
+        cfg = update_cfg_variables_rename(cfg, std)
+    except Exception:
+        ok = False
+        msg = " An error occurred updating the footprint control file contents"
+    if ok:
+        # check to see if the control file object has been changed
+        if cfg != cfg_original:
+            # and save it if it has changed
+            file_name = os.path.basename(cfg.filename)
+            logger.info(" Updated and saved control file " + file_name)
+            cfg.write()
+    else:
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return ok
+
 def concatenate_update_controlfile(cfg):
     """
     Purpose:
