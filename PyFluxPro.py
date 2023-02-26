@@ -3,6 +3,7 @@ import datetime
 import faulthandler
 import logging
 import os
+from requests.exceptions import HTTPError
 import sys
 import traceback
 import warnings
@@ -421,7 +422,13 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.info["THREDDS"]["dodsC_url"] = self.info["THREDDS"]["base_url"].replace("catalog", "dodsC")
         # siphon seems to only accept URLs with a forward slash ('/') as the delimiter
         url = self.info["THREDDS"]["base_url"] + "/" + self.info["THREDDS"]["catalog_name"]
-        self.catalogs = {"sites": TDSCatalog(url)}
+        try:
+            self.catalogs = {"sites": TDSCatalog(url)}
+        except HTTPError:
+            msg = "Error opening DAP server"
+            pfp_gui.MsgBox_Continue(msg)
+            self.unsetCursor()
+            return
         # display the THREDDS catalog in the GUI
         self.info["tab"]["source"] = "thredds"
         self.info["tab"]["type"] = "catalog"
