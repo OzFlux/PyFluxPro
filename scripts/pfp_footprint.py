@@ -1,6 +1,4 @@
-import datetime
 import logging
-import math
 import os
 import copy
 import warnings
@@ -10,7 +8,6 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     matplotlib.rcParams['toolbar'] = 'toolmanager'
 import numpy
-import statsmodels.api as sm
 # PFP modules
 from scripts import constants as c
 from scripts import pfp_classes
@@ -18,7 +15,6 @@ from scripts import pfp_ck
 from scripts import pfp_io
 from scripts import pfp_utils
 from scripts import pfp_ts
-from scripts import meteorologicalfunctions as pfp_mf
 
 """
 Derive a flux footprint estimate based on the paper from Kormann and Meixner (2001). The equations solved
@@ -360,7 +356,7 @@ def kormann_meixner(ds, fpinfo):
     E = pfp_utils.CreateEmptyVariable("E", nrecs, datetime=ldt["Data"])
     KM_p01a = pfp_utils.CreateEmptyVariable("KM_p01a", nrecs, datetime=ldt["Data"])
     KM_p01b = pfp_utils.CreateEmptyVariable("KM_p01b", nrecs, datetime=ldt["Data"])
-    KM_p01c = pfp_utils.CreateEmptyVariable("KM_p01c", nrecs, datetime=ldt["Data"])
+    #KM_p01c = pfp_utils.CreateEmptyVariable("KM_p01c", nrecs, datetime=ldt["Data"])
     A["Data"] = 1 + mu
     B["Data"] = Umaj * (zm**r) / r / r / Kmaj
     C["Data"] = (B["Data"]**mu) /GammaProxmu
@@ -383,18 +379,26 @@ def kormann_meixner(ds, fpinfo):
         x0 = x0 - Fm / dFm
     KM_p01b["Data"] = x0
     # set x0 = center of ellipse
-    x0 = 0.5*(KM_p01b["Data"] - KM_p01a["Data"])
+    #x0 = 0.5*(KM_p01b["Data"] - KM_p01a["Data"])
     # Delivers y for which phi(xcenter,y)=level, i.e. "width of ellipse" ellipse parameter d: short axes of ellipse
     #for _ in [0,1,2,3,4,5]:
-    #    y = D["Data"] * x ^ E["Data"] * Sqr(2) * Sqr(Log(C["Data"] * Exp(-B["Data"] / x) / Sqr(2 * PI) / x ^ (A["Data"] + E["Data"]) / D["Data"] / p))
-    #    Gm = (1 - y ^ 2 / D["Data"] ^ 2 / x ^ (2 * E["Data"])) * E["Data"] / x - xi / x ^ 2 + (1 + mu) / x
-    #    y = D["Data"] * x ^ E["Data"] * Sqr(2) * Sqr(Log(C["Data"] * Exp(-B["Data"] / x) / Sqr(2 * PI) / x ^ (A["Data"] + E["Data"]) / D["Data"] / p))
-    #    dGm = 2 * (y ^ 2 * E["Data"] ^ 2) / D["Data"] ^ 2 / x ^ (2 * E["Data"] + 2) - (1 - y ^ 2 / D["Data"] ^ 2 / x ^ (2 * E["Data"])) * E["Data"] / x ^ 2 + 2 * xi / x ^ 3 + (1 + mu) / x ^ 2
+    #    help1 = D["Data"] * x0**E["Data"] * numpy.sqrt(2)
+    #    help2 = C["Data"] * numpy.exp(-B["Data"] / x0)
+    #    help3 = x0**(A["Data"] + E["Data"])
+    #    y = help1 * numpy.sqrt(numpy.log(help2 / numpy.sqrt(2 * numpy.pi) / help3 / D["Data"] / p))
+    #    help4 = (1 - y**2 / D["Data"]**2 / x0**(2 * E["Data"]))
+    #    Gm = help4 * E["Data"] / x0 - xi / x0**2 + (1 + mu) / x0
+    #    help5 = (y**2 * E["Data"]**2)
+    #    help6 = x0**(2 * E["Data"] + 2)
+    #    help7 = (1 - y**2 / D["Data"]**2 / x0**(2 * E["Data"]))
+    #    dGm = 2 * help5 / D["Data"]**2 / help6 - help7 * E["Data"] / x0**2 + 2 * xi / x0**3 + (1 + mu) / x0**2
     #    x0 = x0 - Gm / dGm
-    #   
-    #    ye = D["Data"] * x0 ^ E["Data"] * Sqr(2) * Sqr(Log(C["Data"] * Exp(-B["Data"] / x0) / Sqr(2 * PI) / x0 ^ (A["Data"] + E["Data"]) / D["Data"] / (p)))
-    #    EllipseMax = ye
-    
+       
+    #KM_p01c["Data"] = D["Data"] * x0**E["Data"] * numpy.sqrt(2) * numpy.sqrt(numpy.log(C["Data"] * numpy.exp(-B["Data"] / x0) / numpy.sqrt(2 * numpy.pi) / x0**(A["Data"] + E["Data"]) / D["Data"] / p))
+    # range check for ellipse parameter
+    KM_p01a["Data"]    = numpy.ma.masked_greater(KM_p01a["Data"],  10000.0, copy=True)
+    KM_p01b["Data"]    = numpy.ma.masked_greater(KM_p01b["Data"], 100000.0, copy=True)
+    #KM_p01c["Data"]    = numpy.ma.masked_greater(KM_p01c["Data"],  50000.0, copy=True)
     # get the QC flag
     A["Flag"] = numpy.where(numpy.ma.getmaskarray(A["Data"]) == True, ones, zeros)
     B["Flag"] = numpy.where(numpy.ma.getmaskarray(B["Data"]) == True, ones, zeros)
@@ -403,7 +407,7 @@ def kormann_meixner(ds, fpinfo):
     E["Flag"] = numpy.where(numpy.ma.getmaskarray(E["Data"]) == True, ones, zeros)
     KM_p01a["Flag"] = numpy.where(numpy.ma.getmaskarray(KM_p01a["Data"]) == True, ones, zeros)
     KM_p01b["Flag"] = numpy.where(numpy.ma.getmaskarray(KM_p01b["Data"]) == True, ones, zeros)
-    KM_p01c["Flag"] = numpy.where(numpy.ma.getmaskarray(KM_p01c["Data"]) == True, ones, zeros)
+    #KM_p01c["Flag"] = numpy.where(numpy.ma.getmaskarray(KM_p01c["Data"]) == True, ones, zeros)
     # update the variable attributes
     A["Attr"]["units"] = "1"
     B["Attr"]["units"] = "1"
@@ -412,15 +416,15 @@ def kormann_meixner(ds, fpinfo):
     E["Attr"]["units"] = "1"
     KM_p01a["Attr"]["units"] = "m"
     KM_p01b["Attr"]["units"] = "m"
-    KM_p01c["Attr"]["units"] = "m"
+    #KM_p01c["Attr"]["units"] = "m"
     A["Attr"]["long_name"] = "Kormann-Meixner parameter A"
-    B["Attr"]["long_name"] = "Kormann-Meixner parameter A"
-    C["Attr"]["long_name"] = "Kormann-Meixner parameter A"
-    D["Attr"]["long_name"] = "Kormann-Meixner parameter A"
-    E["Attr"]["long_name"] = "Kormann-Meixner parameter A"
+    B["Attr"]["long_name"] = "Kormann-Meixner parameter B"
+    C["Attr"]["long_name"] = "Kormann-Meixner parameter C"
+    D["Attr"]["long_name"] = "Kormann-Meixner parameter D"
+    E["Attr"]["long_name"] = "Kormann-Meixner parameter E"
     KM_p01a["Attr"]["long_name"] = "Kormann-Meixner intersection point of 1%- ellipse nearest to sensor"
     KM_p01b["Attr"]["long_name"] = "Kormann-Meixner intersection point of 1%- ellipse farthest from sensor"
-    KM_p01c["Attr"]["long_name"] = "Kormann-Meixner half width of 1%-ellipse"
+    #KM_p01c["Attr"]["long_name"] = "Kormann-Meixner half width of 1%-ellipse"
     pfp_utils.CreateVariable(ds, A)
     pfp_utils.CreateVariable(ds, B)
     pfp_utils.CreateVariable(ds, C)
@@ -428,7 +432,7 @@ def kormann_meixner(ds, fpinfo):
     pfp_utils.CreateVariable(ds, E)
     pfp_utils.CreateVariable(ds, KM_p01a)
     pfp_utils.CreateVariable(ds, KM_p01b)
-    pfp_utils.CreateVariable(ds, KM_p01c)
+    #pfp_utils.CreateVariable(ds, KM_p01c)
     return
 
 def crosswind_std(ds, fpinfo):
