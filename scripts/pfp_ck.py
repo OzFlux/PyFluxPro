@@ -976,23 +976,25 @@ def do_qcchecks(cf,ds,mode="verbose"):
         return
     # loop over the series specified in the control file
     # first time for general QC checks
-    for series in series_list:
+    for series in list(series_list):
         # check the series is in the data structure
         if series not in list(ds.root["Variables"].keys()):
             if mode!="quiet":
                 msg = " QC checks: series "+series+" not found in data structure, skipping ..."
                 logger.warning(msg)
+            series_list.remove(series)
             continue
         # if so, do the QC checks
         do_qcchecks_oneseries(cf,ds,section,series)
     # loop over the series in the control file
     # second time for dependencies
-    for series in series_list:
+    for series in list(series_list):
         # check the series is in the data structure
         if series not in list(ds.root["Variables"].keys()):
             if mode!="quiet":
                 msg = " Dependencies: series "+series+" not found in data structure, skipping ..."
                 logger.warning(msg)
+            series_list.remove(series)
             continue
         # if so, do dependency check
         do_dependencycheck(cf,ds,section,series,code=23,mode="quiet")

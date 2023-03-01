@@ -832,7 +832,7 @@ def nc_read_groups(nc_file):
             else:
                 ts = ds.root["Attributes"]["time_step"]
             group["Attributes"]["time_step"] = ts
-    nc_file.close()
+    #nc_file.close()
     ds.info["returncodes"]["value"] = 0
     ds.info["returncodes"]["message"] = "netCDF file read OK"
     return ds
@@ -918,7 +918,7 @@ def nc_read_series(nc_file, checktimestep=True, fixtimestepmethod="round"):
         msg = "Unable to find any datetime data in netCDF file"
         logger.error(msg)
         raise RuntimeError(msg)
-    nc_file.close()
+    #nc_file.close()
     # check to see if we have the "nc_nrecs" global attribute
     if "nc_nrecs" not in list(ds.root["Attributes"].keys()):
         ds.root["Attributes"]["nc_nrecs"] = str(len(ds.root["Variables"]["DateTime"]["Data"]))
@@ -1398,6 +1398,7 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", updat
                                 fixtimestepmethod=fixtimestepmethod)
         else:
             ds = nc_read_groups(nc_file)
+        nc_file.close()
         if update:
             ds = ds_update(ds)
     elif engine.lower() == "xarray":
