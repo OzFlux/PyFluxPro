@@ -1,5 +1,6 @@
 # standard modules
 from collections import OrderedDict
+import copy
 import inspect
 import logging
 import os
@@ -21,7 +22,9 @@ class display_thredds_tree(QtWidgets.QWidget):
         super(display_thredds_tree, self).__init__()
         self.main_gui = main_gui
         self.catalogs = main_gui.catalogs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "thredds"
+        self.info["tab"]["type"] = "catalog"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.view = QtWidgets.QTreeView()
         self.model = QtGui.QStandardItemModel()
@@ -196,7 +199,9 @@ class edit_cfg_batch(QtWidgets.QWidget):
         self.cfg = main_gui.file
         self.main_gui = main_gui
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.implemented_levels = ["L1", "L2", "L3",
                                    "concatenate", "climatology",
@@ -593,7 +598,9 @@ class edit_cfg_climatology(QtWidgets.QWidget):
         super(edit_cfg_climatology, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_climatology_gui()
 
@@ -907,7 +914,9 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         super(edit_cfg_concatenate, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_concatenate_gui()
 
@@ -1421,7 +1430,9 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
         super(edit_cfg_cpd_barr, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_cpd_barr_gui()
 
@@ -1761,7 +1772,9 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
         super(edit_cfg_cpd_mchugh, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_cpd_mchugh_gui()
 
@@ -2101,7 +2114,9 @@ class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
         super(edit_cfg_cpd_mcnew, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_cpd_mcnew_gui()
 
@@ -2441,7 +2456,9 @@ class edit_cfg_L1(QtWidgets.QWidget):
         super(edit_cfg_L1, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.update_info()
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         # disable editing of essential entries in Files
@@ -2450,22 +2467,24 @@ class edit_cfg_L1(QtWidgets.QWidget):
         self.edit_L1_gui()
 
     def update_info(self):
-        self.info["edit_cfg_L1"] = {"irga_flux": "Li-7500RS", "sonic_flux": "CSAT3B"}
+        self.info["instrument"] = {"irga_flux": "Li-7500RS", "sonic_flux": "CSAT3B"}
         self.update_info_sonic_irga_lists()
 
     def update_info_sonic_irga_lists(self):
         cfg_labels = sorted(list(self.cfg["Variables"].keys()))
         # IRGA signal strengths
-        signal_labels = ["Signal_CO2", "Signal_H2O"]
+        signal_labels = ["AGC_IRGA", "Signal_CO2", "Signal_H2O"]
         # PFP covariances
         h2o_covars = ["UxA", "UyA", "UzA"]
         co2_covars = ["UxC", "UyC", "UzC"]
         t_covars = ["UxT", "UyT", "UzT"]
         m_covars = ["UxUy", "UxUz", "UyUz"]
         # anything with 'IRGA' in the variable name
-        irga_labels = [l for l in self.cfg["Variables"].keys() if "IRGA" in l]
+        irga_labels = [l for l in cfg_labels if "_IRGA_" in l]
+        irga_diag_labels = ["Diag_IRGA"]
         # anything with 'SONIC' in the variable name
-        sonic_labels = [l for l in cfg_labels if "SONIC" in l]
+        sonic_labels = [l for l in cfg_labels if "_SONIC_" in l]
+        sonic_diag_labels = ["Diag_SONIC"]
         # fluxes from EddyPro, EasyFlux and the like
         fco2_labels = [l for l in cfg_labels if l[0:4] == "Fco2"]
         sco2_labels = [l for l in cfg_labels if l[0:4] == "Sco2"]
@@ -2476,22 +2495,22 @@ class edit_cfg_L1(QtWidgets.QWidget):
         us_labels = [l for l in cfg_labels if l[0:5] == "ustar"]
         # lists of variables by instrument
         # fast IRGAs e.g. Li-7500RS etc used for turbulence measurements
-        sieL1 = self.info["edit_cfg_L1"]
-        sieL1["fast_irga_only_labels"] = irga_labels + signal_labels
+        sii = self.info["instrument"]
+        sii["fast_irga_only_labels"] = irga_labels + signal_labels + irga_diag_labels
         # slow IRGAs e.g. Li-840 used for profile measurements
-        sieL1["slow_irga_only_labels"] = sco2_labels
+        sii["slow_irga_only_labels"] = sco2_labels
         # IRGA only
-        sieL1["irga_only_labels"] = irga_labels + signal_labels + sco2_labels
+        sii["irga_only_labels"] = irga_labels + signal_labels + sco2_labels
         # sonic anemometer only
-        sieL1["sonic_only_labels"] = sonic_labels + t_covars + m_covars + fh_labels + fm_labels + us_labels
+        sii["sonic_only_labels"] = sonic_labels + t_covars + m_covars + fh_labels + fm_labels + us_labels + sonic_diag_labels
         # sonic and fast IRGA
-        sieL1["sonic_irga_labels"] = h2o_covars + co2_covars + fco2_labels + fh2o_labels + fe_labels
+        sii["sonic_irga_labels"] = h2o_covars + co2_covars + fco2_labels + fh2o_labels + fe_labels
         # all sonic or IRGA related variables
-        sieL1["all_sonic_irga_labels"] = list(sieL1["fast_irga_only_labels"])
-        sieL1["all_sonic_irga_labels"] += sieL1["slow_irga_only_labels"]
-        sieL1["all_sonic_irga_labels"] += sieL1["sonic_only_labels"]
-        sieL1["all_sonic_irga_labels"] += sieL1["sonic_irga_labels"]
-
+        sii["all_sonic_irga_labels"] = list(sii["fast_irga_only_labels"])
+        sii["all_sonic_irga_labels"] += sii["slow_irga_only_labels"]
+        sii["all_sonic_irga_labels"] += sii["sonic_only_labels"]
+        sii["all_sonic_irga_labels"] += sii["sonic_irga_labels"]
+        return
     def add_attribute(self):
         """ Add a variable attribute to a variable in the [Variables] section."""
         # get the index of the selected item
@@ -3288,7 +3307,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
         parent = selected_item.parent()
         parent.child(selected_item.row(), 1).setText(sender)
         key = parent.child(selected_item.row(), 0).text()
-        self.info["edit_cfg_L1"][key] = sender
+        self.info["instrument"][key] = sender
         # update the control file in case variables have been added
         #self.cfg = self.get_data_from_model()
         # update the IRGA and sonic label lists in case variables have been added
@@ -3297,7 +3316,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
         self.update_instrument_variable_attribute()
 
     def update_instrument_variable_attribute(self):
-        sieL1 = self.info["edit_cfg_L1"]
+        sii = self.info["instrument"]
         # find the 'Variables' section
         for i in range(self.model.rowCount()):
             variables_section = self.model.item(i)
@@ -3307,12 +3326,12 @@ class edit_cfg_L1(QtWidgets.QWidget):
         for i in range(variables_section.rowCount()):
             variable_section = variables_section.child(i,0)
             # check to see if this variable is in the irga_only list
-            if (variable_section.text() in sieL1["fast_irga_only_labels"]):
-                instrument_type = sieL1["irga_flux"]
-            elif (variable_section.text() in sieL1["sonic_only_labels"]):
-                instrument_type = sieL1["sonic_flux"]
-            elif (variable_section.text() in sieL1["sonic_irga_labels"]):
-                instrument_type = ",".join([sieL1["sonic_flux"], sieL1["irga_flux"]])
+            if (variable_section.text() in sii["fast_irga_only_labels"]):
+                instrument_type = sii["irga_flux"]
+            elif (variable_section.text() in sii["sonic_only_labels"]):
+                instrument_type = sii["sonic_flux"]
+            elif (variable_section.text() in sii["sonic_irga_labels"]):
+                instrument_type = ",".join([sii["sonic_flux"], sii["irga_flux"]])
             else:
                 continue
             # iterate through the variable subsections 'Attr', 'xl' or 'csv'
@@ -3374,7 +3393,9 @@ class edit_cfg_L2(QtWidgets.QWidget):
         super(edit_cfg_L2, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.not_selectable = []
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_L2_gui()
@@ -3728,7 +3749,17 @@ class edit_cfg_L2(QtWidgets.QWidget):
             # multiple selections not allowed in 'Files' section
             return
         idx = idxs[0]
-        if idx.column() != 1:
+        if not idx.parent().isValid():
+            # get a list of existing entries in this section
+            existing_entries = self.get_existing_entries()
+            for item in ["plot_path", "file_path", "in_filename", "out_filename"]:
+                if item not in existing_entries:
+                    self.context_menu.actionAddFileEntry = QtWidgets.QAction(self)
+                    self.context_menu.actionAddFileEntry.setText("Add " + item)
+                    self.context_menu.addAction(self.context_menu.actionAddFileEntry)
+                    self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
+                    #add_separator = True
+        elif idx.column() != 1:
             return
         # check to see if we have the selected subsection
         key = idx.sibling(idx.row(), 0).data()
@@ -4035,6 +4066,21 @@ class edit_cfg_L2(QtWidgets.QWidget):
         self.update_tab_text()
         return
 
+    def add_fileentry(self):
+        """ Add a new entry to the [Files] section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        section = idx.model().itemFromIndex(idx)
+        # get the sender
+        s = self.context_menu.sender().text()
+        file_entry = s.rsplit(" ", 1)[-1]
+        dict_to_add = {file_entry: "Right click to browse"}
+        # add the subsection
+        self.add_subsection(section, dict_to_add)
+        # update the tab text
+        self.update_tab_text()
+
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         model = self.model
@@ -4202,6 +4248,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
         self.cfg = self.get_data_from_model()
         return
     def handleSelection(self, selected, deselected):
+        """ Handle selections made in the GUI.  If we are in the Plots section
+            then we enable multiple selections."""
         if len(self.view.selectedIndexes()) == 1:
             self.reset_selection_mode()
         for idx in selected.indexes():
@@ -4210,7 +4258,8 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 if idx.parent().data() == "Plots":
                     # allow selection of multiple items
                     self.view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-                    self.view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+                    # disable editing if more than 1 item selected
+                    #self.view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
                 else:
                     if self.view.selectionMode() == 3:
                         item.setSelectable(False)
@@ -4238,11 +4287,13 @@ class edit_cfg_L2(QtWidgets.QWidget):
         """ Remove an item from the view."""
         # loop over selected items in the tree
         idxs = self.view.selectedIndexes()
-        for idx in idxs:
+        while len(idxs) > 0:
+            idx = idxs[0]
             if idx.parent().isValid():
                 selected_item = idx.model().itemFromIndex(idx)
                 parent = selected_item.parent()
                 parent.removeRow(idx.row())
+                idxs = self.view.selectedIndexes()
         self.reset_selection_mode()
         self.update_tab_text()
         return
@@ -4307,7 +4358,9 @@ class edit_cfg_L3(QtWidgets.QWidget):
         super(edit_cfg_L3, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_L3_gui()
 
@@ -5387,7 +5440,9 @@ class edit_cfg_L4(QtWidgets.QWidget):
         super(edit_cfg_L4, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_l4_gui()
 
@@ -6431,7 +6486,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
         super(edit_cfg_L5, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_l5_gui()
 
@@ -7660,7 +7717,9 @@ class edit_cfg_L6(QtWidgets.QWidget):
         super(edit_cfg_L6, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_l6_gui()
 
@@ -8447,7 +8506,9 @@ class edit_cfg_mpt(QtWidgets.QWidget):
         super(edit_cfg_mpt, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_mpt_gui()
 
@@ -8787,7 +8848,9 @@ class edit_cfg_nc2csv(QtWidgets.QWidget):
         super(edit_cfg_nc2csv, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_nc2csv_gui()
 
@@ -9085,7 +9148,9 @@ class edit_cfg_windrose(QtWidgets.QWidget):
         super(edit_cfg_windrose, self).__init__()
         self.cfg = main_gui.file
         self.tabs = main_gui.tabs
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_windrose_gui()
 
@@ -9423,10 +9488,12 @@ class edit_cfg_windrose(QtWidgets.QWidget):
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
 class file_explore(QtWidgets.QWidget):
-    def __init__(self, main_gui):
+    def __init__(self, main_gui, source):
         super(file_explore, self).__init__()
         self.main_gui = main_gui
-        self.info = main_gui.info
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = source
+        self.info["tab"]["type"] = "netcdf"
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.ds = main_gui.ds
         self.tabs = main_gui.tabs

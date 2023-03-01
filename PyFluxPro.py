@@ -14,6 +14,7 @@ import matplotlib
 matplotlib.use("QT5Agg")
 from PyQt5 import QtCore, QtGui, QtWidgets
 from siphon.catalog import TDSCatalog
+import xarray
 # PFP modules
 sys.path.insert(0, 'scripts')
 from scripts import cfg
@@ -423,8 +424,6 @@ class pfp_main_ui(QtWidgets.QWidget):
         url = self.info["THREDDS"]["base_url"] + "/" + self.info["THREDDS"]["catalog_name"]
         self.catalogs = {"sites": TDSCatalog(url)}
         # display the THREDDS catalog in the GUI
-        self.info["tab"]["source"] = "thredds"
-        self.info["tab"]["type"] = "catalog"
         self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.display_thredds_tree(self)
         # add a tab for the THREDDS server tree
         tab_title = self.info["THREDDS"]["server_name"]
@@ -446,9 +445,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # file when it is needed instead of all at once making GUI response better
         self.ds = pfp_io.NetCDFRead(file_url, engine="xarray")
         # display the netcdf file in the GUI
-        self.info["tab"]["source"] = "thredds"
-        self.info["tab"]["type"] = "netcdf"
-        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
+        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self, "thredds")
         # add a tab for the netCDF file contents
         tab_title = os.path.basename(os.path.split(file_url)[1])
         tab_title = self.info["THREDDS"]["server_name"] + ": " + tab_title
@@ -521,8 +518,6 @@ class pfp_main_ui(QtWidgets.QWidget):
             # and save the control file
             self.file.write()
         # create a QtTreeView to edit the control file
-        self.info["tab"]["source"] = "local"
-        self.info["tab"]["type"] = "controlfile"
         if self.file["level"] in ["L1"]:
             # update control file to new syntax
             if not pfp_compliance.l1_update_controlfile(self.file): return
@@ -588,10 +583,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         self.file.close()
         # read the netCDF file to a data structure
         self.ds = pfp_io.NetCDFRead(file_uri, checktimestep=False, engine="xarray")
-        self.info["tab"]["source"] = "local"
-        self.info["tab"]["type"] = "netcdf"
         # display the netcdf file in the GUI
-        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
+        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self, "local")
         # add a tab for the netCDF file contents
         tab_title = os.path.basename(file_uri)
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
@@ -1011,6 +1004,11 @@ class pfp_main_ui(QtWidgets.QWidget):
         # here we trap user attempts to close the log window
         if (currentIndex == 0):
             return
+        # check to see if this is an xarray dataset (used by pfp_gui.file_explore())
+        if hasattr(self.tabs.tab_dict[currentIndex], "ds"):
+            if isinstance(self.tabs.tab_dict[currentIndex].ds["root"], xarray.Dataset):
+                # close the xarray Dataset
+                self.tabs.tab_dict[currentIndex].ds["root"].close()
         # check to see if the tab contents have been saved
         tab_text = str(self.tabs.tabText(currentIndex))
         if "*" in tab_text:
@@ -1033,6 +1031,8 @@ class pfp_main_ui(QtWidgets.QWidget):
                 self.tabs.tab_dict[n-1] = self.tabs.tab_dict.pop(n)
         # decrement the tab index
         self.tabs.tab_index_all = self.tabs.tab_index_all - 1
+        # update the enabling/disabling of menu items based on the current tab contents
+        self.handle_tabbar_clicked(self.tabs.currentIndex())
         return
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""

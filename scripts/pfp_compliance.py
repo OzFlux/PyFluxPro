@@ -1459,16 +1459,18 @@ def l1_check_irga_sonic_type(cfg, messages):
     """
     cfg_labels = sorted(list(cfg["Variables"].keys()))
     # IRGA signal strengths
-    signal_labels = ["Signal_CO2", "Signal_H2O"]
+    signal_labels = ["AGC_IRGA", "Signal_CO2", "Signal_H2O"]
     # PFP covariances
     h2o_covars = ["UxA", "UyA", "UzA"]
     co2_covars = ["UxC", "UyC", "UzC"]
     t_covars = ["UxT", "UyT", "UzT"]
     m_covars = ["UxUy", "UxUz", "UyUz"]
     # anything with 'IRGA' in the variable name
-    irga_labels = [l for l in cfg_labels if "IRGA" in l]
+    irga_labels = [l for l in cfg_labels if "_IRGA_" in l]
+    irga_diag_labels = ["Diag_IRGA"]
     # anything with 'SONIC' in the variable name
-    sonic_labels = [l for l in cfg_labels if "SONIC" in l]
+    sonic_labels = [l for l in cfg_labels if "_SONIC_" in l]
+    sonic_diag_labels = ["Diag_SONIC"]
     # fluxes from EddyPro, EasyFlux and the like
     fco2_labels = [l for l in cfg_labels if l[0:4] == "Fco2"]
     sco2_labels = [l for l in cfg_labels if l[0:4] == "Sco2"]
@@ -1476,13 +1478,14 @@ def l1_check_irga_sonic_type(cfg, messages):
     fe_labels = [l for l in cfg_labels if l[0:2] == "Fe"]
     fh_labels = [l for l in cfg_labels if l[0:2] == "Fh"]
     fm_labels = [l for l in cfg_labels if l[0:2] == "Fm"]
+    us_labels = [l for l in cfg_labels if l[0:5] == "ustar"]
     # lists of variables by instrument
     # fast IRGAs e.g. Li-7500RS etc used for turbulence measurements
-    fast_irga_only_labels = irga_labels + signal_labels
+    fast_irga_only_labels = irga_labels + signal_labels + irga_diag_labels
     # slow IRGAs e.g. Li-840 used for profile measurements
     slow_irga_only_labels = sco2_labels
     # sonic anemometer only
-    sonic_only_labels = sonic_labels + t_covars + m_covars + fh_labels + fm_labels
+    sonic_only_labels = sonic_labels + t_covars + m_covars + fh_labels + fm_labels + us_labels + sonic_diag_labels
     # sonic and fast IRGA
     sonic_irga_labels = h2o_covars + co2_covars + fco2_labels + fh2o_labels + fe_labels
     # all sonic or IRGA related variables
