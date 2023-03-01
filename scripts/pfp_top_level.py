@@ -1313,7 +1313,7 @@ def do_utilities_footprint_standard(main_ui, nc_file_uri):
         cfg = pfp_io.get_controlfilecontents(stdname)
         file_path = os.path.join(os.path.split(nc_file_uri)[0], "")
         in_filename = os.path.split(nc_file_uri)[1]
-        out_filename = in_filename.replace(".nc", "_Footprint.xls")
+        out_filename = in_filename.replace(".nc", "_fp.nc")
         cfg["Files"] = {"file_path": file_path, "in_filename": in_filename,
                         "out_filename": out_filename}
         pfp_footprint.calculate_footprint(cfg)

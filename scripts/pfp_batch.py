@@ -421,6 +421,9 @@ def do_mpt_batch(main_ui, cf_level):
             logger.error(error_message)
             continue
     return 1
+def do_footprint_batch(main_ui, cf_level):
+    logger.info("no batch processing for footprint yet")
+    return
 def do_L4_batch(main_ui, cf_level):
     sites = sorted(list(cf_level.keys()), key=int)
     for i in sites:
@@ -636,8 +639,8 @@ def do_levels_batch(main_ui):
             if not do_mpt_batch(main_ui, cf_batch["Levels"][level]):
                 break
         elif level.lower() == "footprint":
-            # ustar threshold from change point detection
-            if not do_mpt_batch(main_ui, cf_batch["Levels"][level]):
+            # Kormann-Meixner 2001 footprint calculation
+            if not do_footprint_batch(main_ui, cf_batch["Levels"][level]):
                 break
         elif level.lower() == "l4":
             # L4 processing

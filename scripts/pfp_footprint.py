@@ -9,16 +9,8 @@ import matplotlib
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     matplotlib.rcParams['toolbar'] = 'toolmanager'
-import matplotlib.dates as mdt
-import matplotlib.gridspec as gridspec
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.backend_tools import ToolToggleBase
 import numpy
-from scipy import stats
 import statsmodels.api as sm
-import windrose
 # PFP modules
 from scripts import constants as c
 from scripts import pfp_classes
@@ -37,63 +29,31 @@ Boundary-Layer Meteorology 99: 207. https://doi.org/10.1023/A:1018991015119 and
 Neftel, A., Spirig, C., Ammann, C., 2008: Application and test of a simple tool for operational footprint 
 evaluations. Environmental Pollution 152, 644-652. for details.
 
-This function calculates footprints within a fixed physical domain for a series of
-time steps, rotates footprints into the corresponding wind direction and aggregates
-all footprints to a footprint climatology. The percentage of source area is
-calculated for the footprint climatology.
-
-
 FKM Input
-    All vectors need to be of equal length (one value for each time step)
     zm       = Measurement height above displacement height (i.e. z-d) [m]
-               usually a scalar, but can also be a vector 
-    z0       = Roughness length [m]
-               usually a scalar, but can also be a vector 
-    umean    = Vector of mean wind speed at zm [ms-1] - enter [None] if not known 
-               Either z0 or umean is required. If both are given,
-               z0 is selected to calculate the footprint
+    z0       = Roughness length [m], calculated according to Kormann and Meixner, 2001
+    umean    = Vector of mean wind speed at zm [ms-1]
     ol       = Vector of Obukhov length [m]
-    sigmav   = Vector of standard deviation of lateral velocity fluctuations [ms-1]
+    Vsd      = Vector of standard deviation of lateral velocity fluctuations [ms-1]
                if not available it is calculated as 0.5*Ws (wind speed)
     ustar    = Vector of friction velocity [ms-1]
-    wind_dir = Vector of wind direction in degrees (of 360) for rotation of the footprint
-
-    Optional input:
-    domain       = Domain size as an array of [xmin xmax ymin ymax] [m].
-                   Footprint will be calculated for a measurement at [0 0 zm] m
-                   Default is smallest area including the r% footprint or [-1000 1000 -1000 1000]m,
-                   whichever smallest (80% footprint if r not given).
-    dx, dy       = Cell size of domain [m]
-                   Small dx, dy results in higher spatial resolution and higher computing time
-                   Default is dx = dy = 2 m. If only dx is given, dx=dy.
-    nx, ny       = Two integer scalars defining the number of grid elements in x and y
-                   Large nx/ny result in higher spatial resolution and higher computing time
-                   Default is nx = ny = 1000. If only nx is given, nx=ny.
-                   If both dx/dy and nx/ny are given, dx/dy is given priority if the domain is also specified.
-    pulse        = Display progress of footprint calculations every pulse-the footprint (e.g., "100")
-    verbosity    = Level of verbosity at run time: 0 = completely silent, 1 = notify only of fatal errors,
-                   2 = all notifications
-FKM output
-    FKM      = Structure array with footprint climatology data for measurement at [0 0 zm] m
-    x_2d     = x-grid of 2-dimensional footprint [m]
-    y_2d     = y-grid of 2-dimensional footprint [m]
-    fclim_2d = Normalised footprint function values of footprint climatology [m-2]
-    n        = Number of footprints calculated and included in footprint climatology
-    flag_err = 0 if no error, 1 in case of error, 2 if not all contour plots (rs%) within specified domain
+    Ws       = Vector of wind direction in degrees (of 360) for rotation of the footprint
 
 Footprint calculation following the Kormann-Meixner Approach
 1st Version by Marx Stampfli, stampfli mathematics, Bern, Switzerland
 Revision December 2006, C. Spirig and A. Neftel, Agroscope, Zurich, Switzerland
             ported into python CM Ewenz, Adelaide Nov 2015 to May 2016
 Array of lower and upper ranges for following parameters
-             (empty,Xcoord,Ycoord,U_star,     LM,Std_v,Wdir,   zm,U_meas,empty)
-lrange = Array(0,    -5000, -5000,  0.01,-999999,    0,   0,    0,     0,    0)
-urange = Array(0,     5000,  5000,     5, 999999,   20, 360, 1000,    30,    0)
+        ustar,     LM,  Vsd,  Wd,   zm,    Ws
+lrange = 0.01,-999999,    0,   0,    0,     0
+urange =    5, 999999,   20, 360, 1000,    30
 
 Created: May 2018 Cacilia Ewenz
-version: 0.1
-last change: 08/06/2018 Cacilia Ewenz
-Copyright (C) 2018, Cacilia Ewenz
+         version: 0.1
+Changes: 08/06/2018 Cacilia Ewenz
+         22/02/2023 Calculate Kormann-Meixner parameters: A, B, C, D, E, x0, KM_p01a, KM_p01b, KM_p01c
+         
+Copyright (C) 2018, 2019, 2020, 2021, 2022, 2023, Cacilia Ewenz
 """
 logger = logging.getLogger("pfp_log")
 
@@ -107,8 +67,7 @@ def calculate_footprint(cf):
     """
     in_filename = pfp_io.get_infilenamefromcf(cf)
     if not pfp_utils.file_exists(in_filename):
-        msg = " Unable to find netCDF file " + in_filename
-        logger.error(msg)
+        logger.error(" Unable to find netCDF file " + in_filename)
         return
     ds = pfp_io.NetCDFRead(in_filename)
     if ds.info["returncodes"]["value"] != 0:
@@ -122,17 +81,20 @@ def calculate_footprint(cf):
     # check the required variables are in the data structure
     if not calculate_footprint_check_variables(ds_fkm, fpinfo):
         return
-    # update the info dictionary
-    fpinfo["start"] = ds_fkm.root["Attributes"]["time_coverage_start"]
-    fpinfo["end"] = ds_fkm.root["Attributes"]["time_coverage_end"]
-    fpinfo["site_name"] = ds_fkm.root["Attributes"]["site_name"]
     # (1) Evaluate input data and apply constraints
+    logger.info("Check footprint input variables")    
     check_fkm_inputs(ds_fkm,fpinfo)
     # (2) get a mask for all input variables
+    logger.info("Mask footprint input variables to valids")    
     composite_mask(ds_fkm, fpinfo)
     # (3) calculate Kormann and Meixner, 2001 footprint
+    logger.info("Calculate Kormann-Meixner footprint variables")    
     kormann_meixner(ds_fkm, fpinfo)
-    # (4) write data to level 3 output netCDF file
+    # (4) Do range checks on output parameter
+    # apply the quality control checks (range, diurnal, exclude dates and exclude hours
+    #pfp_ck.do_qcchecks(cf, ds_fkm) or directly pfp_ck.do_rangecheck(cf,ds,section,series,code=2)
+    # (5) write data to level 3 output netCDF file
+    logger.info("Write output to L3 footprint file")        
     out_filename = fpinfo["out_filename"]
     pfp_io.NetCDFWrite(out_filename, ds_fkm)
     logger.info("Finished Footprint calculation")
@@ -140,7 +102,7 @@ def calculate_footprint(cf):
     return
 
 def calculate_footprint_check_variables(ds, fpinfo):
-    """ Check the variables named in the control file exist in the data structure."""
+    logger.info("Check the variables named in the control file exist in the data structure.")
     ok = True
     labels = list(ds.root["Variables"].keys())
     for item in ["Fsd", "Wd", "Ws", "ustar", "Vsd", "ol"]:
@@ -180,12 +142,6 @@ def calculate_footprint_parse_controlfile(cf):
     except:
         fpinfo["out_filename"] = fpinfo["in_filename"].replace(".nc", "_fp.nc")
     # get the day/night separator Fsd name and its threshold
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "number_speed_bins", default="8")
-    fpinfo["nbins"] = int(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "speed_bin_width", default="1")
-    fpinfo["wbins"] = int(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "number_sectors", default="16")
-    fpinfo["nsectors"] = int(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default="10")
     fpinfo["Fsd_threshold"] = int(opt)
     # get the wind direction and wind speed variable names
@@ -214,10 +170,10 @@ def check_fkm_inputs(ds,fpinfo):
     logger.info('Check range for input variables')
     
     # get the required variables
-    ol = pfp_utils.GetVariable(ds, fpinfo["ol"])
-    Ws = pfp_utils.GetVariable(ds, fpinfo["Ws"])
-    Wd = pfp_utils.GetVariable(ds, fpinfo["Wd"])
-    Vsd = pfp_utils.GetVariable(ds, fpinfo["Vsd"])
+    ol    = pfp_utils.GetVariable(ds, fpinfo["ol"])
+    Ws    = pfp_utils.GetVariable(ds, fpinfo["Ws"])
+    Wd    = pfp_utils.GetVariable(ds, fpinfo["Wd"])
+    Vsd   = pfp_utils.GetVariable(ds, fpinfo["Vsd"])
     ustar = pfp_utils.GetVariable(ds, fpinfo["ustar"])
     
     # get the instrument height above the displacement height (2/3*canopy_height)
@@ -231,6 +187,7 @@ def check_fkm_inputs(ds,fpinfo):
     # create a variable dictionary for zmol
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     ldt = pfp_utils.GetVariable(ds, "DateTime")
+    # Create zm/L variable
     zmol = pfp_utils.CreateEmptyVariable("zmol", nrecs, datetime=ldt["Data"])
     # create QC flags
     zeros = numpy.zeros(nrecs, dtype=numpy.int32)
@@ -249,14 +206,19 @@ def check_fkm_inputs(ds,fpinfo):
         msg = "zm (measurement height) must be larger than zero."
         logger.error(msg)
         return False
-    z0["Data"] = numpy.ma.masked_less(z0["Data"], 0.0, copy=True)
-    zmol["Data"] = numpy.ma.masked_less(zmol["Data"], -3.0, copy=True)
-    zmol["Data"] = numpy.ma.masked_greater(zmol["Data"], 3.0, copy=True)
-    Vsd["Data"] = numpy.ma.masked_less_equal(Vsd["Data"], 0.0, copy=True)
+    z0["Data"]    = numpy.ma.masked_less(z0["Data"], 0.0, copy=True)
+    zmol["Data"]  = numpy.ma.masked_less(zmol["Data"], -3.0, copy=True)
+    zmol["Data"]  = numpy.ma.masked_greater(zmol["Data"], 3.0, copy=True)
+    ol["Data"]    = numpy.ma.masked_less(ol["Data"], -99999.0, copy=True)
+    ol["Data"]    = numpy.ma.masked_greater(ol["Data"], 99999.0, copy=True)
+    Vsd["Data"]   = numpy.ma.masked_less_equal(Vsd["Data"], 0.0, copy=True)
+    Vsd["Data"]   = numpy.ma.masked_greater_equal(Vsd["Data"], 20.0, copy=True)
     ustar["Data"] = numpy.ma.masked_less_equal(ustar["Data"], 0.1, copy=True)
-    Ws["Data"] = numpy.ma.masked_less_equal(Ws["Data"], 0.1, copy=True)
-    Wd["Data"] = numpy.ma.masked_greater(Wd["Data"], 360.0, copy=True)
-    Wd["Data"] = numpy.ma.masked_less(Wd["Data"], 0.0, copy=True)
+    ustar["Data"] = numpy.ma.masked_greater_equal(ustar["Data"], 5.0, copy=True)
+    Ws["Data"]    = numpy.ma.masked_less_equal(Ws["Data"], 0.1, copy=True)
+    Ws["Data"]    = numpy.ma.masked_greater_equal(Ws["Data"], 30.0, copy=True)
+    Wd["Data"]    = numpy.ma.masked_greater(Wd["Data"], 360.0, copy=True)
+    Wd["Data"]    = numpy.ma.masked_less(Wd["Data"], 0.0, copy=True)
     return True
 
 def composite_mask(ds, fpinfo):
@@ -266,14 +228,14 @@ def composite_mask(ds, fpinfo):
     Author: CE
     Date: Feb 2023
     """
-    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    ldt   = pfp_utils.GetVariable(ds, "DateTime")
     # get the required variables
-    z0 = pfp_utils.GetVariable(ds, "z0")
-    zmol = pfp_utils.GetVariable(ds, "zmol")
-    ol = pfp_utils.GetVariable(ds, fpinfo["ol"])
-    Ws = pfp_utils.GetVariable(ds, fpinfo["Ws"])
-    Wd = pfp_utils.GetVariable(ds, fpinfo["Wd"])
-    Vsd = pfp_utils.GetVariable(ds, fpinfo["Vsd"])
+    z0    = pfp_utils.GetVariable(ds, "z0")
+    zmol  = pfp_utils.GetVariable(ds, "zmol")
+    ol    = pfp_utils.GetVariable(ds, fpinfo["ol"])
+    Ws    = pfp_utils.GetVariable(ds, fpinfo["Ws"])
+    Wd    = pfp_utils.GetVariable(ds, fpinfo["Wd"])
+    Vsd   = pfp_utils.GetVariable(ds, fpinfo["Vsd"])
     ustar = pfp_utils.GetVariable(ds, fpinfo["ustar"])
 
     # get a composite mask over all variables needed for Kormann-Meixner 2001 footprint
@@ -282,24 +244,15 @@ def composite_mask(ds, fpinfo):
         mask_item = numpy.ma.getmaskarray(item)
         mask_all = numpy.ma.mask_or(mask_all, mask_item)
     
-    # and then apply the composite mask to all variables and remove masked elements
-    #Ws["Data"] = list(numpy.ma.compressed(numpy.ma.masked_where(mask_all == True, Ws["Data"])))
-    #ol["Data"] = list(numpy.ma.compressed(numpy.ma.masked_where(mask_all == True, ol["Data"])))
-    #zmol["Data"] = list(numpy.ma.compressed(numpy.ma.masked_where(mask_all == True, zmol["Data"])))
-    #Vsd["Data"] = list(numpy.ma.compressed(numpy.ma.masked_where(mask_all == True, Vsd["Data"])))
-    #ustar["Data"] = list(numpy.ma.compressed(numpy.ma.masked_where(mask_all == True, ustar["Data"])))
-    #Wd["Data"] = list(numpy.ma.compressed(numpy.ma.masked_where(mask_all == True, Wd["Data"])))
-    #z0["Data"] = list(numpy.ma.compressed(numpy.ma.masked_where(mask_all == True, z0["Data"])))
-    #ldt["Data"] = list(numpy.ma.compressed(numpy.ma.masked_where(mask_all == True, ldt["Data"])))
     # apply composite mask but don't remove masked elements
-    Ws["Data"] = numpy.ma.masked_where(mask_all == True, Ws["Data"])
-    ol["Data"] = numpy.ma.masked_where(mask_all == True, ol["Data"])
-    zmol["Data"] = numpy.ma.masked_where(mask_all == True, zmol["Data"])
-    Vsd["Data"] = numpy.ma.masked_where(mask_all == True, Vsd["Data"])
+    Ws["Data"]    = numpy.ma.masked_where(mask_all == True, Ws["Data"])
+    ol["Data"]    = numpy.ma.masked_where(mask_all == True, ol["Data"])
+    zmol["Data"]  = numpy.ma.masked_where(mask_all == True, zmol["Data"])
+    Vsd["Data"]   = numpy.ma.masked_where(mask_all == True, Vsd["Data"])
     ustar["Data"] = numpy.ma.masked_where(mask_all == True, ustar["Data"])
-    Wd["Data"] = numpy.ma.masked_where(mask_all == True, Wd["Data"])
-    z0["Data"] = numpy.ma.masked_where(mask_all == True, z0["Data"])
-    ldt["Data"] = numpy.ma.masked_where(mask_all == True, ldt["Data"])
+    Wd["Data"]    = numpy.ma.masked_where(mask_all == True, Wd["Data"])
+    z0["Data"]    = numpy.ma.masked_where(mask_all == True, z0["Data"])
+    ldt["Data"]   = numpy.ma.masked_where(mask_all == True, ldt["Data"])
     if len(ustar["Data"]) == 0:
         msg = "No footprint input data for "+str(ldt[0])+" to "+str(ldt[-1])
         logger.warning(msg)
@@ -314,15 +267,15 @@ def kormann_meixner(ds, fpinfo):
     Author: CE
     Date: Feb 2023
     """
-    ldt = pfp_utils.GetVariable(ds, "DateTime")
+    ldt   = pfp_utils.GetVariable(ds, "DateTime")
     nrecs = len(ldt["Data"])
     # get the required variables
-    z0 = pfp_utils.GetVariable(ds, "z0")
-    ol = pfp_utils.GetVariable(ds, fpinfo["ol"])
-    zmol = pfp_utils.GetVariable(ds, "zmol")
-    Ws = pfp_utils.GetVariable(ds, fpinfo["Ws"])
-    Wd = pfp_utils.GetVariable(ds, fpinfo["Wd"])
-    Vsd = pfp_utils.GetVariable(ds, fpinfo["Vsd"])
+    z0    = pfp_utils.GetVariable(ds, "z0")
+    ol    = pfp_utils.GetVariable(ds, fpinfo["ol"])
+    zmol  = pfp_utils.GetVariable(ds, "zmol")
+    Ws    = pfp_utils.GetVariable(ds, fpinfo["Ws"])
+    Wd    = pfp_utils.GetVariable(ds, fpinfo["Wd"])
+    Vsd   = pfp_utils.GetVariable(ds, fpinfo["Vsd"])
     ustar = pfp_utils.GetVariable(ds, fpinfo["ustar"])
     # create QC flags
     zeros = numpy.zeros(nrecs, dtype=numpy.int32)
@@ -407,6 +360,7 @@ def kormann_meixner(ds, fpinfo):
     E = pfp_utils.CreateEmptyVariable("E", nrecs, datetime=ldt["Data"])
     KM_p01a = pfp_utils.CreateEmptyVariable("KM_p01a", nrecs, datetime=ldt["Data"])
     KM_p01b = pfp_utils.CreateEmptyVariable("KM_p01b", nrecs, datetime=ldt["Data"])
+    KM_p01c = pfp_utils.CreateEmptyVariable("KM_p01c", nrecs, datetime=ldt["Data"])
     A["Data"] = 1 + mu
     B["Data"] = Umaj * (zm**r) / r / r / Kmaj
     C["Data"] = (B["Data"]**mu) /GammaProxmu
@@ -416,18 +370,31 @@ def kormann_meixner(ds, fpinfo):
     philevel = 0.01
     x0 = xPhiMax / 3
     p = philevel * xPhiMax
-    for _ in [1,2,3,4,5]:
+    for _ in [0,1,2,3,4,5]:
         Fm = C["Data"] * numpy.exp(-B["Data"] / x0) * x0**(-A["Data"]) - p
         dFm = (C["Data"] * numpy.exp(-B["Data"] / x0) * x0**(-A["Data"])) / x0**2 * -(A["Data"] * x0 - B["Data"]) - p
         x0 = x0 - Fm / dFm
     KM_p01a["Data"] = x0
     x0 = xPhiMax * 3
     p = philevel * xPhiMax
-    for _ in [1,2,3,4,5]:
+    for _ in [0,1,2,3,4,5]:
         Fm = C["Data"] * numpy.exp(-B["Data"] / x0) * x0**(-A["Data"]) - p
         dFm = (C["Data"] * numpy.exp(-B["Data"] / x0) * x0**(-A["Data"])) / x0**2 * -(A["Data"] * x0 - B["Data"]) - p
         x0 = x0 - Fm / dFm
     KM_p01b["Data"] = x0
+    # set x0 = center of ellipse
+    x0 = 0.5*(KM_p01b["Data"] - KM_p01a["Data"])
+    # Delivers y for which phi(xcenter,y)=level, i.e. "width of ellipse" ellipse parameter d: short axes of ellipse
+    #for _ in [0,1,2,3,4,5]:
+    #    y = D["Data"] * x ^ E["Data"] * Sqr(2) * Sqr(Log(C["Data"] * Exp(-B["Data"] / x) / Sqr(2 * PI) / x ^ (A["Data"] + E["Data"]) / D["Data"] / p))
+    #    Gm = (1 - y ^ 2 / D["Data"] ^ 2 / x ^ (2 * E["Data"])) * E["Data"] / x - xi / x ^ 2 + (1 + mu) / x
+    #    y = D["Data"] * x ^ E["Data"] * Sqr(2) * Sqr(Log(C["Data"] * Exp(-B["Data"] / x) / Sqr(2 * PI) / x ^ (A["Data"] + E["Data"]) / D["Data"] / p))
+    #    dGm = 2 * (y ^ 2 * E["Data"] ^ 2) / D["Data"] ^ 2 / x ^ (2 * E["Data"] + 2) - (1 - y ^ 2 / D["Data"] ^ 2 / x ^ (2 * E["Data"])) * E["Data"] / x ^ 2 + 2 * xi / x ^ 3 + (1 + mu) / x ^ 2
+    #    x0 = x0 - Gm / dGm
+    #   
+    #    ye = D["Data"] * x0 ^ E["Data"] * Sqr(2) * Sqr(Log(C["Data"] * Exp(-B["Data"] / x0) / Sqr(2 * PI) / x0 ^ (A["Data"] + E["Data"]) / D["Data"] / (p)))
+    #    EllipseMax = ye
+    
     # get the QC flag
     A["Flag"] = numpy.where(numpy.ma.getmaskarray(A["Data"]) == True, ones, zeros)
     B["Flag"] = numpy.where(numpy.ma.getmaskarray(B["Data"]) == True, ones, zeros)
@@ -436,6 +403,7 @@ def kormann_meixner(ds, fpinfo):
     E["Flag"] = numpy.where(numpy.ma.getmaskarray(E["Data"]) == True, ones, zeros)
     KM_p01a["Flag"] = numpy.where(numpy.ma.getmaskarray(KM_p01a["Data"]) == True, ones, zeros)
     KM_p01b["Flag"] = numpy.where(numpy.ma.getmaskarray(KM_p01b["Data"]) == True, ones, zeros)
+    KM_p01c["Flag"] = numpy.where(numpy.ma.getmaskarray(KM_p01c["Data"]) == True, ones, zeros)
     # update the variable attributes
     A["Attr"]["units"] = "1"
     B["Attr"]["units"] = "1"
@@ -444,13 +412,15 @@ def kormann_meixner(ds, fpinfo):
     E["Attr"]["units"] = "1"
     KM_p01a["Attr"]["units"] = "m"
     KM_p01b["Attr"]["units"] = "m"
+    KM_p01c["Attr"]["units"] = "m"
     A["Attr"]["long_name"] = "Kormann-Meixner parameter A"
     B["Attr"]["long_name"] = "Kormann-Meixner parameter A"
     C["Attr"]["long_name"] = "Kormann-Meixner parameter A"
     D["Attr"]["long_name"] = "Kormann-Meixner parameter A"
     E["Attr"]["long_name"] = "Kormann-Meixner parameter A"
-    KM_p01a["Attr"]["long_name"] = "Kormann-Meixner ellipse 1% value close distance from the tower"
-    KM_p01b["Attr"]["long_name"] = "Kormann-Meixner ellipse 1% value far distance from the tower"
+    KM_p01a["Attr"]["long_name"] = "Kormann-Meixner intersection point of 1%- ellipse nearest to sensor"
+    KM_p01b["Attr"]["long_name"] = "Kormann-Meixner intersection point of 1%- ellipse farthest from sensor"
+    KM_p01c["Attr"]["long_name"] = "Kormann-Meixner half width of 1%-ellipse"
     pfp_utils.CreateVariable(ds, A)
     pfp_utils.CreateVariable(ds, B)
     pfp_utils.CreateVariable(ds, C)
@@ -458,6 +428,7 @@ def kormann_meixner(ds, fpinfo):
     pfp_utils.CreateVariable(ds, E)
     pfp_utils.CreateVariable(ds, KM_p01a)
     pfp_utils.CreateVariable(ds, KM_p01b)
+    pfp_utils.CreateVariable(ds, KM_p01c)
     return
 
 def crosswind_std(ds, fpinfo):
@@ -490,7 +461,7 @@ def crosswind_std(ds, fpinfo):
 
 def z0calc(ds, fpinfo):
     # aerodynamic roughness length, psi functions according to Dyer (1974)
-    logger.info(' Calculating aerodynamic roughness length, Kormann and Meixner (2001) (Eqs. 31 to 35)')
+    logger.info('Calculating aerodynamic roughness length, Kormann and Meixner (2001) (Eqs. 31 to 35)')
     # get the required variables
     LM = pfp_utils.GetVariable(ds, fpinfo["ol"])
     Ws = pfp_utils.GetVariable(ds, fpinfo["Ws"])
