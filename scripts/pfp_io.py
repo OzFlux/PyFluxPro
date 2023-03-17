@@ -17,6 +17,7 @@ import dateutil
 import netCDF4
 import numpy
 import pandas
+from pandas.errors import ParserError
 import xlwt
 import xlsxwriter
 from PyQt5 import QtWidgets
@@ -738,23 +739,39 @@ def ReadExcelWorkbook(l1_info):
     return dfs
 
 def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
-    """ Get the timestamp column name."""
     df = dfs[df_name]
-    # is_datetime64_dtype should trap '<M8[ns]' and '>M8[ns]' as well
-    # as datetim64[ns]
-    if pandas.api.types.is_datetime64_dtype(df[df.columns[0]]):
-        timestamp = df.columns[0]
-    # pandas sometimes returns a column that can be interpreted as
-    # datetime as dtype object
-    elif pandas.api.types.is_object_dtype(df[df.columns[0]]):
-        # convert dtype object to datetime64[ns]
-        df[df.columns[0]] = pandas.to_datetime(df[df.columns[0]],
-                                               infer_datetime_format=True,
-                                               errors='coerce')
-        timestamp = df.columns[0]
+    got_timestamp = False
+    more_than_one = False
+    if not got_timestamp:
+        dt_columns = [c for c in df.columns if pandas.api.types.is_datetime64_dtype(df[c])]
+        if len(dt_columns) > 1:
+            more_than_one = True
+        for dt_column in dt_columns:
+            try:
+                df[dt_column] = pandas.to_datetime(df[dt_column])
+                timestamp = dt_column
+                got_timestamp = True
+                break
+            except (ParserError, ValueError):
+                pass
+    if not got_timestamp:
+        obj_columns = [c for c in df.columns[df.dtypes=='object']]
+        if len(obj_columns) > 1:
+            more_than_one = True
+        for obj_column in obj_columns:
+            try:
+                df[obj_column] = pandas.to_datetime(df[obj_column])
+                timestamp = obj_column
+                got_timestamp = True
+                break
+            except (ParserError,ValueError):
+                pass
+    if got_timestamp:
+        if more_than_one:
+            msg = " Using " + timestamp + " as the timestamp for sheet " + df_name
+            logger.info(msg)
     else:
-        # can't interpret column 0 as a datetime so delete sheet
-        msg = " Unable to convert column " + df.columns[0] + " to a time stamp"
+        msg = " Unable to find a timestamp for " + df_name + ", deleting ..."
         logger.error(msg)
         del dfs[df_name]
         del l1_info["read_excel"]["xl_sheets"][df_name]
