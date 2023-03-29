@@ -14,11 +14,12 @@ import xlrd
 # PFP modules
 cwd = os.getcwd()
 sys.path.insert(0, cwd[:cwd.index("utilities")-1])
-import scripts.constants as c
-import scripts.pfp_io as pfp_io
-import scripts.pfp_log as pfp_log
-import scripts.pfp_ts as pfp_ts
-import scripts.pfp_utils as pfp_utils
+from scripts import constants as c
+from scripts import pfp_classes
+from scripts import pfp_io
+from scripts import pfp_log
+from scripts import pfp_ts
+from scripts import pfp_utils
 
 now = datetime.datetime.now()
 log_file_name = "cleanup_" + now.strftime("%Y%m%d%H%M") + ".log"
@@ -245,8 +246,7 @@ def change_variable_attributes(std, ds):
         pfp_utils.CreateVariable(ds, variable)
 
     # parse variable attributes to new format, remove deprecated variable attributes
-    # and fix valid_range == "-1e+35,1e+35"
-    msg = " Remove deprecated, check valid_range"
+    msg = " Remove deprecated variable attributes"
     logger.info(msg)
     tmp = std["Variables"]["deprecated"]["attributes"]
     deprecated = pfp_utils.string_to_list(tmp)
@@ -259,16 +259,31 @@ def change_variable_attributes(std, ds):
         for vattr in deprecated:
             if vattr in list(variable["Attr"].keys()):
                 del variable["Attr"][vattr]
-        # fix valid_range == "-1e+35,1e+35"
+        pfp_utils.CreateVariable(ds, variable)
+    # check the valid range
+    msg = " Check the valid_range variable attribute"
+    logger.info(msg)
+    labels = list(ds.root["Variables"].keys())
+    for label in labels:
+        variable = pfp_utils.GetVariable(ds, label)
         if "valid_range" in variable["Attr"]:
             valid_range = variable["Attr"]["valid_range"]
-            if valid_range == "-1e+35,1e+35":
-                d = numpy.ma.min(variable["Data"])
-                mn = pfp_utils.round2significant(d, 4, direction='down')
-                d = numpy.ma.max(variable["Data"])
-                mx = pfp_utils.round2significant(d, 4, direction='up')
+            if check_valid_range(valid_range):
+                pass
+            else:
+                if (("rangecheck_upper" in variable["Attr"]) and
+                    ("rangecheck_lower" in variable["Attr"])):
+                    rc_upper = variable["Attr"]["rangecheck_upper"]
+                    mx = max([float(s) for s in rc_upper.split(",")])
+                    rc_lower = variable["Attr"]["rangecheck_lower"]
+                    mn = min([float(s) for s in rc_lower.split(",")])
+                else:
+                    mn = numpy.ma.min(variable["Data"])
+                    mx = numpy.ma.max(variable["Data"])
+                mn = pfp_utils.round2significant(mn, 4, direction='down')
+                mx = pfp_utils.round2significant(mx, 4, direction='up')
                 variable["Attr"]["valid_range"] = repr(mn) + "," + repr(mx)
-        pfp_utils.CreateVariable(ds, variable)
+                pfp_utils.CreateVariable(ds, variable)
 
     # ugly hack to deal with CO2_IRGA_Av, CO2_IRGA_Sd and CO2_IRGA_Vr units
     msg = " Converting CO2 units"
@@ -416,6 +431,37 @@ def change_variable_names(std, ds):
             ds.root["Variables"][new_label] = ds.root["Variables"].pop(label)
     return
 
+def check_valid_range(valid_range):
+    """
+    Check the valid_range variable attribute has the correct format.
+    The rules are:
+     - must be a string
+     - must have 2 parts separated by a comma
+     - each part must be a number
+    """
+    ok = True
+    # check valid_range is a string
+    if not isinstance(valid_range, str):
+        ok = False
+    # check it has 2 parts separated by a comma
+    if ok:
+        parts = valid_range.split(",")
+        if len(parts) != 2:
+            ok = False
+    # check each part is a number
+    if ok:
+        for part in parts:
+            if not is_number(part):
+                ok = False
+    return ok
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
 def consistent_Fco2_storage(std, ds, site):
     """
     Purpose:
@@ -474,7 +520,7 @@ def consistent_Fco2_storage(std, ds, site):
         # calculate single point Fc storage term
         cf = {"Options": {"zms": zms}}
         info = {"CO2": {"label": "CO2", "height": zms}}
-        pfp_ts.CalculateFco2StorageSinglePoint(cf, ds, info)
+        pfp_ts.CalculateSco2SinglePoint(cf, ds, info)
         # convert Fco2_single from mg/m2/s to umol/m2/s
         pfp_utils.CheckUnits(ds, "Fco2_single", "umol/m^2/s", convert_units=True)
     return
@@ -532,7 +578,7 @@ def include_variables(std, ds_in):
     msg = " Including variables ..."
     logger.info(msg)
     # get a new data structure
-    ds_out = pfp_io.DataStructure()
+    ds_out = pfp_classes.DataStructure()
     # copy the global attributes
     for gattr in ds_in.root["Attributes"]:
         ds_out.root["Attributes"][gattr] = ds_in.root["Attributes"][gattr]
@@ -618,13 +664,13 @@ else:
 rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "WD2TB", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "OzFlux", "Sites")
-#sites = ["DalyUncleared"]
-sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
-         "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
-         "Fletcherview", "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield",
-         "Longreach", "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek",
-         "Samford", "SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra",
-         "Whroo", "WombatStateForest", "Yanco"]
+sites = ["Fletcherview"]
+#sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
+         #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
+         #"Fletcherview", "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield",
+         #"Longreach", "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek",
+         #"Samford", "SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra",
+         #"Whroo", "WombatStateForest", "Yanco"]
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
     op = os.path.join(rp, site, "Data", "Processed")

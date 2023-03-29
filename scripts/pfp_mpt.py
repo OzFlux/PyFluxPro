@@ -162,6 +162,7 @@ def run_mpt_code(cf, ds, mpt):
             cmd = [ustar_mp_exe, "-input_path="+in_full_path, "-output_path="+out_base_path]
         elif ts == 60:
             cmd = [ustar_mp_exe, "-input_path="+in_full_path, "-output_path="+out_base_path, "-hourly"]
+        print(year, log_file_path)
         subprocess.call(cmd, stdout=mptlogfile)
         if os.path.isfile(out_full_path):
             out_file_paths[year] = out_full_path

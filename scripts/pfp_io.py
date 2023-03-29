@@ -1410,14 +1410,42 @@ def NetCDFRead(nc_file_uri, checktimestep=True, fixtimestepmethod="round", updat
         groups = nc_file.groups.keys()
         nc_file.close()
         if len(groups) == 0:
-            ds["root"] = xarray.open_dataset(nc_file_uri)
+            ds["root"] = xarray.open_dataset(nc_file_uri, engine="netcdf4")
             ds["root"] = ds["root"].squeeze()
+            # clean up xarray's interpretation of some variable attributes
+            netcdf_read_xarray_attr_to_string(ds["root"])
         else:
             ds["root"] = xarray.open_dataset(nc_file_uri)
             for group in groups:
                 ds[group] = xarray.open_dataset(nc_file_uri, group=group)
                 ds[group] = ds[group].squeeze()
+                # clean up xarray's interpretation of some variable attributes
+                netcdf_read_xarray_attr_to_string(ds[group])
     return ds
+
+def netcdf_read_xarray_attr_to_string(xrds):
+    """
+    Purpose:
+     Fix xarray's interpretation of some variable attributes.
+     PFP writes the valid_range variable attribute as 2 floating
+     point numbers separated by a comma.  xarray returns this
+     attribute as a numpy.ndarray which displays as [0., 35.] when
+     the file is opened in the PFP GUI.
+     This routine converts any attribute value written as a numpy.ndarray
+     to a comma separated string.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: March 2023
+    """
+    labels = list(xrds)
+    for label in labels:
+        attrs = xrds[label].attrs
+        for attr in attrs:
+            if isinstance(attrs[attr], numpy.ndarray):
+                value = ",".join([str(x) for x in attrs[attr]])
+                xrds[label].attrs[attr] = value
+    return
 
 def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3, engine="netcdf4"):
     """
@@ -1476,12 +1504,21 @@ def NetCDFWrite(nc_file_path, ds, nc_type='NETCDF4', outputlist=None, ndims=3, e
                 if dim not in ds[group].dims:
                     # only add if not already present
                     ds[group] = ds[group].expand_dims({dim: 1})
+            # use the same dimension order as pfp_io.nc_write_series()
+            ds[group] = ds[group].transpose("time", "latitude", "longitude")
+            # use encoding to suppress addition of _FillValue to variable attributes
+            labels = list(ds[group])
+            encoding = {}
+            for label in labels:
+                encoding[label] = {"_FillValue": None}
         # write the root group to the netCDF file
-        ds["root"].to_netcdf(nc_file_path, "w", format="NETCDF4")
+        ds["root"].to_netcdf(nc_file_path, "w", format="NETCDF4",
+                             encoding=encoding)
         groups.remove("root")
         # write the remaining groups to the netCDF file
         for group in groups:
-            ds[group].to_netcdf(nc_file_path, "a", group=group, format="NETCDF4")
+            ds[group].to_netcdf(nc_file_path, "a", group=group, format="NETCDF4",
+                                encoding=encoding)
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):
