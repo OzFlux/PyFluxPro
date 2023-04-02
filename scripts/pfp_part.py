@@ -196,7 +196,6 @@ class partition(object):
                                      "E0_av": -9999, "E0_se": -9999,
                                      "E0_av_qc": -9999, "E0_se_qc": -9999}
             df = self.get_subset(date, size = window_size, mode = 'night')
-            #print(date, self.subset_start, self.subset_end)
             self.results["E0"][n]["start"] = self.subset_start
             self.results["E0"][n]["end"] = self.subset_end
             if len(df) == 0:

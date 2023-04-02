@@ -2633,6 +2633,9 @@ def MergeSeriesUsingDict(ds, info, merge_order="standard"):
                 # replace bad primary with good secondary
                 data[index] = ds.root["Variables"][label]["Data"][index].copy()
                 flag1[index] = ds.root["Variables"][label]["Flag"][index].copy()
+                if ((attr["long_name"] == "") and (attr["units"] == "")):
+                    for vattr in ["long_name", "statistic_type", "units"]:
+                        attr[vattr] = ds.root["Variables"][label]["Attr"][vattr]
                 s2add = pfp_utils.append_string(s2add, ds.root["Variables"][label]["Attr"][descr_level], caps=False)
             else:
                 logger.error(" MergeSeries: secondary input series "+label+" not found")

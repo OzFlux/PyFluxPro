@@ -1144,6 +1144,11 @@ if (__name__ == '__main__'):
     # get the application name and version
     pfp_version = cfg.version_name + " " + cfg.version_number
     app = QtWidgets.QApplication(["PyFluxPro"])
+    # set the minimum font size for the application to 11 pt
+    font = app.font()
+    point_size = max([font.pointSize(), 11])
+    font.setPointSize(point_size)
+    app.setFont(font)
     # get a text editor for the log window
     textBox = QtWidgets.QTextEdit()
     textBox.setReadOnly(True)

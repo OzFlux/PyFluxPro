@@ -795,6 +795,9 @@ def gfalternate_loadoutputdata(ds_tower, data_dict, l4a):
                            (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False))[0]
     ds_tower.root["Variables"][label_output]["Data"][si:ei+1][ind6] = numpy.ma.filled(data_dict[label_output][label_alternate]["fitcorr"][ind6], c.missing_value)
     ds_tower.root["Variables"][label_output]["Flag"][si:ei+1][ind6] = numpy.int32(flag_code)
+    for vattr in data_dict[label_output]["attr"]:
+        ds_tower.root["Variables"][label_output]["Attr"][vattr] = data_dict[label_output]["attr"][vattr]
+    return
 
 def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=None):
     """
@@ -855,6 +858,12 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=None
                 l4a["run"]["label_alternate"] = label_alternate
                 # get the raw alternate data
                 alternate = pfp_utils.GetVariable(ds_alternate, label_alternate, start=si_alternate, end=ei_alternate)
+                # trap empty long_name and units variable attributes that occur
+                # if this variable is missing from the tower data
+                if ((data_dict[label_output]["attr"]["long_name"] == "") and
+                    (data_dict[label_output]["attr"]["units"] == "")):
+                    for vattr in ["long_name", "statistic_type", "units"]:
+                        data_dict[label_output]["attr"][vattr] = alternate["Attr"][vattr]
                 # check this alternate variable to see if there are enough points
                 l4a["run"]["gotminpoints_alternate"] = gfalternate_gotminpoints(alternate["Data"], l4a, label_alternate, mode=mode)
                 l4a["run"]["gotdataforgaps_alternate"] = gfalternate_gotdataforgaps(data_dict[label_output]["data"], alternate["Data"], l4a, mode=mode)
