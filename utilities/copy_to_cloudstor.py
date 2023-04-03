@@ -93,7 +93,7 @@ def get_destination_name(source_name):
     return destination_name, ok
 
 logger.info("Reading site_master.xls")
-site_master_name = "/mnt/OzFlux/Sites/site_master_pri.xls"
+site_master_name = "/mnt/OzFlux/Sites/site_master.xls"
 xlwb = xlrd.open_workbook(site_master_name)
 processing_sheet = xlwb.sheet_by_name("Processing")
 processing_info = {}
@@ -101,13 +101,13 @@ labels = [h for h in processing_sheet.row_values(0)]
 for n, label in enumerate(labels):
     processing_info[label] = processing_sheet.col_values(n)[1:]
 bp_site_names = sorted(processing_info["BP name"])
-#bp_site_names = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin"]
+#bp_site_names = ["Fletcherview"]
 #msg = "Processing " + ",".join(bp_site_names)
 #logger.info(msg)
 
 bp_base = "/mnt/OzFlux/Sites"
 csep_base = "TERNcloudstor:Shared/EcoSystemProcesses/Sites"
-csep_version = "2022_v2"
+csep_version = "2023_v1"
 levels = ["L3", "L4", "L5", "L6"]
 method = "default"
 create = True
