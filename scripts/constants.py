@@ -36,7 +36,8 @@ C2K = 273.15   # convert degrees celsius to kelvin
 # 'no_sonic' is for IRGAs used in profile measurements
 instruments = {"sonics": {"CSAT3": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
                           "CSAT3A": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
-                          "CSAT3B": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115}},
+                          "CSAT3B": {"lwVert": 0.115, "lwHor": 0.058, "lTv": 0.115},
+                          "WindMaster-Pro": {"lwVert": 0, "lwHor": 0, "lTv": 0}},
                "irgas": {"open_path": {"Li-7500": {"dIRGA": 0.0095, "lIRGA": 0.127},
                                        "Li-7500A": {"dIRGA": 0.0095, "lIRGA": 0.127},
                                        "Li-7500RS": {"dIRGA": 0.0095, "lIRGA": 0.127},
