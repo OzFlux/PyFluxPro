@@ -4293,7 +4293,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 selected_item = idx.model().itemFromIndex(idx)
                 parent = selected_item.parent()
                 parent.removeRow(idx.row())
-                idxs = self.view.selectedIndexes()
+            idxs.remove(idx)
         self.reset_selection_mode()
         self.update_tab_text()
         return
