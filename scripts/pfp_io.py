@@ -906,67 +906,64 @@ def write_tsv_reddyproc(cf):
     Hhh = numpy.array([d.hour + d.minute/float(60) for d in dt])
     # get the data
     data = OrderedDict()
-    for label in list(cf["Variables"].keys()):
-        data[label] = {"name": cf["Variables"][label]["name"],
-                       "format": cf["Variables"][label]["format"]}
-    series_list = list(data.keys())
-    for series in series_list:
-        ncname = data[series]["name"]
+    labels = list(cf["Variables"].keys())
+    for label in labels:
+        ncname = cf["Variables"][label]["name"]
         if ncname not in list(ds.root["Variables"].keys()):
             msg = "Series " + ncname + " not in netCDF file, skipping ..."
             logger.error(msg)
-            series_list.remove(series)
+            labels.remove(label)
             continue
-        data[series] = pfp_utils.GetVariable(ds, ncname, start=si, end=ei, out_type="-9999")
-        fmt = data[series]["format"]
+        data[label] = pfp_utils.GetVariable(ds, ncname, start=si, end=ei, out_type="-9999")
+        fmt = cf["Variables"][label]["format"]
         if "." in fmt:
             numdec = len(fmt) - (fmt.index(".") + 1)
             strfmt = "{0:."+str(numdec)+"f}"
         else:
             strfmt = "{0:d}"
-        data[series]["fmt"] = strfmt
+        data[label]["fmt"] = strfmt
     # adjust units as required
     # this could be done better, pete!
-    for series in series_list:
-        if series=="NEE":
-            if data[series]["Attr"]["units"] in ["mg/m^2/s","mgCO2/m^2/s"]:
-                data[series]["Data"] = pfp_mf.Fco2_umolpm2psfrommgCO2pm2ps(data[series]["Data"])
-                data[series]["Attr"]["units"] = "umolm-2s-1"
-            elif data[series]["Attr"]["units"]=='umol/m^2/s':
-                data[series]["Attr"]["units"] = "umolm-2s-1"
+    for label in labels:
+        if label == "NEE":
+            if data[label]["Attr"]["units"] in ["mg/m^2/s","mgCO2/m^2/s"]:
+                data[label]["Data"] = pfp_mf.Fco2_umolpm2psfrommgCO2pm2ps(data[label]["Data"])
+                data[label]["Attr"]["units"] = "umolm-2s-1"
+            elif data[label]["Attr"]["units"]=='umol/m^2/s':
+                data[label]["Attr"]["units"] = "umolm-2s-1"
             else:
-                msg = " REddyProc output: unrecognised units for "+series+", returning ..."
+                msg = " REddyProc output: unrecognised units for "+label+", returning ..."
                 logger.error(msg)
                 return 0
-        if series=="LE" or series=="H" or series=="Rg":
-            data[series]["Attr"]["units"] = "Wm-2"
-        if series=="Tair" or series=="Tsoil":
-            data[series]["Attr"]["units"] = "degC"
-        if series=="rH" and data[series]["Attr"]["units"] in ["fraction","frac"]:
-            idx = numpy.where(data[series]["Data"]!=c.missing_value)[0]
-            data[series]["Data"][idx] = float(100)*data[series]["Data"][idx]
-            data[series]["Attr"]["units"] = "percent"
-        if series=="VPD" and data[series]["Attr"]["units"]=="kPa":
-            idx = numpy.where(data[series]["Data"]!=c.missing_value)[0]
-            data[series]["Data"][idx] = float(10)*data[series]["Data"][idx]
-            data[series]["Attr"]["units"] = "hPa"
-        if series=="Ustar":
-            if data[series]["Attr"]["units"]=="m/s":
-                data[series]["Attr"]["units"] = "ms-1"
+        if label == "LE" or label == "H" or label == "Rg":
+            data[label]["Attr"]["units"] = "Wm-2"
+        if label == "Tair" or label == "Tsoil":
+            data[label]["Attr"]["units"] = "degC"
+        if label == "rH" and data[label]["Attr"]["units"] in ["fraction","frac"]:
+            idx = numpy.where(data[label]["Data"]!=c.missing_value)[0]
+            data[label]["Data"][idx] = float(100)*data[label]["Data"][idx]
+            data[label]["Attr"]["units"] = "percent"
+        if label == "VPD" and data[label]["Attr"]["units"] == "kPa":
+            idx = numpy.where(data[label]["Data"]!=c.missing_value)[0]
+            data[label]["Data"][idx] = float(10)*data[label]["Data"][idx]
+            data[label]["Attr"]["units"] = "hPa"
+        if label == "Ustar":
+            if data[label]["Attr"]["units"]=="m/s":
+                data[label]["Attr"]["units"] = "ms-1"
     # write the variable names to the csv file
     row_list = ['Year','DoY','Hour']
-    for item in series_list:
+    for item in labels:
         row_list.append(item)
     writer.writerow(row_list)
     # write the units line to the csv file
     units_list = ["-","-","-"]
-    for item in series_list:
+    for item in labels:
         units_list.append(data[item]["Attr"]["units"])
     writer.writerow(units_list)
     # now write the data
     for i in range(len(Year)):
         data_list = ['%d'%(Year[i]),'%d'%(int(Ddd[i])),'%.1f'%(Hhh[i])]
-        for series in series_list:
+        for series in labels:
             strfmt = data[series]["fmt"]
             if "d" in strfmt:
                 data_list.append(strfmt.format(int(round(data[series]["Data"][i]))))
