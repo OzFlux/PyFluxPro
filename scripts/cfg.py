@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.11"
+version_number = "V3.4.12"
+# V3.4.12 - March 2023
+#         - improve detection of timestamp when reading Excel workbook
 # V3.4.11 - January 2023
 #         - add 'SeriesToKeep' to [Options] at concatenate
 #           - allows user to specify the variable that will be written to the

@@ -1465,9 +1465,9 @@ def l1_check_irga_sonic_type(cfg, messages):
     t_covars = ["UxT", "UyT", "UzT"]
     m_covars = ["UxUy", "UxUz", "UyUz"]
     # anything with 'IRGA' in the variable name
-    irga_labels = [l for l in cfg_labels if "IRGA" in l]
+    irga_labels = [l for l in cfg_labels if "_IRGA" in l]
     # anything with 'SONIC' in the variable name
-    sonic_labels = [l for l in cfg_labels if "SONIC" in l]
+    sonic_labels = [l for l in cfg_labels if "_SONIC" in l]
     # fluxes from EddyPro, EasyFlux and the like
     fco2_labels = [l for l in cfg_labels if l[0:4] == "Fco2"]
     sco2_labels = [l for l in cfg_labels if l[0:4] == "Sco2"]
