@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.12"
+version_number = "V3.4.13"
+# V3.4.13 - May 2023
+#         - remove numpy dtypes e.g. dtype=numpy.int becomes dtype=int
 # V3.4.12 - March 2023
 #         - improve detection of timestamp when reading Excel workbook
 # V3.4.11 - January 2023

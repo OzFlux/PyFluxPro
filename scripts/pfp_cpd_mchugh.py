@@ -268,7 +268,7 @@ def cpd_mchugh_main(cf):
         #output_stats_df.to_csv(os.path.join(d['results_output_path'], 'annual_statistics.csv'))
     xlsheet = "Annual"
     output_stats_df.to_excel(xlwriter,sheet_name=xlsheet)
-    xlwriter.save()
+    xlwriter.close()
     # close any open plot windows if we are doing batch processing
     #if d["call_mode"]!="interactive": plt.close('all')
 

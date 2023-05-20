@@ -239,5 +239,5 @@ def xl_write_mpt(mpt_full_path, ustar_results):
         df_bootstraps = pandas.DataFrame.from_dict(by_years["Bootstraps"])
         df_bootstraps.index.names = ["Bootstraps"]
         df_bootstraps.to_excel(xlwriter, sheet_name=str(year), startrow=20)
-    xlwriter.save()
+    xlwriter.close()
     return

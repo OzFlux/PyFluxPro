@@ -141,7 +141,7 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
             # ... but only if the ustar data is not masked
             c2 = (numpy.ma.getmaskarray(ustar) == False)
             idx = numpy.where(c1 & c2)[0]
-            indicators["final"]["Data"][idx] = numpy.int(1)
+            indicators["final"]["Data"][idx] = int(1)
             indicators["final"]["Attr"].update(indicators["day"]["Attr"])
         else:
             msg = " u* filter applied to day time data (FluxNet method)"
@@ -646,7 +646,7 @@ def do_EPQCFlagCheck(cf, ds, section, series, code=9):
             idx = numpy.where(bool_array == True)[0]
             flag[idx] = numpy.int32(1)
     idx = numpy.where(flag == 1)[0]
-    variable["Data"][idx] = numpy.float(c.missing_value)
+    variable["Data"][idx] = float(c.missing_value)
     variable["Flag"][idx] = numpy.int32(9)
     pfp_utils.CreateVariable(ds, variable)
     return

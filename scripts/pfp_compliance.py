@@ -2154,8 +2154,9 @@ def l2_check_files(cfg, messages):
             if os.path.isdir(plot_path):
                 pass
             else:
-                msg = "Files: " + plot_path + " is not a directory"
-                messages["ERROR"].append(msg)
+                msg = "Files: " + plot_path + " doesn't exist, creating ..."
+                messages["INFO"].append(msg)
+                os.mkdir(plot_path)
         else:
             msg = "Files: 'plot_path' not in section"
             messages["ERROR"].append(msg)
@@ -2797,8 +2798,9 @@ def l6_check_files(cfg, messages):
             if os.path.isdir(plot_path):
                 pass
             else:
-                msg = "Files: " + plot_path + " is not a directory"
-                messages["ERROR"].append(msg)
+                msg = "Files: " + plot_path + " doesn't exist, creating ..."
+                messages["INFO"].append(msg)
+                os.mkdir(plot_path)
         else:
             msg = "Files: 'plot_path' not in section"
             messages["ERROR"].append(msg)

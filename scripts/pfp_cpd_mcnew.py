@@ -748,7 +748,7 @@ def _write_to_file(data_dict, write_to_file):
                  .to_excel(xlwriter, sheet_name=str(year), index=None)
                  )
             continue
-    xlwriter.save()
+    xlwriter.close()
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
