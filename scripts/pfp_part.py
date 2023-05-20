@@ -592,7 +592,10 @@ class partition(object):
         if hasattr(self, 'LL_fignum'):
             pass
         else:
-            self.LL_fignum = plt.get_fignums()[-1] + 1
+            if len(plt.get_fignums()) == 0:
+                self.LL_fignum = 1
+            else:
+                self.LL_fignum = plt.get_fignums()[-1] + 1
 
         if self.l6_info["Options"]["call_mode"] == "interactive":
             plt.ion()
