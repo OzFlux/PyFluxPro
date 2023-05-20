@@ -280,9 +280,8 @@ class partition(object):
             params = params_df.loc[date]
             str_date = dt.datetime.strftime(date, '%Y-%m-%d')
             data = self.df.loc[str_date, 'TC']
-            resp_series = resp_series.append(_Lloyd_and_Taylor
-                                             (t_series = data,
-                                              Eo = params.Eo, rb = params.rb))
+            rs = _Lloyd_and_Taylor(t_series=data, rb=params.rb, Eo=params.Eo)
+            resp_series = pd.concat([resp_series, rs])
         return resp_series
     #--------------------------------------------------------------------------
 

@@ -297,7 +297,7 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         pfp_utils.CreateVariable(ds, ER)
         # Write to excel
         params_df.to_excel(xl_writer, output)
-        xl_writer.save()
+        xl_writer.close()
         # Do plotting
         startdate = str(ds.root["Variables"]["DateTime"]["Data"][0])
         enddate = str(ds.root["Variables"]["DateTime"]["Data"][-1])
@@ -395,7 +395,7 @@ def GetERFromFco2(ds, l6_info):
     notok = numpy.ones(nrecs)
     for flag_value in [0, 10]:
         idx = numpy.where(Fco2["Flag"] == flag_value)[0]
-        notok[idx] = numpy.int(0)
+        notok[idx] = int(0)
     Fco2["Data"] = numpy.ma.masked_where((notok == 1), Fco2["Data"])
     ER["Flag"] = numpy.where((notok == 1), numpy.full(nrecs, 501), numpy.zeros(nrecs))
     # get the indicator series
