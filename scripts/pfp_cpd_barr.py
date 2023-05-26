@@ -145,7 +145,7 @@ def xl_write_cpd(cpd_full_path, ustar_results):
         df_by_years = pandas.DataFrame.from_dict(by_years[year])
         df_by_years.index.names = ["Bootstraps"]
         df_by_years.to_excel(xlwriter, sheet_name=str(year))
-    xlwriter.save()
+    xlwriter.close()
     return
 
 def cpdBootstrapUStarTh4Season20100901(t, NEE, uStar, T, fNight, fPlot, cSiteYr, nBoot, pb):
@@ -783,7 +783,7 @@ def cpdBin(x, y, dx, nPerBin):
         # into bins with nPerBin points in each bin.
         iYaN = numpy.where(~numpy.isnan(x + y) == True)[0]
         nYaN = len(iYaN)
-        nBins = numpy.floor(nYaN / nPerBin).astype(numpy.int)
+        nBins = numpy.floor(nYaN / nPerBin).astype(int)
         mx = numpy.full(nBins, numpy.nan)
         my = numpy.full(nBins, numpy.nan)
         iprctile = numpy.arange(0, 101, (100. / float(nBins)))
@@ -803,8 +803,8 @@ def cpdBin(x, y, dx, nPerBin):
     elif len(dx) == 1:
         nx = numpy.min(x)
         xx = numpy.max(x)
-        nx = dx*numpy.floor(nx / dx).astype(numpy.int)
-        xx = dx*numpy.ceil(xx / dx).astype(numpy.int)
+        nx = dx*numpy.floor(nx / dx).astype(int)
+        xx = dx*numpy.ceil(xx / dx).astype(int)
         mx = numpy.full(len(numpy.arange(nx, xx, dx)), numpy.nan)
         my = numpy.full(len(numpy.arange(nx, xx, dx)), numpy.nan)
         for jx in numpy.arange(nx, xx, dx):

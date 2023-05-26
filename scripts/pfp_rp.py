@@ -273,7 +273,7 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         pfp_utils.CreateVariable(ds, ER)
         # Write to excel
         params_df.to_excel(xl_writer, output)
-        xl_writer.save()
+        xl_writer.close()
         # Do plotting
         startdate = str(ds.root["Variables"]["DateTime"]["Data"][0])
         enddate = str(ds.root["Variables"]["DateTime"]["Data"][-1])

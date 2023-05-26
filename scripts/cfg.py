@@ -3,6 +3,10 @@ version_number = "V3.5.0"
 # V3.5.0 - February 2023
 #        - implement ability to browse THREDDS server and open remote files
 #        - add ability to convert FluxNet subset HH files to netCDF using L1
+# V3.4.13 - May 2023
+#         - remove numpy dtypes e.g. dtype=numpy.int becomes dtype=int
+# V3.4.12 - March 2023
+#         - improve detection of timestamp when reading Excel workbook
 # V3.4.11 - January 2023
 #         - add 'SeriesToKeep' to [Options] at concatenate
 #           - allows user to specify the variable that will be written to the

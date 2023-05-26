@@ -2768,8 +2768,8 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
                         logger.error(msg)
                         continue
                 SeriesNameString = SeriesNameString + ", " + secondary_series
-                p_idx = numpy.zeros(p_recs, dtype=numpy.int)
-                s_idx = numpy.zeros(s_recs, dtype=numpy.int)
+                p_idx = numpy.zeros(p_recs, dtype=int)
+                s_idx = numpy.zeros(s_recs, dtype=int)
                 for okflag in okflags:
                     # index of acceptable primary values
                     index = numpy.where(primary["Flag"] == okflag)[0]

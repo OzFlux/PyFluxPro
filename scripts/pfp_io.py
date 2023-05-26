@@ -19,6 +19,7 @@ import numpy
 import pandas
 import pytz
 import xarray
+from pandas.errors import ParserError
 import xlwt
 import xlsxwriter
 from PyQt5 import QtWidgets
