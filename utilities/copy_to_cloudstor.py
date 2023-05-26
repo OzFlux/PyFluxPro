@@ -100,8 +100,8 @@ processing_info = {}
 labels = [h for h in processing_sheet.row_values(0)]
 for n, label in enumerate(labels):
     processing_info[label] = processing_sheet.col_values(n)[1:]
-bp_site_names = sorted(processing_info["BP name"])
-#bp_site_names = ["Fletcherview"]
+#bp_site_names = sorted(processing_info["BP name"])
+bp_site_names = ["Whroo"]
 #msg = "Processing " + ",".join(bp_site_names)
 #logger.info(msg)
 
