@@ -2805,7 +2805,7 @@ def write_tsv_reddyproc(cfg):
             series_list.remove(series)
             continue
         data[series] = pfp_utils.GetVariable(ds, ncname, start=si, end=ei, out_type="-9999")
-        fmt = data[series]["format"]
+        fmt = cfg["Variables"][series]["format"]
         if "." in fmt:
             numdec = len(fmt) - (fmt.index(".") + 1)
             strfmt = "{0:."+str(numdec)+"f}"
