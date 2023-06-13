@@ -1145,7 +1145,7 @@ def ParseL6ControlFile(cf, ds):
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ConvertToPhotons", default=True)
     l6_info["Options"]["convert_to_photons"] = opt
     l6_info["Options"]["plot_raw_data"] = False
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "PlotRawData", default="No")
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "plot_raw_data", default="No")
     if opt.lower() == "yes":
         l6_info["Options"]["plot_raw_data"] = True
     # some useful global attributes

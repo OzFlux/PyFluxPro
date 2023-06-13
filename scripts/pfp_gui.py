@@ -2592,7 +2592,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
         sender = str(self.context_menu.sender().text())
         sender = sender.replace(" ", "_")
         # get the arguments for the selected function
-        args = inspect.getargspec(implemented_functions_data[implemented_functions_name.index(sender)])
+        args = inspect.getfullargspec(implemented_functions_data[implemented_functions_name.index(sender)])
         # construct the function string
         function_string = sender+"("
         for item in args[0][2:]:
@@ -8158,7 +8158,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.context_menu.actionRemoveGlobalAttribute.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Options":
                 key = str(parent.child(selected_item.row(),0).text())
-                if (selected_item.column() == 1) and (key in ["PlotRawData"]):
+                if (selected_item.column() == 1) and (key in ["plot_raw_data"]):
                     if selected_text != "Yes":
                         self.context_menu.actionChangeOption = QtWidgets.QAction(self)
                         self.context_menu.actionChangeOption.setText("Yes")

@@ -2782,6 +2782,12 @@ def l6_update_controlfile(cfg):
     except Exception:
         ok = False
         msg = " An error occurred while updating the L6 control file syntax"
+    # clean up the Options section
+    try:
+        cfg = l6_update_cfg_options(cfg)
+    except Exception:
+        ok = False
+        msg = " An error occurred while updating the Options section"
     # clean up the variable names
     try:
         cfg = l6_update_cfg_variable_names(cfg, std)
@@ -2889,10 +2895,37 @@ def l6_check_options(cfg, messages):
             else:
                 msg = "Options: 'PlotRawData' must be 'Yes' or 'No'"
                 messages["ERROR"].append(msg)
+        if "plot_raw_data" in cfg["Options"]:
+            opt = cfg["Options"]["plot_raw_data"]
+            if isinstance(opt, str):
+                if opt.lower() in ["yes", "no"]:
+                    pass
+                else:
+                    msg = "Options: 'plot_raw_data' must be 'Yes' or 'No'"
+                    messages["ERROR"].append(msg)
+            else:
+                msg = "Options: 'plot_raw_data' must be 'Yes' or 'No'"
+                messages["ERROR"].append(msg)
     else:
         # 'Options' section is optional
         pass
     return
+def l6_update_cfg_options(cfg):
+    """
+    Purpose:
+     Update the Options section of an L6 control file.
+    Usage:
+    Side effects:
+     Returns a modified control file object.
+    Author: PRI
+    Date: June 2023
+    """
+    if "Options" in cfg:
+        if "PlotRawData" in cfg["Options"]:
+            cfg["Options"].rename("PlotRawData", "plot_raw_data")
+        if not "plot_raw_data" in cfg["Options"]:
+            cfg["Options"]["plot_raw_data"] = "No"
+    return cfg
 def l6_update_cfg_syntax(cfg):
     """
     Purpose:
