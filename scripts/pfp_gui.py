@@ -1107,7 +1107,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
         sender = str(self.context_menu.sender().text())
         sender = sender.replace(" ", "_")
         # get the arguments for the selected function
-        args = inspect.getargspec(implemented_functions_data[implemented_functions_name.index(sender)])
+        args = inspect.getfullargspec(implemented_functions_data[implemented_functions_name.index(sender)])
         # construct the function string
         function_string = sender+"("
         for item in args[0][2:]:
