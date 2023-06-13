@@ -13,6 +13,7 @@ import pylab
 # PFP modules
 from scripts import constants as c
 from scripts import pfp_classes
+from scripts import pfp_erlt
 from scripts import pfp_gf
 from scripts import pfp_gfSOLO
 from scripts import pfp_gui
@@ -151,32 +152,53 @@ def ERUsingLasslop(ds, l6_info, xl_writer):
             raise RuntimeError(msg)
     return
 
-def ERUsingLloydTaylor(ds, l6_info, xl_writer):
+def ERUsingLloydTaylor(ds, l6_info):
     """
     Purpose:
     Usage:
-    Author: IMcH
-    Date: April 2022
+    Author: PRI
+    Date: June 2023
     """
     if "ERUsingLloydTaylor" not in l6_info:
         return
     msg = " Estimating ER using Lloyd-Taylor"
     logger.info(msg)
-    l6_info["Options"]["called_by"] = "ERUsingLloydTaylor"
-    EcoResp(ds, l6_info, "ERUsingLloydTaylor", xl_writer)
-    for output in l6_info["ERUsingLloydTaylor"]["outputs"]:
-        if output in list(ds.root["Variables"].keys()):
-            source = l6_info["ERUsingLloydTaylor"]["outputs"][output]["source"]
-            l6_info["Summary"]["EcosystemRespiration"].append(source)
-            merge = l6_info["EcosystemRespiration"][source]["MergeSeries"]["source"].split(",")
-            l6_info["MergeSeries"]["standard"][source] = {"output": source,
-                                                          "source": merge}
-        else:
-            msg = output + " not in data structure"
-            logger.error("!!!!!")
-            logger.error(msg)
-            logger.error("!!!!!")
-            raise RuntimeError(msg)
+
+    ts = int(ds.root["Attributes"]["time_step"])
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    DateTime = pfp_utils.GetVariable(ds, "DateTime")
+    ldt = DateTime["Data"] - datetime.timedelta(minutes=ts)
+    years = numpy.unique([dt.year for dt in ldt])
+    then = datetime.datetime.now()
+    called_by = "ERUsingLloydTaylor"
+    subset_labels = ["ER", "Fco2", "Fsd", "Sws", "Ta"]
+    outputs = l6_info[called_by]["outputs"].keys()
+    for output in outputs:
+        print("Estimating "+output)
+        results = pfp_erlt.create_results(years)
+        Rb = pfp_utils.CreateEmptyVariable("Rb_LT", nrecs)
+        pfp_utils.CreateVariable(ds, Rb)
+        E0 = pfp_utils.CreateEmptyVariable("E0_LT", nrecs)
+        pfp_utils.CreateVariable(ds, E0)
+        for year in years:
+            msg = "Processing " + str(year)
+            logger.info(msg)
+            start = datetime.datetime(year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+            end = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+            ds_year = pfp_erlt.subset_data_structure(ds, start, end, subset_labels=subset_labels)
+            pfp_erlt.estimate_e0_full_year(ds_year, results, l6_info)
+            pfp_erlt.estimate_e0_windows(ds_year, results, l6_info)
+            pfp_erlt.quality_control_e0(results, year)
+            pfp_erlt.get_final_e0(results, year)
+            if not pfp_erlt.check_final_e0(results, year):
+                continue
+            pfp_erlt.get_final_rb(ds_year, results, l6_info)
+        pfp_erlt.interpolate_parameters_lt(ds, results)
+        pfp_erlt.estimate_er_lt(ds, output)
+    pfp_erlt.write_results(results, l6_info)
+    now = datetime.datetime.now()
+    msg = " Elapsed time:" + str(now-then)
+    logger.info(msg)
     return
 
 def EcoResp(ds, l6_info, called_by, xl_writer):
