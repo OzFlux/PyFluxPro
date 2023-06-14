@@ -124,17 +124,9 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by):
     # get the name for the description variable attribute
     descr_level = "description_" + str(ds.root["Attributes"]["processing_level"])
     ldt = pfp_utils.GetVariable(ds, "DateTime")
-
-    #first_date = ldt["Data"][0]
-    #last_date = ldt["Data"][-1]
-
     data_mds = numpy.genfromtxt(out_file_path, delimiter=",", names=True, autostrip=True, dtype=None)
     dt_mds = numpy.array([dateutil.parser.parse(str(dt)) for dt in data_mds["TIMESTAMP"]])
     idxa, idxb = pfp_utils.FindMatchingIndices(ldt["Data"], dt_mds)
-
-    #si_mds = pfp_utils.GetDateIndex(dt_mds, first_date)
-    #ei_mds = pfp_utils.GetDateIndex(dt_mds, last_date)
-
     # get a list of the names in the data array
     mds_output_names = list(data_mds.dtype.names)
     # strip out the timestamp and the original data
@@ -149,8 +141,10 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by):
             data_out = numpy.ma.array(var_in["Data"], copy=True)
             data_out[idxa] = data_mds[mds_output_name][idxb]
             data_out = numpy.ma.masked_values(data_out, c.missing_value)
-            # ugly hack for datasets that start on YYYY-01-01 00:00, the MDS C code discards
+            # Ugly hack for datasets that start on YYYY-01-01 00:00, the MDS C code discards
             # these times and they are missing from the MDS output.
+            # Many thanks to Professor Shih-Chieh Chang of National Dong Hwa University, Taiwan
+            # for reporting this bug.  Problems often behave like fractals.
             if numpy.ma.is_masked(data_out[0]):
                 data_out[0] = data_out[1]
             idx = numpy.where(numpy.ma.getmaskarray(var_in["Data"]) == True)[0]
