@@ -289,7 +289,7 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         # Pass the dataframe to the respiration class and get the results
         ptc = pfp_part.partition(df, xl_writer, l6_info)
         params_df = ptc.estimate_parameters(mode = er_mode)
-        ER["Data"] = numpy.ma.array(ptc.estimate_er_time_series(params_df))
+        ER["Data"] = numpy.ma.array(ptc.estimate_er_time_series(params_df), copy=True)
         ER["Flag"] = numpy.tile(30, len(ER["Data"]))
         # Write ER to data structure
         drivers = iel["outputs"][output]["drivers"]
@@ -2126,7 +2126,7 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
     mask = numpy.ma.mask_or(obs["Data"].mask, mod["Data"].mask)
-    obs_mor = numpy.ma.array(obs["Data"], mask=mask)
+    obs_mor = numpy.ma.array(obs["Data"], mask=mask, copy=True)
     dstats = pfp_utils.get_diurnalstats(dt, obs_mor, ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'b-', label="Obs")
     # get the diurnal stats of all predictions
@@ -2149,7 +2149,7 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     # plot the best fit line
     coefs = numpy.ma.polyfit(numpy.ma.copy(mod["Data"]), numpy.ma.copy(obs["Data"]), 1)
     xfit = numpy.ma.array([numpy.ma.minimum.reduce(mod["Data"]),
-                           numpy.ma.maximum.reduce(mod["Data"])])
+                           numpy.ma.maximum.reduce(mod["Data"])], copy=True)
     yfit = numpy.polyval(coefs, xfit)
     r = numpy.ma.corrcoef(mod["Data"], obs["Data"])
     ax2.plot(xfit, yfit, 'r--', linewidth=3)
