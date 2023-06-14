@@ -1006,18 +1006,18 @@ def xy_xlims_changed(event_ax, fig, var):
     ax_xy.set_ylabel(var[1]["Label"]+" ("+var[1]["Attr"]["units"]+")")
     mask = numpy.ma.mask_or(numpy.ma.getmaskarray(var[0]["Data"][si:ei]),
                             numpy.ma.getmaskarray(var[1]["Data"][si:ei]))
-    x_nm = numpy.ma.compressed(numpy.ma.array(var[0]["Data"][si:ei], mask=mask))
+    x_nm = numpy.ma.compressed(numpy.ma.array(var[0]["Data"][si:ei], mask=mask, copy=True))
     if len(x_nm) == 0:
         return
     x_nm = sm.add_constant(x_nm,prepend=False)
-    y_nm = numpy.ma.compressed(numpy.ma.array(var[1]["Data"][si:ei], mask=mask))
+    y_nm = numpy.ma.compressed(numpy.ma.array(var[1]["Data"][si:ei], mask=mask, copy=True))
     if len(y_nm) == 0:
         return
     resrlm = sm.RLM(y_nm,x_nm,M=sm.robust.norms.TukeyBiweight()).fit()
     if numpy.isnan(resrlm.params[0]):
         resrlm = sm.RLM(y_nm,x_nm,M=sm.robust.norms.TrimmedMean()).fit()
-    r = numpy.corrcoef(numpy.ma.compressed(numpy.ma.array(var[0]["Data"][si:ei], mask=mask)),
-                       numpy.ma.compressed(numpy.ma.array(var[1]["Data"][si:ei], mask=mask)))
+    r = numpy.corrcoef(numpy.ma.compressed(numpy.ma.array(var[0]["Data"][si:ei], mask=mask, copy=True)),
+                       numpy.ma.compressed(numpy.ma.array(var[1]["Data"][si:ei], mask=mask, copy=True)))
     eqnstr = 'y = %.3fx + %.3f (RLM)'%(resrlm.params[0],resrlm.params[1])
     ax_xy.plot(x_nm[:,0],resrlm.fittedvalues,'r--',linewidth=3)
     ax_xy.text(0.5,0.93,eqnstr,fontsize=8,horizontalalignment='center',transform=ax_xy.transAxes)
@@ -1168,8 +1168,9 @@ def plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily):
     Fe_30min = data["Fe"]["Data"]
     mask = numpy.ma.mask_or(Fa_30min.mask, Fe_30min.mask)
     mask = numpy.ma.mask_or(mask, Fh_30min.mask)
-    Fa_SEB = numpy.ma.array(Fa_30min, mask=mask)     # apply the mask
-    FhpFe_SEB = numpy.ma.array(Fh_30min, mask=mask) + numpy.ma.array(Fe_30min, mask=mask)
+    Fa_SEB = numpy.ma.array(Fa_30min, mask=mask, copy=True)
+    FhpFe_SEB = (numpy.ma.array(Fh_30min, mask=mask, copy=True) +
+                 numpy.ma.array(Fe_30min, mask=mask, copy=True))
     plt.ion()
     fig = plt.figure(nFig, figsize=(8, 8))
     fig.canvas.manager.set_window_title("Surface Energy Balance")
@@ -1178,9 +1179,9 @@ def plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily):
     # scatter plot of (Fh+Fe) versus Fa, 24 hour averages
     mask = numpy.ma.mask_or(daily["Fa"]["Data"].mask, daily["Fe"]["Data"].mask)
     mask = numpy.ma.mask_or(mask, daily["Fh"]["Data"].mask)
-    Fa_daily = numpy.ma.array(daily["Fa"]["Data"], mask=mask)         # apply the mask
-    Fe_daily = numpy.ma.array(daily["Fe"]["Data"], mask=mask)
-    Fh_daily = numpy.ma.array(daily["Fh"]["Data"], mask=mask)
+    Fa_daily = numpy.ma.array(daily["Fa"]["Data"], mask=mask, copy=True)
+    Fe_daily = numpy.ma.array(daily["Fe"]["Data"], mask=mask, copy=True)
+    Fh_daily = numpy.ma.array(daily["Fh"]["Data"], mask=mask, copy=True)
     Fa_daily_avg = numpy.ma.average(Fa_daily, axis=1)      # get the daily average
     Fe_daily_avg = numpy.ma.average(Fe_daily, axis=1)
     Fh_daily_avg = numpy.ma.average(Fh_daily, axis=1)
@@ -1194,9 +1195,9 @@ def plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily):
     Fh_day = numpy.ma.masked_where(day_mask == False, Fh_30min)
     mask = numpy.ma.mask_or(Fa_day.mask, Fe_day.mask)
     mask = numpy.ma.mask_or(mask, Fh_day.mask)
-    Fa_day = numpy.ma.array(Fa_day, mask=mask)         # apply the mask
-    Fe_day = numpy.ma.array(Fe_day, mask=mask)
-    Fh_day = numpy.ma.array(Fh_day, mask=mask)
+    Fa_day = numpy.ma.array(Fa_day, mask=mask, copy=True)
+    Fe_day = numpy.ma.array(Fe_day, mask=mask, copy=True)
+    Fh_day = numpy.ma.array(Fh_day, mask=mask, copy=True)
     FhpFe_day = Fh_day + Fe_day
     xyplot(Fa_day, FhpFe_day, sub=[2,2,3], regr=1, title="Day", xlabel="Fa (W/m^2)", ylabel="Fh+Fe (W/m^2)")
     # scatter plot of (Fh+Fe) versus Fa, night time
@@ -1206,9 +1207,9 @@ def plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily):
     Fh_night = numpy.ma.masked_where(night_mask==False, Fh_30min)
     mask = numpy.ma.mask_or(Fa_night.mask, Fe_night.mask)
     mask = numpy.ma.mask_or(mask, Fh_night.mask)
-    Fa_night = numpy.ma.array(Fa_night, mask=mask)         # apply the mask
-    Fe_night = numpy.ma.array(Fe_night, mask=mask)
-    Fh_night = numpy.ma.array(Fh_night, mask=mask)
+    Fa_night = numpy.ma.array(Fa_night, mask=mask, copy=True)
+    Fe_night = numpy.ma.array(Fe_night, mask=mask, copy=True)
+    Fh_night = numpy.ma.array(Fh_night, mask=mask, copy=True)
     FhpFe_night = Fh_night + Fe_night
     xyplot(Fa_night, FhpFe_night, sub=[2,2,4], regr=1, title="Night", xlabel="Fa (W/m^2)", ylabel="Fh+Fe (W/m^2)")
     # hard copy of plot
@@ -1231,9 +1232,9 @@ def plot_quickcheck_get_seb(daily):
     mask = numpy.ma.mask_or(Fa_day.mask, Fe_day.mask)
     mask = numpy.ma.mask_or(mask, Fh_day.mask)
     # apply the mask
-    Fa_day = numpy.ma.array(Fa_day, mask=mask)
-    Fe_day = numpy.ma.array(Fe_day, mask=mask)
-    Fh_day = numpy.ma.array(Fh_day, mask=mask)
+    Fa_day = numpy.ma.array(Fa_day, mask=mask, copy=True)
+    Fe_day = numpy.ma.array(Fe_day, mask=mask, copy=True)
+    Fh_day = numpy.ma.array(Fh_day, mask=mask, copy=True)
     # get the daily averages
     Fa_day_avg = numpy.ma.average(Fa_day, axis=1)
     Fe_day_avg = numpy.ma.average(Fe_day, axis=1)
@@ -1259,8 +1260,8 @@ def plot_quickcheck_get_ef(daily):
     # mask based on dependencies, set all to missing if any missing
     mask = numpy.ma.mask_or(Fa_day.mask, Fe_day.mask)
     # apply the mask
-    Fa_day = numpy.ma.array(Fa_day, mask=mask)
-    Fe_day = numpy.ma.array(Fe_day, mask=mask)
+    Fa_day = numpy.ma.array(Fa_day, mask=mask, copy=True)
+    Fe_day = numpy.ma.array(Fe_day, mask=mask, copy=True)
     # get the daily averages
     Fa_day_avg = numpy.ma.average(Fa_day, axis=1)
     Fe_day_avg = numpy.ma.average(Fe_day, axis=1)
@@ -1285,8 +1286,8 @@ def plot_quickcheck_get_br(daily):
     # mask based on dependencies, set all to missing if any missing
     mask = numpy.ma.mask_or(Fe_day.mask, Fh_day.mask)
     # apply the mask
-    Fe_day = numpy.ma.array(Fe_day, mask=mask)
-    Fh_day = numpy.ma.array(Fh_day, mask=mask)
+    Fe_day = numpy.ma.array(Fe_day, mask=mask, copy=True)
+    Fh_day = numpy.ma.array(Fh_day, mask=mask, copy=True)
     # get the daily averages
     Fe_day_avg = numpy.ma.average(Fe_day, axis=1)
     Fh_day_avg = numpy.ma.average(Fh_day, axis=1)
@@ -1311,8 +1312,8 @@ def plot_quickcheck_get_wue(daily):
     # mask based on dependencies, set all to missing if any missing
     mask = numpy.ma.mask_or(Fe_day.mask, Fc_day.mask)
     # apply the mask
-    Fe_day = numpy.ma.array(Fe_day,mask=mask)
-    Fc_day = numpy.ma.array(Fc_day,mask=mask)
+    Fe_day = numpy.ma.array(Fe_day,mask=mask, copy=True)
+    Fc_day = numpy.ma.array(Fc_day,mask=mask, copy=True)
     # get the daily averages
     Fe_day_avg = numpy.ma.average(Fe_day, axis=1)
     Fc_day_avg = numpy.ma.average(Fc_day, axis=1)
@@ -1982,7 +1983,7 @@ def xyplot(x,y,sub=[1,1,1],regr=0,thru0=0,title=None,xlabel=None,ylabel=None,fna
         return
     if regr==1:
         coefs = numpy.ma.polyfit(numpy.ma.copy(x),numpy.ma.copy(y),1)
-        xfit = numpy.ma.array([numpy.ma.min(x),numpy.ma.max(x)])
+        xfit = numpy.ma.array([numpy.ma.min(x),numpy.ma.max(x)], copy=True)
         yfit = numpy.polyval(coefs,xfit)
         r = numpy.ma.corrcoef(x,y)
         eqnstr = 'y = %.3fx + %.3f (OLS)'%(coefs[0],coefs[1])

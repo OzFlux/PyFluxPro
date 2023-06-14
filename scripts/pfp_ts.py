@@ -1953,8 +1953,8 @@ def get_laggedcorrelation(x_in,y_in,maxlags):
     """
     lags = numpy.arange(-maxlags,maxlags+1)
     mask = numpy.ma.mask_or(x_in.mask,y_in.mask,copy=True,shrink=False)
-    x = numpy.ma.array(x_in,mask=mask,copy=True)
-    y = numpy.ma.array(y_in,mask=mask,copy=True)
+    x = numpy.ma.array(x_in, mask=mask, copy=True)
+    y = numpy.ma.array(y_in, mask=mask, copy=True)
     x = numpy.ma.compressed(x)
     y = numpy.ma.compressed(y)
     corr = numpy.correlate(x, y, mode=2)
@@ -2150,7 +2150,7 @@ def get_synthetic_fsd(ds):
     Fsd_syn["Data"] = [pysolar.GetRadiationDirect(dt, alt)
                        for dt, alt in
                        zip(ldt_UTC, solar_altitude["Data"])]
-    Fsd_syn["Data"] = numpy.ma.array(Fsd_syn["Data"])
+    Fsd_syn["Data"] = numpy.ma.array(Fsd_syn["Data"], copy=True)
     # get the QC flag
     Fsd_syn["Flag"] = numpy.zeros(nrecs, dtype=numpy.int32)
     # add the synthetic downwelling shortwave radiation to the data structure
@@ -2819,10 +2819,10 @@ def ReplaceWhereMissing(Destination,Primary,Secondary,FlagOffset=None,FlagValue=
 
 def ReplaceWhenDiffExceedsRange(DateTime,Destination,Primary,Secondary,RList):
     # get the primary data series
-    p_data = numpy.ma.array(Primary['Data'])
+    p_data = numpy.ma.array(Primary['Data'], copy=True)
     p_flag = Primary['Flag'].copy()
     # get the secondary data series
-    s_data = numpy.ma.array(Secondary['Data'])
+    s_data = numpy.ma.array(Secondary['Data'], copy=True)
     # truncate the longest series if the sizes do not match
     if numpy.size(p_data)!=numpy.size(s_data):
         logger.warning(' ReplaceWhenDiffExceedsRange: Series lengths differ, longest will be truncated')

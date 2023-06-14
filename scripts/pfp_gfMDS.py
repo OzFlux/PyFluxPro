@@ -115,6 +115,7 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by):
     Author: PRI
     Date: May 2018
     """
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # get the MDS flag value from the processing level
     processing_level = ds.root["Attributes"]["processing_level"]
     level_number = pfp_utils.strip_non_numeric(processing_level)
@@ -123,12 +124,9 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by):
     # get the name for the description variable attribute
     descr_level = "description_" + str(ds.root["Attributes"]["processing_level"])
     ldt = pfp_utils.GetVariable(ds, "DateTime")
-    first_date = ldt["Data"][0]
-    last_date = ldt["Data"][-1]
     data_mds = numpy.genfromtxt(out_file_path, delimiter=",", names=True, autostrip=True, dtype=None)
     dt_mds = numpy.array([dateutil.parser.parse(str(dt)) for dt in data_mds["TIMESTAMP"]])
-    si_mds = pfp_utils.GetDateIndex(dt_mds, first_date)
-    ei_mds = pfp_utils.GetDateIndex(dt_mds, last_date)
+    idxa, idxb = pfp_utils.FindMatchingIndices(ldt["Data"], dt_mds)
     # get a list of the names in the data array
     mds_output_names = list(data_mds.dtype.names)
     # strip out the timestamp and the original data
@@ -140,30 +138,39 @@ def gfMDS_get_mds_output(ds, mds_label, out_file_path, l5_info, called_by):
         if mds_output_name == "FILLED":
             # get the gap filled target and write it to the data structure
             var_in = pfp_utils.GetVariable(ds, l5_info[called_by]["outputs"][mds_label]["target"])
-            data = data_mds[mds_output_name][si_mds:ei_mds+1]
-            idx = numpy.where((numpy.ma.getmaskarray(var_in["Data"]) == True) &
-                              (abs(data - c.missing_value) > c.eps))[0]
-            flag = numpy.array(var_in["Flag"])
+            data_out = numpy.ma.array(var_in["Data"], copy=True)
+            data_out[idxa] = data_mds[mds_output_name][idxb]
+            data_out = numpy.ma.masked_values(data_out, c.missing_value)
+            # Ugly hack for datasets that start on YYYY-01-01 00:00, the MDS C code discards
+            # these times and they are missing from the MDS output.
+            # Many thanks to Professor Shih-Chieh Chang of National Dong Hwa University, Taiwan
+            # for reporting this bug.  Problems often behave like fractals.
+            if numpy.ma.is_masked(data_out[0]):
+                data_out[0] = data_out[1]
+            idx = numpy.where(numpy.ma.getmaskarray(var_in["Data"]) == True)[0]
+            flag = numpy.array(var_in["Flag"], copy=True)
             flag[idx] = numpy.int32(mds_flag_value)
             attr = copy.deepcopy(var_in["Attr"])
             pfp_utils.append_to_attribute(attr, {descr_level: "Gap filled using MDS"})
-            var_out = {"Label":mds_label, "Data":data, "Flag":flag, "Attr":attr}
+            var_out = {"Label": mds_label, "Data": data_out, "Flag": flag, "Attr": attr}
             pfp_utils.CreateVariable(ds, var_out)
         elif mds_output_name == "TIMEWINDOW":
             # make the series name for the data structure
             mds_qc_label = "MDS"+"_"+l5_info[called_by]["outputs"][mds_label]["target"]+"_"+mds_output_name
-            data = data_mds[mds_output_name][si_mds:ei_mds+1]
-            flag = numpy.zeros(len(data))
+            data_out = numpy.zeros(nrecs, dtype=float)
+            data_out[idxa] = data_mds[mds_output_name][idxb]
+            flag = numpy.zeros(nrecs, dtype=int)
             attr = {"long_name":"TIMEWINDOW from MDS gap filling for "+l5_info[called_by]["outputs"][mds_label]["target"]}
-            var_out = {"Label":mds_qc_label, "Data":data, "Flag":flag, "Attr":attr}
+            var_out = {"Label": mds_qc_label, "Data": data_out, "Flag": flag, "Attr": attr}
             pfp_utils.CreateVariable(ds, var_out)
         else:
             # make the series name for the data structure
             mds_qc_label = "MDS"+"_"+l5_info[called_by]["outputs"][mds_label]["target"]+"_"+mds_output_name
-            data = data_mds[mds_output_name][si_mds:ei_mds+1]
-            flag = numpy.zeros(len(data))
+            data_out = numpy.zeros(nrecs, dtype=float)
+            data_out[idxa] = data_mds[mds_output_name][idxb]
+            flag = numpy.zeros(nrecs, dtype=int)
             attr = {"long_name":"QC field from MDS gap filling for "+l5_info[called_by]["outputs"][mds_label]["target"]}
-            var_out = {"Label":mds_qc_label, "Data":data, "Flag":flag, "Attr":attr}
+            var_out = {"Label": mds_qc_label, "Data": data_out, "Flag": flag, "Attr": attr}
             pfp_utils.CreateVariable(ds, var_out)
     return
 
@@ -338,7 +345,7 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
     mask = numpy.ma.mask_or(obs["Data"].mask, mds["Data"].mask)
-    obs_mor = numpy.ma.array(obs["Data"], mask=mask)
+    obs_mor = numpy.ma.array(obs["Data"], mask=mask, copy=True)
     _, Hr1, Av1, _, _, _ = gf_getdiurnalstats(Hdh, obs_mor, ts)
     ax1.plot(Hr1, Av1, 'b-', label="Obs")
     # get the diurnal stats of all SOLO predictions

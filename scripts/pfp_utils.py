@@ -1291,7 +1291,7 @@ def CreateEmptyVariable(label, nrecs, datetime=None, out_type="ma", attr=None):
     """
     data = numpy.ones(nrecs, dtype=numpy.float64)*float(c.missing_value)
     if out_type == "ma":
-        data = numpy.ma.array(data, mask=True)
+        data = numpy.ma.array(data, mask=True, copy=True)
     flag = numpy.ones(nrecs, dtype=numpy.int32)
     attr_new = make_attribute_dictionary(attr=attr)
     variable = {"Label": label, "Data": data, "Flag": flag, "Attr": attr_new}
@@ -2137,7 +2137,7 @@ def get_datetime_from_excel_date(values, xl_datemode):
     xl_date = values + 1462*int(xl_datemode)
     base_date = datetime.datetime(1899, 12, 30)
     dt = [base_date + datetime.timedelta(days=xl_date[i]) for i in range(len(values))]
-    return numpy.ma.array(dt)
+    return numpy.ma.array(dt, copy=True)
 
 def get_datetime_from_xldatetime(ds):
     ''' Creates a series of Python datetime objects from the Excel date read from the Excel file.
@@ -2205,7 +2205,7 @@ def get_diurnalstats(dt,data,info):
     ndays = len(data_wholedays)//nperday
     data_2d = numpy.ma.reshape(data_wholedays,[ndays,nperday])
     diel_stats = {}
-    diel_stats["Hr"] = numpy.ma.array([i*ts/float(60) for i in range(0,nperday)])
+    diel_stats["Hr"] = numpy.ma.array([i*ts/float(60) for i in range(0,nperday)], copy=True)
     diel_stats["Av"] = numpy.ma.average(data_2d,axis=0)
     diel_stats["Sd"] = numpy.ma.std(data_2d,axis=0)
     diel_stats["Mx"] = numpy.ma.max(data_2d,axis=0)
@@ -2620,7 +2620,7 @@ def get_xldatefromdatetime(ds):
                                                       ldt[i].minute,
                                                       ldt[i].second),
                                                       datemode) for i in range(0,len(ldt))]
-    xldt_new = numpy.ma.array(xldate, dtype=numpy.float64)
+    xldt_new = numpy.ma.array(xldate, dtype=numpy.float64, copy=True)
     # create the Excel datetime series
     var = {"Label": "xlDateTime", "Data": xldt_new, "Flag": flag, "Attr": xldt_attr}
     CreateVariable(ds, var)
