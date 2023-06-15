@@ -1,14 +1,18 @@
 # Python modules
 import copy
 import datetime
+import logging
 import os
 # 3rd party modules
 import matplotlib.pyplot as plt
 import numpy
 import scipy
+import xlsxwriter
 # PFP modules
 from scripts import pfp_classes
 from scripts import pfp_utils
+
+logger = logging.getLogger("pfp_log")
 
 def check_final_e0(results, year):
     """ Based on ONEFlux code for estimating final rb values."""
@@ -23,7 +27,7 @@ def check_final_e0(results, year):
                       (e0_nn["stderr"] < 450))[0]
     if len(idx) == 0:
         msg = " No E0 from windows passed quality control, skipping year " + str(year)
-        print(msg)
+        logger.warning(msg)
         ok = False
     else:
         ok = True
@@ -62,7 +66,8 @@ def create_results(years):
     return results
 def er_lloyd_taylor(T, E0, rb):
     return rb*numpy.exp(E0*(1/(288.13-227.13)-1/((T+273.15)-227.13)))
-def estimate_e0_full_year(ds_year, results, l6_info, called_by="ERUsingLloydTaylor"):
+def estimate_e0_full_year(ds_year, results, l6_info):
+    called_by = l6_info["ERUsingLloydTaylor"]["info"]["called_by"]
     ts = int(ds_year.root["Attributes"]["time_step"])
     ER = pfp_utils.GetVariable(ds_year, "ER")
     Ta = pfp_utils.GetVariable(ds_year, "Ta")
@@ -81,8 +86,8 @@ def estimate_e0_full_year(ds_year, results, l6_info, called_by="ERUsingLloydTayl
     res["rb"]["value"] = numpy.append(res["rb"]["value"], rls["rls"].x[1])
     res["rb"]["stderr"] = numpy.append(res["rb"]["stderr"], rls["perr"][1])
     return
-def estimate_e0_windows(ds_year, results, l6_info, fit_type="least_squares",
-                        called_by="ERUsingLloydTaylor"):
+def estimate_e0_windows(ds_year, results, l6_info, fit_type="least_squares"):
+    called_by = l6_info["ERUsingLloydTaylor"]["info"]["called_by"]
     nrecs = int(ds_year.root["Attributes"]["nc_nrecs"])
     ts = int(ds_year.root["Attributes"]["time_step"])
     nperday = int(24*60/ts)
@@ -114,7 +119,8 @@ def estimate_e0_windows(ds_year, results, l6_info, fit_type="least_squares",
             print("Insufficient number of points ", str(len(y)))
             continue
         if max(x) - min(x) < mts:
-            print("Insufficient temperature spread ", str(max(y)-min(y)))
+            msg = " Insufficient temperature spread ", str(max(y)-min(y))
+            logger.debug(msg)
             continue
         rls = least_squares(residuals_lt, numpy.array([e0p, rbp]), (x, y), method='lm')
         rw = results["years"][year]["win"]
@@ -167,7 +173,8 @@ def get_final_e0(results, year):
         rwqca["E0"]["value"] = raqc["E0"]["value"]
         rwqca["E0"]["stderr"] = raqc["E0"]["stderr"]
     return
-def get_final_rb(ds_year, results, l6_info, called_by="ERUsingLloydTaylor"):
+def get_final_rb(ds_year, results, l6_info):
+    called_by = l6_info["ERUsingLloydTaylor"]["info"]["called_by"]
     nrecs = int(ds_year.root["Attributes"]["nc_nrecs"])
     ts = int(ds_year.root["Attributes"]["time_step"])
     nperday = int(24*60/ts)
@@ -206,7 +213,8 @@ def get_final_rb(ds_year, results, l6_info, called_by="ERUsingLloydTaylor"):
         elif (len(y) < 6):
             print("Insufficient number of points ", str(len(y)))
         elif (max(x) - min(x) < mts):
-            print("Insufficient temperature spread ", str(max(y)-min(y)))
+            msg = " Insufficient temperature spread ", str(max(y)-min(y))
+            logger.debug(msg)
         # plot to screen and hard copy
         # plot_er_vs_ta(y, x, z, l6_info)
         si = si + ss*nperday
@@ -277,10 +285,6 @@ def least_squares(func, p0, args, method='trf', loss='linear'):
     perr = numpy.sqrt(numpy.diag(cov))
     return {"rls": rls, "perr": perr}
 def plot_er_vs_ta(er, ta, sws, rw, l6_info):
-    if len(plt.get_fignums()) == 0:
-        l6_info["ERUsingLloydTaylor"]["info"]["fignum"] = 1
-    else:
-        l6_info["ERUsingLloydTaylor"]["info"]["fignum"] = plt.get_fignums()[-1] + 1
     fignum = l6_info["ERUsingLloydTaylor"]["info"]["fignum"]
     title = str(rw["start"][-1]) + " to " + str(rw["end"][-1])
     plot_path = l6_info["ERUsingLloydTaylor"]["info"]["plot_path"]
@@ -349,29 +353,15 @@ def residuals_lt_rb(params, T, ER, E0):
     rb = params[0]
     residuals = er_lloyd_taylor(T, E0, rb) - ER
     return residuals
-def subset_data_structure(ds, start, end, subset_labels=None):
-    ts = int(ds.root["Attributes"]["time_step"])
-    ldt = ds.root["Variables"]["DateTime"]["Data"]
-    si = pfp_utils.GetDateIndex(ldt, start, default=0, ts=ts)
-    ei = pfp_utils.GetDateIndex(ldt, end, default=len(ldt)-1, ts=ts)
-    labels = list(ds.root["Variables"].keys())
-    if subset_labels is None:
-        subset_labels = labels.copy()
-    else:
-        for subset_label in list(subset_labels):
-            if subset_label not in labels:
-                subset_labels.remove(subset_label)
-    ds_subset = pfp_classes.DataStructure(global_attributes=ds.root["Attributes"])
-    if "DateTime" not in subset_labels:
-        subset_labels.append("DateTime")
-    for subset_label in list(subset_labels):
-        var = pfp_utils.GetVariable(ds, subset_label, start=si, end=ei)
-        pfp_utils.CreateVariable(ds_subset, var)
-    ds_subset.root["Attributes"]["time_coverage_start"] = var["DateTime"][0]
-    ds_subset.root["Attributes"]["time_coverage_end"] = var["DateTime"][-1]
-    ds_subset.root["Attributes"]["nc_nrecs"] = len(var["Data"])
-    return ds_subset
+def update_mergeseries(l6_info, output):
+    """ Update the MergeSeries entry in l6_info."""
+    source = l6_info["ERUsingLloydTaylor"]["outputs"][output]["source"]
+    l6_info["Summary"]["EcosystemRespiration"].append(source)
+    merge = l6_info["EcosystemRespiration"][source]["MergeSeries"]["source"].split(",")
+    l6_info["MergeSeries"]["standard"][source] = {"output": source, "source": merge}
+    return
 def write_results(results, l6_info):
+    """ Write the Lloyd-Taylor results to an Excel workbook."""
     file_path = l6_info["Files"]["file_path"]
     out_filename = l6_info["Files"]["out_filename"].replace(".nc", "_LloydTaylor.xlsx")
     xlsx_uri = os.path.join(file_path, out_filename)
@@ -383,7 +373,7 @@ def write_results(results, l6_info):
     workbook.close()
     return
 def write_results_settings(workbook, results, l6_info):
-    # write the settings to the worksheet "Settings"
+    """ Write the settings to the worksheet 'Settings'."""
     row = 0
     col = 0
     worksheet = workbook.add_worksheet("Settings")
@@ -404,7 +394,7 @@ def write_results_settings(workbook, results, l6_info):
                 worksheet.write(row, col+1, value)
     return
 def write_results_summary(workbook, results):
-    # write the annual E0 and rb values to the "Summary" worksheet
+    """ Write the annual E0 and rb values to the 'Summary' worksheet."""
     row = 0
     col = 0
     worksheet = workbook.add_worksheet("Summary")
@@ -433,7 +423,7 @@ def write_results_summary(workbook, results):
         row = row + 1
     return
 def write_results_e0_windowed(workbook, results):
-    # write the E0 window results
+    """ Write the E0 window results."""
     date_format = workbook.add_format({'num_format': 'yyyy-mm-dd HH:MM'})
     row = 0
     col = 0

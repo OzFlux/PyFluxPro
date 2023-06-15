@@ -19,6 +19,7 @@ from scripts import pfp_gfSOLO
 from scripts import pfp_gui
 from scripts import pfp_io
 from scripts import pfp_part
+from scripts import pfp_plot
 from scripts import pfp_ts
 from scripts import pfp_utils
 
@@ -163,29 +164,28 @@ def ERUsingLloydTaylor(ds, l6_info):
         return
     msg = " Estimating ER using Lloyd-Taylor"
     logger.info(msg)
-
+    called_by = l6_info["ERUsingLloydTaylor"]["info"]["called_by"]
+    l6_info["ERUsingLloydTaylor"]["info"]["fignum"] = pfp_plot.get_next_fignum()
     ts = int(ds.root["Attributes"]["time_step"])
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
-    DateTime = pfp_utils.GetVariable(ds, "DateTime")
-    ldt = DateTime["Data"] - datetime.timedelta(minutes=ts)
-    years = numpy.unique([dt.year for dt in ldt])
+    site_name = ds.root["Attributes"]["site_name"]
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    ldt = dt["Data"] - datetime.timedelta(minutes=ts)
+    years = numpy.unique([d.year for d in ldt])
     then = datetime.datetime.now()
-    called_by = "ERUsingLloydTaylor"
     subset_labels = ["ER", "Fco2", "Fsd", "Sws", "Ta"]
     outputs = l6_info[called_by]["outputs"].keys()
     for output in outputs:
-        print("Estimating "+output)
+        drivers = [l for l in l6_info[called_by]["outputs"][output]["drivers"]]
         results = pfp_erlt.create_results(years)
         Rb = pfp_utils.CreateEmptyVariable("Rb_LT", nrecs)
         pfp_utils.CreateVariable(ds, Rb)
         E0 = pfp_utils.CreateEmptyVariable("E0_LT", nrecs)
         pfp_utils.CreateVariable(ds, E0)
         for year in years:
-            msg = "Processing " + str(year)
-            logger.info(msg)
             start = datetime.datetime(year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
             end = datetime.datetime(year+1, 1, 1, 0, 0, 0)
-            ds_year = pfp_erlt.subset_data_structure(ds, start, end, subset_labels=subset_labels)
+            ds_year = pfp_io.SubsetDataStructure(ds, start, end, subset_labels=subset_labels)
             pfp_erlt.estimate_e0_full_year(ds_year, results, l6_info)
             pfp_erlt.estimate_e0_windows(ds_year, results, l6_info)
             pfp_erlt.quality_control_e0(results, year)
@@ -195,9 +195,19 @@ def ERUsingLloydTaylor(ds, l6_info):
             pfp_erlt.get_final_rb(ds_year, results, l6_info)
         pfp_erlt.interpolate_parameters_lt(ds, results)
         pfp_erlt.estimate_er_lt(ds, output)
-    pfp_erlt.write_results(results, l6_info)
+        pfp_erlt.write_results(results, l6_info)
+        pfp_erlt.update_mergeseries(l6_info, output)
+        target = l6_info[called_by]["outputs"][output]["target"]
+        fig_num = pfp_plot.get_next_fignum()
+        title = site_name + ": " + "Ecosystem respiration modelled by Lloyd-Taylor"
+        pd = rp_initplot(site_name=site_name, label=target,
+                         fig_num=fig_num, title=title,
+                         nDrivers=len(drivers),
+                         startdate=str(dt["Data"][0]),
+                         enddate=str(dt["Data"][-1]))
+        rp_plot(pd, ds, output, drivers, target, l6_info[called_by], called_by)
     now = datetime.datetime.now()
-    msg = " Elapsed time:" + str(now-then)
+    msg = " Finished Lloyd-Taylor method: elapsed time was " + str(now-then)
     logger.info(msg)
     return
 

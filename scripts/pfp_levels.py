@@ -363,13 +363,8 @@ def l6qc(main_gui, cf, ds5):
     # estimate ER using Lloyd-Taylor
     if "ERUsingLloydTaylor" in list(l6_info.keys()):
         try:
-            # open the Excel file for writing all outputs
-            xl_name = l6_info["ERUsingLloydTaylor"]["info"]["data_file_path"]
-            xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
-            pfp_rp.ERUsingLloydTaylor(ds6, l6_info, xl_writer)
-            xl_writer.close()
+            pfp_rp.ERUsingLloydTaylor(ds6, l6_info)
         except RuntimeError:
-            xl_writer.close()
             msg = " Error using Lloyd-Taylor to estimate ER"
             logger.error(msg)
     else:

@@ -2399,6 +2399,40 @@ def read_eddypro_full(csvname):
 
     return ds
 
+def SubsetDataStructure(ds, start, end, subset_labels=None):
+    """
+    Purpose:
+     Subset a data strucrure.
+    Usage:
+     start = datetime.datetime(year, 1, 1, 0, 0, 0) + datetime.timedelta(minutes=ts)
+     end = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+     subset_labels = ["ER", "Fco2", "Fsd", "Sws", "Ta"]
+     ds_subset = pfp_io.SubsetDataStructure(ds, start, end, subset_labels=subset_labels)
+    Author: PRI
+    Date: June 2023
+    """
+    ts = int(ds.root["Attributes"]["time_step"])
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
+    si = pfp_utils.GetDateIndex(ldt, start, default=0, ts=ts)
+    ei = pfp_utils.GetDateIndex(ldt, end, default=len(ldt)-1, ts=ts)
+    labels = list(ds.root["Variables"].keys())
+    if subset_labels is None:
+        subset_labels = labels.copy()
+    else:
+        for subset_label in list(subset_labels):
+            if subset_label not in labels:
+                subset_labels.remove(subset_label)
+    ds_subset = pfp_classes.DataStructure(global_attributes=ds.root["Attributes"])
+    if "DateTime" not in subset_labels:
+        subset_labels.append("DateTime")
+    for subset_label in list(subset_labels):
+        var = pfp_utils.GetVariable(ds, subset_label, start=si, end=ei)
+        pfp_utils.CreateVariable(ds_subset, var)
+    ds_subset.root["Attributes"]["time_coverage_start"] = var["DateTime"][0]
+    ds_subset.root["Attributes"]["time_coverage_end"] = var["DateTime"][-1]
+    ds_subset.root["Attributes"]["nc_nrecs"] = len(var["Data"])
+    return ds_subset
+
 def write_csv_ep_biomet(cf):
     """
     Purpose:

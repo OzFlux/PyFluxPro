@@ -53,7 +53,12 @@ def get_diurnalstats(DecHour,Data,dt):
             Mx[i] = numpy.max(Data[li])
             Mn[i] = numpy.min(Data[li])
     return Hr, Av, Sd, Mx, Mn
-
+def get_next_fignum():
+    if len(plt.get_fignums()) == 0:
+        fignum = 1
+    else:
+        fignum = plt.get_fignums()[-1] + 1
+    return fignum
 def get_ticks(start, end):
     from datetime import timedelta as td
     delta = end - start
