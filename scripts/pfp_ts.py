@@ -828,7 +828,7 @@ def CalculateNetRadiation(cf,ds,Fn_out='Fn_4cmpt',Fsd_in='Fsd',Fsu_in='Fsu',Fld_
         for item in [Fsd_in, Fsu_in, Fld_in, Flu_in]:
             if item not in list(ds.root["Variables"].keys()):
                 missing_items.append(item)
-        msg = "  " + ",".join(missing_items) + " not found, Fn set to missing"
+        msg = "  " + ",".join(missing_items) + " not found, "+Fn_out+" set to missing"
         logger.warning(msg)
         attr = {"long_name": "Calculated net radiation (one or more components missing)",
                 "standard_name": "surface_net_downward_radiative_flux", "units": "W/m^2",

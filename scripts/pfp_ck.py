@@ -744,7 +744,8 @@ def do_IRGAcheck(cf,ds):
             logger.warning(msg)
             irga_type = "Li-7500"
     # do the IRGA checks
-    if irga_type in ["Li-7500", "Li-7500A", "Li-7500RS", "Li-7200", "Li-7200RS"]:
+    if irga_type in ["Li-7500", "Li-7500A", "Li-7500RS", "Li-7500DS",
+                     "Li-7200", "Li-7200RS", "Li-7200DS"]:
         ds.root["Attributes"]["irga_type"] = irga_type
         do_li7500check(cf, ds)
     elif irga_type in ["EC150", "EC155", "IRGASON"]:
