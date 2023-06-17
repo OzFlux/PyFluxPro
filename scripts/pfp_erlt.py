@@ -116,10 +116,11 @@ def estimate_e0_windows(ds_year, results, l6_info, fit_type="least_squares"):
         x = numpy.ma.compressed(Ta["Data"][si:ei+1])
         z = numpy.ma.compressed(Sws["Data"][si:ei+1])
         if (len(y) < mwp):
-            print("Insufficient number of points ", str(len(y)))
+            msg = "  Insufficient number of points " + str(len(y))
+            logger.debug(msg)
             continue
         if max(x) - min(x) < mts:
-            msg = " Insufficient temperature spread ", str(max(y)-min(y))
+            msg = "  Insufficient temperature spread " + str(max(y)-min(y))
             logger.debug(msg)
             continue
         rls = least_squares(residuals_lt, numpy.array([e0p, rbp]), (x, y), method='lm')
@@ -211,9 +212,10 @@ def get_final_rb(ds_year, results, l6_info):
             rf["rb"]["value"] = numpy.append(rf["rb"]["value"], rls["rls"].x[0])
             rf["rb"]["stderr"] = numpy.append(rf["rb"]["stderr"], rls["perr"][0])
         elif (len(y) < 6):
-            print("Insufficient number of points ", str(len(y)))
+            msg = "  Insufficient number of points " + str(len(y))
+            logger.debug(msg)
         elif (max(x) - min(x) < mts):
-            msg = " Insufficient temperature spread ", str(max(y)-min(y))
+            msg = "  Insufficient temperature spread " + str(max(y)-min(y))
             logger.debug(msg)
         # plot to screen and hard copy
         # plot_er_vs_ta(y, x, z, l6_info)

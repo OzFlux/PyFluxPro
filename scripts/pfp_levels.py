@@ -350,23 +350,12 @@ def l6qc(main_gui, cf, ds5):
     # check units of Fco2
     pfp_utils.CheckFco2Units(ds6, "umol/m^2/s", convert_units=True)
     # get ER from the observed Fco2
-    try:
-        pfp_rp.GetERFromFco2(ds6, l6_info)
-    except RuntimeError:
-        return ds6
+    pfp_rp.GetERFromFco2(ds6, l6_info)
     # estimate ER using SOLO
-    try:
-        pfp_rp.ERUsingSOLO(main_gui, ds6, l6_info, "ERUsingSOLO")
-    except RuntimeError:
-        msg = " Error using SOLO to estimate ER"
-        logger.error(msg)
+    pfp_rp.ERUsingSOLO(main_gui, ds6, l6_info, "ERUsingSOLO")
     # estimate ER using Lloyd-Taylor
     if "ERUsingLloydTaylor" in list(l6_info.keys()):
-        try:
-            pfp_rp.ERUsingLloydTaylor(ds6, l6_info)
-        except RuntimeError:
-            msg = " Error using Lloyd-Taylor to estimate ER"
-            logger.error(msg)
+        pfp_rp.ERUsingLloydTaylor(ds6, l6_info)
     else:
         msg = "The Lloyd-Taylor ER method is disabled in the control file"
         logger.warning(msg)

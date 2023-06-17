@@ -6,6 +6,7 @@ import logging
 import os
 import traceback
 # 3rd party modules
+from configobj import ConfigObj
 from PyQt5 import QtCore, QtGui, QtWidgets
 # PFP modules
 from scripts import constants as c
@@ -3680,7 +3681,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
-    def browse_file_name(self):
+    def browse_file_name(self, mode):
         """ Browse for the input data file path."""
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
@@ -3691,8 +3692,16 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # get the file_path so it can be used as a default directory
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                          directory=file_path)[0]
+        if mode == "in_filename":
+            caption = "Choose an input file ..."
+        elif mode == "out_filename":
+            caption = "Choose an output file ..."
+        else:
+            msg = "browse_file_name: unkown option: " + str(mode)
+            raise RuntimeError(msg)
+        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption=caption,
+                                                          directory=file_path,
+                                                          filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -3772,7 +3781,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
             self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
             self.context_menu.actionBrowseInputFile.setText("Browse...")
             self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
-            self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_file_name)
+            self.context_menu.actionBrowseInputFile.triggered.connect(lambda: self.browse_file_name(key))
         else:
             pass
         return
@@ -4791,7 +4800,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                          directory=file_path)[0]
+                                                          directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -5788,7 +5797,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                          directory=file_path)[0]
+                                                          directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -6952,7 +6961,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -7419,6 +7428,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         model = self.model
+        for item in self.cfg.keys():
+            if item not in ["level"]:
+                self.cfg.pop(item)
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
@@ -7987,7 +7999,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
