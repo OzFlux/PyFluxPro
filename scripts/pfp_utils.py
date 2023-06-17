@@ -1947,10 +1947,7 @@ def GetVariable(ds, label, group="root", start=0, end=-1, mode="truncate", out_t
       Fsd = pfp_utils.GetVariable(ds, "Fsd")
     Author: PRI
     """
-    try:
-        gvars = getattr(ds, group)["Variables"]
-    except:
-        print("oi va vei")
+    gvars = getattr(ds, group)["Variables"]
     gattr = getattr(ds, group)["Attributes"]
     dt = gvars["DateTime"]["Data"]
     # get the data, flag and attributes for this variable from the data structure

@@ -2173,7 +2173,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                          directory=file_path)[0]
+                                                          directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -3345,7 +3345,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                          directory=file_path)[0]
+                                                          directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -6530,7 +6530,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
             new_file = QtCore.QDir.toNativeSeparators(str(new_file))
             parent.child(selected_item.row(), 1).setText(new_file)
 
-    def browse_input_file(self):
+    def browse_input_file(self, type_filter):
         """ Browse for the input data file path."""
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
@@ -6542,7 +6542,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                          directory=file_path)[0]
+                                                          directory=file_path, filter=type_filter)[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -6681,7 +6681,8 @@ class edit_cfg_L4(QtWidgets.QWidget):
                     self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
                     self.context_menu.actionBrowseInputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
-                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+                    arg = lambda: self.browse_input_file(type_filter="*.nc")
+                    self.context_menu.actionBrowseInputFile.triggered.connect(arg)
                 elif key in ["out_filename"]:
                     self.context_menu.actionBrowseOutputFile = QtWidgets.QAction(self)
                     self.context_menu.actionBrowseOutputFile.setText("Browse...")
@@ -7706,7 +7707,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -8741,7 +8742,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
