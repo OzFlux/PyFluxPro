@@ -4895,7 +4895,7 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
             # populate the output file name with a default based on the input file name
             for n in range(parent.rowCount()):
                 if parent.child(n, 0).text() == "out_filename":
-                    xls_filename = new_file_parts[1].replace(".nc", "_CPD_Barr.xls")
+                    xls_filename = new_file_parts[1].replace(".nc", "_CPD_Barr.xlsx")
                     parent.child(n, 1).setText(xls_filename)
         return
 
@@ -4912,7 +4912,7 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
-                                                              directory=file_path, filter="*.xls")[0]
+                                                              directory=file_path, filter="*.xlsx")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -5921,7 +5921,7 @@ class edit_cfg_mpt(QtWidgets.QWidget):
             # populate the output file name with a default based on the input file name
             for n in range(parent.rowCount()):
                 if parent.child(n, 0).text() == "out_filename":
-                    xls_filename = new_file_parts[1].replace(".nc", "_MPT.xls")
+                    xls_filename = new_file_parts[1].replace(".nc", "_MPT.xlsx")
                     parent.child(n, 1).setText(xls_filename)
         return
 
