@@ -6258,11 +6258,16 @@ class edit_cfg_L4(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
-    def add_fileentry(self, item):
+    def add_fileentry(self):
         """ Add a new entry to the [Files] section."""
+        sender = str(self.context_menu.sender().text())
+        item =  sender.split(" ")[1]
         dict_to_add = {item: "Right click to browse"}
         # add the subsection
-        self.add_subsection(dict_to_add)
+        editable = True
+        if item in ["access", "aws", "climatology", "era5"]:
+            editable = False
+        self.add_subsection(dict_to_add, editable=editable)
 
     def add_gui_section(self):
         """ Add a GUI section."""
@@ -6362,7 +6367,7 @@ class edit_cfg_L4(QtWidgets.QWidget):
         # add the subsubsection (RangeCheck)
         self.add_subsubsection(dict_to_add)
 
-    def add_subsection(self, dict_to_add):
+    def add_subsection(self, dict_to_add, editable=False):
         """ Add a subsection to the model."""
         # get the index of the selected item
         idx = self.view.selectedIndexes()[0]
@@ -6371,7 +6376,8 @@ class edit_cfg_L4(QtWidgets.QWidget):
         for key in dict_to_add:
             val = str(dict_to_add[key])
             child0 = QtGui.QStandardItem(key)
-            child0.setEditable(False)
+            if not editable:
+                child0.setEditable(False)
             child1 = QtGui.QStandardItem(val)
             section.appendRow([child0, child1])
         self.update_tab_text()
@@ -6618,7 +6624,8 @@ class edit_cfg_L4(QtWidgets.QWidget):
                         self.context_menu.actionAddFileEntry = QtWidgets.QAction(self)
                         self.context_menu.actionAddFileEntry.setText("Add " + item)
                         self.context_menu.addAction(self.context_menu.actionAddFileEntry)
-                        self.context_menu.actionAddFileEntry.triggered.connect(lambda:self.add_fileentry(item))
+                        #self.context_menu.actionAddFileEntry.triggered.connect(lambda:self.add_fileentry(item))
+                        self.context_menu.actionAddFileEntry.triggered.connect(self.add_fileentry)
                         add_separator = True
             elif selected_text == "Imports":
                 self.context_menu.actionAddImportsVariable = QtWidgets.QAction(self)
