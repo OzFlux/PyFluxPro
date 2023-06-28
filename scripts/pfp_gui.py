@@ -510,7 +510,7 @@ class file_explore(QtWidgets.QWidget):
             # increment the figure number
             self.figure_number += 1
         except Exception:
-            error_message = " An error occured while plotting fingerprints, see below for details ..."
+            error_message = " An error occurred while plotting fingerprints, see below for details ..."
             logger.error(error_message)
             error_message = traceback.format_exc()
             logger.error(error_message)
@@ -541,7 +541,7 @@ class file_explore(QtWidgets.QWidget):
             # increment the figure number
             self.figure_number += 1
         except Exception:
-            error_message = " An error occured while plotting percentile time series, see below for details ..."
+            error_message = " An error occurred while plotting percentile time series, see below for details ..."
             logger.error(error_message)
             error_message = traceback.format_exc()
             logger.error(error_message)
@@ -572,7 +572,7 @@ class file_explore(QtWidgets.QWidget):
             # increment the figure number
             self.figure_number += 1
         except Exception:
-            error_message = " An error occured while plotting time series, see below for details ..."
+            error_message = " An error occurred while plotting time series, see below for details ..."
             logger.error(error_message)
             error_message = traceback.format_exc()
             logger.error(error_message)
@@ -603,7 +603,7 @@ class file_explore(QtWidgets.QWidget):
             # increment the figure number
             self.figure_number += 1
         except Exception:
-            error_message = " An error occured while plotting time series, see below for details ..."
+            error_message = " An error occurred while plotting time series, see below for details ..."
             logger.error(error_message)
             error_message = traceback.format_exc()
             logger.error(error_message)
