@@ -1336,7 +1336,7 @@ def get_ustar_thresholds(cf, ds):
             msg = " No source for ustar threshold found in " + os.path.basename(cf.filename)
         ustar_out = cleanup_ustar_dict(ds, ustar_dict)
     except Exception:
-        msg = " An error occured getting the ustar threshold"
+        msg = " An error occurred getting the ustar threshold"
         logger.error(msg)
         ds.info["returncodes"]["value"] = 1
         ds.info["returncodes"]["message"] = msg
