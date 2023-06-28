@@ -40,7 +40,7 @@ def l1qc(cfg):
     if len(list(dfs.keys())) == 0:
         ds = pfp_io.DataStructure()
         ds.info["returncodes"]["value"] = 1
-        ds.info["returncodes"]["message"] = "An error occured reading the input file"
+        ds.info["returncodes"]["message"] = "An error occurred reading the input file"
         return ds
     # merge the data frames (1 per Excel worksheet)
     df = pfp_io.MergeDataFrames(dfs, l1_info)
