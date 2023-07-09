@@ -4508,7 +4508,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 class edit_cfg_L3(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_L3, self).__init__()
-        self.cfg = main_gui.file
+        self.cfg = main_gui.cfg
         self.tabs = main_gui.tabs
         self.info = copy.deepcopy(main_gui.info)
         self.info["tab"]["source"] = "local"
@@ -5351,6 +5351,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         """ Iterate over the model and get the data."""
         # create a new control file object
         cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
         cfg.filename = self.cfg.filename
         # set the control file level
         cfg["level"] = "L3"

@@ -1,4 +1,5 @@
 # standard modules
+import copy
 import datetime
 import faulthandler
 import logging
@@ -338,8 +339,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         file_open_success = False
         if not file_open_success:
             try:
-                self.file = ConfigObj(self.file_uri, indent_type="    ", list_values=False,
-                                      write_empty_values=True, encoding="UTF8")
+                content = ConfigObj(self.file_uri, indent_type="    ", list_values=False,
+                                    write_empty_values=True, encoding="UTF8")
                 file_open_success = True
             except Exception:
                 # trying to open a netCDF file will throw UnicodeDecodeError
@@ -365,7 +366,7 @@ class pfp_main_ui(QtWidgets.QWidget):
         # check to see if it is a netCDF file
         if not file_open_success:
             try:
-                self.file = netCDF4.Dataset(self.file_uri, "r")
+                content = netCDF4.Dataset(self.file_uri, "r")
                 file_open_success = True
             except:
                 # unrecognised file type
@@ -375,11 +376,13 @@ class pfp_main_ui(QtWidgets.QWidget):
                 logger.error(error_message)
                 return
         # do the business depending on the file type
-        if isinstance(self.file, ConfigObj):
+        if isinstance(content, ConfigObj):
             # we are opening a control file
+            self.cfg = copy.deepcopy(content)
             self.file_open_control_file()
-        elif isinstance(self.file, netCDF4._netCDF4.Dataset):
+        elif isinstance(content, netCDF4._netCDF4.Dataset):
             # we are opening a netCDF file
+            self.file = copy.deepcopy(content)
             self.file_open_netcdf_file()
         else:
             # unrecognised file type
@@ -519,58 +522,58 @@ class pfp_main_ui(QtWidgets.QWidget):
         """ Open a control file in the PFP GUI."""
         logger = logging.getLogger(name="pfp_log")
         # check to see if the processing level is defined in the control file
-        if "level" not in self.file:
+        if "level" not in self.cfg:
             # if not, then sniff the control file to see what it is
-            self.file["level"] = self.get_cf_level()
+            self.cfg["level"] = self.get_cf_level()
             # and save the control file
-            self.file.write()
+            self.cfg.write()
         # create a QtTreeView to edit the control file
-        if self.file["level"] in ["L1"]:
+        if self.cfg["level"] in ["L1"]:
             # update control file to new syntax
-            if not pfp_compliance.l1_update_controlfile(self.file): return
+            if not pfp_compliance.l1_update_controlfile(self.cfg): return
             # put the GUI for editing the L1 control file in a new tab
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L1(self)
-        elif self.file["level"] in ["L2"]:
-            if not pfp_compliance.l2_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["L2"]:
+            if not pfp_compliance.l2_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L2(self)
-        elif self.file["level"] in ["L3"]:
-            if not pfp_compliance.l3_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["L3"]:
+            if not pfp_compliance.l3_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L3(self)
-        elif self.file["level"] in ["concatenate"]:
-            if not pfp_compliance.concatenate_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["concatenate"]:
+            if not pfp_compliance.concatenate_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_concatenate(self)
-        elif self.file["level"] in ["climatology"]:
-            if not pfp_compliance.climatology_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["climatology"]:
+            if not pfp_compliance.climatology_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_climatology(self)
-        elif self.file["level"] in ["cpd_barr"]:
-            if not pfp_compliance.cpd_barr_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["cpd_barr"]:
+            if not pfp_compliance.cpd_barr_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_cpd_barr(self)
-        elif self.file["level"] in ["cpd_mchugh"]:
-            if not pfp_compliance.cpd_mchugh_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["cpd_mchugh"]:
+            if not pfp_compliance.cpd_mchugh_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_cpd_mchugh(self)
-        elif self.file["level"] in ["cpd_mcnew"]:
-            if not pfp_compliance.cpd_mcnew_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["cpd_mcnew"]:
+            if not pfp_compliance.cpd_mcnew_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_cpd_mcnew(self)
-        elif self.file["level"] in ["mpt"]:
-            if not pfp_compliance.mpt_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["mpt"]:
+            if not pfp_compliance.mpt_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_mpt(self)
-        elif self.file["level"] in ["L4"]:
-            if not pfp_compliance.l4_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["L4"]:
+            if not pfp_compliance.l4_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L4(self)
-        elif self.file["level"] in ["L5"]:
-            if not pfp_compliance.l5_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["L5"]:
+            if not pfp_compliance.l5_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L5(self)
-        elif self.file["level"] in ["L6"]:
-            if not pfp_compliance.l6_update_controlfile(self.file): return
+        elif self.cfg["level"] in ["L6"]:
+            if not pfp_compliance.l6_update_controlfile(self.cfg): return
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_L6(self)
-        elif self.file["level"] in ["nc2csv_biomet", "nc2csv_fluxnet", "nc2csv_oneflux", "nc2csv_reddyproc"]:
+        elif self.cfg["level"] in ["nc2csv_biomet", "nc2csv_fluxnet", "nc2csv_oneflux", "nc2csv_reddyproc"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv(self)
-        elif self.file["level"] in ["batch"]:
+        elif self.cfg["level"] in ["batch"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_batch(self)
-        elif self.file["level"] in ["windrose"]:
+        elif self.cfg["level"] in ["windrose"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_windrose(self)
         else:
-            logger.error(" Unrecognised control file type: " + self.file["level"])
+            logger.error(" Unrecognised control file type: " + self.cfg["level"])
             return
         # add a tab for the control file
         tab_title = os.path.basename(str(self.file_uri))
@@ -852,12 +855,14 @@ class pfp_main_ui(QtWidgets.QWidget):
         content = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         if isinstance(content, ConfigObj):
             # we are saving a control file
-            file_uri = content.filename
+            self.cfg = copy.deepcopy(content)
+            file_uri = self.cfg.filename
             file_uri = QtWidgets.QFileDialog.getSaveFileName(self, "Save as ...", file_uri)[0]
             if len(str(file_uri)) == 0:
                 return
-            content.filename = file_uri
-            self.file_save_as_control_file(content)
+            # update the controlfile name
+            self.cfg.filename = file_uri
+            self.file_save_as_control_file()
         elif ((isinstance(content, pfp_classes.DataStructure)) or
               (isinstance(content, dict))):
             # we are saving a netCDF file
@@ -873,17 +878,15 @@ class pfp_main_ui(QtWidgets.QWidget):
             logger.error(msg)
         return
 
-    def file_save_as_control_file(self, cfg):
+    def file_save_as_control_file(self):
         """ Save the current tab with a different name."""
         tab_index_current = self.tabs.tab_index_current
         logger = logging.getLogger(name="pfp_log")
         # write the control file
-        logger.info(" Saving " + cfg.filename)
-        cfg.write()
-        # update the stored control file with the new name
-        self.file.filename = cfg.filename
+        logger.info(" Saving " + self.cfg.filename)
+        self.cfg.write()
         # update the tab text
-        tab_title = os.path.basename(str(cfg.filename))
+        tab_title = os.path.basename(str(self.cfg.filename))
         self.tabs.setTabText(tab_index_current, tab_title)
         return
 

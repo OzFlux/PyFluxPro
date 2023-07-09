@@ -1334,21 +1334,22 @@ def NetCDFConcatenate(info):
         dt = pfp_utils.GetVariable(data[file_name], "DateTime")
         inc["time_coverage_start"].append(dt["Data"][0])
         inc["time_coverage_end"].append(dt["Data"][-1])
-        inc["labels"] = inc["labels"] + list(data[file_name].root["Variables"].keys())
-    # get a list of unique variable names and remove unwanted labels
-    inc["labels"] = list(set(inc["labels"]))
+        inc["labels"][file_name] =  list(data[file_name].root["Variables"].keys())
     # get a list of files with start times in chronological order
     inc["chrono_files"] = [f for d, f in sorted(zip(inc["time_coverage_start"], inc["in_file_names"]))]
     # remove depreacted variables
     netcdf_concatenate_remove_depreacted(info)
     # check units for each variable are consistent across all files to be concatenated
     netcdf_concatenate_check_units_standard_name(data, info)
+    # get the list of variables to be included in the output file
+    netcdf_concatenate_include_labels(info)
     # create the output data structure from the input files
     ds_out = netcdf_concatenate_create_ds_out(data, info)
     # truncate the start and the end of the output data structure
     ds_out = netcdf_concatenate_truncate(ds_out, info)
     # get the maximum gap length (in hours) from the control file
-    pfp_ts.InterpolateOverMissing(ds_out, inc["labels"], max_length_hours=inc["MaxGapInterpolate"],
+    labels = list(ds_out.root["Variables"].keys())
+    pfp_ts.InterpolateOverMissing(ds_out, labels, max_length_hours=inc["MaxGapInterpolate"],
                                   int_type="Akima")
     # make sure we have all of the humidities
     pfp_ts.CalculateHumidities(ds_out)
@@ -1364,8 +1365,8 @@ def NetCDFConcatenate(info):
     pfp_utils.get_coverage_groups(ds_out)
     # remove intermediate series
     pfp_ts.RemoveIntermediateSeries(ds_out, info)
-    # keep only a subset of variables
-    netcdf_concatenate_keep_subset(ds_out, info)
+    ## keep only a subset of variables
+    #netcdf_concatenate_keep_subset(ds_out, info)
     # rename if output file is the same as one of the input files
     netcdf_concatenate_rename_output(data, inc["out_file_name"])
     logger.info(" Writing data to " + os.path.split(inc["out_file_name"])[1])
@@ -1668,12 +1669,14 @@ def netcdf_concatenate_create_ds_out(data, info):
           "Attr": {"long_name": "Datetime in local timezone", "units": "None"},
           "Label": "DateTime"}
     pfp_utils.CreateVariable(ds_out, dt)
+    if "DateTime" in list(inc["labels"]["include"]):
+        inc["labels"]["include"].remove("DateTime")
     # create the netCDF time variable
     pfp_utils.get_nctime_from_datetime(ds_out)
     time_out = pfp_utils.GetVariable(ds_out, "time")
     # make the empty variables
     attr_out = {}
-    for label in inc["labels"]:
+    for label in inc["labels"]["include"]:
         ds_out.root["Variables"][label] = pfp_utils.CreateEmptyVariable(label, nrecs, out_type="ndarray")
         attr_out[label] = []
     # now loop over the files in chronological order
@@ -1686,7 +1689,7 @@ def netcdf_concatenate_create_ds_out(data, info):
         # find the indices of matching times
         indsa, indsb = pfp_utils.FindMatchingIndices(time_out["Data"], time_in["Data"])
         # loop over the variables
-        for label in inc["labels"]:
+        for label in inc["labels"]["include"]:
             dout = ds_out.root["Variables"][label]
             if label in list(data[file_name].root["Variables"].keys()):
                 din = data[file_name].root["Variables"][label]
@@ -1710,6 +1713,27 @@ def netcdf_concatenate_create_ds_out(data, info):
     ds_out.root["Attributes"]["nc_nrecs"] = nrecs
     return ds_out
 
+def netcdf_concatenate_include_labels(info):
+    inc = info["NetCDFConcatenate"]
+    if inc["SeriesToKeep"] == "all":
+        file_names = list(inc["labels"].keys())
+        labels_include = []
+        for file_name in file_names:
+            labels_file = list(inc["labels"][file_name])
+            labels_include.append(labels_file)
+    elif inc["SeriesToKeep"] == "common":
+        file_names = list(inc["labels"].keys())
+        if len(file_names) <= 1:
+            return
+        labels_include = list(inc["labels"][file_names[0]])
+        for file_name in file_names[1:]:
+            labels_file = list(inc["labels"][file_name])
+            labels_include = list(set(labels_include).intersection(set(labels_file)))
+    else:
+        labels_include = pfp_utils.csv_string_to_list(inc["SeriesToKeep"])
+    inc["labels"]["include"] = list(set(labels_include))
+    return
+
 def netcdf_concatenate_keep_subset(ds_out, info):
     """
     Purpose:
@@ -1720,15 +1744,25 @@ def netcdf_concatenate_keep_subset(ds_out, info):
     Date: January 2023
     """
     inc = info["NetCDFConcatenate"]
-    if "SeriesToKeep" not in inc:
+    if inc["SeriesToKeep"] == "all":
         return
+    elif inc["SeriesToKeep"] == "common":
+        file_names = list(inc["labels"].keys())
+        if len(file_names) <= 1:
+            return
+        labels_include = list(inc["labels"][file_names[0]])
+        for file_name in file_names[1:]:
+            labels_file = list(inc["labels"][file_name])
+            labels_include = list(set(labels_include).intersection(set(labels_file)))
+    else:
+        labels_include = pfp_utils.csv_string_to_list(inc["SeriesToKeep"])
     msg = " Removing variables not listed in SeriesToKeep"
     logger.info(msg)
-    inc_labels = inc["SeriesToKeep"]
-    inc_labels.append("DateTime")
+    if "DateTime" not in labels_include:
+        labels_include.append("DateTime")
     labels = list(ds_out.root["Variables"].keys())
-    exc_labels = [l for l in labels if l not in inc_labels]
-    for label in exc_labels:
+    labels_exclude = [l for l in labels if l not in labels_include]
+    for label in labels_exclude:
         pfp_utils.DeleteVariable(ds_out, label)
     return
 

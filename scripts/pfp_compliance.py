@@ -509,14 +509,13 @@ def ParseConcatenateControlFile(cf):
     inc["TruncateThreshold"] = float(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SeriesToCheck", default="all")
     inc["SeriesToCheck"] = pfp_utils.csv_string_to_list(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SeriesToKeep", default=None)
-    if opt is not None:
-        inc["SeriesToKeep"] = pfp_utils.csv_string_to_list(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SeriesToKeep", default="all")
+    inc["SeriesToKeep"] = opt
     # now add the bits and pieces
     inc["time_coverage_start"] = []
     inc["time_coverage_end"] = []
     inc["chrono_files"] = []
-    inc["labels"] = []
+    inc["labels"] = {}
     inc["attributes"] = ["height", "instrument", "long_name", "standard_name",
                          "statistic_type", "units", "valid_range"]
     # add key for suppressing output of intermediate variables e.g. Cpd etc
