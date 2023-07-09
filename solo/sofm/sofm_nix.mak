@@ -6,7 +6,7 @@ SOURCE	= 	readDataPC.cc MATRIX.cc sofm.cc
 OBJ	=	$(SOURCE:%.cc=%.o)
 # we disable the IEEE floating point operation and enable use of the NPU (-ffast-math)
 # using the IEE floating point was very slow using gcc V4.8 under Windows
-CXX = /usr/bin/g++  -Ofast -flto -Wall -I.
+CXX = /usr/bin/g++  -Ofast -flto -fpermissive -Wall -I.
 LIB	=	-lm
 RM	=	rm -f
 CP  = cp

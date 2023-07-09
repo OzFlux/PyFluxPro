@@ -899,6 +899,18 @@ def gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=None
         gfalternate_plotcomposite(data_dict, stat_dict, diel_avg, l4a, pd)
 
 def gfalternate_plotcomposite(data_dict, stat_dict, diel_avg, l4a, pd):
+    """
+    Purpose:
+     Plot the L4 gap filling results for thie current window.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day ...
+    """
+    # check to see if the minimum number of good points criteria was met
+    if not l4a["run"]["gotminpoints_both"]:
+        # if not, return without plotting
+        return
     # set up some local pointers
     label_tower = l4a["run"]["label_tower"]
     label_composite = l4a["run"]["label_composite"]

@@ -880,6 +880,8 @@ class pfp_main_ui(QtWidgets.QWidget):
         # write the control file
         logger.info(" Saving " + cfg.filename)
         cfg.write()
+        # update the stored control file with the new name
+        self.file.filename = cfg.filename
         # update the tab text
         tab_title = os.path.basename(str(cfg.filename))
         self.tabs.setTabText(tab_index_current, tab_title)

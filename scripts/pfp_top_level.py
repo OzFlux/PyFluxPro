@@ -740,7 +740,7 @@ def do_plot_fcvsustar_annual():
         logger.info(" Finished plotting Fc versus u*")
         logger.info("")
     except Exception:
-        error_message = " An error occured while plotting Fc versus u*, see below for details ..."
+        error_message = " An error occurred while plotting Fc versus u*, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -772,7 +772,7 @@ def do_plot_fcvsustar_seasonal():
         logger.info(" Finished plotting Fc versus u*")
         logger.info("")
     except Exception:
-        error_message = " An error occured while plotting Fc versus u*, see below for details ..."
+        error_message = " An error occurred while plotting Fc versus u*, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -804,7 +804,7 @@ def do_plot_fcvsustar_monthly():
         logger.info(" Finished plotting Fc versus u*")
         logger.info("")
     except Exception:
-        error_message = " An error occured while plotting Fc versus u*, see below for details ..."
+        error_message = " An error occurred while plotting Fc versus u*, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -850,7 +850,7 @@ def do_plot_fingerprints():
         logger.info(" Finished plotting fingerprint")
         logger.info("")
     except Exception:
-        error_message = " An error occured while plotting fingerprints, see below for details ..."
+        error_message = " An error occurred while plotting fingerprints, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -896,7 +896,7 @@ def do_plot_quickcheck():
         logger.info(" Finished plotting summaries")
         logger.info("")
     except Exception:
-        error_message = " An error occured while plotting quickcheck, see below for details ..."
+        error_message = " An error occurred while plotting quickcheck, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -942,7 +942,7 @@ def do_plot_timeseries():
         logger.info(" Finished plotting time series")
         logger.info("")
     except Exception:
-        error_message = " An error occured while plotting time series, see below for details ..."
+        error_message = " An error occurred while plotting time series, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -989,7 +989,7 @@ def do_plot_windrose_standard():
         logger.info(" Finished plotting windroses")
         logger.info("")
     except Exception:
-        error_message = " An error occured while plotting windroses, see below for details ..."
+        error_message = " An error occurred while plotting windroses, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1016,7 +1016,7 @@ def do_plot_windrose_custom(main_ui):
         logger.info(" Finished plotting windroses")
         logger.info("")
     except Exception:
-        error_message = " An error occured while plotting windroses, see below for details ..."
+        error_message = " An error occurred while plotting windroses, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1037,7 +1037,7 @@ def do_utilities_climatology_custom(main_ui):
         logger.info("Finished climatology")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing climatology, see below for details ..."
+        error_message = " An error occurred while doing climatology, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1063,7 +1063,7 @@ def do_utilities_climatology_standard(main_ui, nc_file_uri):
         logger.info("Finished climatology")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing climatology, see below for details ..."
+        error_message = " An error occurred while doing climatology, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1084,7 +1084,7 @@ def do_utilities_ustar_cpd_barr_custom(main_ui):
         logger.info("Finished CPD u* threshold detection (Barr)")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing CPD u* threshold (Barr), see below for details ..."
+        error_message = " An error occurred while doing CPD u* threshold (Barr), see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1117,7 +1117,7 @@ def do_utilities_ustar_cpd_barr_standard(main_ui, nc_file_uri):
         logger.info("Finished CPD u* threshold detection (Barr)")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing CPD u* threshold (Barr), see below for details ..."
+        error_message = " An error occurred while doing CPD u* threshold (Barr), see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1137,7 +1137,7 @@ def do_utilities_ustar_cpd_mchugh_custom(main_ui):
         logger.info("Finished CPD u* threshold detection (McHugh)")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing CPD u* threshold (McHugh), see below for details ..."
+        error_message = " An error occurred while doing CPD u* threshold (McHugh), see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1169,7 +1169,7 @@ def do_utilities_ustar_cpd_mchugh_standard(main_ui, nc_file_uri):
         logger.info("Finished CPD u* threshold detection (McHugh)")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing CPD u* threshold (McHugh), see below for details ..."
+        error_message = " An error occurred while doing CPD u* threshold (McHugh), see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1190,7 +1190,7 @@ def do_utilities_ustar_cpd_mcnew_custom(main_ui):
         logger.info("Finished CPD u* threshold detection (McNew)")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing CPD u* threshold (McNew), see below for details ..."
+        error_message = " An error occurred while doing CPD u* threshold (McNew), see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1223,7 +1223,7 @@ def do_utilities_ustar_cpd_mcnew_standard(main_ui, nc_file_uri):
         logger.info("Finished CPD u* threshold detection (McNew)")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing CPD u* threshold (McNew), see below for details ..."
+        error_message = " An error occurred while doing CPD u* threshold (McNew), see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1245,7 +1245,7 @@ def do_utilities_ustar_mpt_custom(main_ui):
         logger.info("Finished MPT u* threshold detection")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing MPT u* threshold, see below for details ..."
+        error_message = " An error occurred while doing MPT u* threshold, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1279,7 +1279,7 @@ def do_utilities_ustar_mpt_standard(main_ui, nc_file_uri):
         logger.info("Finished MPT u* threshold detection")
         logger.info("")
     except Exception:
-        error_message = " An error occured while doing MPT u* threshold, see below for details ..."
+        error_message = " An error occurred while doing MPT u* threshold, see below for details ..."
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
@@ -1292,7 +1292,7 @@ def do_utilities_ustar_mpt_standard(main_ui, nc_file_uri):
         #logger.info("Finished CF check")
         #logger.info("")
     #except Exception:
-        #error_message = " An error occured while doing the CF check, see below for details ..."
+        #error_message = " An error occurred while doing the CF check, see below for details ..."
         #logger.error(error_message)
         #error_message = traceback.format_exc()
         #logger.error(error_message)

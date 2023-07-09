@@ -363,14 +363,14 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
     mask = numpy.ma.mask_or(obs["Data"].mask, mod["Data"].mask)
-    obs_mor = numpy.ma.array(obs["Data"], mask=mask)
+    obs_mor = numpy.ma.array(obs["Data"], mask=mask, copy=True)
     _, Hr1, Av1, _, _, _ = gf_getdiurnalstats(Hdh, obs_mor, ts)
     ax1.plot(Hr1, Av1, 'b-', label="Obs")
     # get the diurnal stats of all SOLO predictions
     _, Hr2, Av2, _, _, _ = gf_getdiurnalstats(Hdh, mod["Data"], ts)
     ax1.plot(Hr2, Av2, 'r-', label="SOLO(all)")
     # get the diurnal stats of SOLO predictions when the obs are present
-    mod_mor = numpy.ma.array(mod["Data"], mask=mask)
+    mod_mor = numpy.ma.array(mod["Data"], mask=mask, copy=True)
     if numpy.ma.count_masked(obs["Data"]) != 0:
         index = numpy.where(numpy.ma.getmaskarray(obs["Data"]) == False)[0]
         # get the diurnal stats of SOLO predictions when observations are present
@@ -389,7 +389,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     ax2.set_xlabel(target + '_SOLO')
     # plot the best fit line
     coefs = numpy.ma.polyfit(numpy.ma.copy(mod["Data"]), numpy.ma.copy(obs["Data"]), 1)
-    xfit = numpy.ma.array([numpy.ma.min(mod["Data"]), numpy.ma.max(mod["Data"])])
+    xfit = numpy.ma.array([numpy.ma.min(mod["Data"]), numpy.ma.max(mod["Data"])], copy=True)
     yfit = numpy.polyval(coefs, xfit)
     r = numpy.ma.corrcoef(mod["Data"], obs["Data"])
     ax2.plot(xfit, yfit, 'r--', linewidth=3)

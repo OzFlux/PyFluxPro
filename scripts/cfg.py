@@ -3,6 +3,16 @@ version_number = "V3.5.0"
 # V3.5.0 - February 2023
 #        - implement ability to browse THREDDS server and open remote files
 #        - add ability to convert FluxNet subset HH files to netCDF using L1
+# V3.4.14 - June 2023
+#         - fix problem associated with MDS gap filling and data sets that start
+#           at YYYY-01-01 00:00
+#           - the MDS C code discards YYYY-01-01 00:00 so the MDS output ends
+#             up being 1 element shorter than the input data
+#         - discovered that the default behaviour of numpy.array() and numpy.ma.array()
+#           are different
+#           - numpy.array() default is copy=True
+#           - numpy.ma.array() default is copy=False
+#           - changed all calls to numpy.ma.array() to include copy=True
 # V3.4.13 - May 2023
 #         - remove numpy dtypes e.g. dtype=numpy.int becomes dtype=int
 # V3.4.12 - March 2023

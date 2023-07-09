@@ -41,7 +41,7 @@ def l1qc(cfg):
     if len(list(dfs.keys())) == 0:
         ds = pfp_classes.DataStructure()
         ds.info["returncodes"]["value"] = 1
-        ds.info["returncodes"]["message"] = "An error occured reading the input file"
+        ds.info["returncodes"]["message"] = "An error occurred reading the input file"
         return ds
     # merge the data frames (1 per Excel worksheet)
     df = pfp_io.MergeDataFrames(dfs, l1_info)
@@ -257,9 +257,9 @@ def l4qc(main_gui, cf, ds3):
     # merge the first group of gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds4, l4_info, merge_order="prerequisite")
     # re-calculate the net radiation
-    pfp_ts.CalculateNetRadiation(cf, ds4, Fn_out='Fn', Fsd_in='Fsd', Fsu_in='Fsu', Fld_in='Fld', Flu_in='Flu')
+    pfp_ts.CalculateNetRadiation(cf, ds4)
     # re-calculate the available energy
-    pfp_ts.CalculateAvailableEnergy(ds4, Fa_out='Fa', Fn_in='Fn', Fg_in='Fg')
+    pfp_ts.CalculateAvailableEnergy(ds4)
     # merge the second group of gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds4, l4_info, merge_order="standard")
     # re-calculate the water vapour concentrations
@@ -350,28 +350,16 @@ def l6qc(main_gui, cf, ds5):
     # check units of Fco2
     pfp_utils.CheckFco2Units(ds6, "umol/m^2/s", convert_units=True)
     # get ER from the observed Fco2
-    try:
-        pfp_rp.GetERFromFco2(ds6, l6_info)
-    except RuntimeError:
-        return ds6
+    pfp_rp.GetERFromFco2(ds6, l6_info)
     # estimate ER using SOLO
-    try:
-        pfp_rp.ERUsingSOLO(main_gui, ds6, l6_info, "ERUsingSOLO")
-    except RuntimeError:
-        msg = " Error using SOLO to estimate ER"
-        logger.error(msg)
+    pfp_rp.ERUsingSOLO(main_gui, ds6, l6_info, "ERUsingSOLO")
     # estimate ER using Lloyd-Taylor
     if "ERUsingLloydTaylor" in list(l6_info.keys()):
-        try:
-            # open the Excel file for writing all outputs
-            xl_name = l6_info["ERUsingLloydTaylor"]["info"]["data_file_path"]
-            xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
-            pfp_rp.ERUsingLloydTaylor(ds6, l6_info, xl_writer)
-            xl_writer.close()
-        except RuntimeError:
-            xl_writer.close()
-            msg = " Error using Lloyd-Taylor to estimate ER"
-            logger.error(msg)
+        # open the Excel file for writing all outputs
+        xl_name = l6_info["ERUsingLloydTaylor"]["info"]["data_file_path"]
+        xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
+        pfp_rp.ERUsingLloydTaylor(ds6, l6_info, xl_writer)
+        xl_writer.close()
     else:
         msg = "The Lloyd-Taylor ER method is disabled in the control file"
         logger.warning(msg)
