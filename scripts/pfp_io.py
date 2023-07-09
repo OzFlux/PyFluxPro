@@ -2399,6 +2399,55 @@ def read_eddypro_full(csvname):
 
     return ds
 
+def SubsetDataStructure(ds, labels=None, start=0, end=-1, match="exact"):
+    """
+    Purpose:
+     Return a subset of a data structure based on a subset of variables,
+     a start time and and end time.
+    Usage:
+     labels = ["Fco2", "Fe", "Fh", "Fm"]
+     start = "2022-01-01 00:30"
+     end = "2023-01-01 00:00"
+     ds_subset = pfp_io.SubsetDataStructure(ds, labels=labels, start=start, end=end, match=match)
+     where ds is the full data structure
+           labels is a list of variables required in the subset
+           start is the start datetime of the subset
+           end is the end datetime of the subset
+           match is the type of datetime match options are:
+                "exact"       finds the exact datetime specified
+                "wholehours"  finds the start of the first whole hour and the
+                              end of the last whole hour
+                "wholedays"   finds the start of the first whole day and the
+                              end of the last whole day
+                "wholemonths" finds the start of the first whole month and the
+                              end of the last whole month
+    Side effects:
+     Returns a subset of the original data structure.
+    Author: PRI
+    Date: July 2023
+    """
+    ts = int(ds.root["Attributes"]["time_step"])
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
+    si = pfp_utils.GetDateIndex(ldt, start, default=0, ts=ts)
+    ei = pfp_utils.GetDateIndex(ldt, end, default=len(ldt)-1, ts=ts)
+    all_labels = list(ds.root["Variables"].keys())
+    if labels is None:
+        labels = all_labels.copy()
+    else:
+        for label in list(labels):
+            if label not in labels:
+                labels.remove(label)
+    ds_subset = pfp_classes.DataStructure(global_attributes=ds.root["Attributes"])
+    if "DateTime" not in labels:
+        labels.append("DateTime")
+    for label in list(labels):
+        var = pfp_utils.GetVariable(ds, label, start=si, end=ei, match=match)
+        pfp_utils.CreateVariable(ds_subset, var)
+    ds_subset.root["Attributes"]["time_coverage_start"] = var["DateTime"][0]
+    ds_subset.root["Attributes"]["time_coverage_end"] = var["DateTime"][-1]
+    ds_subset.root["Attributes"]["nc_nrecs"] = len(var["Data"])
+    return ds_subset
+
 def write_csv_ep_biomet(cf):
     """
     Purpose:
