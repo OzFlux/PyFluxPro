@@ -193,137 +193,137 @@ class display_thredds_tree(QtWidgets.QWidget):
             self.current_section.appendRow([key, value])
             self.model.appendRow(self.current_section)
         return
-    def plot_fingerprints(self, selections):
-        """ Wrapper for plot fingerprints function."""
-        # remove anything that is not the label of a variable in self.ds
-        groups = sorted(list(selections.keys()))
-        for group in groups:
-            gvars = getattr(self.ds, group)
-            labels = sorted(selections[group])
-            for label in labels:
-                if label not in list(gvars["Variables"].keys()):
-                    selections[group].remove(label)
-            # check to make sure there is something left to plot
-            if len(selections[group]) == 0:
-                msg = " No variables in group " + group + " to plot"
-                logger.warning(msg)
-                selections.pop(group)
-        if len(selections.keys()) == 0:
-            msg = " Nothing to plot"
-            logger.warning(msg)
-            return
-        # go ahead and plot
-        try:
-            pfp_plot.plot_explore_fingerprints(self.ds, selections)
-            # increment the figure number
-            self.figure_number += 1
-        except Exception:
-            error_message = " An error occurred while plotting fingerprints, see below for details ..."
-            logger.error(error_message)
-            error_message = traceback.format_exc()
-            logger.error(error_message)
-        return
+    #def plot_fingerprints(self, selections):
+        #""" Wrapper for plot fingerprints function."""
+        ## remove anything that is not the label of a variable in self.ds
+        #groups = sorted(list(selections.keys()))
+        #for group in groups:
+            #gvars = getattr(self.ds, group)
+            #labels = sorted(selections[group])
+            #for label in labels:
+                #if label not in list(gvars["Variables"].keys()):
+                    #selections[group].remove(label)
+            ## check to make sure there is something left to plot
+            #if len(selections[group]) == 0:
+                #msg = " No variables in group " + group + " to plot"
+                #logger.warning(msg)
+                #selections.pop(group)
+        #if len(selections.keys()) == 0:
+            #msg = " Nothing to plot"
+            #logger.warning(msg)
+            #return
+        ## go ahead and plot
+        #try:
+            #pfp_plot.plot_explore_fingerprints(self.ds, selections)
+            ## increment the figure number
+            #self.figure_number += 1
+        #except Exception:
+            #error_message = " An error occurred while plotting fingerprints, see below for details ..."
+            #logger.error(error_message)
+            #error_message = traceback.format_exc()
+            #logger.error(error_message)
+        #return
 
-    def plot_percentiles(self, selections):
-        """ Wrapper for plot percentiles function."""
-        # remove anything that is not the label of a variable in self.ds
-        groups = sorted(list(selections.keys()))
-        for group in groups:
-            gvars = getattr(self.ds, group)
-            labels = sorted(selections[group])
-            for label in labels:
-                if label not in list(gvars["Variables"].keys()):
-                    selections[group].remove(label)
-            # check to make sure there is something left to plot
-            if len(selections[group]) == 0:
-                msg = " No variables in group " + group + " to plot"
-                logger.warning(msg)
-                selections.pop(group)
-        if len(selections.keys()) == 0:
-            msg = " Nothing to plot"
-            logger.warning(msg)
-            return
-        # go ahead and plot
-        try:
-            pfp_plot.plot_explore_percentiles(self.ds, selections)
-            # increment the figure number
-            self.figure_number += 1
-        except Exception:
-            error_message = " An error occurred while plotting percentile time series, see below for details ..."
-            logger.error(error_message)
-            error_message = traceback.format_exc()
-            logger.error(error_message)
-        return
+    #def plot_percentiles(self, selections):
+        #""" Wrapper for plot percentiles function."""
+        ## remove anything that is not the label of a variable in self.ds
+        #groups = sorted(list(selections.keys()))
+        #for group in groups:
+            #gvars = getattr(self.ds, group)
+            #labels = sorted(selections[group])
+            #for label in labels:
+                #if label not in list(gvars["Variables"].keys()):
+                    #selections[group].remove(label)
+            ## check to make sure there is something left to plot
+            #if len(selections[group]) == 0:
+                #msg = " No variables in group " + group + " to plot"
+                #logger.warning(msg)
+                #selections.pop(group)
+        #if len(selections.keys()) == 0:
+            #msg = " Nothing to plot"
+            #logger.warning(msg)
+            #return
+        ## go ahead and plot
+        #try:
+            #pfp_plot.plot_explore_percentiles(self.ds, selections)
+            ## increment the figure number
+            #self.figure_number += 1
+        #except Exception:
+            #error_message = " An error occurred while plotting percentile time series, see below for details ..."
+            #logger.error(error_message)
+            #error_message = traceback.format_exc()
+            #logger.error(error_message)
+        #return
 
-    def plot_timeseries(self, selections):
-        """ Wrapper for plot time series function."""
-        # remove anything that is not the label of a variable in self.ds
-        groups = sorted(list(selections.keys()))
-        for group in groups:
-            gvars = getattr(self.ds, group)
-            labels = sorted(selections[group])
-            for label in labels:
-                if label not in list(gvars["Variables"].keys()):
-                    selections[group].remove(label)
-            # check to make sure there is something left to plot
-            if len(selections[group]) == 0:
-                msg = " No variables in group " + group + " to plot"
-                logger.warning(msg)
-                selections.pop(group)
-        if len(selections.keys()) == 0:
-            msg = " Nothing to plot"
-            logger.warning(msg)
-            return
-        # go ahead and plot
-        try:
-            pfp_plot.plot_explore_timeseries(self.ds, selections)
-            # increment the figure number
-            self.figure_number += 1
-        except Exception:
-            error_message = " An error occurred while plotting time series, see below for details ..."
-            logger.error(error_message)
-            error_message = traceback.format_exc()
-            logger.error(error_message)
-        return
+    #def plot_timeseries(self, selections):
+        #""" Wrapper for plot time series function."""
+        ## remove anything that is not the label of a variable in self.ds
+        #groups = sorted(list(selections.keys()))
+        #for group in groups:
+            #gvars = getattr(self.ds, group)
+            #labels = sorted(selections[group])
+            #for label in labels:
+                #if label not in list(gvars["Variables"].keys()):
+                    #selections[group].remove(label)
+            ## check to make sure there is something left to plot
+            #if len(selections[group]) == 0:
+                #msg = " No variables in group " + group + " to plot"
+                #logger.warning(msg)
+                #selections.pop(group)
+        #if len(selections.keys()) == 0:
+            #msg = " Nothing to plot"
+            #logger.warning(msg)
+            #return
+        ## go ahead and plot
+        #try:
+            #pfp_plot.plot_explore_timeseries(self.ds, selections)
+            ## increment the figure number
+            #self.figure_number += 1
+        #except Exception:
+            #error_message = " An error occurred while plotting time series, see below for details ..."
+            #logger.error(error_message)
+            #error_message = traceback.format_exc()
+            #logger.error(error_message)
+        #return
 
-    def plot_timeseries_grouped(self, selections):
-        """ Wrapper for plot time series function."""
-        # remove anything that is not the label of a variable in self.ds
-        groups = sorted(list(selections.keys()))
-        for group in groups:
-            gvars = getattr(self.ds, group)
-            labels = sorted(selections[group])
-            for label in labels:
-                if label not in list(gvars["Variables"].keys()):
-                    selections[group].remove(label)
-            # check to make sure there is something left to plot
-            if len(selections[group]) == 0:
-                msg = " No variables in group " + group + " to plot"
-                logger.warning(msg)
-                selections.pop(group)
-        if len(selections.keys()) == 0:
-            msg = " Nothing to plot"
-            logger.warning(msg)
-            return
-        # go ahead and plot
-        try:
-            pfp_plot.plot_explore_timeseries_grouped(self.ds, selections)
-            # increment the figure number
-            self.figure_number += 1
-        except Exception:
-            error_message = " An error occurred while plotting time series, see below for details ..."
-            logger.error(error_message)
-            error_message = traceback.format_exc()
-            logger.error(error_message)
-        return
+    #def plot_timeseries_grouped(self, selections):
+        #""" Wrapper for plot time series function."""
+        ## remove anything that is not the label of a variable in self.ds
+        #groups = sorted(list(selections.keys()))
+        #for group in groups:
+            #gvars = getattr(self.ds, group)
+            #labels = sorted(selections[group])
+            #for label in labels:
+                #if label not in list(gvars["Variables"].keys()):
+                    #selections[group].remove(label)
+            ## check to make sure there is something left to plot
+            #if len(selections[group]) == 0:
+                #msg = " No variables in group " + group + " to plot"
+                #logger.warning(msg)
+                #selections.pop(group)
+        #if len(selections.keys()) == 0:
+            #msg = " Nothing to plot"
+            #logger.warning(msg)
+            #return
+        ## go ahead and plot
+        #try:
+            #pfp_plot.plot_explore_timeseries_grouped(self.ds, selections)
+            ## increment the figure number
+            #self.figure_number += 1
+        #except Exception:
+            #error_message = " An error occurred while plotting time series, see below for details ..."
+            #logger.error(error_message)
+            #error_message = traceback.format_exc()
+            #logger.error(error_message)
+        #return
 
-    def update_tab_text(self):
-        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
-        # add an asterisk to the tab text to indicate the tab contents have changed
-        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        if "*" not in tab_text:
-            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-        return
+    #def update_tab_text(self):
+        #""" Add an asterisk to the tab title text to indicate tab contents have changed."""
+        ## add an asterisk to the tab text to indicate the tab contents have changed
+        #tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        #if "*" not in tab_text:
+            #self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+        #return
 
 class edit_cfg_batch(QtWidgets.QWidget):
     def __init__(self, main_gui):
@@ -331,6 +331,10 @@ class edit_cfg_batch(QtWidgets.QWidget):
         self.cfg = copy.deepcopy(main_gui.file)
         self.main_gui = main_gui
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.implemented_levels = ["L1", "L2", "L3",
                                    "concatenate", "climatology",
                                    "cpd_barr", "cpd_mchugh", "cpd_mcnew", "mpt",
@@ -532,32 +536,36 @@ class edit_cfg_batch(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "batch"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "batch"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Levels"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -800,7 +808,8 @@ class edit_cfg_climatology(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path,
+                                                              filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -892,32 +901,36 @@ class edit_cfg_climatology(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "climatology"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "climatology"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -1123,35 +1136,39 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "concatenate"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "concatenate"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Files"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
                     if key2 in ["plot_path"]:
-                        cfg[key1][key2] = section.child(j,1).text()
+                        self.cfg[key1][key2] = section.child(j,1).text()
                     else:
-                        cfg[key1][key2] = {}
+                        self.cfg[key1][key2] = {}
                         for k in range(subsection.rowCount()):
                             key3 = str(subsection.child(k, 0).text())
                             val3 = str(subsection.child(k, 1).text())
-                            cfg[key1][key2][key3] = val3
-        return cfg
+                            self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
@@ -1472,7 +1489,8 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path,
+                                                              filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_path = QtCore.QDir.toNativeSeparators(str(new_file_path))
@@ -1491,7 +1509,8 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
-                                                          directory=file_path, filter="*.nc")[0]
+                                                              directory=file_path,
+                                                              filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_path = QtCore.QDir.toNativeSeparators(str(new_file_path))
@@ -1756,32 +1775,36 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "cpd_barr"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "cpd_barr"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -1973,7 +1996,8 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path,
+                                                              filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -2101,32 +2125,36 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "cpd_mchugh"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "cpd_mchugh"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -2446,32 +2474,36 @@ class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "cpd_mcnew"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "cpd_mcnew"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -3068,34 +3100,38 @@ class edit_cfg_L1(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "L1"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "L1"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Global", "Output", "General", "Options", "Soil", "Massman"]:
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         for l in range(subsubsection.rowCount()):
                             key4 = str(subsubsection.child(l, 0).text())
                             val4 = str(subsubsection.child(l, 1).text())
-                            cfg[key1][key2][key3][key4] = val4
-        return cfg
+                            self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def get_existing_entries(self, section):
         """ Get a list of existing entries in the current section."""
@@ -3840,8 +3876,16 @@ class edit_cfg_L2(QtWidgets.QWidget):
         # get the file_path so it can be used as a default directory
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
-        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                          directory=file_path)[0]
+        row = selected_item.row()
+        if parent.child(row, 0).text() == "in_filename":
+            caption = "Choose an input file ..."
+        elif parent.child(row, 0).text() == "out_filename":
+            caption = "Choose an output file ..."
+        else:
+            caption = "Choose a file ..."
+        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption=caption,
+                                                              directory=file_path,
+                                                              filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -4232,43 +4276,47 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "L2"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "L2"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Plots"]:
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
             elif key1 in ["Variables"]:
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         for l in range(subsubsection.rowCount()):
                             key4 = str(subsubsection.child(l, 0).text())
                             val4 = str(subsubsection.child(l, 1).text())
-                            cfg[key1][key2][key3][key4] = val4
-        return cfg
+                            self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -4889,26 +4937,26 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
-    def browse_alternate_file(self):
-        """ Browse for the alternate data file path."""
-        # get the index of the selected item
-        idx = self.view.selectedIndexes()[0]
-        # get the selected item from the index
-        selected_item = idx.model().itemFromIndex(idx)
-        # get the parent of the selected item
-        parent = selected_item.parent()
-        # set the file filter
-        file_filter = "*.nc"
-        # get the file path from the selected item
-        file_path = os.path.split(str(idx.data()))[0]
-        file_path = os.path.join(file_path, "")
-        # dialog for open file
-        new_file = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an alternate data file ...",
-                                                     directory=file_path, filter=file_filter)[0]
-        # quit if cancel button pressed
-        if len(str(new_file)) > 0:
-            # update the model
-            parent.child(selected_item.row(), 1).setText(new_file)
+    #def browse_alternate_file(self):
+        #""" Browse for the alternate data file path."""
+        ## get the index of the selected item
+        #idx = self.view.selectedIndexes()[0]
+        ## get the selected item from the index
+        #selected_item = idx.model().itemFromIndex(idx)
+        ## get the parent of the selected item
+        #parent = selected_item.parent()
+        ## set the file filter
+        #file_filter = "*.nc"
+        ## get the file path from the selected item
+        #file_path = os.path.split(str(idx.data()))[0]
+        #file_path = os.path.join(file_path, "")
+        ## dialog for open file
+        #new_file = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an alternate data file ...",
+                                                     #directory=file_path, filter=file_filter)[0]
+        ## quit if cancel button pressed
+        #if len(str(new_file)) > 0:
+            ## update the model
+            #parent.child(selected_item.row(), 1).setText(new_file)
 
     def browse_file_path(self):
         """ Browse for the data file path."""
@@ -4943,7 +4991,8 @@ class edit_cfg_L3(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                          directory=file_path)[0]
+                                                          directory=file_path,
+                                                          filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -5350,11 +5399,12 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         # create a new control file object
-        #cfg = ConfigObj(indent_type="    ", list_values=False)
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
         # give it the old name
-        #cfg.filename = self.cfg.filename
+        self.cfg.filename = filename
         # set the control file level
-        #cfg["level"] = "L3"
+        self.cfg["level"] = "L3"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -6363,31 +6413,35 @@ class edit_cfg_L4(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "L4"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "L4"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Global", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["GUI", "Imports"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
             elif key1 in []:
                 # sections with 3 levels
                 pass
@@ -6397,27 +6451,27 @@ class edit_cfg_L4(QtWidgets.QWidget):
                     # subsections are variables
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         # subsubsections are GapFillFromAlternate, GapFillFromClimatology and MergeSeries
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         if key3 in ["GapFillFromAlternate", "GapFillFromClimatology", "GapFillUsingMDS"]:
                             for l in range(subsubsection.rowCount()):
                                 subsubsubsection = subsubsection.child(l)
                                 key4 = str(subsubsubsection.text())
-                                cfg[key1][key2][key3][key4] = {}
+                                self.cfg[key1][key2][key3][key4] = {}
                                 for m in range(subsubsubsection.rowCount()):
                                     key5 = str(subsubsubsection.child(m, 0).text())
                                     val5 = str(subsubsubsection.child(m, 1).text())
-                                    cfg[key1][key2][key3][key4][key5] = val5
+                                    self.cfg[key1][key2][key3][key4][key5] = val5
                         elif key3 in ["MergeSeries", "RangeCheck", "DiurnalCheck", "DependencyCheck", "ExcludeDates"]:
                             for l in range(subsubsection.rowCount()):
                                 key4 = str(subsubsection.child(l, 0).text())
                                 val4 = str(subsubsection.child(l, 1).text())
-                                cfg[key1][key2][key3][key4] = val4
-        return cfg
+                                self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -7579,31 +7633,35 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "L5"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "L5"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Global", "Output", "Options", "ustar_threshold"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Imports", "GUI"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
             elif key1 in []:
                 # sections with 3 levels
                 pass
@@ -7613,27 +7671,27 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     # subsections are variables
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         # subsubsections are GapFillUsingSOLO, GapFillUsingMDS and MergeSeries
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         if key3 in ["GapFillUsingSOLO", "GapFillLongSOLO", "GapFillUsingMDS"]:
                             for l in range(subsubsection.rowCount()):
                                 subsubsubsection = subsubsection.child(l)
                                 key4 = str(subsubsubsection.text())
-                                cfg[key1][key2][key3][key4] = {}
+                                self.cfg[key1][key2][key3][key4] = {}
                                 for m in range(subsubsubsection.rowCount()):
                                     key5 = str(subsubsubsection.child(m, 0).text())
                                     val5 = str(subsubsubsection.child(m, 1).text())
-                                    cfg[key1][key2][key3][key4][key5] = val5
+                                    self.cfg[key1][key2][key3][key4][key5] = val5
                         elif key3 in ["MergeSeries", "RangeCheck", "DiurnalCheck", "DependencyCheck", "ExcludeDates"]:
                             for l in range(subsubsection.rowCount()):
                                 key4 = str(subsubsection.child(l, 0).text())
                                 val4 = str(subsubsection.child(l, 1).text())
-                                cfg[key1][key2][key3][key4] = val4
-        return cfg
+                                self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -8151,7 +8209,8 @@ class edit_cfg_L6(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path,
+                                                              filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -8378,56 +8437,60 @@ class edit_cfg_L6(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "L6"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "L6"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Global", "Output", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity", "GUI"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
             elif key1 in ["EcosystemRespiration"]:
                 # sections with 4 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         if key3 in ["ERUsingSOLO", "ERUsingFFNET", "ERUsingLloydTaylor", "ERUsingLasslop"]:
                             for l in range(subsubsection.rowCount()):
                                 subsubsubsection = subsubsection.child(l)
                                 key4 = str(subsubsubsection.text())
-                                cfg[key1][key2][key3][key4] = {}
+                                self.cfg[key1][key2][key3][key4] = {}
                                 for m in range(subsubsubsection.rowCount()):
                                     key5 = str(subsubsubsection.child(m, 0).text())
                                     val5 = str(subsubsubsection.child(m, 1).text())
-                                    cfg[key1][key2][key3][key4][key5] = val5
+                                    self.cfg[key1][key2][key3][key4][key5] = val5
                         elif key3 in ["MergeSeries"]:
                             for l in range(subsubsection.rowCount()):
                                 key4 = str(subsubsection.child(l, 0).text())
                                 val4 = str(subsubsection.child(l, 1).text())
-                                cfg[key1][key2][key3][key4] = val4
-        return cfg
+                                self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def get_existing_entries(self):
         """ Get a list of existing entries in the current section."""
@@ -8734,7 +8797,8 @@ class edit_cfg_mpt(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path,
+                                                              filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -8862,32 +8926,36 @@ class edit_cfg_mpt(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = "mpt"
+        # create a new control file object
+        filename = self.cfg.filename
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = "mpt"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
@@ -9085,33 +9153,38 @@ class edit_cfg_nc2csv(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = self.cfg["level"]
+        # create a new control file object
+        filename = self.cfg.filename
+        level =  self.cfg["level"]
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = level
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
 
-        return cfg
+        return self.cfg
 
     def context_menu(self, position):
         """ Right click context menu."""
@@ -9241,7 +9314,8 @@ class edit_cfg_nc2csv(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path,
+                                                              filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -9383,7 +9457,8 @@ class edit_cfg_windrose(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path,
+                                                              filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -9513,32 +9588,37 @@ class edit_cfg_windrose(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
-        cfg = ConfigObj(indent_type="    ", list_values=False)
-        cfg.filename = self.cfg.filename
-        cfg["level"] = self.cfg["level"]
+        # create a new control file object
+        filename = self.cfg.filename
+        level = self.cfg["level"]
+        self.cfg = ConfigObj(indent_type="    ", list_values=False)
+        # give it the old name
+        self.cfg.filename = filename
+        # set the control file level
+        self.cfg["level"] = level
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Options"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Variables"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
-        return cfg
+                        self.cfg[key1][key2][key3] = val3
+        return self.cfg
 
     def get_keyval_by_key_name(self, section, key):
         """ Get the value from a section based on the key name."""
