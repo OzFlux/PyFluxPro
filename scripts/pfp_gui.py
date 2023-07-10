@@ -4508,7 +4508,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
 class edit_cfg_L3(QtWidgets.QWidget):
     def __init__(self, main_gui):
         super(edit_cfg_L3, self).__init__()
-        self.cfg = main_gui.cfg
+        self.cfg = main_gui.file
         self.tabs = main_gui.tabs
         self.info = copy.deepcopy(main_gui.info)
         self.info["tab"]["source"] = "local"
@@ -5350,48 +5350,48 @@ class edit_cfg_L3(QtWidgets.QWidget):
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
         # create a new control file object
-        cfg = ConfigObj(indent_type="    ", list_values=False)
+        #cfg = ConfigObj(indent_type="    ", list_values=False)
         # give it the old name
-        cfg.filename = self.cfg.filename
+        #cfg.filename = self.cfg.filename
         # set the control file level
-        cfg["level"] = "L3"
+        #cfg["level"] = "L3"
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
             section = model.item(i)
             key1 = str(section.text())
-            cfg[key1] = {}
+            self.cfg[key1] = {}
             if key1 in ["Files", "Global", "Options", "Soil", "Massman"]:
                 # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
-                    cfg[key1][key2] = val2
+                    self.cfg[key1][key2] = val2
             elif key1 in ["Plots", "Imports"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         key3 = str(subsection.child(k, 0).text())
                         val3 = str(subsection.child(k, 1).text())
-                        cfg[key1][key2][key3] = val3
+                        self.cfg[key1][key2][key3] = val3
             elif key1 in ["Variables"]:
                 # sections with 3 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
-                    cfg[key1][key2] = {}
+                    self.cfg[key1][key2] = {}
                     for k in range(subsection.rowCount()):
                         subsubsection = subsection.child(k)
                         key3 = str(subsubsection.text())
-                        cfg[key1][key2][key3] = {}
+                        self.cfg[key1][key2][key3] = {}
                         for l in range(subsubsection.rowCount()):
                             key4 = str(subsubsection.child(l, 0).text())
                             val4 = str(subsubsection.child(l, 1).text())
-                            cfg[key1][key2][key3][key4] = val4
-        return cfg
+                            self.cfg[key1][key2][key3][key4] = val4
+        return self.cfg
 
     def enable_plot(self):
         """ Enable a plot by removing '[disabled]' from the title."""
