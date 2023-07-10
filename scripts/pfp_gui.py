@@ -193,137 +193,6 @@ class display_thredds_tree(QtWidgets.QWidget):
             self.current_section.appendRow([key, value])
             self.model.appendRow(self.current_section)
         return
-    #def plot_fingerprints(self, selections):
-        #""" Wrapper for plot fingerprints function."""
-        ## remove anything that is not the label of a variable in self.ds
-        #groups = sorted(list(selections.keys()))
-        #for group in groups:
-            #gvars = getattr(self.ds, group)
-            #labels = sorted(selections[group])
-            #for label in labels:
-                #if label not in list(gvars["Variables"].keys()):
-                    #selections[group].remove(label)
-            ## check to make sure there is something left to plot
-            #if len(selections[group]) == 0:
-                #msg = " No variables in group " + group + " to plot"
-                #logger.warning(msg)
-                #selections.pop(group)
-        #if len(selections.keys()) == 0:
-            #msg = " Nothing to plot"
-            #logger.warning(msg)
-            #return
-        ## go ahead and plot
-        #try:
-            #pfp_plot.plot_explore_fingerprints(self.ds, selections)
-            ## increment the figure number
-            #self.figure_number += 1
-        #except Exception:
-            #error_message = " An error occurred while plotting fingerprints, see below for details ..."
-            #logger.error(error_message)
-            #error_message = traceback.format_exc()
-            #logger.error(error_message)
-        #return
-
-    #def plot_percentiles(self, selections):
-        #""" Wrapper for plot percentiles function."""
-        ## remove anything that is not the label of a variable in self.ds
-        #groups = sorted(list(selections.keys()))
-        #for group in groups:
-            #gvars = getattr(self.ds, group)
-            #labels = sorted(selections[group])
-            #for label in labels:
-                #if label not in list(gvars["Variables"].keys()):
-                    #selections[group].remove(label)
-            ## check to make sure there is something left to plot
-            #if len(selections[group]) == 0:
-                #msg = " No variables in group " + group + " to plot"
-                #logger.warning(msg)
-                #selections.pop(group)
-        #if len(selections.keys()) == 0:
-            #msg = " Nothing to plot"
-            #logger.warning(msg)
-            #return
-        ## go ahead and plot
-        #try:
-            #pfp_plot.plot_explore_percentiles(self.ds, selections)
-            ## increment the figure number
-            #self.figure_number += 1
-        #except Exception:
-            #error_message = " An error occurred while plotting percentile time series, see below for details ..."
-            #logger.error(error_message)
-            #error_message = traceback.format_exc()
-            #logger.error(error_message)
-        #return
-
-    #def plot_timeseries(self, selections):
-        #""" Wrapper for plot time series function."""
-        ## remove anything that is not the label of a variable in self.ds
-        #groups = sorted(list(selections.keys()))
-        #for group in groups:
-            #gvars = getattr(self.ds, group)
-            #labels = sorted(selections[group])
-            #for label in labels:
-                #if label not in list(gvars["Variables"].keys()):
-                    #selections[group].remove(label)
-            ## check to make sure there is something left to plot
-            #if len(selections[group]) == 0:
-                #msg = " No variables in group " + group + " to plot"
-                #logger.warning(msg)
-                #selections.pop(group)
-        #if len(selections.keys()) == 0:
-            #msg = " Nothing to plot"
-            #logger.warning(msg)
-            #return
-        ## go ahead and plot
-        #try:
-            #pfp_plot.plot_explore_timeseries(self.ds, selections)
-            ## increment the figure number
-            #self.figure_number += 1
-        #except Exception:
-            #error_message = " An error occurred while plotting time series, see below for details ..."
-            #logger.error(error_message)
-            #error_message = traceback.format_exc()
-            #logger.error(error_message)
-        #return
-
-    #def plot_timeseries_grouped(self, selections):
-        #""" Wrapper for plot time series function."""
-        ## remove anything that is not the label of a variable in self.ds
-        #groups = sorted(list(selections.keys()))
-        #for group in groups:
-            #gvars = getattr(self.ds, group)
-            #labels = sorted(selections[group])
-            #for label in labels:
-                #if label not in list(gvars["Variables"].keys()):
-                    #selections[group].remove(label)
-            ## check to make sure there is something left to plot
-            #if len(selections[group]) == 0:
-                #msg = " No variables in group " + group + " to plot"
-                #logger.warning(msg)
-                #selections.pop(group)
-        #if len(selections.keys()) == 0:
-            #msg = " Nothing to plot"
-            #logger.warning(msg)
-            #return
-        ## go ahead and plot
-        #try:
-            #pfp_plot.plot_explore_timeseries_grouped(self.ds, selections)
-            ## increment the figure number
-            #self.figure_number += 1
-        #except Exception:
-            #error_message = " An error occurred while plotting time series, see below for details ..."
-            #logger.error(error_message)
-            #error_message = traceback.format_exc()
-            #logger.error(error_message)
-        #return
-
-    #def update_tab_text(self):
-        #""" Add an asterisk to the tab title text to indicate tab contents have changed."""
-        ## add an asterisk to the tab text to indicate the tab contents have changed
-        #tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
-        #if "*" not in tab_text:
-            #self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
-        #return
 
 class edit_cfg_batch(QtWidgets.QWidget):
     def __init__(self, main_gui):
@@ -449,12 +318,6 @@ class edit_cfg_batch(QtWidgets.QWidget):
                         add_separator = True
         elif level == 1:
             parent = selected_item.parent()
-            #if (str(parent.text()) == "Options") and (selected_item.column() == 0):
-                #self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
-                #self.context_menu.actionRemoveOption.setText("Remove option")
-                #self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                #self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
-            #elif str(parent.text()) == "Files":
             if str(parent.text()) == "Levels":
                 if selected_text in self.implemented_levels:
                     self.context_menu.actionAddControlFile = QtWidgets.QAction(self)
@@ -472,7 +335,6 @@ class edit_cfg_batch(QtWidgets.QWidget):
         elif level == 2:
             parent = selected_item.parent()
             section = selected_item.parent().parent()
-            #if ((str(section.text()) == "Files") and (str(parent.text()) == "In")):
             if (str(section.text()) == "Levels"):
                 if (selected_item.column() == 0):
                     self.context_menu.actionAddControlFileAbove = QtWidgets.QAction(self)
@@ -2803,10 +2665,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 child1.setEditable(False)
             selected_item.appendRow([child0, child1])
         if update:
-            # update the control file in case variables have been added
-            #self.cfg = self.get_data_from_model()
-            # update the IRGA and sonic label lists in case variables have been added
-            #self.update_info_sonic_irga_lists()
             # update the model with the IRGA and sonic type
             self.update_instrument_variable_attribute()
         # update the tab text with an asterix if required
@@ -2837,10 +2695,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # insert the new row above the selected item
         parent.insertRow(idx.row(), [child0, child1])
         if update:
-            # update the control file in case variables have been added
-            #self.cfg = self.get_data_from_model()
-            # update the IRGA and sonic label lists in case variables have been added
-            #self.update_info_sonic_irga_lists()
             # update the model with the IRGA and sonic type
             self.update_instrument_variable_attribute()
         # put an asterix in the tab title to show the content has changed
@@ -3493,10 +3347,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         parent.child(selected_item.row(), 1).setText(sender)
         key = parent.child(selected_item.row(), 0).text()
         self.info["instrument"][key] = sender
-        # update the control file in case variables have been added
-        #self.cfg = self.get_data_from_model()
-        # update the IRGA and sonic label lists in case variables have been added
-        #self.update_info_sonic_irga_lists()
         # update the model with the IRGA and sonic type
         self.update_instrument_variable_attribute()
 
@@ -4937,27 +4787,6 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
-    #def browse_alternate_file(self):
-        #""" Browse for the alternate data file path."""
-        ## get the index of the selected item
-        #idx = self.view.selectedIndexes()[0]
-        ## get the selected item from the index
-        #selected_item = idx.model().itemFromIndex(idx)
-        ## get the parent of the selected item
-        #parent = selected_item.parent()
-        ## set the file filter
-        #file_filter = "*.nc"
-        ## get the file path from the selected item
-        #file_path = os.path.split(str(idx.data()))[0]
-        #file_path = os.path.join(file_path, "")
-        ## dialog for open file
-        #new_file = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an alternate data file ...",
-                                                     #directory=file_path, filter=file_filter)[0]
-        ## quit if cancel button pressed
-        #if len(str(new_file)) > 0:
-            ## update the model
-            #parent.child(selected_item.row(), 1).setText(new_file)
-
     def browse_file_path(self):
         """ Browse for the data file path."""
         # get the index of the selected item
@@ -5902,22 +5731,6 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 parent2.appendRow(parent3)
             self.sections["Drivers"].appendRow(parent2)
 
-    #def add_variable_above(self):
-        #""" Add a new variable above the selected variable."""
-        ## get the index of the selected item
-        #idx = self.view.selectedIndexes()[0]
-        ## get the selected item from the index
-        #selected_item = idx.model().itemFromIndex(idx)
-        ## get the parent of the selected item
-        #parent = selected_item.parent()
-        ## construct the new variable dictionary
-        #new_var = {"RangeCheck":{"lower":0, "upper": 1}}
-        #subsection = QtGui.QStandardItem("New variable")
-        #self.add_subsubsection(subsection, new_var)
-        #parent.insertRow(idx.row(), subsection)
-        ## add an asterisk to the tab text to indicate the tab contents have changed
-        #self.update_tab_text()
-
     def browse_alternate_file(self):
         """ Browse for the alternate data file path."""
         # get the index of the selected item
@@ -6241,10 +6054,6 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 if add_separator:
                     add_separator = False
                     self.context_menu.addSeparator()
-                #self.context_menu.actionAddVariableAbove = QtWidgets.QAction(self)
-                #self.context_menu.actionAddVariableAbove.setText("New variable")
-                #self.context_menu.addAction(self.context_menu.actionAddVariableAbove)
-                #self.context_menu.actionAddVariableAbove.triggered.connect(self.add_variable_above)
                 self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveOption.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveOption)
@@ -8266,12 +8075,6 @@ class edit_cfg_L6(QtWidgets.QWidget):
             root = self.model.invisibleRootItem()
             for i in range(root.rowCount()):
                 self.section_headings.append(str(root.child(i).text()))
-            #if "Imports" not in self.section_headings and selected_text == "Files":
-                #self.context_menu.actionAddImportsSection = QtWidgets.QAction(self)
-                #self.context_menu.actionAddImportsSection.setText("Add Imports section")
-                #self.context_menu.addAction(self.context_menu.actionAddImportsSection)
-                #self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
-                #add_separator = True
             if "Options" not in self.section_headings and selected_text == "Files":
                 self.context_menu.actionAddOptionsSection = QtWidgets.QAction(self)
                 self.context_menu.actionAddOptionsSection.setText("Add Options section")
@@ -9402,28 +9205,6 @@ class edit_cfg_windrose(QtWidgets.QWidget):
         self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.edit_windrose_gui()
 
-    #def add_new_variable(self):
-        #""" Add a new variable to the 'Variables' section."""
-        ## get the index of the selected item
-        #idx = self.view.selectedIndexes()[0]
-        ## get the selected item from the index
-        #parent = idx.model().itemFromIndex(idx)
-        #dict_to_add = {"name": ""}
-        #subsection = QtGui.QStandardItem("New variable")
-        #self.add_subsection(subsection, dict_to_add)
-        #parent.appendRow(subsection)
-        ## add an asterisk to the tab text to indicate the tab contents have changed
-        #self.update_tab_text()
-
-    #def add_subsection(self, section, dict_to_add):
-        #""" Add a subsection to the model."""
-        #for key in dict_to_add:
-            #val = str(dict_to_add[key])
-            #child0 = QtGui.QStandardItem(key)
-            #child0.setEditable(False)
-            #child1 = QtGui.QStandardItem(val)
-            #section.appendRow([child0, child1])
-
     def browse_file_path(self):
         """ Browse for the data file path."""
         # get the index of the selected item
@@ -9463,31 +9244,7 @@ class edit_cfg_windrose(QtWidgets.QWidget):
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
             parent.child(selected_item.row(), 1).setText(new_file_parts[1])
-            ## populate the output file name with a default based on the input file name
-            #for n in range(parent.rowCount()):
-                #if parent.child(n, 0).text() == "out_filename":
-                    #xls_filename = new_file_parts[1].replace(".nc", "_CPD_Barr.xls")
-                    #parent.child(n, 1).setText(xls_filename)
         return
-
-    #def browse_output_file(self):
-        #""" Browse for the output data file path."""
-        ## get the index of the selected item
-        #idx = self.view.selectedIndexes()[0]
-        ## get the selected item from the index
-        #selected_item = idx.model().itemFromIndex(idx)
-        ## get the parent of the selected item
-        #parent = selected_item.parent()
-        ## get the top level and sub sections
-        ## get the file_path so it can be used as a default directory
-        #key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
-        ## dialog for open file
-        #new_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
-                                                              #directory=file_path, filter="*.xls")[0]
-        ## update the model
-        #if len(str(new_file_path)) > 0:
-            #new_file_parts = os.path.split(str(new_file_path))
-            #parent.child(selected_item.row(), 1).setText(new_file_parts[1])
 
     def context_menu(self, position):
         """ Right click context menu."""
@@ -9506,10 +9263,6 @@ class edit_cfg_windrose(QtWidgets.QWidget):
         level = self.get_level_selected_item()
         if level == 0:
             if selected_text in ["Variables"]:
-                #self.context_menu.actionAddVariable = QtWidgets.QAction(self)
-                #self.context_menu.actionAddVariable.setText("Add variable")
-                #self.context_menu.addAction(self.context_menu.actionAddVariable)
-                #self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
                 pass
             elif selected_text in ["Options"]:
                 pass
@@ -9531,20 +9284,11 @@ class edit_cfg_windrose(QtWidgets.QWidget):
                     self.context_menu.actionBrowseInputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
                     self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
-                #elif key in ["out_filename"]:
-                    #self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
-                    #self.context_menu.actionBrowseInputFile.setText("Browse...")
-                    #self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
-                    #self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_output_file)
                 else:
                     pass
             elif (str(parent.text()) == "Options") and (selected_item.column() == 0):
                 pass
             elif (str(parent.text()) == "Variables") and (selected_item.column() == 0):
-                #self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
-                #self.context_menu.actionRemoveOption.setText("Remove variable")
-                #self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                #self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
                 pass
             else:
                 pass
@@ -9724,18 +9468,6 @@ class edit_cfg_windrose(QtWidgets.QWidget):
         self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
-
-    #def remove_item(self):
-        #""" Remove an item from the view."""
-        ## loop over selected items in the tree
-        #for idx in self.view.selectedIndexes():
-            ## get the selected item from the index
-            #selected_item = idx.model().itemFromIndex(idx)
-            ## get the parent of the selected item
-            #parent = selected_item.parent()
-            ## remove the row
-            #parent.removeRow(selected_item.row())
-        #self.update_tab_text()
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
