@@ -1043,6 +1043,8 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         """ Change the selected text."""
         idx = self.view.selectedIndexes()[0]
         selected_item = idx.model().itemFromIndex(idx)
+        if new_text == "Custom":
+            new_text = "AH,CO2,Fa,Fco2,Fe,Fg,Fh,Fld,Flu,Fm,Fn,Fsd,Fsu,H2O,Precip,RH,SH,Sws,Ta,Ts,VP,Wd,Ws,ps,ustar"
         selected_item.setText(new_text)
 
     def context_menu(self, position):
@@ -1123,6 +1125,22 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                     self.context_menu.actionChangeOption.setText("No")
                     self.context_menu.addAction(self.context_menu.actionChangeOption)
                     self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("No"))
+            elif (selected_item.column() == 1) and (key in ["SeriesToKeep"]):
+                if selected_text != "All":
+                    self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                    self.context_menu.actionChangeOption.setText("All")
+                    self.context_menu.addAction(self.context_menu.actionChangeOption)
+                    self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("All"))
+                if selected_text != "Common":
+                    self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                    self.context_menu.actionChangeOption.setText("Common")
+                    self.context_menu.addAction(self.context_menu.actionChangeOption)
+                    self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("Common"))
+                if selected_text != "Custom":
+                    self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                    self.context_menu.actionChangeOption.setText("Custom")
+                    self.context_menu.addAction(self.context_menu.actionChangeOption)
+                    self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("Custom"))
             elif str(parent.text()) == "Files":
                 if ((selected_item.column() == 0) and (selected_text == "In")):
                     self.context_menu.actionAddInputFile = QtWidgets.QAction(self)
@@ -1317,7 +1335,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
     def add_seriestokeep(self):
         """ Add the SeriesToKeep option to the context menu."""
         # add the option to the [Options] section
-        series = "AH,CO2,Fa,Fco2,Fe,Fg,Fh,Fld,Flu,Fm,Fn,Fsd,Fsu,H2O,Precip,RH,SH,Sws,Ta,Ts,VP,Wd,Ws,ps,ustar"
+        series = "All"
         dict_to_add = {"SeriesToKeep": series}
         # add the subsubsection
         self.add_subsection(dict_to_add)
