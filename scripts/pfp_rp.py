@@ -1776,7 +1776,7 @@ def get_ustarthreshold_from_results(results_name):
     Date: July 2015
           October 2021 - rewrite to use pandas, add trap for failed open
     """
-    df = pandas.read_excel(results_name, sheet_name="Annual", index_col=0)
+    df = pandas.read_excel(results_name, sheet_name="Annual", index_col=0, engine="openpyxl")
     df.index = df.index.map(str)
     ustar_dict = df.to_dict('index')
     return ustar_dict
