@@ -1656,7 +1656,8 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.actionAddLinear.setText("Add Linear")
                     self.context_menu.addAction(self.context_menu.actionAddLinear)
                     self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
-                if "Wd offset" not in existing_entries:
+                # 'Wd offset' option only for wind direction variables
+                if (("Wd offset" not in existing_entries) and (selected_text[0:2] == "Wd")):
                     self.context_menu.actionAddWdOffset = QtWidgets.QAction(self)
                     self.context_menu.actionAddWdOffset.setText("Add Wd offset")
                     self.context_menu.addAction(self.context_menu.actionAddWdOffset)
@@ -1743,7 +1744,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.context_menu.addMenu(menuUnits)
                 self.context_menu.addMenu(menuStats)
                 self.context_menu.addMenu(menuTransforms)
-            elif (str(idx.parent().data()) in ["Linear"] and str(idx.data()) != "0"):
+            elif (str(idx.parent().data()) in ["Linear", "Wd offset"] and str(idx.data()) != "0"):
                 self.context_menu.actionRemoveExcludeDateRange = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
