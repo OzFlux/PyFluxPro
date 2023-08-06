@@ -873,6 +873,12 @@ def do_linear(cf,ds):
         if pfp_utils.haskey(cf,ThisOne,'Linear'):
             pfp_ts.ApplyLinear(cf,ds,ThisOne)
 
+def do_wd_offset(cf, ds):
+    labels = list(cf["Variables"].keys())
+    for label in labels:
+        if pfp_utils.haskey(cf, label, "Wd offset"):
+            pfp_ts.ApplyWdOffset(cf, ds, label)
+
 def parse_rangecheck_limit(s):
     """
     Purpose:
@@ -1017,13 +1023,6 @@ def do_qcchecks_oneseries(cf, ds, section, series):
     do_excludedates(cf,ds,section,series,code=6)
     # do exclude hours
     do_excludehours(cf,ds,section,series,code=7)
-    # do wind direction corrections
-    do_winddirectioncorrection(cf,ds,section,series)
-
-def do_winddirectioncorrection(cf, ds, section, series):
-    if "CorrectWindDirection" not in list(cf[section][series].keys()):
-        return
-    pfp_ts.CorrectWindDirection(cf, ds, series)
 
 def rangecheckserieslower(data,lower):
     if lower is None:

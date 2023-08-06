@@ -11,6 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # PFP modules
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
+from scripts import pfp_func_transforms
 from scripts import pfp_gfALT
 from scripts import pfp_gfSOLO
 from scripts import pfp_io
@@ -1155,6 +1156,30 @@ class edit_cfg_L1(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_wdoffset(self):
+        """ Add an offset to a wind direction variable."""
+        new_qc = {"Wd offset": {"0": "YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 0.0"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_wdoffsetrange(self):
+        """ Add another date range to the wind direction offset correction."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 0.0")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
     def add_qc_check(self, selected_item, new_qc):
         for key1 in new_qc:
             parent = QtGui.QStandardItem(key1)
@@ -1631,6 +1656,11 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.actionAddLinear.setText("Add Linear")
                     self.context_menu.addAction(self.context_menu.actionAddLinear)
                     self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
+                if "Wd offset" not in existing_entries:
+                    self.context_menu.actionAddWdOffset = QtWidgets.QAction(self)
+                    self.context_menu.actionAddWdOffset.setText("Add Wd offset")
+                    self.context_menu.addAction(self.context_menu.actionAddWdOffset)
+                    self.context_menu.actionAddWdOffset.triggered.connect(self.add_wdoffset)
                 if add_separator:
                     self.context_menu.addSeparator()
                 if src == "xl":
@@ -1655,7 +1685,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.actionAddAttribute.setText("Add attribute")
                     self.context_menu.addAction(self.context_menu.actionAddAttribute)
                     self.context_menu.actionAddAttribute.triggered.connect(self.add_attribute)
-                elif str(idx.data()) in ["Function", "Linear", "xl", "csv"]:
+                elif str(idx.data()) in ["Function", "Linear", "Wd offset", "xl", "csv"]:
                     self.context_menu.actionRemoveSubSubSection = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveSubSubSection.setText("Remove item")
                     self.context_menu.addAction(self.context_menu.actionRemoveSubSubSection)
@@ -1666,6 +1696,12 @@ class edit_cfg_L1(QtWidgets.QWidget):
                         self.context_menu.addAction(self.context_menu.actionAddLinearRange)
                         self.context_menu.actionAddLinearRange.triggered.connect(self.add_linearrange)
                         add_separator = True
+                    if str(idx.data()) in ["Wd offset"]:
+                        self.context_menu.actionAddWdOffsetRange = QtWidgets.QAction(self)
+                        self.context_menu.actionAddWdOffsetRange.setText("Add date range")
+                        self.context_menu.addAction(self.context_menu.actionAddWdOffsetRange)
+                        self.context_menu.actionAddWdOffsetRange.triggered.connect(self.add_wdoffsetrange)
+                        add_separator = True
         elif level == 3:
             if ((str(idx.parent().data()) == "Attr") and (selected_item.column() == 0) and
                 (selected_item.text() not in ["long_name", "statistic_type", "units"])):
@@ -1674,6 +1710,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveAttribute)
                 self.context_menu.actionRemoveAttribute.triggered.connect(self.remove_item)
             elif (str(idx.parent().data()) == "Function" and (selected_item.column() == 1)):
+                # do the units conversion functions
                 implemented_func_units = [name for name,data in inspect.getmembers(pfp_func_units, inspect.isfunction)]
                 menuUnits = QtWidgets.QMenu(self)
                 menuUnits.setTitle("Units")
@@ -1683,7 +1720,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     actionAddUnitsFunction[item].setText(str(item.replace("_", " ")))
                     actionAddUnitsFunction[item].triggered.connect(lambda: self.add_function_entry(pfp_func_units))
                     menuUnits.addAction(actionAddUnitsFunction[item])
-                # now do the statistics comversion functions
+                # now do the statistics conversion functions
                 implemented_func_stats = [name for name,data in inspect.getmembers(pfp_func_stats, inspect.isfunction)]
                 menuStats = QtWidgets.QMenu(self)
                 menuStats.setTitle("Statistics")
@@ -1693,8 +1730,19 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     actionAddStatsFunction[item].setText(str(item.replace("_", " ")))
                     actionAddStatsFunction[item].triggered.connect(lambda: self.add_function_entry(pfp_func_stats))
                     menuStats.addAction(actionAddStatsFunction[item])
+                # do the units conversion functions
+                implemented_func_transforms = [name for name,data in inspect.getmembers(pfp_func_transforms, inspect.isfunction)]
+                menuTransforms = QtWidgets.QMenu(self)
+                menuTransforms.setTitle("Transforms")
+                actionAddTransformsFunction = {}
+                for item in implemented_func_transforms:
+                    actionAddTransformsFunction[item] = QtWidgets.QAction(self)
+                    actionAddTransformsFunction[item].setText(str(item.replace("_", " ")))
+                    actionAddTransformsFunction[item].triggered.connect(lambda: self.add_function_entry(pfp_func_transforms))
+                    menuTransforms.addAction(actionAddTransformsFunction[item])
                 self.context_menu.addMenu(menuUnits)
                 self.context_menu.addMenu(menuStats)
+                self.context_menu.addMenu(menuTransforms)
             elif (str(idx.parent().data()) in ["Linear"] and str(idx.data()) != "0"):
                 self.context_menu.actionRemoveExcludeDateRange = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")

@@ -12,6 +12,7 @@ from scripts import constants as c
 from scripts import meteorologicalfunctions as pfp_mf
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
+from scripts import pfp_func_transforms
 from scripts import pfp_io
 from scripts import pfp_utils
 from scripts import pysolar
@@ -56,6 +57,46 @@ def ApplyLinear(cf,ds,ThisOne):
             flag[si:ei][index] = numpy.int32(10)
             ds.root["Variables"][ThisOne]['Data'] = numpy.ma.filled(data,float(c.missing_value)).astype(numpy.float64)
             ds.root["Variables"][ThisOne]['Flag'] = flag
+
+def ApplyWdOffset(cf, ds, label):
+    """
+    Purpose:
+     Apply an offset correction for a specified date range to a wind direction variable.
+    Usage:
+     pfp_ts.ApplyWdOffset(cf, da, label)
+    """
+    labels = list(ds.root["Variables"].keys())
+    if label not in labels:
+        return
+    if pfp_utils.incf(cf, label) and pfp_utils.haskey(cf, label, "Wd offset"):
+        msg = "  Applying offset to " + label
+        logger.info(msg)
+        data = numpy.ma.masked_where(ds.root["Variables"][label]["Data"]==float(c.missing_value), ds.root["Variables"][label]['Data'])
+        flag = ds.root["Variables"][label]["Flag"].copy()
+        ldt = ds.root["Variables"]["DateTime"]["Data"]
+
+        date_ranges = list(cf["Variables"][label]["Wd offset"].keys())
+        for i in range(len(date_ranges)):
+            dates_string = cf["Variables"][label]["Wd offset"][str(i)]
+            dates_list = dates_string.split(",")
+            try:
+                dt = datetime.datetime.strptime(dates_list[0], "%Y-%m-%d %H:%M")
+                si = pfp_utils.find_nearest_value(ldt, dt)
+            except ValueError:
+                si = 0
+            try:
+                dt = datetime.datetime.strptime(dates_list[1], "%Y-%m-%d %H:%M")
+                ei = pfp_utils.find_nearest_value(ldt, dt)
+            except ValueError:
+                ei = -1
+            offset = float(dates_list[2])
+
+            data[si:ei] = numpy.ma.mod(data[si:ei] + offset, float(360))
+            index = numpy.where(flag[si:ei] == 0)[0]
+            flag[si:ei][index] = numpy.int32(10)
+            ds.root["Variables"][label]["Data"] = numpy.ma.filled(data, float(c.missing_value)).astype(numpy.float64)
+            ds.root["Variables"][label]["Flag"] = flag
+    return
 
 def AverageSeriesByElements(cf, ds, Av_out):
     """
@@ -1563,34 +1604,49 @@ def DoFunctions(ds, info):
     Date: September 2015
     """
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
-    implemented_func_units = [name for name,data in inspect.getmembers(pfp_func_units,inspect.isfunction)]
-    implemented_func_stats = [name for name,data in inspect.getmembers(pfp_func_stats,inspect.isfunction)]
-    implemented_functions = implemented_func_units + implemented_func_stats
+    implemented_func_units = [name for name,data in
+                              inspect.getmembers(pfp_func_units,
+                                                 inspect.isfunction)]
+    implemented_func_stats = [name for name,data in
+                              inspect.getmembers(pfp_func_stats,
+                                                 inspect.isfunction)]
+    implemented_func_transforms = [name for name,data in
+                                   inspect.getmembers(pfp_func_transforms,
+                                                      inspect.isfunction)]
+    implemented_functions = (implemented_func_units +
+                             implemented_func_stats +
+                             implemented_func_transforms)
     functions = {}
     units_vars = []
     stats_vars = []
+    transforms_vars = []
     for label in list(info["Variables"].keys()):
         # datetime functions handled elsewhere for now
-        if label == "DateTime": continue
-        if "Function" not in list(info["Variables"][label].keys()): continue
+        if label == "DateTime":
+            continue
+        if "Function" not in list(info["Variables"][label].keys()):
+            continue
         if "func" not in list(info["Variables"][label]["Function"].keys()):
             msg = " 'func' keyword not found in [Functions] for " + label
             logger.error(msg)
             continue
         function_string = info["Variables"][label]["Function"]["func"]
-        function_string = function_string.replace('"','')
+        function_string = function_string.replace('"', '')
         function_name = function_string.split("(")[0]
-        function_args = function_string.split("(")[1].replace(")","").replace(" ","").split(",")
+        function_args = function_string.split("(")[1].replace(")", "").replace(" ", "").split(",")
         if function_name not in implemented_functions:
             msg = " Requested function " + function_name + " not imlemented, skipping ..."
             logger.error(msg)
             continue
         if function_name in implemented_func_units:
-            functions[label] = {"type": "units", "name":function_name, "arguments":function_args}
+            functions[label] = {"type": "units", "name": function_name, "arguments": function_args}
             units_vars.append(label)
         elif function_name in implemented_func_stats:
-            functions[label] = {"type": "stats", "name":function_name, "arguments":function_args}
+            functions[label] = {"type": "stats", "name": function_name, "arguments": function_args}
             stats_vars.append(label)
+        elif function_name in implemented_func_transforms:
+            functions[label] = {"type": "transforms", "name": function_name, "arguments": function_args}
+            transforms_vars.append(label)
     series_list = list(ds.root["Variables"].keys())
     for label in units_vars:
         if label not in series_list:
@@ -1611,6 +1667,14 @@ def DoFunctions(ds, info):
             var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=info["Variables"][label]["Attr"])
             pfp_utils.CreateVariable(ds, var)
         result = getattr(pfp_func_stats, functions[label]["name"])(ds, label, *functions[label]["arguments"])
+        if result:
+            msg = " Completed function for " + label
+            logger.info(msg)
+    for label in transforms_vars:
+        if label not in series_list:
+            var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=info["Variables"][label]["Attr"])
+            pfp_utils.CreateVariable(ds, var)
+        result = getattr(pfp_func_transforms, functions[label]["name"])(ds, label, *functions[label]["arguments"])
         if result:
             msg = " Completed function for " + label
             logger.info(msg)

@@ -13,6 +13,7 @@ import timezonefinder
 from scripts import constants as c
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
+from scripts import pfp_func_transforms
 from scripts import pfp_gui
 from scripts import pfp_io
 from scripts import pfp_utils
@@ -1378,13 +1379,21 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
             function_name = function_string.split("(")[0]
             # get a list of function names in pfp_func_units and pfp_func_stats
             implemented_func_units = [name for name,data in
-                                      inspect.getmembers(pfp_func_units,inspect.isfunction)]
+                                      inspect.getmembers(pfp_func_units,
+                                                         inspect.isfunction)]
             implemented_func_stats = [name for name,data in
-                                      inspect.getmembers(pfp_func_stats,inspect.isfunction)]
-            implemented_functions = implemented_func_units + implemented_func_stats
+                                      inspect.getmembers(pfp_func_stats,
+                                                         inspect.isfunction)]
+            implemented_func_transforms = [name for name,data in
+                                           inspect.getmembers(pfp_func_transforms,
+                                                              inspect.isfunction)]
+            implemented_functions = (implemented_func_units +
+                                     implemented_func_stats +
+                                     implemented_func_transforms)
             # check the function name is implemented
             if function_name not in implemented_functions:
-                msg = " Skipping " + cfg_label + " (function " + function_name + " not implemented)"
+                msg = " Skipping " + cfg_label + " (function " + function_name
+                msg += " not implemented)"
                 messages["ERROR"].append(msg)
             # check the arguments are being read in
             else:

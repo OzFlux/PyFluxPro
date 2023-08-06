@@ -52,6 +52,8 @@ def l1qc(cfg):
     pfp_ck.do_linear(cfg, ds)
     # create new variables using user defined functions
     pfp_ts.DoFunctions(ds, l1_info["read_excel"])
+    # apply offset to wind directions
+    pfp_ck.do_wd_offset(cfg, ds)
     # calculate variances from standard deviations and vice versa
     pfp_ts.CalculateStandardDeviations(ds)
     # check missing data and QC flags are consistent
