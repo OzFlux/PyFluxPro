@@ -544,6 +544,8 @@ def ParseL1ControlFile(cf):
     l1ire["Files"]["in_firstdatarow"] = cf["Files"]["in_firstdatarow"]
     # get the global attributes
     l1ire["Global"] = copy.deepcopy(cf["Global"])
+    # get the options section
+    l1ire["Options"] = copy.deepcopy(cf["Options"])
     # get the variables
     l1ire["Variables"] = copy.deepcopy(cf["Variables"])
     return l1_info

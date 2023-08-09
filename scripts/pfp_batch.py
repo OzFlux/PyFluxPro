@@ -54,6 +54,10 @@ def do_L1_batch(main_ui, cf_level):
             cf_l1 = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.l1_update_controlfile(cf_l1):
                 continue
+            if "Options" not in cf_l1:
+                cf_l1["Options"] = {}
+            cf_l1["Options"]["call_mode"] = "batch"
+            cf_l1["Options"]["show_plots"] = "No"
             if pfp_compliance.check_l1_controlfile(cf_l1):
                 ds1 = pfp_levels.l1qc(cf_l1)
                 outfilename = pfp_io.get_outfilenamefromcf(cf_l1)

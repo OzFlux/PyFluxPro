@@ -26,6 +26,7 @@ from scripts import cfg
 from scripts import constants as c
 from scripts import meteorologicalfunctions as pfp_mf
 from scripts import pfp_log
+from scripts import pfp_plot
 from scripts import pfp_ts
 from scripts import pfp_utils
 
@@ -99,6 +100,113 @@ class DataStructure(object):
             for group in groups:
                 setattr(self, group, {"Attributes": {}, "Variables": {}})
                 self.info["groups"].append(group)
+
+def CheckTimeStamps(dfs, l1_info, fix=True):
+    """
+    Purpose:
+     Check the timestamps of the Excel worksheets or CSV file read at
+     L1 for a range of anomalies.  The checks are:
+      - timestamps that are non-integral with respect to the time step
+      - duplicate timestamps
+      - time steps less than the specified time step
+      - time steps greater than 3 hours
+      - time steps greater than 1 day
+     If any timestamps that fail these checks are detected this function
+     will print warning messages to the log window and produce 1 plot per
+     worksheet showing a time series of the time step and a histogram
+     of the the time step distribution.
+    Usage:
+    Side effects:
+     If the optional argument fix=True, this function will delete rows
+     with timestamps that are not an integral of the time step specified
+     in the global attributes and rows with duplicate timestamps.
+    Author: PRI
+    Date: August 2023
+    """
+    ts = int(l1_info["read_excel"]["Global"]["time_step"])
+    results = {}
+    sheets = list(dfs.keys())
+    msg = " Checking timestamps on sheets " + ",".join(sheets)
+    logger.info(msg)
+    for sheet in sheets:
+        indices = checktimestamps_get_indices(dfs[sheet], l1_info)
+        results[sheet] = indices
+        if ((len(indices["non_integral"]) > 0) or
+            (len(indices["duplicates"]) > 0) or
+            (len(indices["greaterthan_3hours"]) > 0) or
+            (len(indices["greaterthan_1day"]) > 0)):
+            pfp_plot.checktimestamps_plots(dfs[sheet], sheet, l1_info)
+        if fix:
+            dfs[sheet] = checktimestamps_drop_rows(dfs[sheet], indices)
+    lg = [results[s]["longest_gap"] for s in sheets]
+    max_lg = max(lg)
+    if max_lg != ts:
+        if max_lg > 1440:
+            value = round(max_lg/1440, 1)
+            units = "days"
+        else:
+            value = int(max_lg)
+            units = "minutes"
+        msg = "  The longest gap is " + str(value) + " " + units + " on sheet "
+        msg += sheets[lg.index(max_lg)]
+        logger.info(msg)
+    return
+
+def checktimestamps_get_indices(df, l1_info):
+    ts = int(l1_info["read_excel"]["Global"]["time_step"])
+    indices = {}
+    # timestamp from data frame index
+    dt = df.index.values
+    # time step in minutes
+    ddt = numpy.diff(dt).astype(int)/(10**9)/60
+    dt_mod = numpy.mod(dt.astype(int)/10**9, 1800)
+    indices["non_integral"] = numpy.where(dt_mod != 0)[0]
+    if len(indices["non_integral"]) != 0:
+        msg = "  Number of non-integral time steps: " + str(len(indices["non_integral"]))
+        logger.warning(msg)
+    indices["duplicates"] = numpy.where(ddt==0)[0]
+    if len(indices["duplicates"]) != 0:
+        msg = "  Number of duplicate timestamps: " + str(len(indices["duplicates"]))
+        logger.warning(msg)
+    indices["lessthan_timestep"] = numpy.where(ddt < ts)[0]
+    if len(indices["lessthan_timestep"]) != 0:
+        msg = "  Number of time steps less than " + str(ts) + " minutes: "
+        msg += str(len(indices["lessthan_timestep"])//2)
+        logger.warning(msg)
+    indices["equalto_timestep"] = numpy.where(ddt == ts)[0]
+    if len(indices["equalto_timestep"]) != 0:
+        msg = "  Number of time steps equal to " + str(ts) + " minutes: "
+        msg += str(len(indices["equalto_timestep"]))
+        #logger.info(msg)
+    indices["greaterthan_3hours"] = numpy.where(ddt >= 180)[0]
+    if len(indices["greaterthan_3hours"]) != 0:
+        msg = "  Number of gaps greater than 3 hours: " + str(len(indices["greaterthan_3hours"]))
+        logger.warning(msg)
+    indices["greaterthan_1day"] = numpy.where(ddt >= 1440)[0]
+    if len(indices["greaterthan_1day"]) != 0:
+        msg = "  Number of gaps greater than 1 day: " + str(len(indices["greaterthan_1day"]))
+        logger.warning(msg)
+    indices["longest_gap"] = numpy.max(ddt)
+    return indices
+
+def checktimestamps_drop_rows(df, indices):
+    if len(indices["non_integral"]) != 0:
+        n = len(indices["non_integral"])
+        msg = " Removing " + str(n) + " rows with non-integral time steps"
+        logger.info(msg)
+        index_name = df.index.name
+        df = df.reset_index()
+        df = df.drop(indices["non_integral"])
+        df.set_index(index_name, inplace=True)
+    if len(indices["duplicates"]) != 0:
+        n = len(indices["duplicates"])
+        msg = " Removing " + str(n) + " rows with duplicate time steps"
+        logger.info(msg)
+        index_name = df.index.name
+        df = df.reset_index()
+        df = df.drop(indices["duplicates"])
+        df.set_index(index_name, inplace=True)
+    return df
 
 def coerce_to_numeric(value):
     if isinstance(value, numbers.Number):
@@ -393,7 +501,10 @@ def DataFrameToDataStructure(df, l1_info):
         var["Data"] = numpy.ma.masked_values(var["Data"], c.missing_value)
         # set the QC flag to 1 for masked data
         mask = numpy.ma.getmaskarray(var["Data"])
-        var["Flag"] = numpy.where(mask == False, zeros, ones)
+        try:
+            var["Flag"] = numpy.where(mask == False, zeros, ones)
+        except:
+            print("oi va vey")
         var["Attr"] = l1ire["Variables"][label]["Attr"]
         pfp_utils.CreateVariable(ds, var)
     return ds
@@ -2158,7 +2269,7 @@ def MergeDataFrames(dfs, l1_info):
     Side effects:
      Returns a pandas data frame.
     Author: PRI
-    Date: Back in the day
+    DaMergeDataFrameste: Back in the day
     """
     # get a list of data frame names
     df_names = list(dfs)
@@ -2181,7 +2292,7 @@ def MergeDataFrames(dfs, l1_info):
         # set the datetime as the index
         df = df.set_index("DateTime")
         # list of data frames
-        frames = [dfs[s] for s in sorted(list(dfs.keys()))]
+        frames = [df] + [dfs[s] for s in sorted(list(dfs.keys()))]
         # merge the data frames on columns (axis=1)
         df = pandas.concat(frames, axis=1)
     else:

@@ -42,6 +42,8 @@ def l1qc(cfg):
         ds.info["returncodes"]["value"] = 1
         ds.info["returncodes"]["message"] = "An error occurred reading the input file"
         return ds
+    # check the timestamps
+    pfp_io.CheckTimeStamps(dfs, l1_info, fix=True)
     # merge the data frames (1 per Excel worksheet)
     df = pfp_io.MergeDataFrames(dfs, l1_info)
     # convert the data frame to a PFP data structure and add metadata
