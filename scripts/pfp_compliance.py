@@ -542,6 +542,11 @@ def ParseL1ControlFile(cf):
     l1ire["Files"]["file_name"] = os.path.join(cf["Files"]["file_path"], cf["Files"]["in_filename"])
     l1ire["Files"]["in_headerrow"] = cf["Files"]["in_headerrow"]
     l1ire["Files"]["in_firstdatarow"] = cf["Files"]["in_firstdatarow"]
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, "L1", "")
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    l1ire["Files"]["plot_path"] = plot_path
     # get the global attributes
     l1ire["Global"] = copy.deepcopy(cf["Global"])
     # get the options section

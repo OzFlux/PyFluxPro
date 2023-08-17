@@ -47,11 +47,11 @@ def Wd_from_Ux_Uy(ds, Wd_out, Ux_in, Uy_in):
     Wd = pfp_utils.CreateEmptyVariable(Wd_out, nrecs, attr=attr)
     if ((Ux["Attr"]["instrument"] in ["WindMaster-Pro"]) and
         (Uy["Attr"]["instrument"] == Ux["Attr"]["instrument"])):
-        Wd_sonic = numpy.ma.mod(360 - numpy.degrees(numpy.ma.arctan2(Uy, Ux)), 360)
+        Wd_sonic = numpy.ma.mod(360 - numpy.degrees(numpy.ma.arctan2(Uy["Data"], Ux["Data"])), 360)
         Wd["Attr"]["instrument"] = Ux["Attr"]["instrument"]
     elif ((Ux["Attr"]["instrument"] in ["CSAT", "CSAT3A", "CSAT3B"]) and
           (Uy["Attr"]["instrument"] == Ux["Attr"]["instrument"])):
-        Wd_sonic = numpy.ma.mod(180 - numpy.degrees(numpy.ma.arctan2(Uy, Ux)), 360)
+        Wd_sonic = numpy.ma.mod(180 - numpy.degrees(numpy.ma.arctan2(Uy["Data"], Ux["Data"])), 360)
         Wd["Attr"]["instrument"] = Ux["Attr"]["instrument"]
     else:
         msg = " Unrecognised sonic anemometer type (" + Ux["instrument"]

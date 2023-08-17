@@ -73,11 +73,22 @@ def checktimestamps_plots(df, sheet, l1_info):
         axs[1].text(bin_ticks[i], hist[i], str(hist[i]), ha='center', va='bottom')
     axs[1].set_ylabel("Number")
     fig.tight_layout()
+    # get the plot path
+    plot_path = l1_info["read_excel"]["Files"]["plot_path"]
+    # get the plot file name
+    file_name = "timestamps_" + sheet + "_" + start + "_" + end + ".png"
+    # get the plot file uri
+    file_uri = os.path.join(plot_path, file_name)
+    # save the plot as a PNG file
+    fig.savefig(file_uri, format='png')
+    # interactive or batch?
     if show_plots.lower() == "yes":
+        # interactive so render the plot, pause 0.5 seconds, turn interactive plotting off
         plt.draw()
         pfp_utils.mypause(0.5)
         plt.ioff()
     else:
+        # batch so close the figure, switch to previous backend
         plt.close(fig)
         plt.switch_backend(current_backend)
         plt.ion()
@@ -1192,6 +1203,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
             logger.warning("  Variable " + ThisOne + " not in data structure")
         # get the plot path and save a hard copy of the plot
         plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
+        plot_path = os.path.join(plot_path, Level, "")
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
         fname = os.path.join(plot_path, SiteName.replace(' ','')+'_'+Level+'_'+p['PlotDescription'].replace(' ','')+'.png')

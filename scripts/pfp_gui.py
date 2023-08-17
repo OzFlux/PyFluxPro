@@ -1156,6 +1156,19 @@ class edit_cfg_L1(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_plot_path(self):
+        """ Add plot_path to the 'Files' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        child0 = QtGui.QStandardItem("plot_path")
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("Right click to browse")
+        parent.appendRow([child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
     def add_wdoffset(self):
         """ Add an offset to a wind direction variable."""
         new_qc = {"Wd offset": {"0": "YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 0.0"}}
@@ -1556,6 +1569,27 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
+    def browse_plot_path(self):
+        """ Browse for the plot path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the selected entry text
+        file_path = str(idx.data())
+        # dialog for new directory
+        new_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose a folder ...",
+                                                         file_path, QtWidgets.QFileDialog.ShowDirsOnly)
+        # quit if cancel button pressed
+        if len(str(new_dir)) > 0:
+            # make sure the string ends with a path delimiter
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
+            # update the model
+            parent.child(selected_item.row(), 1).setText(new_dir)
+
     def context_menu(self, position):
         """ Right click context menu."""
         # are we reading an Excel or CSV file?
@@ -1578,7 +1612,29 @@ class edit_cfg_L1(QtWidgets.QWidget):
         level = self.get_level_selected_item()
         add_separator = False
         if level == 0:
-            if selected_text == "Global":
+            if selected_text == "Files":
+                existing_entries = self.get_existing_entries()
+                if "file_path" not in existing_entries:
+                    self.context_menu.actionAddfile_path = QtWidgets.QAction(self)
+                    self.context_menu.actionAddfile_path.setText("Add file_path")
+                    self.context_menu.addAction(self.context_menu.actionAddfile_path)
+                    self.context_menu.actionAddfile_path.triggered.connect(self.add_file_path)
+                if "in_filename" not in existing_entries:
+                    self.context_menu.actionAddin_filename = QtWidgets.QAction(self)
+                    self.context_menu.actionAddin_filename.setText("Add in_filename")
+                    self.context_menu.addAction(self.context_menu.actionAddin_filename)
+                    self.context_menu.actionAddin_filename.triggered.connect(self.add_in_filename)
+                if "out_filename" not in existing_entries:
+                    self.context_menu.actionAddout_filename = QtWidgets.QAction(self)
+                    self.context_menu.actionAddout_filename.setText("Add out_filename")
+                    self.context_menu.addAction(self.context_menu.actionAddout_filename)
+                    self.context_menu.actionAddout_filename.triggered.connect(self.add_out_filename)
+                if "plot_path" not in existing_entries:
+                    self.context_menu.actionAddplot_path = QtWidgets.QAction(self)
+                    self.context_menu.actionAddplot_path.setText("Add plot_path")
+                    self.context_menu.addAction(self.context_menu.actionAddplot_path)
+                    self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
+            elif selected_text == "Global":
                 self.context_menu.actionAddGlobal = QtWidgets.QAction(self)
                 self.context_menu.actionAddGlobal.setText("Add attribute")
                 self.context_menu.addAction(self.context_menu.actionAddGlobal)
@@ -1614,6 +1670,11 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.actionBrowseOutputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
                     self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
+                elif key == "plot_path":
+                    self.context_menu.actionBrowsePlotPath = QtWidgets.QAction(self)
+                    self.context_menu.actionBrowsePlotPath.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowsePlotPath)
+                    self.context_menu.actionBrowsePlotPath.triggered.connect(self.browse_plot_path)
                 else:
                     pass
             if ((str(parent.text()) == "Files") and (selected_item.column() == 0) and
