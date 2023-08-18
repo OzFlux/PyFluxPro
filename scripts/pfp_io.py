@@ -131,13 +131,28 @@ def CheckTimeStamps(dfs, l1_info, fix=True):
     for sheet in sheets:
         indices = checktimestamps_get_indices(dfs[sheet], l1_info)
         results[sheet] = indices
-        if ((len(indices["non_integral"]) > 0) or
+        if ((len(indices["non_monotonic"]) > 0) or
+            (len(indices["non_integral"]) > 0) or
             (len(indices["duplicates"]) > 0) or
             (len(indices["greaterthan_3hours"]) > 0) or
             (len(indices["greaterthan_1day"]) > 0)):
             pfp_plot.checktimestamps_plots(dfs[sheet], sheet, l1_info)
-        if fix:
+        if fix and (len(indices["non_monotonic"]) == 0):
             dfs[sheet] = checktimestamps_drop_rows(dfs[sheet], indices)
+        elif (len(indices["non_monotonic"]) > 0):
+            msg = "  Timestamp does not increase monotonically on sheet " + sheet
+            logger.error(msg)
+            msg = "  Sheet " + sheet + " will not be processed!!!"
+            logger.error(msg)
+            dfs.pop(sheet)
+        else:
+            pass
+    # check to see if any sheets remain to be processed
+    sheets = list(dfs.keys())
+    if len(sheets) == 0:
+        msg = "No sheets or files to process after timestamp checks"
+        logger.error(msg)
+        raise RuntimeError(msg)
     lg = [results[s]["longest_gap"] for s in sheets]
     max_lg = max(lg)
     if max_lg != ts:
@@ -159,19 +174,23 @@ def checktimestamps_get_indices(df, l1_info):
     dt = df.index.values
     # time step in minutes
     ddt = numpy.diff(dt).astype(int)/(10**9)/60
+    indices["non_monotonic"] = numpy.where(ddt < 0)[0]
+    if len(indices["non_monotonic"]) > 0:
+        msg = "  Number of negative time steps: " + str(len(indices["non_monotonic"]))
+        logger.error(msg)
     dt_mod = numpy.mod(dt.astype(int)/10**9, 1800)
     indices["non_integral"] = numpy.where(dt_mod != 0)[0]
     if len(indices["non_integral"]) != 0:
         msg = "  Number of non-integral time steps: " + str(len(indices["non_integral"]))
         logger.warning(msg)
-    indices["duplicates"] = numpy.where(ddt==0)[0]
+    indices["duplicates"] = numpy.where(ddt == 0)[0]
     if len(indices["duplicates"]) != 0:
         msg = "  Number of duplicate timestamps: " + str(len(indices["duplicates"]))
         logger.warning(msg)
-    indices["lessthan_timestep"] = numpy.where(ddt < ts)[0]
+    indices["lessthan_timestep"] = numpy.where((ddt > 0) and (ddt < ts))[0]
     if len(indices["lessthan_timestep"]) != 0:
         msg = "  Number of time steps less than " + str(ts) + " minutes: "
-        msg += str(len(indices["lessthan_timestep"])//2)
+        msg += str(len(indices["lessthan_timestep"]))
         logger.warning(msg)
     indices["equalto_timestep"] = numpy.where(ddt == ts)[0]
     if len(indices["equalto_timestep"]) != 0:
