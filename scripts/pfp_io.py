@@ -187,7 +187,7 @@ def checktimestamps_get_indices(df, l1_info):
     if len(indices["duplicates"]) != 0:
         msg = "  Number of duplicate timestamps: " + str(len(indices["duplicates"]))
         logger.warning(msg)
-    indices["lessthan_timestep"] = numpy.where((ddt > 0) and (ddt < ts))[0]
+    indices["lessthan_timestep"] = numpy.where((ddt > 0) & (ddt < ts))[0]
     if len(indices["lessthan_timestep"]) != 0:
         msg = "  Number of time steps less than " + str(ts) + " minutes: "
         msg += str(len(indices["lessthan_timestep"]))

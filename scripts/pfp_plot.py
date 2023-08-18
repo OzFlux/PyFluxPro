@@ -609,6 +609,7 @@ def plot_fingerprint(cf):
                 plt.setp(ax.get_yticklabels(), visible=False)
             n += 1
         plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+        plot_path = os.path.join(plot_path, "fingerprints", "")
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
         pngname = plot_path + site_name.replace(" ","") + "_" + level + "_"

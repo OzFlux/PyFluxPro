@@ -715,7 +715,7 @@ def check_l1_controlfile(cfg):
         std = ConfigObj(std_name, indent_type="    ", list_values=False, write_empty_values=True)
         std_labels = sorted(list(std["Variables"].keys()))
         # initialise the messages dictionary
-        messages = {"ERROR":[], "WARNING": [], "INFO": []}
+        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": []}
         # check the files section
         l1_check_files(cfg, std, messages)
         # check the global attributes section
@@ -1154,10 +1154,8 @@ def display_messages_interactive(messages, mode="Close"):
             error_messages.append(item)
         logger.error("!!!!!")
     if len(messages["WARNING"]) > 0:
-        logger.warning("?????")
         for item in messages["WARNING"]:
             logger.warning(item)
-        logger.warning("?????")
     for item in messages["INFO"]:
         logger.info(item)
     # convert error list to a comma separated string
@@ -1304,7 +1302,7 @@ def l1_check_global_forced(cfg, std, messages):
     for item in forced:
         cfg["Global"][item] = forced[item]
         msg = "Global: setting " + item + " to " + forced[item]
-        messages["INFO"].append(msg)
+        messages["DEBUG"].append(msg)
     # and do the time zone
     lon = float(cfg["Global"]["longitude"])
     lat = float(cfg["Global"]["latitude"])
