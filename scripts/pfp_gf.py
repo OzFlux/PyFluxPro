@@ -175,7 +175,7 @@ def CheckL5Targets(ds, l5_info):
         ds.info["returncodes"] = {"value": 1, "message": msg}
     return
 
-def ParseL4ControlFile(cf, ds):
+def ParseL4ControlFile(cfg, ds):
     """
     Purpose:
      Create the L4 information and setting dictionary.
@@ -187,23 +187,24 @@ def ParseL4ControlFile(cf, ds):
     ds.info["returncodes"]["message"] = "OK"
     ds.info["returncodes"]["value"] = 0
     l4_info = {}
+    l4_info["cfg"] = copy.deepcopy(cfg)
     # add key for suppressing output of intermediate variables e.g. Ta_aws
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
     l4_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     # loop over target variables
-    for target in list(cf["Drivers"].keys()):
-        if "GapFillFromAlternate" in list(cf["Drivers"][target].keys()):
-            gfalternate_createdict(cf, ds, l4_info, target, "GapFillFromAlternate")
+    for target in list(cfg["Drivers"].keys()):
+        if "GapFillFromAlternate" in list(cfg["Drivers"][target].keys()):
+            gfalternate_createdict(cfg, ds, l4_info, target, "GapFillFromAlternate")
             # check to see if something went wrong
             if ds.info["returncodes"]["value"] != 0:
                 # if it has, return to calling routine
                 return l4_info
-        if "GapFillFromClimatology" in list(cf["Drivers"][target].keys()):
-            gfClimatology_createdict(cf, ds, l4_info, target, "GapFillFromClimatology")
+        if "GapFillFromClimatology" in list(cfg["Drivers"][target].keys()):
+            gfClimatology_createdict(cfg, ds, l4_info, target, "GapFillFromClimatology")
             if ds.info["returncodes"]["value"] != 0:
                 return l4_info
-        if "MergeSeries" in list(cf["Drivers"][target].keys()):
-            gfMergeSeries_createdict(cf, ds, l4_info, target, "MergeSeries")
+        if "MergeSeries" in list(cfg["Drivers"][target].keys()):
+            gfMergeSeries_createdict(cfg, ds, l4_info, target, "MergeSeries")
     # check to make sure at least 1 output is defined
     outputs = []
     for method in ["GapFillFromAlternate", "GapFillFromClimatology"]:

@@ -6399,7 +6399,9 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 child1 = QtGui.QStandardItem(val)
                 gui_method.appendRow([child0, child1])
             self.sections["GUI"].appendRow(gui_method)
-        self.model.insertRow(self.section_headings.index("Drivers"), self.sections["GUI"])
+        idx = self.section_headings.index("Drivers")
+        self.model.insertRow(idx, self.sections["GUI"])
+        self.section_headings.insert(idx, "GUI")
         self.update_tab_text()
 
     def add_imports_section(self):
@@ -6533,6 +6535,12 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 subsubsection.appendRow(subsubsubsection)
             subsection.appendRow(subsubsection)
         self.update_tab_text()
+
+    def add_truncate(self):
+        """ Add Truncate to the [Options] section."""
+        dict_to_add = {"Truncate": "No"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_variable(self, d2a):
         """ Add a variable."""
@@ -6706,12 +6714,12 @@ class edit_cfg_L4(QtWidgets.QWidget):
         # get the level of the selected item
         level = self.get_level_selected_item()
         add_separator = False
+        # get a list of the section headings at the root level
+        self.section_headings = []
+        root = self.model.invisibleRootItem()
+        for i in range(root.rowCount()):
+            self.section_headings.append(str(root.child(i).text()))
         if level == 0:
-            # get a list of the section headings at the root level
-            self.section_headings = []
-            root = self.model.invisibleRootItem()
-            for i in range(root.rowCount()):
-                self.section_headings.append(str(root.child(i).text()))
             if "Imports" not in self.section_headings and selected_text == "Files":
                 self.context_menu.actionAddImportsSection = QtWidgets.QAction(self)
                 self.context_menu.actionAddImportsSection.setText("Add Imports section")
@@ -6754,11 +6762,6 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
                 # only put an option in the context menu if it is not already present
-                if "MaxGapInterpolate" not in existing_entries:
-                    self.context_menu.actionAddMaxGapInterpolate = QtWidgets.QAction(self)
-                    self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
-                    self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
-                    self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
                 if "InterpolateType" not in existing_entries:
                     self.context_menu.actionAddInterpolateType = QtWidgets.QAction(self)
                     self.context_menu.actionAddInterpolateType.setText("InterpolateType")
@@ -6769,6 +6772,16 @@ class edit_cfg_L4(QtWidgets.QWidget):
                     self.context_menu.actionKeepIntermediateSeries.setText("KeepIntermediateSeries")
                     self.context_menu.addAction(self.context_menu.actionKeepIntermediateSeries)
                     self.context_menu.actionKeepIntermediateSeries.triggered.connect(self.add_keepintermediateseries)
+                if "MaxGapInterpolate" not in existing_entries:
+                    self.context_menu.actionAddMaxGapInterpolate = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
+                    self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
+                    self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
+                if "Truncate" not in existing_entries:
+                    self.context_menu.actionAddTruncate = QtWidgets.QAction(self)
+                    self.context_menu.actionAddTruncate.setText("Truncate")
+                    self.context_menu.addAction(self.context_menu.actionAddTruncate)
+                    self.context_menu.actionAddTruncate.triggered.connect(self.add_truncate)
             elif selected_text == "GUI":
                 self.context_menu.actionRemoveGUISection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveGUISection.setText("Remove section")
@@ -6844,15 +6857,32 @@ class edit_cfg_L4(QtWidgets.QWidget):
                         self.context_menu.actionChangeInterpolateType.triggered.connect(lambda:self.change_selected_text("Akima"))
                 elif (selected_item.column() == 1) and (key in ["KeepIntermediateSeries"]):
                     if selected_text != "Yes":
-                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
-                        self.context_menu.actionChangeOption.setText("Yes")
-                        self.context_menu.addAction(self.context_menu.actionChangeOption)
-                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("Yes"))
+                        self.context_menu.actionChangeKeepIntermediateSeries = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeKeepIntermediateSeries.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionChangeKeepIntermediateSeries)
+                        self.context_menu.actionChangeKeepIntermediateSeries.triggered.connect(lambda:self.change_selected_text("Yes"))
                     if selected_text != "No":
-                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
-                        self.context_menu.actionChangeOption.setText("No")
-                        self.context_menu.addAction(self.context_menu.actionChangeOption)
-                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("No"))
+                        self.context_menu.actionChangeKeepIntermediateSeries = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeKeepIntermediateSeries.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeKeepIntermediateSeries)
+                        self.context_menu.actionChangeKeepIntermediateSeries.triggered.connect(lambda:self.change_selected_text("No"))
+                elif (selected_item.column() == 1) and (key in ["Truncate"]):
+                    if selected_text != "First missing":
+                        self.context_menu.actionChangeTruncate0 = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeTruncate0.setText("First missing")
+                        self.context_menu.addAction(self.context_menu.actionChangeTruncate0)
+                        self.context_menu.actionChangeTruncate0.triggered.connect(lambda:self.change_selected_text("First missing"))
+                    if selected_text != "To imports":
+                        if "Imports" in self.section_headings:
+                            self.context_menu.actionChangeTruncate1 = QtWidgets.QAction(self)
+                            self.context_menu.actionChangeTruncate1.setText("To imports")
+                            self.context_menu.addAction(self.context_menu.actionChangeTruncate1)
+                            self.context_menu.actionChangeTruncate1.triggered.connect(lambda:self.change_selected_text("To imports"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeTruncate2 = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeTruncate2.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeTruncate2)
+                        self.context_menu.actionChangeTruncate2.triggered.connect(lambda:self.change_selected_text("No"))
             elif (str(parent.text()) in ["Drivers"]):
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -7344,10 +7374,30 @@ class edit_cfg_L4(QtWidgets.QWidget):
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
+        selected_text = selected_item.text()
         # get the root
         root = self.model.invisibleRootItem()
         # remove the row
         root.removeRow(selected_item.row())
+        self.section_headings.remove(selected_text)
+        # if we are removing the Imports section, we may have to update the
+        # Options/Truncate entry
+        if selected_text == "Imports":
+            # get the top level parent
+            parent = self.model.invisibleRootItem()
+            # loop over the sections in the top level parent
+            for i in range(parent.rowCount()):
+                item = parent.child(i)
+                # and find the Options section
+                if item.text() == "Options":
+                    # then loop over the entries in the Options section
+                    for j in range(item.rowCount()):
+                        # and find the Truncate entry
+                        if item.child(j, 0).text() == "Truncate":
+                            # and if this is set to 'To Imports'
+                            if item.child(j, 1).text() == "To imports":
+                                # set it to 'No'
+                                item.child(j, 1).setText("No")
         self.update_tab_text()
 
     def update_tab_text(self):

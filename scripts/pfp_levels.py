@@ -267,6 +267,8 @@ def l4qc(main_gui, cf, ds3):
     pfp_ts.CalculateHumiditiesAfterGapFill(ds4, l4_info)
     # re-calculate the meteorological variables
     pfp_ts.CalculateMeteorologicalVariables(ds4, l4_info)
+    # truncate data structure if requested
+    pfp_io.TruncateDataStructure(ds4, l4_info)
     # check for any missing data
     pfp_utils.get_missingingapfilledseries(ds4, l4_info)
     # write the percentage of good data as a variable attribute

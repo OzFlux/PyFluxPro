@@ -1314,6 +1314,56 @@ def smap_writeheaders(cf,csvfile):
     writer.writerow(row_list)
     return writer
 
+def TruncateDataStructure(ds, info):
+    """
+    Purpose:
+     Truncate a data structure.  The options are:
+      (1) no truncation (No)
+      (2) after the last good data record (First missing)
+      (3) to last date of any imports (Imports)
+    Usage:
+     pfp_io.TruncateDataStructure(ds, info)
+    Author: PRI
+    Date: August 2023
+    """
+    opt = pfp_utils.get_keyvaluefromcf(info["cfg"], ["Options"], "Truncate", default="No")
+    if opt.lower() == "no":
+        return
+    msg = " Truncating data structure (" + opt + ")"
+    logger.info(msg)
+    if opt.lower() == "first missing":
+        labels = sorted(list(info["cfg"]["Drivers"].keys()))
+        ts = int(ds.root["Attributes"]["time_step"])
+        first_missing_dates = []
+        for label in labels:
+            var = pfp_utils.GetVariable(ds, label)
+            idx = numpy.where(numpy.ma.getmaskarray(var["Data"]))[0]
+            if len(idx) > 0:
+                first_missing_dates.append(var["DateTime"][min(idx)])
+            else:
+                pass
+        if len(first_missing_dates) > 0:
+            first_missing_date = min(first_missing_dates)
+            last_good_date = first_missing_date - datetime.timedelta(minutes=ts)
+            msg = "  All variables truncated to " + last_good_date.strftime("%Y-%m-%d")
+            logger.info(msg)
+            labels = sorted(list(ds.root["Variables"].keys()))
+            for label in labels:
+                var = pfp_utils.GetVariable(ds, label, end=last_good_date)
+                pfp_utils.CreateVariable(ds, var)
+            dt = pfp_utils.GetVariable(ds, "DateTime")
+            ds.root["Attributes"]["nc_nrecs"] = int(len(dt["Data"]))
+            ds.root["Attributes"]["time_coverage_end"] = str(dt["Data"][-1])
+        else:
+            pass
+    elif opt.lower() == "to imports":
+        msg = " Option " + opt + " not implemented yet"
+        logger.warning(msg)
+    else:
+        msg = "Unrecognised truncate option (" + opt + ")"
+        logger.warning(msg)
+    return
+
 def write_csv_ecostress(cf):
     """
     Purpose:
