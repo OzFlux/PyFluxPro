@@ -1810,15 +1810,6 @@ def l1_update_controlfile(cfg):
     cfg = update_cfg_variables_rename(cfg, std)
     cfg = l1_update_cfg_variables_attributes(cfg, std, chk)
     cfg = l1_update_cfg_variables_function(cfg, std)
-    #try:
-        #cfg = update_cfg_global_attributes(cfg, std)
-        #cfg = update_cfg_variables_deprecated(cfg, std)
-        #cfg = update_cfg_variables_rename(cfg, std)
-        #cfg = l1_update_cfg_variables_attributes(cfg, std, chk)
-        #cfg = l1_update_cfg_variables_function(cfg, std)
-    #except Exception:
-        #ok = False
-        #msg = " An error occurred updating the L1 control file contents"
     if ok:
         # check to see if the control file object has been changed
         if cfg != cfg_original:
