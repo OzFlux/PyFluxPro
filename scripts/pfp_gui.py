@@ -11,6 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # PFP modules
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
+from scripts import pfp_func_transforms
 from scripts import pfp_gfALT
 from scripts import pfp_gfSOLO
 from scripts import pfp_io
@@ -1155,6 +1156,43 @@ class edit_cfg_L1(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_plot_path(self):
+        """ Add plot_path to the 'Files' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        child0 = QtGui.QStandardItem("plot_path")
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("Right click to browse")
+        parent.appendRow([child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def add_wdoffset(self):
+        """ Add an offset to a wind direction variable."""
+        new_qc = {"Wd offset": {"0": "YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 0.0"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_wdoffsetrange(self):
+        """ Add another date range to the wind direction offset correction."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 0.0")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
     def add_qc_check(self, selected_item, new_qc):
         for key1 in new_qc:
             parent = QtGui.QStandardItem(key1)
@@ -1531,6 +1569,27 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
+    def browse_plot_path(self):
+        """ Browse for the plot path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the selected entry text
+        file_path = str(idx.data())
+        # dialog for new directory
+        new_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose a folder ...",
+                                                         file_path, QtWidgets.QFileDialog.ShowDirsOnly)
+        # quit if cancel button pressed
+        if len(str(new_dir)) > 0:
+            # make sure the string ends with a path delimiter
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
+            # update the model
+            parent.child(selected_item.row(), 1).setText(new_dir)
+
     def context_menu(self, position):
         """ Right click context menu."""
         # are we reading an Excel or CSV file?
@@ -1553,7 +1612,29 @@ class edit_cfg_L1(QtWidgets.QWidget):
         level = self.get_level_selected_item()
         add_separator = False
         if level == 0:
-            if selected_text == "Global":
+            if selected_text == "Files":
+                existing_entries = self.get_existing_entries()
+                if "file_path" not in existing_entries:
+                    self.context_menu.actionAddfile_path = QtWidgets.QAction(self)
+                    self.context_menu.actionAddfile_path.setText("Add file_path")
+                    self.context_menu.addAction(self.context_menu.actionAddfile_path)
+                    self.context_menu.actionAddfile_path.triggered.connect(self.add_file_path)
+                if "in_filename" not in existing_entries:
+                    self.context_menu.actionAddin_filename = QtWidgets.QAction(self)
+                    self.context_menu.actionAddin_filename.setText("Add in_filename")
+                    self.context_menu.addAction(self.context_menu.actionAddin_filename)
+                    self.context_menu.actionAddin_filename.triggered.connect(self.add_in_filename)
+                if "out_filename" not in existing_entries:
+                    self.context_menu.actionAddout_filename = QtWidgets.QAction(self)
+                    self.context_menu.actionAddout_filename.setText("Add out_filename")
+                    self.context_menu.addAction(self.context_menu.actionAddout_filename)
+                    self.context_menu.actionAddout_filename.triggered.connect(self.add_out_filename)
+                if "plot_path" not in existing_entries:
+                    self.context_menu.actionAddplot_path = QtWidgets.QAction(self)
+                    self.context_menu.actionAddplot_path.setText("Add plot_path")
+                    self.context_menu.addAction(self.context_menu.actionAddplot_path)
+                    self.context_menu.actionAddplot_path.triggered.connect(self.add_plot_path)
+            elif selected_text == "Global":
                 self.context_menu.actionAddGlobal = QtWidgets.QAction(self)
                 self.context_menu.actionAddGlobal.setText("Add attribute")
                 self.context_menu.addAction(self.context_menu.actionAddGlobal)
@@ -1589,6 +1670,11 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.actionBrowseOutputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
                     self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
+                elif key == "plot_path":
+                    self.context_menu.actionBrowsePlotPath = QtWidgets.QAction(self)
+                    self.context_menu.actionBrowsePlotPath.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowsePlotPath)
+                    self.context_menu.actionBrowsePlotPath.triggered.connect(self.browse_plot_path)
                 else:
                     pass
             if ((str(parent.text()) == "Files") and (selected_item.column() == 0) and
@@ -1631,6 +1717,12 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.actionAddLinear.setText("Add Linear")
                     self.context_menu.addAction(self.context_menu.actionAddLinear)
                     self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
+                # 'Wd offset' option only for wind direction variables
+                if (("Wd offset" not in existing_entries) and (selected_text[0:2] == "Wd")):
+                    self.context_menu.actionAddWdOffset = QtWidgets.QAction(self)
+                    self.context_menu.actionAddWdOffset.setText("Add Wd offset")
+                    self.context_menu.addAction(self.context_menu.actionAddWdOffset)
+                    self.context_menu.actionAddWdOffset.triggered.connect(self.add_wdoffset)
                 if add_separator:
                     self.context_menu.addSeparator()
                 if src == "xl":
@@ -1655,7 +1747,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.actionAddAttribute.setText("Add attribute")
                     self.context_menu.addAction(self.context_menu.actionAddAttribute)
                     self.context_menu.actionAddAttribute.triggered.connect(self.add_attribute)
-                elif str(idx.data()) in ["Function", "Linear", "xl", "csv"]:
+                elif str(idx.data()) in ["Function", "Linear", "Wd offset", "xl", "csv"]:
                     self.context_menu.actionRemoveSubSubSection = QtWidgets.QAction(self)
                     self.context_menu.actionRemoveSubSubSection.setText("Remove item")
                     self.context_menu.addAction(self.context_menu.actionRemoveSubSubSection)
@@ -1666,6 +1758,12 @@ class edit_cfg_L1(QtWidgets.QWidget):
                         self.context_menu.addAction(self.context_menu.actionAddLinearRange)
                         self.context_menu.actionAddLinearRange.triggered.connect(self.add_linearrange)
                         add_separator = True
+                    if str(idx.data()) in ["Wd offset"]:
+                        self.context_menu.actionAddWdOffsetRange = QtWidgets.QAction(self)
+                        self.context_menu.actionAddWdOffsetRange.setText("Add date range")
+                        self.context_menu.addAction(self.context_menu.actionAddWdOffsetRange)
+                        self.context_menu.actionAddWdOffsetRange.triggered.connect(self.add_wdoffsetrange)
+                        add_separator = True
         elif level == 3:
             if ((str(idx.parent().data()) == "Attr") and (selected_item.column() == 0) and
                 (selected_item.text() not in ["long_name", "statistic_type", "units"])):
@@ -1674,6 +1772,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.context_menu.addAction(self.context_menu.actionRemoveAttribute)
                 self.context_menu.actionRemoveAttribute.triggered.connect(self.remove_item)
             elif (str(idx.parent().data()) == "Function" and (selected_item.column() == 1)):
+                # do the units conversion functions
                 implemented_func_units = [name for name,data in inspect.getmembers(pfp_func_units, inspect.isfunction)]
                 menuUnits = QtWidgets.QMenu(self)
                 menuUnits.setTitle("Units")
@@ -1683,7 +1782,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     actionAddUnitsFunction[item].setText(str(item.replace("_", " ")))
                     actionAddUnitsFunction[item].triggered.connect(lambda: self.add_function_entry(pfp_func_units))
                     menuUnits.addAction(actionAddUnitsFunction[item])
-                # now do the statistics comversion functions
+                # now do the statistics conversion functions
                 implemented_func_stats = [name for name,data in inspect.getmembers(pfp_func_stats, inspect.isfunction)]
                 menuStats = QtWidgets.QMenu(self)
                 menuStats.setTitle("Statistics")
@@ -1693,9 +1792,20 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     actionAddStatsFunction[item].setText(str(item.replace("_", " ")))
                     actionAddStatsFunction[item].triggered.connect(lambda: self.add_function_entry(pfp_func_stats))
                     menuStats.addAction(actionAddStatsFunction[item])
+                # do the units conversion functions
+                implemented_func_transforms = [name for name,data in inspect.getmembers(pfp_func_transforms, inspect.isfunction)]
+                menuTransforms = QtWidgets.QMenu(self)
+                menuTransforms.setTitle("Transforms")
+                actionAddTransformsFunction = {}
+                for item in implemented_func_transforms:
+                    actionAddTransformsFunction[item] = QtWidgets.QAction(self)
+                    actionAddTransformsFunction[item].setText(str(item.replace("_", " ")))
+                    actionAddTransformsFunction[item].triggered.connect(lambda: self.add_function_entry(pfp_func_transforms))
+                    menuTransforms.addAction(actionAddTransformsFunction[item])
                 self.context_menu.addMenu(menuUnits)
                 self.context_menu.addMenu(menuStats)
-            elif (str(idx.parent().data()) in ["Linear"] and str(idx.data()) != "0"):
+                self.context_menu.addMenu(menuTransforms)
+            elif (str(idx.parent().data()) in ["Linear", "Wd offset"] and str(idx.data()) != "0"):
                 self.context_menu.actionRemoveExcludeDateRange = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
                 self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
@@ -6289,7 +6399,9 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 child1 = QtGui.QStandardItem(val)
                 gui_method.appendRow([child0, child1])
             self.sections["GUI"].appendRow(gui_method)
-        self.model.insertRow(self.section_headings.index("Drivers"), self.sections["GUI"])
+        idx = self.section_headings.index("Drivers")
+        self.model.insertRow(idx, self.sections["GUI"])
+        self.section_headings.insert(idx, "GUI")
         self.update_tab_text()
 
     def add_imports_section(self):
@@ -6423,6 +6535,12 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 subsubsection.appendRow(subsubsubsection)
             subsection.appendRow(subsubsection)
         self.update_tab_text()
+
+    def add_truncate(self):
+        """ Add Truncate to the [Options] section."""
+        dict_to_add = {"Truncate": "No"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_variable(self, d2a):
         """ Add a variable."""
@@ -6596,12 +6714,12 @@ class edit_cfg_L4(QtWidgets.QWidget):
         # get the level of the selected item
         level = self.get_level_selected_item()
         add_separator = False
+        # get a list of the section headings at the root level
+        self.section_headings = []
+        root = self.model.invisibleRootItem()
+        for i in range(root.rowCount()):
+            self.section_headings.append(str(root.child(i).text()))
         if level == 0:
-            # get a list of the section headings at the root level
-            self.section_headings = []
-            root = self.model.invisibleRootItem()
-            for i in range(root.rowCount()):
-                self.section_headings.append(str(root.child(i).text()))
             if "Imports" not in self.section_headings and selected_text == "Files":
                 self.context_menu.actionAddImportsSection = QtWidgets.QAction(self)
                 self.context_menu.actionAddImportsSection.setText("Add Imports section")
@@ -6644,11 +6762,6 @@ class edit_cfg_L4(QtWidgets.QWidget):
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
                 # only put an option in the context menu if it is not already present
-                if "MaxGapInterpolate" not in existing_entries:
-                    self.context_menu.actionAddMaxGapInterpolate = QtWidgets.QAction(self)
-                    self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
-                    self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
-                    self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
                 if "InterpolateType" not in existing_entries:
                     self.context_menu.actionAddInterpolateType = QtWidgets.QAction(self)
                     self.context_menu.actionAddInterpolateType.setText("InterpolateType")
@@ -6659,6 +6772,16 @@ class edit_cfg_L4(QtWidgets.QWidget):
                     self.context_menu.actionKeepIntermediateSeries.setText("KeepIntermediateSeries")
                     self.context_menu.addAction(self.context_menu.actionKeepIntermediateSeries)
                     self.context_menu.actionKeepIntermediateSeries.triggered.connect(self.add_keepintermediateseries)
+                if "MaxGapInterpolate" not in existing_entries:
+                    self.context_menu.actionAddMaxGapInterpolate = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
+                    self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
+                    self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
+                if "Truncate" not in existing_entries:
+                    self.context_menu.actionAddTruncate = QtWidgets.QAction(self)
+                    self.context_menu.actionAddTruncate.setText("Truncate")
+                    self.context_menu.addAction(self.context_menu.actionAddTruncate)
+                    self.context_menu.actionAddTruncate.triggered.connect(self.add_truncate)
             elif selected_text == "GUI":
                 self.context_menu.actionRemoveGUISection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveGUISection.setText("Remove section")
@@ -6734,15 +6857,32 @@ class edit_cfg_L4(QtWidgets.QWidget):
                         self.context_menu.actionChangeInterpolateType.triggered.connect(lambda:self.change_selected_text("Akima"))
                 elif (selected_item.column() == 1) and (key in ["KeepIntermediateSeries"]):
                     if selected_text != "Yes":
-                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
-                        self.context_menu.actionChangeOption.setText("Yes")
-                        self.context_menu.addAction(self.context_menu.actionChangeOption)
-                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("Yes"))
+                        self.context_menu.actionChangeKeepIntermediateSeries = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeKeepIntermediateSeries.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionChangeKeepIntermediateSeries)
+                        self.context_menu.actionChangeKeepIntermediateSeries.triggered.connect(lambda:self.change_selected_text("Yes"))
                     if selected_text != "No":
-                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
-                        self.context_menu.actionChangeOption.setText("No")
-                        self.context_menu.addAction(self.context_menu.actionChangeOption)
-                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("No"))
+                        self.context_menu.actionChangeKeepIntermediateSeries = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeKeepIntermediateSeries.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeKeepIntermediateSeries)
+                        self.context_menu.actionChangeKeepIntermediateSeries.triggered.connect(lambda:self.change_selected_text("No"))
+                elif (selected_item.column() == 1) and (key in ["Truncate"]):
+                    if selected_text != "First missing":
+                        self.context_menu.actionChangeTruncate0 = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeTruncate0.setText("First missing")
+                        self.context_menu.addAction(self.context_menu.actionChangeTruncate0)
+                        self.context_menu.actionChangeTruncate0.triggered.connect(lambda:self.change_selected_text("First missing"))
+                    if selected_text != "To imports":
+                        if "Imports" in self.section_headings:
+                            self.context_menu.actionChangeTruncate1 = QtWidgets.QAction(self)
+                            self.context_menu.actionChangeTruncate1.setText("To imports")
+                            self.context_menu.addAction(self.context_menu.actionChangeTruncate1)
+                            self.context_menu.actionChangeTruncate1.triggered.connect(lambda:self.change_selected_text("To imports"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeTruncate2 = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeTruncate2.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeTruncate2)
+                        self.context_menu.actionChangeTruncate2.triggered.connect(lambda:self.change_selected_text("No"))
             elif (str(parent.text()) in ["Drivers"]):
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
@@ -7234,10 +7374,30 @@ class edit_cfg_L4(QtWidgets.QWidget):
         idx = self.view.selectedIndexes()[0]
         # get the selected item from the index
         selected_item = idx.model().itemFromIndex(idx)
+        selected_text = selected_item.text()
         # get the root
         root = self.model.invisibleRootItem()
         # remove the row
         root.removeRow(selected_item.row())
+        self.section_headings.remove(selected_text)
+        # if we are removing the Imports section, we may have to update the
+        # Options/Truncate entry
+        if selected_text == "Imports":
+            # get the top level parent
+            parent = self.model.invisibleRootItem()
+            # loop over the sections in the top level parent
+            for i in range(parent.rowCount()):
+                item = parent.child(i)
+                # and find the Options section
+                if item.text() == "Options":
+                    # then loop over the entries in the Options section
+                    for j in range(item.rowCount()):
+                        # and find the Truncate entry
+                        if item.child(j, 0).text() == "Truncate":
+                            # and if this is set to 'To Imports'
+                            if item.child(j, 1).text() == "To imports":
+                                # set it to 'No'
+                                item.child(j, 1).setText("No")
         self.update_tab_text()
 
     def update_tab_text(self):

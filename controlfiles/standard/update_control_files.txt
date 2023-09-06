@@ -74,7 +74,7 @@ xl_filename,xl_moddatetime"""
     L2 = irga_type,sonic_type,SONIC_Check,IRGA_Check
     L3 = """zms,UseL2Fluxes,CalculateFluxes,2DCoordRotation,MassmanCorrection,
 ApplyFco2Storage,ApplyFcStorage,CorrectIndividualFg,CorrectFgForStorage,
-KeepIntermediateSeries,CcUnits, CO2Units, Fco2Units,FcUnits,DisableFco2WPL,
+KeepIntermediateSeries,CcUnits,CO2Units,Fco2Units,FcUnits,DisableFco2WPL,
 DisableFcWPL,DisableFeWPL,DisableWPL,ApplyWPL"""
     concatenate = """NumberOfDimensions,MaxGapInterpolate,FixTimeStepMethod,
 Truncate,DoFingerprints,TruncateThreshold,SeriesToCheck,SeriesToKeep"""
@@ -86,7 +86,7 @@ window_size_forward_mode,window_size_forward_mode_2,window_size_forward_mode_3,
 window_size_back_mode,window_size_back_mode_2,window_size_back_mode_3,bootstrapping_times,
 dump_dataset,no_bootstrapping,no_forward_mode_2,forward_mode,forward_mode_3,
 back_mode,back_mode_2,back_mode_3,groupby,seasons_group_allow_duplicates,threshold_check"""
-    L4 = MaxGapInterpolate,InterpolateType,KeepIntermediateSeries
+    L4 = MaxGapInterpolate,InterpolateType,KeepIntermediateSeries,Truncate
     L5 = """MaxGapInterpolate,MaxShortGapDays,FilterList,TurbulenceFilter,DayNightFilter,
 AcceptDayTimes,Fsd_threshold,TruncateToImports,KeepIntermediateSeries"""
     L6 = MaxGapInterpolate

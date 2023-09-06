@@ -697,6 +697,7 @@ class pfp_main_ui(QWidget):
             if len(str(file_uri)) == 0:
                 return
             content.filename = file_uri
+            self.tabs.tab_dict[tab_index_current].cfg.filename = file_uri
             self.save_as_control_file(content)
         elif isinstance(content, pfp_io.DataStructure):
             # we are opening a netCDF file

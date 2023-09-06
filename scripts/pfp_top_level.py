@@ -402,6 +402,11 @@ def do_run_l1(cfg):
     """
     try:
         logger.info("Starting L1 processing")
+        # add the [Options] section and populate it
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        cfg["Options"]["call_mode"] = "interactive"
+        cfg["Options"]["show_plots"] = "Yes"
         ds1 = pfp_levels.l1qc(cfg)
         if ds1.info["returncodes"]["value"] == 0:
             outfilename = pfp_io.get_outfilenamefromcf(cfg)

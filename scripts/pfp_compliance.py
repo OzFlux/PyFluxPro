@@ -13,6 +13,7 @@ import timezonefinder
 from scripts import constants as c
 from scripts import pfp_func_units
 from scripts import pfp_func_stats
+from scripts import pfp_func_transforms
 from scripts import pfp_gui
 from scripts import pfp_io
 from scripts import pfp_utils
@@ -541,8 +542,15 @@ def ParseL1ControlFile(cf):
     l1ire["Files"]["file_name"] = os.path.join(cf["Files"]["file_path"], cf["Files"]["in_filename"])
     l1ire["Files"]["in_headerrow"] = cf["Files"]["in_headerrow"]
     l1ire["Files"]["in_firstdatarow"] = cf["Files"]["in_firstdatarow"]
+    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, "L1", "")
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    l1ire["Files"]["plot_path"] = plot_path
     # get the global attributes
     l1ire["Global"] = copy.deepcopy(cf["Global"])
+    # get the options section
+    l1ire["Options"] = copy.deepcopy(cf["Options"])
     # get the variables
     l1ire["Variables"] = copy.deepcopy(cf["Variables"])
     return l1_info
@@ -707,7 +715,7 @@ def check_l1_controlfile(cfg):
         std = ConfigObj(std_name, indent_type="    ", list_values=False, write_empty_values=True)
         std_labels = sorted(list(std["Variables"].keys()))
         # initialise the messages dictionary
-        messages = {"ERROR":[], "WARNING": [], "INFO": []}
+        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": []}
         # check the files section
         l1_check_files(cfg, std, messages)
         # check the global attributes section
@@ -1146,10 +1154,8 @@ def display_messages_interactive(messages, mode="Close"):
             error_messages.append(item)
         logger.error("!!!!!")
     if len(messages["WARNING"]) > 0:
-        logger.warning("?????")
         for item in messages["WARNING"]:
             logger.warning(item)
-        logger.warning("?????")
     for item in messages["INFO"]:
         logger.info(item)
     # convert error list to a comma separated string
@@ -1296,7 +1302,7 @@ def l1_check_global_forced(cfg, std, messages):
     for item in forced:
         cfg["Global"][item] = forced[item]
         msg = "Global: setting " + item + " to " + forced[item]
-        messages["INFO"].append(msg)
+        messages["DEBUG"].append(msg)
     # and do the time zone
     lon = float(cfg["Global"]["longitude"])
     lat = float(cfg["Global"]["latitude"])
@@ -1378,13 +1384,21 @@ def l1_check_variables_sections(cfg, std, cfg_label, std_label, messages):
             function_name = function_string.split("(")[0]
             # get a list of function names in pfp_func_units and pfp_func_stats
             implemented_func_units = [name for name,data in
-                                      inspect.getmembers(pfp_func_units,inspect.isfunction)]
+                                      inspect.getmembers(pfp_func_units,
+                                                         inspect.isfunction)]
             implemented_func_stats = [name for name,data in
-                                      inspect.getmembers(pfp_func_stats,inspect.isfunction)]
-            implemented_functions = implemented_func_units + implemented_func_stats
+                                      inspect.getmembers(pfp_func_stats,
+                                                         inspect.isfunction)]
+            implemented_func_transforms = [name for name,data in
+                                           inspect.getmembers(pfp_func_transforms,
+                                                              inspect.isfunction)]
+            implemented_functions = (implemented_func_units +
+                                     implemented_func_stats +
+                                     implemented_func_transforms)
             # check the function name is implemented
             if function_name not in implemented_functions:
-                msg = " Skipping " + cfg_label + " (function " + function_name + " not implemented)"
+                msg = " Skipping " + cfg_label + " (function " + function_name
+                msg += " not implemented)"
                 messages["ERROR"].append(msg)
             # check the arguments are being read in
             else:
@@ -1473,7 +1487,7 @@ def l1_check_irga_sonic_type(cfg, messages):
     sco2_labels = [l for l in cfg_labels if l[0:4] == "Sco2"]
     fh2o_labels = [l for l in cfg_labels if l[0:4] == "Fh2o"]
     fe_labels = [l for l in cfg_labels if l[0:2] == "Fe"]
-    fh_labels = [l for l in cfg_labels if l[0:2] == "Fh"]
+    fh_labels = [l for l in cfg_labels if l[0:2] == "Fh" and l[0:4] != "Fh2o"]
     fm_labels = [l for l in cfg_labels if l[0:2] == "Fm"]
     # lists of variables by instrument
     # fast IRGAs e.g. Li-7500RS etc used for turbulence measurements
@@ -1796,15 +1810,6 @@ def l1_update_controlfile(cfg):
     cfg = update_cfg_variables_rename(cfg, std)
     cfg = l1_update_cfg_variables_attributes(cfg, std, chk)
     cfg = l1_update_cfg_variables_function(cfg, std)
-    #try:
-        #cfg = update_cfg_global_attributes(cfg, std)
-        #cfg = update_cfg_variables_deprecated(cfg, std)
-        #cfg = update_cfg_variables_rename(cfg, std)
-        #cfg = l1_update_cfg_variables_attributes(cfg, std, chk)
-        #cfg = l1_update_cfg_variables_function(cfg, std)
-    #except Exception:
-        #ok = False
-        #msg = " An error occurred updating the L1 control file contents"
     if ok:
         # check to see if the control file object has been changed
         if cfg != cfg_original:

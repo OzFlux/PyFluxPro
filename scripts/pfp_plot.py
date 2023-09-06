@@ -37,6 +37,63 @@ class XYPlotButton(ToolToggleBase):
     def disable(self, event):
         pass
 
+def checktimestamps_plots(df, sheet, l1_info):
+    # timestamp from data frame index
+    dt = df.index.values
+    # time step in minutes
+    ddt = numpy.diff(dt).astype(int)/(10**9)/60
+    bins = [0, 30, 60, 180, 1440, 10*1440, 30*1440, 90*1440]
+    bin_labels = ["<30\nminutes", "30 to 60\nminutes", "60 to 180\nminutes",
+                  "3 hrs to\n1 day", "1 to 10\ndays", "10 to 30\ndays", "30 to 90\ndays"]
+    bin_ticks = [0, 1, 2, 3, 4, 5, 6]
+    hist, bin_edges = numpy.histogram(ddt, bins=bins)
+    hist[0] = hist[0]//2
+
+    site_name = l1_info["read_excel"]["Global"]["site_name"]
+    start = numpy.datetime_as_string(dt[0], unit='D')
+    end = numpy.datetime_as_string(dt[-1], unit='D')
+    title = site_name + ": " + sheet + "; " + start + " to " + end
+
+    # turn on interactive plotting
+    show_plots = l1_info["read_excel"]["Options"]["show_plots"]
+    if show_plots.lower() == "yes":
+        plt.ion()
+    else:
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
+        plt.ioff()
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12, 6), width_ratios=[2, 1])
+    fig.suptitle(title)
+    axs[0].plot(dt[1:], ddt, 'b-')
+    axs[0].set_xlabel("Date")
+    axs[0].set_ylabel("Time step (minutes)")
+    axs[1].bar(bin_ticks, hist)
+    axs[1].set_xticks(bin_ticks, bin_labels, rotation=45)
+    for i in range(len(bin_ticks)):
+        axs[1].text(bin_ticks[i], hist[i], str(hist[i]), ha='center', va='bottom')
+    axs[1].set_ylabel("Number")
+    fig.tight_layout()
+    # get the plot path
+    plot_path = l1_info["read_excel"]["Files"]["plot_path"]
+    # get the plot file name
+    file_name = "timestamps_" + sheet + "_" + start + "_" + end + ".png"
+    # get the plot file uri
+    file_uri = os.path.join(plot_path, file_name)
+    # save the plot as a PNG file
+    fig.savefig(file_uri, format='png')
+    # interactive or batch?
+    if show_plots.lower() == "yes":
+        # interactive so render the plot, pause 0.5 seconds, turn interactive plotting off
+        plt.draw()
+        pfp_utils.mypause(0.5)
+        plt.ioff()
+    else:
+        # batch so close the figure, switch to previous backend
+        plt.close(fig)
+        plt.switch_backend(current_backend)
+        plt.ion()
+    return
+
 def get_diurnalstats(DecHour,Data,dt):
     nInts = 24*int((60/dt)+0.5)
     Hr = numpy.array([c.missing_value]*nInts,dtype=numpy.float64)
@@ -552,6 +609,7 @@ def plot_fingerprint(cf):
                 plt.setp(ax.get_yticklabels(), visible=False)
             n += 1
         plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
+        plot_path = os.path.join(plot_path, "fingerprints", "")
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
         pngname = plot_path + site_name.replace(" ","") + "_" + level + "_"
@@ -1146,6 +1204,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
             logger.warning("  Variable " + ThisOne + " not in data structure")
         # get the plot path and save a hard copy of the plot
         plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
+        plot_path = os.path.join(plot_path, Level, "")
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
         fname = os.path.join(plot_path, SiteName.replace(' ','')+'_'+Level+'_'+p['PlotDescription'].replace(' ','')+'.png')

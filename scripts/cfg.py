@@ -1,5 +1,9 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.14"
+version_number = "V3.4.15"
+# V3.4.15 - August 2023
+#         - implement function to calculate wind speed and wind direction from
+#           components at L1
+#         - implement correction of wind direction by adding an offset at L1
 # V3.4.14 - June 2023
 #         - fix problem associated with MDS gap filling and data sets that start
 #           at YYYY-01-01 00:00

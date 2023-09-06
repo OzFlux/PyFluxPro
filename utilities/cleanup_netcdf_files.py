@@ -633,6 +633,7 @@ for site in sites:
         logger.warning(msg)
         continue
     files = sorted([f for f in os.listdir(sp) if ("L3" in f and ".nc" in f)])
+    #files = sorted([f for f in os.listdir(sp) if ("_L3.nc" in f)])
     if len(files) == 0:
         msg = "No files found in " + sp + " , skipping ..."
         logger.error(msg)

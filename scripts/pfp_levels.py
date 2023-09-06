@@ -42,6 +42,8 @@ def l1qc(cfg):
         ds.info["returncodes"]["value"] = 1
         ds.info["returncodes"]["message"] = "An error occurred reading the input file"
         return ds
+    # check the timestamps
+    pfp_io.CheckTimeStamps(dfs, l1_info, fix=True)
     # merge the data frames (1 per Excel worksheet)
     df = pfp_io.MergeDataFrames(dfs, l1_info)
     # convert the data frame to a PFP data structure and add metadata
@@ -52,6 +54,8 @@ def l1qc(cfg):
     pfp_ck.do_linear(cfg, ds)
     # create new variables using user defined functions
     pfp_ts.DoFunctions(ds, l1_info["read_excel"])
+    # apply offset to wind directions
+    pfp_ck.do_wd_offset(cfg, ds)
     # calculate variances from standard deviations and vice versa
     pfp_ts.CalculateStandardDeviations(ds)
     # check missing data and QC flags are consistent
@@ -263,6 +267,8 @@ def l4qc(main_gui, cf, ds3):
     pfp_ts.CalculateHumiditiesAfterGapFill(ds4, l4_info)
     # re-calculate the meteorological variables
     pfp_ts.CalculateMeteorologicalVariables(ds4, l4_info)
+    # truncate data structure if requested
+    pfp_io.TruncateDataStructure(ds4, l4_info)
     # check for any missing data
     pfp_utils.get_missingingapfilledseries(ds4, l4_info)
     # write the percentage of good data as a variable attribute
