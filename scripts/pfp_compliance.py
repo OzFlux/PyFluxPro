@@ -1487,7 +1487,7 @@ def l1_check_irga_sonic_type(cfg, messages):
     sco2_labels = [l for l in cfg_labels if l[0:4] == "Sco2"]
     fh2o_labels = [l for l in cfg_labels if l[0:4] == "Fh2o"]
     fe_labels = [l for l in cfg_labels if l[0:2] == "Fe"]
-    fh_labels = [l for l in cfg_labels if l[0:2] == "Fh"]
+    fh_labels = [l for l in cfg_labels if l[0:2] == "Fh" and l[0:4] != "Fh2o"]
     fm_labels = [l for l in cfg_labels if l[0:2] == "Fm"]
     # lists of variables by instrument
     # fast IRGAs e.g. Li-7500RS etc used for turbulence measurements
