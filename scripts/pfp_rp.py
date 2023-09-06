@@ -850,11 +850,15 @@ def L6_summary_daily(ds, series_dict):
     dda["time_step"] = "daily"
     series_list = list(series_dict["daily"].keys())
     series_list.sort()
+    rejected_series = []
     for item in series_list:
         if item not in list(ds.root["Variables"].keys()):
+            rejected_series.append(item)
             continue
         ddv[item] = {"Data": [], "Attr": {}}
         variable = pfp_utils.GetVariable(ds, item, start=si, end=ei)
+        if numpy.ma.count_masked(variable["Data"]) != 0:
+            continue
         if item in series_dict["lists"]["co2"]:
             variable = pfp_utils.convert_units_func(ds, variable, "gC/m^2")
             ddv[item]["Attr"]["units"] = "gC/m^2"
@@ -888,6 +892,9 @@ def L6_summary_daily(ds, series_dict):
         flag_2d = variable["Flag"].reshape(nDays, ntsInDay)
         for i in range(nDays):
             ddv[item]["Flag"][i] = 1-float(numpy.count_nonzero(flag_2d[i,:]))/float(ntsInDay)
+    if len(rejected_series) > 0:
+        msg = ",".join(rejected_series) + " contained missing data and were skipped"
+        logger.info(msg)
     return ds_daily
 
 def L6_summary_write_xlfile(xl_file, sheet_name, ds, group=None, labels=None):

@@ -3414,7 +3414,10 @@ def xl_write_data(xl_sheet, dsg, labels=None, xlCol=0):
     labels.sort()
     for item in labels:
         xlCol = xlCol + 1
-        xl_sheet.write(0, xlCol, dsg["Variables"][item]["Attr"]["units"])
+        try:
+            xl_sheet.write(0, xlCol, dsg["Variables"][item]["Attr"]["units"])
+        except:
+            print("oi va vei")
         xl_sheet.write(1, xlCol, item)
         d_xf = xlwt.easyxf(num_format_str=dsg["Variables"][item]["Attr"]["format"])
         if numpy.ma.isMA(dsg["Variables"][item]["Data"]):
