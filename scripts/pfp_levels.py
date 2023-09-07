@@ -33,15 +33,6 @@ def l1qc(cfg):
     l1_info = pfp_compliance.ParseL1ControlFile(cfg)
     # read the input file into a pandas data frame
     dfs = pfp_io.ReadInputFile(l1_info)
-    # discard empty data frames
-    for key in list(dfs.keys()):
-        if len(dfs[key]) == 0:
-            dfs.pop(key)
-    if len(list(dfs.keys())) == 0:
-        ds = pfp_io.DataStructure()
-        ds.info["returncodes"]["value"] = 1
-        ds.info["returncodes"]["message"] = "An error occurred reading the input file"
-        return ds
     # check the timestamps
     pfp_io.CheckTimeStamps(dfs, l1_info, fix=True)
     # merge the data frames (1 per Excel worksheet)

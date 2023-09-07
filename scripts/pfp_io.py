@@ -866,6 +866,10 @@ def ReadExcelWorkbook(l1_info):
         # copy the new dataframe to the old name
         dfs[df_name] = tmp.copy()
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
+    # discard empty data frames
+    for key in list(dfs.keys()):
+        if len(dfs[key]) == 0:
+            dfs.pop(key)
     return dfs
 
 def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
@@ -928,6 +932,10 @@ def ReadInputFile(l1_info):
         l1_info["status"]["value"] = 1
         l1_info["status"]["message"] = msg
         data = {}
+    if len(list(data.keys())) == 0:
+        msg = "An error occurred reading the input file"
+        logger.error(msg)
+        raise RuntimeError(msg)
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     return data
 
