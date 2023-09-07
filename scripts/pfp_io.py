@@ -173,12 +173,12 @@ def checktimestamps_get_indices(df, l1_info):
     # timestamp from data frame index
     dt = df.index.values
     # time step in minutes
-    ddt = numpy.diff(dt).astype(int)/(10**9)/60
+    ddt = numpy.diff(dt).astype('timedelta64[s]').astype(int)/60
     indices["non_monotonic"] = numpy.where(ddt < 0)[0]
     if len(indices["non_monotonic"]) > 0:
         msg = "  Number of negative time steps: " + str(len(indices["non_monotonic"]))
         logger.error(msg)
-    dt_mod = numpy.mod(dt.astype(int)/10**9, 1800)
+    dt_mod = numpy.mod(ddt, ts)
     indices["non_integral"] = numpy.where(dt_mod != 0)[0]
     if len(indices["non_integral"]) != 0:
         msg = "  Number of non-integral time steps: " + str(len(indices["non_integral"]))
@@ -866,6 +866,10 @@ def ReadExcelWorkbook(l1_info):
         # copy the new dataframe to the old name
         dfs[df_name] = tmp.copy()
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
+    # discard empty data frames
+    for key in list(dfs.keys()):
+        if len(dfs[key]) == 0:
+            dfs.pop(key)
     return dfs
 
 def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
@@ -928,6 +932,10 @@ def ReadInputFile(l1_info):
         l1_info["status"]["value"] = 1
         l1_info["status"]["message"] = msg
         data = {}
+    if len(list(data.keys())) == 0:
+        msg = "An error occurred reading the input file"
+        logger.error(msg)
+        raise RuntimeError(msg)
     pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     return data
 

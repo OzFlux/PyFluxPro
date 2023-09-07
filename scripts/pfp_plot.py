@@ -41,7 +41,7 @@ def checktimestamps_plots(df, sheet, l1_info):
     # timestamp from data frame index
     dt = df.index.values
     # time step in minutes
-    ddt = numpy.diff(dt).astype(int)/(10**9)/60
+    ddt = numpy.diff(dt).astype('timedelta64[s]').astype(int)/60
     bins = [0, 30, 60, 180, 1440, 10*1440, 30*1440, 90*1440]
     bin_labels = ["<30\nminutes", "30 to 60\nminutes", "60 to 180\nminutes",
                   "3 hrs to\n1 day", "1 to 10\ndays", "10 to 30\ndays", "30 to 90\ndays"]
