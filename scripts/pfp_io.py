@@ -520,10 +520,7 @@ def DataFrameToDataStructure(df, l1_info):
         var["Data"] = numpy.ma.masked_values(var["Data"], c.missing_value)
         # set the QC flag to 1 for masked data
         mask = numpy.ma.getmaskarray(var["Data"])
-        try:
-            var["Flag"] = numpy.where(mask == False, zeros, ones)
-        except:
-            print("oi va vey")
+        var["Flag"] = numpy.where(mask == False, zeros, ones)
         var["Attr"] = l1ire["Variables"][label]["Attr"]
         pfp_utils.CreateVariable(ds, var)
     return ds
@@ -3414,10 +3411,7 @@ def xl_write_data(xl_sheet, dsg, labels=None, xlCol=0):
     labels.sort()
     for item in labels:
         xlCol = xlCol + 1
-        try:
-            xl_sheet.write(0, xlCol, dsg["Variables"][item]["Attr"]["units"])
-        except:
-            print("oi va vei")
+        xl_sheet.write(0, xlCol, dsg["Variables"][item]["Attr"]["units"])
         xl_sheet.write(1, xlCol, item)
         d_xf = xlwt.easyxf(num_format_str=dsg["Variables"][item]["Attr"]["format"])
         if numpy.ma.isMA(dsg["Variables"][item]["Data"]):
