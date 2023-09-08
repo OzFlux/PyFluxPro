@@ -125,6 +125,38 @@ def change_global_attributes(std, ds):
         ds.root["Attributes"]["fluxnet_id"] = std["Global_attributes"]["fluxnet_id"][site_name]
     return
 
+def  check_global_attributes(ds, info):
+    """
+    Purpose:
+     Check the latitude, longitude, altitude, time zone and time step in the
+     netCDF global attributes against the values in the site_master.xls
+     workbook.
+    Usage:
+    Author: PRI
+    Date: September 2023
+    """
+    msg = " Checking global attributes are correct"
+    logger.info(msg)
+    site_name = ds.root["Attributes"]["site_name"]
+    sites = list(info.keys())
+    if site_name not in sites:
+        msg = " " + site_name + " not found in site master workbook"
+        logger.warning(msg)
+        return
+    # check the latitude, longitude and altitude
+    for item in ["latitude", "longitude", "altitude"]:
+        ds_value = round(float(ds.root["Attributes"][item]), 4)
+        sm_value = round(float(info[site_name][item]), 4)
+        if ds_value != sm_value:
+            ds.root["Attributes"][item] = info[site_name][item]
+    # check the time zone and time step
+    for item in ["time_zone", "time_step"]:
+        ds_value = str(ds.root["Attributes"][item])
+        sm_value = str(info[site_name][item])
+        if ds_value != sm_value:
+            ds.root["Attributes"][item] = info[site_name][item]
+    return
+
 def change_variable_attributes(std, ds):
     """
     Purpose:
@@ -606,6 +638,30 @@ def xl_read_site_information(xls_name, site_name):
             info[measurement][field] = xl_sheet.cell_value(row, col)
     return info
 
+def xl_read_site_master(sm_uri, sheet_name):
+    """
+    Purpose:
+     Read the site master workbook.
+    Usage:
+     site_information = pfp_io.xl_read_site_master(sm_uri, sheet_name)
+    Author: PRI
+    Date: September 2023
+    """
+    xl_book = xlrd.open_workbook(sm_uri)
+    sheet_names = [sn.replace(" ", "") for sn in xl_book.sheet_names()]
+    xl_sheet = xl_book.sheet_by_index(sheet_names.index(sheet_name))
+    nrows = xl_sheet.nrows
+    ncols = xl_sheet.ncols
+    info = {}
+    for row in range(1, nrows):
+        site_name = str(xl_sheet.cell_value(row, 0))
+        site_name = site_name.replace(" ", "")
+        info[site_name] = {}
+        for col in range(1, ncols):
+            field = xl_sheet.cell_value(0, col)
+            info[site_name][field] = xl_sheet.cell_value(row, col)
+    return info
+
 logger = logging.getLogger("pfp_log")
 
 std_name = os.path.join("..", "controlfiles", "standard", "update_control_files.txt")
@@ -618,13 +674,13 @@ else:
 rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "WD2TB", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "OzFlux", "Sites")
+# read the site_master.xls workbook
+sm_uri = os.path.join(rp, "site_master.xls")
+# path to the site master file
+sm_info = xl_read_site_master(sm_uri, "Processing")
+sites = list(sm_info.keys())
 #sites = ["DalyUncleared"]
-sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
-         "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
-         "Fletcherview", "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield",
-         "Longreach", "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek",
-         "Samford", "SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra",
-         "Whroo", "WombatStateForest", "Yanco"]
+
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
     op = os.path.join(rp, site, "Data", "Processed")
@@ -655,6 +711,8 @@ for site in sites:
         exclude_variables(std, ds2)
         # update the global attributes
         change_global_attributes(std, ds2)
+        # check specific global attributes, cgane if necessary
+        check_global_attributes(ds2, info)
         # update the variable attributes
         change_variable_attributes(std, ds2)
         # Fc single point storage
