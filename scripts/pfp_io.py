@@ -2029,7 +2029,7 @@ def ReadCSVFile(l1_info):
         engine = "python"
         na_values = ["NAN"]
         # read the CSV file
-        df = pandas.read_csv(file_uri, delimiter=",",
+        df = pandas.read_csv(file_uri, delimiter=l1ire["Files"]["delimiter"],
                              engine=engine, header=0,
                              skiprows=skiprows,
                              na_values=na_values,
@@ -2067,6 +2067,15 @@ def ReadCSVFile(l1_info):
             # date and time in separate columns, time at end of the period
             df["TIMESTAMP"] = pandas.to_datetime(df["date"].astype('string')+" "+df["time"].astype('string'),
                                                  errors="raise")
+        # maybe an REddyProc output file?
+        elif (("Year" in headers) and ("DoY" in headers) and ("Hour" in headers)):
+            df["Minute"] = (60 * (df["Hour"] - df["Hour"].astype(int))).astype(int)
+            df["Hour"] = df["Hour"].astype(int)
+            df["TIMESTAMP"] = pandas.to_datetime(df["Year"] * 10**7 +
+                                                 df["DoY"] * 10**4 +
+                                                 df["Hour"] * 10**2 +
+                                                 df["Minute"],
+                                                 format='%Y%j%H%M')
         # try and automatically find a timestamp
         else:
             # otherwise, try and automatically detect the datetime column
@@ -2315,7 +2324,7 @@ def ReadInputFile(l1_info):
     if file_extension[1].lower() in [".xls", ".xlsx"]:
         l1ire["src"] = "xl"
         data = ReadExcelWorkbook(l1_info)
-    elif file_extension[1].lower() in [".csv"]:
+    elif file_extension[1].lower() in [".csv", ".tsv"]:
         l1ire["src"] = "csv"
         data = ReadCSVFile(l1_info)
     else:

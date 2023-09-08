@@ -2846,7 +2846,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # get the file_path so it can be used as a default directory
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
-        filter_text = "All (*.csv *.xls *.xlsx);;CSV (*.csv);;Excel (*.xls *.xlsx)"
+        filter_text = "All (*.csv *.tsv *.xls *.xlsx);;CSV (*.csv);;TSV (*.tsv);;Excel (*.xls *.xlsx)"
         new_file_path = QtWidgets.QFileDialog.getOpenFileNames(caption="Choose an input file ...",
                                                                directory=file_path,
                                                                filter=filter_text)[0]
@@ -2892,7 +2892,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     msg = " Only 1 Excel workbook can be opened"
                     logger.error(msg)
                     ok = False
-            elif new_file_extension[0].lower() in [".csv"]:
+            elif new_file_extension[0].lower() in [".csv", ".tsv"]:
                 if len(new_file_path) == 1:
                     ok = True
                 elif len(new_file_path) == 2:
@@ -2908,7 +2908,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     logger.error(msg)
                     ok = False
             else:
-                msg = " Unrecognised file type (must be .xls, .xlsx or .csv)"
+                msg = " Unrecognised file type (must be .xls, .xlsx, .csv or .tsv)"
                 logger.error(msg)
                 ok = False
         else:

@@ -13,13 +13,13 @@ Australian Federal Government via the National Collaborative Research Infrastruc
 and the Education Investment Fund.'''
     altitude = <altitude>m
     canopy_height = <canopy_height>m
-    comment = ""
-    contact = ""
+    comment = 
+    contact = 
     data_link = http://data.ozflux.org.au/
     featureType = timeSeries
-    fluxnet_id = ""
+    fluxnet_id = 
     history = June 2021 processing
-    institution = ""
+    institution = 
     latitude = <latitude>
     license = https://creativecommons.org/licenses/by/4.0/
     license_name = CC BY 4.0
@@ -27,16 +27,16 @@ and the Education Investment Fund.'''
     metadata_link = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
     ozflux_link = http://ozflux.org.au/
     publisher_name = TERN Ecosystem Processes,OzFlux
-    references = ""
+    references = 
     site_name = <site_name>
-    site_pi = ""
-    soil = ""
-    source = ""
+    site_pi = 
+    soil = 
+    source = 
     time_step = 30
     time_zone = <country>/<time_zone>
     title = ONEFlux subset output for the <site_name> site
-    tower_height = ""
-    vegetation = ""
+    tower_height = 
+    vegetation = 
 [Variables]
     [[CO2_F_MDS]]
         [[[Attr]]]
@@ -45,14 +45,16 @@ and the Education Investment Fund.'''
             standard_name = mole_fraction_of_carbon_dioxide_in_air
             statistic_type = average
             units = umol/mol
+            not_required = height
         [[[csv]]]
             name = CO2_F_MDS
     [[CO2_F_MDS_QC]]
         [[[Attr]]]
             description = Quality flag for CO2_F_MDS
-            long_name = CO2 concentration
+            long_name = CO2 flux quality control flag
             statistic_type = average
             units = 1
+            not_required = height
         [[[csv]]]
             name = CO2_F_MDS_QC
     [[GPP_DT_VUT_25]]
@@ -191,6 +193,7 @@ and the Education Investment Fund.'''
             long_name = Latent heat flux
             statistic_type = average
             units = W/m^2
+            standard_name = surface_upward_latent_heat_flux
         [[[csv]]]
             name = LE_CORR
     [[LE_CORR_25]]
@@ -199,6 +202,7 @@ and the Education Investment Fund.'''
             long_name = Latent heat flux
             statistic_type = average
             units = W/m^2
+            standard_name = surface_upward_latent_heat_flux
         [[[csv]]]
             name = LE_CORR_25
     [[LE_CORR_75]]
@@ -207,6 +211,7 @@ and the Education Investment Fund.'''
             long_name = Latent heat flux
             statistic_type = average
             units = W/m^2
+            standard_name = surface_upward_latent_heat_flux
         [[[csv]]]
             name = LE_CORR_75
     [[LE_F_MDS]]
@@ -221,7 +226,7 @@ and the Education Investment Fund.'''
     [[LE_F_MDS_QC]]
         [[[Attr]]]
             description = Quality flag for LE_F_MDS, LE_CORR, LE_CORR25, and LE_CORR75, 0 = measured; 1 = good quality gapfill; 2 = medium; 3 = poor
-            long_name = Latent heat flux
+            long_name = Latent heat flux quality control flag
             statistic_type = average
             units = 1
         [[[csv]]]
@@ -232,12 +237,13 @@ and the Education Investment Fund.'''
             long_name = Latent heat flux
             statistic_type = average
             units = W/m^2
+            standard_name = surface_upward_latent_heat_flux
         [[[csv]]]
             name = LE_RANDUNC
     [[LW_IN_F]]
         [[[Attr]]]
             description = Consolidated from LW_IN_F_MDS and LW_IN_ERA
-            long_name = Down-welling longwave
+            long_name = Down-welling longwave radiation
             standard_name = surface_downwelling_longwave_flux_in_air
             statistic_type = average
             units = W/m^2
@@ -246,7 +252,7 @@ and the Education Investment Fund.'''
     [[LW_IN_F_QC]]
         [[[Attr]]]
             description = Quality flag for LW_IN_F
-            long_name = Down-welling longwave
+            long_name = Down-welling longwave radiation quality control flag
             statistic_type = average
             units = 1
         [[[csv]]]
@@ -254,7 +260,7 @@ and the Education Investment Fund.'''
     [[LW_OUT]]
         [[[Attr]]]
             description = Longwave radiation, outgoing
-            long_name = Up-welling longwave
+            long_name = Up-welling longwave radiation
             standard_name = surface_upwelling_longwave_flux_in_air
             statistic_type = average
             units = W/m^2
@@ -267,7 +273,7 @@ and the Education Investment Fund.'''
             long_name = Net Ecosystem Exchange
             statistic_type = average
             units = umol/m^2/s
-            description = NEE VUT percentiles (approx. percentile indicated by XX, see doc.) calculated from the 40 estimates aggregated at the different time resolutions — XX = 05, 16, 25, 50, 75, 84, 95
+            description = NEE VUT percentiles (approx. percentile indicated by XX, see doc.) calculated from the 40 estimates aggregated at the different time resolutions  XX = 05, 16, 25, 50, 75, 84, 95
     [[NEE_VUT_25_QC]]
         [[[csv]]]
             name = NEE_VUT_25_QC
@@ -275,7 +281,7 @@ and the Education Investment Fund.'''
             long_name = Net Ecosystem Exchange quality flag
             statistic_type = average
             units = 1
-            description = Quality flag for NEE_VUT_XX — XX = 05, 16, 25, 50, 75, 84, 95, 0 = measured; 1 = good quality gapfill; 2 = medium; 3 = poor
+            description = Quality flag for NEE_VUT_XX  XX = 05, 16, 25, 50, 75, 84, 95, 0 = measured; 1 = good quality gapfill; 2 = medium; 3 = poor
     [[NEE_VUT_50]]
         [[[csv]]]
             name = NEE_VUT_50
@@ -283,7 +289,7 @@ and the Education Investment Fund.'''
             long_name = Net Ecosystem Exchange
             statistic_type = average
             units = umol/m^2/s
-            description = NEE VUT percentiles (approx. percentile indicated by XX, see doc.) calculated from the 40 estimates aggregated at the different time resolutions — XX = 05, 16, 25, 50, 75, 84, 95
+            description = NEE VUT percentiles (approx. percentile indicated by XX, see doc.) calculated from the 40 estimates aggregated at the different time resolutions  XX = 05, 16, 25, 50, 75, 84, 95
     [[NEE_VUT_50_QC]]
         [[[csv]]]
             name = NEE_VUT_50_QC
@@ -291,7 +297,7 @@ and the Education Investment Fund.'''
             long_name = Net Ecosystem Exchange quality flag
             statistic_type = average
             units = 1
-            description = Quality flag for NEE_VUT_XX — XX = 05, 16, 25, 50, 75, 84, 95, 0 = measured; 1 = good quality gapfill; 2 = medium; 3 = poor
+            description = Quality flag for NEE_VUT_XX  XX = 05, 16, 25, 50, 75, 84, 95, 0 = measured; 1 = good quality gapfill; 2 = medium; 3 = poor
     [[NEE_VUT_75]]
         [[[csv]]]
             name = NEE_VUT_75
@@ -299,7 +305,7 @@ and the Education Investment Fund.'''
             long_name = Net Ecosystem Exchange
             statistic_type = average
             units = umol/m^2/s
-            description = NEE VUT percentiles (approx. percentile indicated by XX, see doc.) calculated from the 40 estimates aggregated at the different time resolutions — XX = 05, 16, 25, 50, 75, 84, 95
+            description = NEE VUT percentiles (approx. percentile indicated by XX, see doc.) calculated from the 40 estimates aggregated at the different time resolutions  XX = 05, 16, 25, 50, 75, 84, 95
     [[NEE_VUT_75_QC]]
         [[[csv]]]
             name = NEE_VUT_75_QC
@@ -307,7 +313,7 @@ and the Education Investment Fund.'''
             long_name = Net Ecosystem Exchange quality flag
             statistic_type = average
             units = 1
-            description = Quality flag for NEE_VUT_XX — XX = 05, 16, 25, 50, 75, 84, 95, 0 = measured; 1 = good quality gapfill; 2 = medium; 3 = poor
+            description = Quality flag for NEE_VUT_XX  XX = 05, 16, 25, 50, 75, 84, 95, 0 = measured; 1 = good quality gapfill; 2 = medium; 3 = poor
     [[NEE_VUT_REF]]
         [[[csv]]]
             name = NEE_VUT_REF
@@ -474,7 +480,7 @@ and the Education Investment Fund.'''
             name = RH
     [[SWC_F_MDS_1]]
         [[[Attr]]]
-            description = Soil water content, gapfilled with MDS (numeric index 
+            description = Soil water content, gapfilled with MDS
             long_name = Soil water content
             standard_name = volume_fraction_of_condensed_water_in_soil
             statistic_type = average
@@ -542,7 +548,7 @@ and the Education Investment Fund.'''
             name = TA_F_QC
     [[TS_F_MDS_1]]
         [[[Attr]]]
-            description = Soil temperature, gapfilled with MDS (numeric index 
+            description = Soil temperature, gapfilled with MDS
             long_name = Soil temperature
             standard_name = soil_temperature
             statistic_type = average
@@ -577,7 +583,7 @@ and the Education Investment Fund.'''
     [[VPD_F_QC]]
         [[[Attr]]]
             description = Quality flag for VPD_F
-            long_name = Vapour pressure deficit
+            long_name = Vapour pressure deficit quality control flag
             statistic_type = average
             units = 1
         [[[csv]]]

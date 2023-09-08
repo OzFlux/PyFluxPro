@@ -100,14 +100,14 @@ processing_info = {}
 labels = [h for h in processing_sheet.row_values(0)]
 for n, label in enumerate(labels):
     processing_info[label] = processing_sheet.col_values(n)[1:]
-#bp_site_names = sorted(processing_info["BP name"])
-bp_site_names = ["Whroo"]
+bp_site_names = sorted(processing_info["BP name"])
+#bp_site_names = ["Whroo"]
 #msg = "Processing " + ",".join(bp_site_names)
 #logger.info(msg)
 
 bp_base = "/mnt/OzFlux/Sites"
 csep_base = "TERNcloudstor:Shared/EcoSystemProcesses/Sites"
-csep_version = "2023_v1"
+csep_version = "2023_test"
 levels = ["L3", "L4", "L5", "L6"]
 method = "default"
 create = True

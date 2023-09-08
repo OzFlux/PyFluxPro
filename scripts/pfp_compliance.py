@@ -540,6 +540,14 @@ def ParseL1ControlFile(cf):
     l1ire["Files"]["file_name"] = os.path.join(cf["Files"]["file_path"], cf["Files"]["in_filename"])
     l1ire["Files"]["in_headerrow"] = cf["Files"]["in_headerrow"]
     l1ire["Files"]["in_firstdatarow"] = cf["Files"]["in_firstdatarow"]
+    file_extension = os.path.splitext(cf["Files"]["in_filename"])
+    if file_extension[1].lower() in [".csv"]:
+        delimiter = ","
+    elif file_extension[1].lower() in [".tsv"]:
+        delimiter = "\t"
+    else:
+        delimiter = None
+    l1ire["Files"]["delimiter"] = delimiter
     # get the global attributes
     l1ire["Global"] = copy.deepcopy(cf["Global"])
     # get the variables
@@ -1410,6 +1418,8 @@ def l1_check_input_labels(cfg, messages):
         source = "xl"
     elif ("csv" in file_parts[-1].lower()):
         source = "csv"
+    elif ("tsv" in file_parts[-1].lower()):
+        source = "csv"
     else:
         msg = "Unexpected input source (" + file_parts[-1].lower() + ")"
         raise RuntimeError(msg)
@@ -1731,7 +1741,7 @@ def l1_check_variables_units(cfg, std, cfg_label, std_label, messages):
         std_units = sorted(list(std_stat_type.keys()))
         cfg_units = cfg_attr["units"]
         if cfg_units not in std_units:
-            msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+            msg = cfg_label + ": unrecognised units 1 (" + cfg_units + ")"
             messages["ERROR"].append(msg)
     return
 def l1_check_variables_standard_name(cfg, std, cfg_label, std_label, messages):
@@ -1749,7 +1759,7 @@ def l1_check_variables_standard_name(cfg, std, cfg_label, std_label, messages):
             else:
                 pass
         else:
-            msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+            msg = cfg_label + ": unrecognised units 2 (" + cfg_units + ")"
             if msg not in messages["ERROR"]:
                 messages["ERROR"].append(msg)
     return
@@ -1775,7 +1785,7 @@ def l1_make_variables_attributes_consistent(cfg, std, cfg_label, std_label, mess
                 else:
                     pass
         else:
-            msg = cfg_label + ": unrecognised units (" + cfg_units + ")"
+            msg = cfg_label + ": unrecognised units 3 (" + cfg_units + ")"
             if msg not in messages["ERROR"]:
                 messages["ERROR"].append(msg)
     return
