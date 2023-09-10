@@ -506,7 +506,7 @@ def consistent_Fco2_storage(std, ds, site):
         # calculate single point Fc storage term
         cf = {"Options": {"zms": zms}}
         info = {"CO2": {"label": "CO2", "height": zms}}
-        pfp_ts.CalculateFco2StorageSinglePoint(cf, ds, info)
+        pfp_ts.CalculateSco2SinglePoint(cf, ds, info)
         # convert Fco2_single from mg/m2/s to umol/m2/s
         pfp_utils.CheckUnits(ds, "Fco2_single", "umol/m^2/s", convert_units=True)
     return
@@ -678,8 +678,8 @@ rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 sm_uri = os.path.join(rp, "site_master.xls")
 # path to the site master file
 sm_info = xl_read_site_master(sm_uri, "Processing")
-sites = list(sm_info.keys())
-#sites = ["DalyUncleared"]
+#sites = list(sm_info.keys())
+sites = ["GatumPasture"]
 
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
@@ -712,7 +712,7 @@ for site in sites:
         # update the global attributes
         change_global_attributes(std, ds2)
         # check specific global attributes, cgane if necessary
-        check_global_attributes(ds2, info)
+        #check_global_attributes(ds2, info)
         # update the variable attributes
         change_variable_attributes(std, ds2)
         # Fc single point storage
