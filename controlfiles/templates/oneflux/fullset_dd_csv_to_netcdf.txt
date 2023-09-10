@@ -1,0 +1,2029 @@
+level = L1
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.csv)
+    in_firstdatarow = 2
+    in_headerrow = 1
+    out_filename = Right click to browse (*.nc)
+[Global]
+    Conventions = CF-1.8
+    acknowledgement = 
+    altitude = <altitude>m
+    canopy_height = <canopy_height>m
+    comment = 
+    contact = 
+    data_link = http://data.ozflux.org.au/
+    featureType = timeSeries
+    fluxnet_id = 
+    history = 
+    institution = 
+    latitude = <latitude>
+    license = https://creativecommons.org/licenses/by/4.0/
+    license_name = CC BY 4.0
+    longitude = <longitude>
+    metadata_link = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
+    ozflux_link = http://ozflux.org.au/
+    publisher_name = TERN Ecosystem Processes,OzFlux
+    references = 
+    site_name = <site_name>
+    site_pi = 
+    soil = 
+    source = 
+    time_step = daily
+    time_zone = <country>/<time_zone>
+    title = ONEFlux subset output for the <site_name> site
+    tower_height = 
+    vegetation = 
+[Variables]
+    [[TA_F_MDS]]
+        [[[Attr]]]
+            long_name = TA_F_MDS
+            description = Air temperature, gapfilled using MDS method
+            units = degC
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_MDS
+    [[TA_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = TA_F_MDS_QC
+            description = Quality flag for TA_F_MDS
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_MDS_QC
+    [[TA_F_MDS_NIGHT]]
+        [[[Attr]]]
+            long_name = TA_F_MDS_NIGHT
+            description = Average nighttime TA_F_MDS
+            units = degC
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_MDS_NIGHT
+    [[TA_F_MDS_NIGHT_SD]]
+        [[[Attr]]]
+            long_name = TA_F_MDS_NIGHT_SD
+            description = Standard deviation for TA_F_MDS_NIGHT
+            units = degC
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = TA_F_MDS_NIGHT_SD
+    [[TA_F_MDS_NIGHT_QC]]
+        [[[Attr]]]
+            long_name = TA_F_MDS_NIGHT_QC
+            description = Quality flag for TA_F_MDS_NIGHT
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_MDS_NIGHT_QC
+    [[TA_F_MDS_DAY]]
+        [[[Attr]]]
+            long_name = TA_F_MDS_DAY
+            description = Average daytime TA_F_MDS
+            units = degC
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_MDS_DAY
+    [[TA_F_MDS_DAY_SD]]
+        [[[Attr]]]
+            long_name = TA_F_MDS_DAY_SD
+            description = Standard deviation for TA_F_MDS_DAY
+            units = degC
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = TA_F_MDS_DAY_SD
+    [[TA_F_MDS_DAY_QC]]
+        [[[Attr]]]
+            long_name = TA_F_MDS_DAY_QC
+            description = Quality flag for TA_F_MDS_DAY
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_MDS_DAY_QC
+    [[TA_ERA]]
+        [[[Attr]]]
+            long_name = TA_ERA
+            description = Air temperature, downscaled from ERA, linearly regressed using measured only site data
+            units = degC
+            statistic_type = average
+        [[[csv]]]
+            name = TA_ERA
+    [[TA_ERA_NIGHT]]
+        [[[Attr]]]
+            long_name = TA_ERA_NIGHT
+            description = Average nighttime TA_ERA
+            units = degC
+            statistic_type = average
+        [[[csv]]]
+            name = TA_ERA_NIGHT
+    [[TA_ERA_NIGHT_SD]]
+        [[[Attr]]]
+            long_name = TA_ERA_NIGHT_SD
+            description = Standard deviation for TA_ERA_NIGHT
+            units = degC
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = TA_ERA_NIGHT_SD
+    [[TA_ERA_DAY]]
+        [[[Attr]]]
+            long_name = TA_ERA_DAY
+            description = Average daytime TA_ERA
+            units = degC
+            statistic_type = average
+        [[[csv]]]
+            name = TA_ERA_DAY
+    [[TA_ERA_DAY_SD]]
+        [[[Attr]]]
+            long_name = TA_ERA_DAY_SD
+            description = Standard deviation for TA_ERA_DAY
+            units = degC
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = TA_ERA_DAY_SD
+    [[TA_F]]
+        [[[Attr]]]
+            long_name = TA_F
+            description = Air temperature, consolidated from TA_F_MDS and TA_ERA
+            units = degC
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F
+    [[TA_F_QC]]
+        [[[Attr]]]
+            long_name = TA_F_QC
+            description = Quality flag for TA_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_QC
+    [[TA_F_NIGHT]]
+        [[[Attr]]]
+            long_name = TA_F_NIGHT
+            description = Average nighttime TA_F
+            units = degC
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_NIGHT
+    [[TA_F_NIGHT_SD]]
+        [[[Attr]]]
+            long_name = TA_F_NIGHT_SD
+            description = Standard deviation for TA_F_NIGHT
+            units = degC
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = TA_F_NIGHT_SD
+    [[TA_F_NIGHT_QC]]
+        [[[Attr]]]
+            long_name = TA_F_NIGHT_QC
+            description = Quality flag for TA_F_NIGHT
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_NIGHT_QC
+    [[TA_F_DAY]]
+        [[[Attr]]]
+            long_name = TA_F_DAY
+            description = Average daytime TA_F
+            units = degC
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_DAY
+    [[TA_F_DAY_SD]]
+        [[[Attr]]]
+            long_name = TA_F_DAY_SD
+            description = Standard deviation for TA_F_DAY
+            units = degC
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = TA_F_DAY_SD
+    [[TA_F_DAY_QC]]
+        [[[Attr]]]
+            long_name = TA_F_DAY_QC
+            description = Quality flag for TA_F_DAY
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_DAY_QC
+    [[SW_IN_POT]]
+        [[[Attr]]]
+            long_name = SW_IN_POT
+            description = Shortwave radiation, incoming, potential (top of atmosphere)
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = SW_IN_POT
+    [[SW_IN_F_MDS]]
+        [[[Attr]]]
+            long_name = SW_IN_F_MDS
+            description = Shortwave radiation, incoming, gapfilled using MDS (negative values set to zero, e.g., negative values from instrumentation noise)
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = SW_IN_F_MDS
+    [[SW_IN_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = SW_IN_F_MDS_QC
+            description = Quality flag for SW_IN_F_MDS
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = SW_IN_F_MDS_QC
+    [[SW_IN_ERA]]
+        [[[Attr]]]
+            long_name = SW_IN_ERA
+            description = Shortwave radiation, incoming, downscaled from ERA, linearly regressed using measured only site data (negative values set to zero)
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = SW_IN_ERA
+    [[SW_IN_F]]
+        [[[Attr]]]
+            long_name = SW_IN_F
+            description = Shortwave radiation, incoming consolidated from SW_IN_F_MDS and SW_IN_ERA (negative values set to zero)
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = SW_IN_F
+    [[SW_IN_F_QC]]
+        [[[Attr]]]
+            long_name = SW_IN_F_QC
+            description = Quality flag for SW_IN_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = SW_IN_F_QC
+    [[LW_IN_F_MDS]]
+        [[[Attr]]]
+            long_name = LW_IN_F_MDS
+            description = Longwave radiation, incoming, gapfilled using MDS
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_F_MDS
+    [[LW_IN_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = LW_IN_F_MDS_QC
+            description = Quality flag for LW_IN_F_MDS
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_F_MDS_QC
+    [[LW_IN_ERA]]
+        [[[Attr]]]
+            long_name = LW_IN_ERA
+            description = Longwave radiation, incoming, downscaled from ERA, linearly regressed using measured only site data
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_ERA
+    [[LW_IN_F]]
+        [[[Attr]]]
+            long_name = LW_IN_F
+            description = Longwave radiation, incoming, consolidated from LW_IN_F_MDS and LW_IN_ERA
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_F
+    [[LW_IN_F_QC]]
+        [[[Attr]]]
+            long_name = LW_IN_F_QC
+            description = Quality flag for LW_IN_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_F_QC
+    [[LW_IN_JSB]]
+        [[[Attr]]]
+            long_name = LW_IN_JSB
+            description = Longwave radiation, incoming, calculated from TA_F_MDS, SW_IN_F_MDS, VPD_F_MDS and SW_IN_POT using the JSBACH algorithm (Sonke Zaehle)
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_JSB
+    [[LW_IN_JSB_QC]]
+        [[[Attr]]]
+            long_name = LW_IN_JSB_QC
+            description = Quality flag for LW_IN_JSB
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_JSB_QC
+    [[LW_IN_JSB_ERA]]
+        [[[Attr]]]
+            long_name = LW_IN_JSB_ERA
+            description = Longwave radiation, incoming, downscaled from ERA, linearly regressed using site level LW_IN_JSB calculated from measured only drivers
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_JSB_ERA
+    [[LW_IN_JSB_F]]
+        [[[Attr]]]
+            long_name = LW_IN_JSB_F
+            description = Longwave radiation, incoming, consolidated from LW_IN_JSB and LW_IN_JSB_ERA
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_JSB_F
+    [[LW_IN_JSB_F_QC]]
+        [[[Attr]]]
+            long_name = LW_IN_JSB_F_QC
+            description = Quality flag for LW_IN_JSB_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_JSB_F_QC
+    [[VPD_F_MDS]]
+        [[[Attr]]]
+            long_name = VPD_F_MDS
+            description = Vapor Pressure Deficit, gapfilled using MDS
+            units = hPa
+            statistic_type = average
+        [[[csv]]]
+            name = VPD_F_MDS
+    [[VPD_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = VPD_F_MDS_QC
+            description = Quality flag for VPD_F_MDS
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = VPD_F_MDS_QC
+    [[VPD_ERA]]
+        [[[Attr]]]
+            long_name = VPD_ERA
+            description = Vapor Pressure Deficit, downscaled from ERA, linearly regressed using measured only site data
+            units = hPa
+            statistic_type = average
+        [[[csv]]]
+            name = VPD_ERA
+    [[VPD_F]]
+        [[[Attr]]]
+            long_name = VPD_F
+            description = Vapor Pressure Deficit consolidated from VPD_F_MDS and VPD_ERA
+            units = hPa
+            statistic_type = average
+        [[[csv]]]
+            name = VPD_F
+    [[VPD_F_QC]]
+        [[[Attr]]]
+            long_name = VPD_F_QC
+            description = Quality flag for VPD_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = VPD_F_QC
+    [[PA_ERA]]
+        [[[Attr]]]
+            long_name = PA_ERA
+            description = Atmospheric pressure, downscaled from ERA, linearly regressed using measured only site data
+            units = kPa
+            statistic_type = average
+        [[[csv]]]
+            name = PA_ERA
+    [[PA_F]]
+        [[[Attr]]]
+            long_name = PA_F
+            description = Atmospheric pressure consolidated from PA and PA_ERA
+            units = kPa
+            statistic_type = average
+        [[[csv]]]
+            name = PA_F
+    [[PA_F_QC]]
+        [[[Attr]]]
+            long_name = PA_F_QC
+            description = Quality flag for PA_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = PA_F_QC
+    [[P_ERA]]
+        [[[Attr]]]
+            long_name = P_ERA
+            description = Precipitation, downscaled from ERA, linearly regressed using measured only site data
+            units = mm/day
+            statistic_type = sum
+        [[[csv]]]
+            name = P_ERA
+    [[P_F]]
+        [[[Attr]]]
+            long_name = P_F
+            description = Precipitation consolidated from P and P_ERA
+            units = mm/day
+            statistic_type = sum
+        [[[csv]]]
+            name = P_F
+    [[P_F_QC]]
+        [[[Attr]]]
+            long_name = P_F_QC
+            description = Quality flag for P_F
+            units = 1
+            statistic_type = sum
+        [[[csv]]]
+            name = P_F_QC
+    [[WS_ERA]]
+        [[[Attr]]]
+            long_name = WS_ERA
+            description = Wind speed, downscaled from ERA, linearly regressed using measured only site data
+            units = m/s
+            statistic_type = average
+        [[[csv]]]
+            name = WS_ERA
+    [[WS_F]]
+        [[[Attr]]]
+            long_name = WS_F
+            description = Wind speed, consolidated from WS and WS_ERA
+            units = m/s
+            statistic_type = average
+        [[[csv]]]
+            name = WS_F
+    [[WS_F_QC]]
+        [[[Attr]]]
+            long_name = WS_F_QC
+            description = Quality flag of WS_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = WS_F_QC
+    [[USTAR]]
+        [[[Attr]]]
+            long_name = USTAR
+            description = Friction velocity
+            units = m/s
+            statistic_type = average
+        [[[csv]]]
+            name = USTAR
+    [[USTAR_QC]]
+        [[[Attr]]]
+            long_name = USTAR_QC
+            description = Quality flag of USTAR
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = USTAR_QC
+    [[NETRAD]]
+        [[[Attr]]]
+            long_name = NETRAD
+            description = Net radiation
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = NETRAD
+    [[NETRAD_QC]]
+        [[[Attr]]]
+            long_name = NETRAD_QC
+            description = Quality flag of NETRAD
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NETRAD_QC
+    [[SW_OUT]]
+        [[[Attr]]]
+            long_name = SW_OUT
+            description = Shortwave radiation, outgoing
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = SW_OUT
+    [[SW_OUT_QC]]
+        [[[Attr]]]
+            long_name = SW_OUT_QC
+            description = Quality flag of SW_OUT
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = SW_OUT_QC
+    [[LW_OUT]]
+        [[[Attr]]]
+            long_name = LW_OUT
+            description = Longwave radiation, outgoing
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LW_OUT
+    [[LW_OUT_QC]]
+        [[[Attr]]]
+            long_name = LW_OUT_QC
+            description = Quality flag of LW_OUT
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = LW_OUT_QC
+    [[CO2_F_MDS]]
+        [[[Attr]]]
+            long_name = CO2_F_MDS
+            description = CO2 mole fraction, gapfilled with MDS
+            units = umol/mol
+            statistic_type = average
+        [[[csv]]]
+            name = CO2_F_MDS
+    [[CO2_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = CO2_F_MDS_QC
+            description = Quality flag for CO2_F_MDS
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = CO2_F_MDS_QC
+    [[G_F_MDS]]
+        [[[Attr]]]
+            long_name = G_F_MDS
+            description = Soil heat flux
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = G_F_MDS
+    [[G_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = G_F_MDS_QC
+            description = Quality flag of G_F_MDS
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = G_F_MDS_QC
+    [[LE_F_MDS]]
+        [[[Attr]]]
+            long_name = LE_F_MDS
+            description = Latent heat flux, gapfilled using MDS method
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LE_F_MDS
+    [[LE_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = LE_F_MDS_QC
+            description = Quality flag for LE_F_MDS, LE_CORR, LE_CORR25, and LE_CORR75.
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = LE_F_MDS_QC
+    [[LE_CORR]]
+        [[[Attr]]]
+            long_name = LE_CORR
+            description = Latent heat flux, corrected LE_F_MDS by energy balance closure correction factor
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LE_CORR
+    [[LE_CORR_25]]
+        [[[Attr]]]
+            long_name = LE_CORR_25
+            description = Latent heat flux, corrected LE_F_MDS by energy balance closure correction factor, 25th percentile
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LE_CORR_25
+    [[LE_CORR_75]]
+        [[[Attr]]]
+            long_name = LE_CORR_75
+            description = Latent heat flux, corrected LE_F_MDS by energy balance closure correction factor, 75th percentile
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LE_CORR_75
+    [[LE_RANDUNC]]
+        [[[Attr]]]
+            long_name = LE_RANDUNC
+            description = Random uncertainty of LE, from measured only data
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LE_RANDUNC
+    [[LE_CORR_JOINTUNC]]
+        [[[Attr]]]
+            long_name = LE_CORR_JOINTUNC
+            description = Joint uncertainty estimation for LE
+            units = 
+            statistic_type = average
+        [[[csv]]]
+            name = LE_CORR_JOINTUNC
+    [[H_F_MDS]]
+        [[[Attr]]]
+            long_name = H_F_MDS
+            description = Sensible heat flux, gapfilled using MDS method
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = H_F_MDS
+    [[H_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = H_F_MDS_QC
+            description = Quality flag for H_F_MDS, H_CORR, H_CORR25, and H_CORR75.
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = H_F_MDS_QC
+    [[H_CORR]]
+        [[[Attr]]]
+            long_name = H_CORR
+            description = Sensible heat flux, corrected H_F_MDS by energy balance closure correction factor
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = H_CORR
+    [[H_CORR_25]]
+        [[[Attr]]]
+            long_name = H_CORR_25
+            description = Sensible heat flux, corrected H_F_MDS by energy balance closure correction factor, 25th percentile
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = H_CORR_25
+    [[H_CORR_75]]
+        [[[Attr]]]
+            long_name = H_CORR_75
+            description = Sensible heat flux, corrected H_F_MDS by energy balance closure correction factor, 75th percentile
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = H_CORR_75
+    [[H_RANDUNC]]
+        [[[Attr]]]
+            long_name = H_RANDUNC
+            description = Random uncertainty of H, from measured only data
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = H_RANDUNC
+    [[H_CORR_JOINTUNC]]
+        [[[Attr]]]
+            long_name = H_CORR_JOINTUNC
+            description = Joint uncertainty estimation for H
+            units = 
+            statistic_type = average
+        [[[csv]]]
+            name = H_CORR_JOINTUNC
+    [[EBC_CF_N]]
+        [[[Attr]]]
+            long_name = EBC_CF_N
+            description = Number of data points used to calculate energy closure balance correction factor. Driver data points within sliding window (ECB_CF Method 1) or number of ECB_CF data points (for ECB_CF Methods 2 and 3)
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = EBC_CF_N
+    [[EBC_CF_METHOD]]
+        [[[Attr]]]
+            long_name = EBC_CF_METHOD
+            description = Method used to calculate the energy balance closure correction factor
+            units = 
+            statistic_type = average
+        [[[csv]]]
+            name = EBC_CF_METHOD
+    [[NIGHT_D]]
+        [[[Attr]]]
+            long_name = NIGHT_D
+            description = Number of half hours classified as nighttime in the period, i.e., when SW_IN_POT is 0
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NIGHT_D
+    [[DAY_D]]
+        [[[Attr]]]
+            long_name = DAY_D
+            description = Number of half hours classified as daytime in the period, i.e., when SW_IN_POT is greater than 0
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = DAY_D
+    [[NIGHT_RANDUNC_N]]
+        [[[Attr]]]
+            long_name = NIGHT_RANDUNC_N
+            description = Number of half hours classified as nighttime and used to calculate the aggregated random uncertainty
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NIGHT_RANDUNC_N
+    [[DAY_RANDUNC_N]]
+        [[[Attr]]]
+            long_name = DAY_RANDUNC_N
+            description = Number of half hours classified as daytime and used to calculate the aggregated random uncertainty
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = DAY_RANDUNC_N
+    [[NEE_CUT_REF]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF
+            description = Net Ecosystem Exchange, using Constant Ustar Threshold (CUT) across years, reference selected on the basis of the model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF
+    [[NEE_VUT_REF]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF
+            description = Net Ecosystem Exchange, using Variable Ustar Threshold (VUT) for each year, reference selected on the basis of the model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF
+    [[NEE_CUT_REF_QC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_QC
+            description = Quality flag for NEE_CUT_REF
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_QC
+    [[NEE_VUT_REF_QC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_QC
+            description = Quality flag for NEE_VUT_REF
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_QC
+    [[NEE_CUT_REF_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_RANDUNC
+            description = Random uncertainty for NEE_CUT_REF, from measured only data
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_RANDUNC
+    [[NEE_VUT_REF_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_RANDUNC
+            description = Random uncertainty for NEE_VUT_REF, from measured only data
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_RANDUNC
+    [[NEE_CUT_REF_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_JOINTUNC
+            description = Joint uncertainty estimation for NEE_CUT_REF, including random uncertainty and USTAR filtering uncertainty
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_JOINTUNC
+    [[NEE_VUT_REF_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_JOINTUNC
+            description = Joint uncertainty estimation for NEE_VUT_REF, including random uncertainty and USTAR filtering uncertainty
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_JOINTUNC
+    [[NEE_CUT_USTAR50]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50
+            description = Net Ecosystem Exchange, using Constant Ustar Threshold (CUT) across years, from 50 percentile of USTAR threshold
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50
+    [[NEE_VUT_USTAR50]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50
+            description = Net Ecosystem Exchange, using Variable Ustar Threshold (VUT) for each year, from 50 percentile of USTAR threshold
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50
+    [[NEE_CUT_USTAR50_QC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_QC
+            description = Quality flag for NEE_CUT_USTAR50
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_QC
+    [[NEE_VUT_USTAR50_QC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_QC
+            description = Quality flag for NEE_VUT_USTAR50
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_QC
+    [[NEE_CUT_USTAR50_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_RANDUNC
+            description = Random uncertainty for NEE_CUT_USTAR50, from measured only data
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_RANDUNC
+    [[NEE_VUT_USTAR50_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_RANDUNC
+            description = Random uncertainty for NEE_VUT_USTAR50, from measured only data
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_RANDUNC
+    [[NEE_CUT_USTAR50_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_JOINTUNC
+            description = Joint uncertainty estimation for NEE_CUT_USTAR50, including random uncertainty and USTAR filtering uncertainty
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_JOINTUNC
+    [[NEE_VUT_USTAR50_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_JOINTUNC
+            description = Joint uncertainty estimation for NEE_VUT_USTAR50, including random uncertainty and USTAR filtering uncertainty
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_JOINTUNC
+    [[NEE_CUT_MEAN]]
+        [[[Attr]]]
+            long_name = NEE_CUT_MEAN
+            description = Net Ecosystem Exchange, using Constant Ustar Threshold (CUT) across years, average from 40 NEE_CUT_XX versions
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_MEAN
+    [[NEE_VUT_MEAN]]
+        [[[Attr]]]
+            long_name = NEE_VUT_MEAN
+            description = Net Ecosystem Exchange, using Variable Ustar Threshold (VUT) for each year, average from 40 NEE_VUT_XX versions
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_MEAN
+    [[NEE_CUT_MEAN_QC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_MEAN_QC
+            description = Quality flag for NEE_CUT_MEAN, fraction between 0-1 indicating percentage of good quality data
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_MEAN_QC
+    [[NEE_VUT_MEAN_QC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_MEAN_QC
+            description = Quality flag for NEE_VUT_MEAN, fraction between 0-1 indicating percentage of good quality data
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_MEAN_QC
+    [[NEE_CUT_SE]]
+        [[[Attr]]]
+            long_name = NEE_CUT_SE
+            description = Standard Error for NEE_CUT, calculated as SD(NEE_CUT_XX) / SQRT(40)
+            units = gC/m^2/day
+            statistic_type = standard_error
+        [[[csv]]]
+            name = NEE_CUT_SE
+    [[NEE_VUT_SE]]
+        [[[Attr]]]
+            long_name = NEE_VUT_SE
+            description = Standard Error for NEE_VUT, calculated as SD(NEE_VUT_XX) / SQRT(40)
+            units = gC/m^2/day
+            statistic_type = standard_error
+        [[[csv]]]
+            name = NEE_VUT_SE
+    [[NEE_CUT_05]]
+        [[[Attr]]]
+            long_name = NEE_CUT_05
+            description = NEE, filtered with ustar threshold 05 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_05
+    [[NEE_CUT_16]]
+        [[[Attr]]]
+            long_name = NEE_CUT_16
+            description = NEE, filtered with ustar threshold 16 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_16
+    [[NEE_CUT_25]]
+        [[[Attr]]]
+            long_name = NEE_CUT_25
+            description = NEE, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_25
+    [[NEE_CUT_50]]
+        [[[Attr]]]
+            long_name = NEE_CUT_50
+            description = NEE, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_50
+    [[NEE_CUT_75]]
+        [[[Attr]]]
+            long_name = NEE_CUT_75
+            description = NEE, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_75
+    [[NEE_CUT_84]]
+        [[[Attr]]]
+            long_name = NEE_CUT_84
+            description = NEE, filtered with ustar threshold 84 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_84
+    [[NEE_CUT_95]]
+        [[[Attr]]]
+            long_name = NEE_CUT_95
+            description = NEE, filtered with ustar threshold 95 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_95
+    [[NEE_VUT_05]]
+        [[[Attr]]]
+            long_name = NEE_VUT_05
+            description = NEE, filtered with ustar threshold 05 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_05
+    [[NEE_VUT_16]]
+        [[[Attr]]]
+            long_name = NEE_VUT_16
+            description = NEE, filtered with ustar threshold 16 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_16
+    [[NEE_VUT_25]]
+        [[[Attr]]]
+            long_name = NEE_VUT_25
+            description = NEE, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_25
+    [[NEE_VUT_50]]
+        [[[Attr]]]
+            long_name = NEE_VUT_50
+            description = NEE, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_50
+    [[NEE_VUT_75]]
+        [[[Attr]]]
+            long_name = NEE_VUT_75
+            description = NEE, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_75
+    [[NEE_VUT_84]]
+        [[[Attr]]]
+            long_name = NEE_VUT_84
+            description = NEE, filtered with ustar threshold 84 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_84
+    [[NEE_VUT_95]]
+        [[[Attr]]]
+            long_name = NEE_VUT_95
+            description = NEE, filtered with ustar threshold 95 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_95
+    [[NEE_CUT_REF_NIGHT]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_NIGHT
+            description = Average nighttime NEE, from NEE_CUT_REF
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_NIGHT
+    [[NEE_VUT_REF_NIGHT]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_NIGHT
+            description = Average nighttime NEE, from NEE_VUT_REF
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_NIGHT
+    [[NEE_CUT_REF_NIGHT_SD]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_NIGHT_SD
+            description = Standard Deviation of the nighttime NEE, from the NEE_CUT_REF
+            units = umol/m^2/s
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = NEE_CUT_REF_NIGHT_SD
+    [[NEE_VUT_REF_NIGHT_SD]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_NIGHT_SD
+            description = Standard Deviation of the nighttime NEE, from the NEE_VUT_REF
+            units = umol/m^2/s
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = NEE_VUT_REF_NIGHT_SD
+    [[NEE_CUT_REF_NIGHT_QC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_NIGHT_QC
+            description = Quality flag for NEE_CUT_REF_NIGHT
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_NIGHT_QC
+    [[NEE_VUT_REF_NIGHT_QC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_NIGHT_QC
+            description = Quality flag for NEE_VUT_REF_NIGHT
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_NIGHT_QC
+    [[NEE_CUT_REF_NIGHT_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_NIGHT_RANDUNC
+            description = Random uncertainty of NEE_CUT_REF_NIGHT, from the random uncertainty of the single nighttime half-hours
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_NIGHT_RANDUNC
+    [[NEE_VUT_REF_NIGHT_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_NIGHT_RANDUNC
+            description = Random uncertainty of NEE_VUT_REF_NIGHT, from the random uncertainty of the single nighttime half-hours
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_NIGHT_RANDUNC
+    [[NEE_CUT_REF_NIGHT_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_NIGHT_JOINTUNC
+            description = Joint uncertainty estimation for NEE_CUT_REF_NIGHT, including random uncertainty and USTAR filtering uncertainty
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_NIGHT_JOINTUNC
+    [[NEE_VUT_REF_NIGHT_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_NIGHT_JOINTUNC
+            description = Joint uncertainty estimation for NEE_VUT_REF_NIGHT, including random uncertainty and USTAR filtering uncertainty
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_NIGHT_JOINTUNC
+    [[NEE_CUT_REF_DAY]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_DAY
+            description = Average daytime NEE, from NEE_CUT_REF
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_DAY
+    [[NEE_VUT_REF_DAY]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_DAY
+            description = Average daytime NEE, from NEE_VUT_REF
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_DAY
+    [[NEE_CUT_REF_DAY_SD]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_DAY_SD
+            description = Standard Deviation of the daytime NEE, from the NEE_CUT_REF
+            units = umol/m^2/s
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = NEE_CUT_REF_DAY_SD
+    [[NEE_VUT_REF_DAY_SD]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_DAY_SD
+            description = Standard Deviation of the daytime NEE, from the NEE_VUT_REF
+            units = umol/m^2/s
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = NEE_VUT_REF_DAY_SD
+    [[NEE_CUT_REF_DAY_QC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_DAY_QC
+            description = Quality flag for NEE_CUT_REF_DAY
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_DAY_QC
+    [[NEE_VUT_REF_DAY_QC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_DAY_QC
+            description = Quality flag for NEE_VUT_REF_DAY
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_DAY_QC
+    [[NEE_CUT_REF_DAY_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_DAY_RANDUNC
+            description = Random uncertainty of NEE_CUT_REF_DAY, from the random uncertainty of the single daytime half-hours
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_DAY_RANDUNC
+    [[NEE_VUT_REF_DAY_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_DAY_RANDUNC
+            description = Random uncertainty of NEE_VUT_REF_DAY, from the random uncertainty of the single daytime half-hours
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_DAY_RANDUNC
+    [[NEE_CUT_REF_DAY_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_REF_DAY_JOINTUNC
+            description = Joint uncertainty estimation for NEE_CUT_REF_DAY, including random uncertainty and USTAR filtering uncertainty
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_REF_DAY_JOINTUNC
+    [[NEE_VUT_REF_DAY_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_DAY_JOINTUNC
+            description = Joint uncertainty estimation for NEE_VUT_REF_DAY, including random uncertainty and USTAR filtering uncertainty
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_DAY_JOINTUNC
+    [[NEE_CUT_USTAR50_NIGHT]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_NIGHT
+            description = Average nighttime NEE, from NEE_CUT_USTAR50
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_NIGHT
+    [[NEE_VUT_USTAR50_NIGHT]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_NIGHT
+            description = Average nighttime NEE, from NEE_VUT_USTAR50
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_NIGHT
+    [[NEE_CUT_USTAR50_NIGHT_SD]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_NIGHT_SD
+            description = Standard Deviation of the nighttime NEE, from the NEE_CUT_USTAR50
+            units = umol/m^2/s
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_NIGHT_SD
+    [[NEE_VUT_USTAR50_NIGHT_SD]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_NIGHT_SD
+            description = Standard Deviation of the nighttime NEE, from the NEE_VUT_USTAR50
+            units = umol/m^2/s
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_NIGHT_SD
+    [[NEE_CUT_USTAR50_NIGHT_QC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_NIGHT_QC
+            description = Quality flag for NEE_CUT_USTAR50_NIGHT
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_NIGHT_QC
+    [[NEE_VUT_USTAR50_NIGHT_QC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_NIGHT_QC
+            description = Quality flag for NEE_VUT_USTAR50_NIGHT
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_NIGHT_QC
+    [[NEE_CUT_USTAR50_NIGHT_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_NIGHT_RANDUNC
+            description = Random uncertainty of NEE_CUT_USTAR50_NIGHT, from the random uncertainty of the single nighttime half-hours
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_NIGHT_RANDUNC
+    [[NEE_VUT_USTAR50_NIGHT_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_NIGHT_RANDUNC
+            description = Random uncertainty of NEE_VUT_USTAR50_NIGHT, from the random uncertainty of the single nighttime half-hours
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_NIGHT_RANDUNC
+    [[NEE_CUT_USTAR50_NIGHT_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_NIGHT_JOINTUNC
+            description = Joint uncertainty estimation for NEE_CUT_USTAR50_NIGHT, including random uncertainty and USTAR filtering uncertainty
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_NIGHT_JOINTUNC
+    [[NEE_VUT_USTAR50_NIGHT_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_NIGHT_JOINTUNC
+            description = Joint uncertainty estimation for NEE_VUT_USTAR50_NIGHT, including random uncertainty and USTAR filtering uncertainty
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_NIGHT_JOINTUNC
+    [[NEE_CUT_USTAR50_DAY]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_DAY
+            description = Average daytime NEE, from NEE_CUT_USTAR50
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_DAY
+    [[NEE_VUT_USTAR50_DAY]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_DAY
+            description = Average daytime NEE, from NEE_VUT_USTAR50
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_DAY
+    [[NEE_CUT_USTAR50_DAY_SD]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_DAY_SD
+            description = Standard Deviation of the daytime NEE, from the NEE_CUT_USTAR50
+            units = umol/m^2/s
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_DAY_SD
+    [[NEE_VUT_USTAR50_DAY_SD]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_DAY_SD
+            description = Standard Deviation of the daytime NEE, from the NEE_VUT_USTAR50
+            units = umol/m^2/s
+            statistic_type = standard_deviation
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_DAY_SD
+    [[NEE_CUT_USTAR50_DAY_QC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_DAY_QC
+            description = Quality flag for NEE_CUT_USTAR50_DAY
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_DAY_QC
+    [[NEE_VUT_USTAR50_DAY_QC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_DAY_QC
+            description = Quality flag for NEE_VUT_USTAR50_DAY
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_DAY_QC
+    [[NEE_CUT_USTAR50_DAY_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_DAY_RANDUNC
+            description = Random uncertainty of NEE_CUT_USTAR50_DAY, from the random uncertainty of the single daytime half-hours
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_DAY_RANDUNC
+    [[NEE_VUT_USTAR50_DAY_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_DAY_RANDUNC
+            description = Random uncertainty of NEE_VUT_USTAR50_DAY, from the random uncertainty of the single daytime half-hours
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_DAY_RANDUNC
+    [[NEE_CUT_USTAR50_DAY_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_CUT_USTAR50_DAY_JOINTUNC
+            description = Joint uncertainty estimation for NEE_CUT_USTAR50_DAY, including random uncertainty and USTAR filtering uncertainty
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_CUT_USTAR50_DAY_JOINTUNC
+    [[NEE_VUT_USTAR50_DAY_JOINTUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_USTAR50_DAY_JOINTUNC
+            description = Joint uncertainty estimation for NEE_VUT_USTAR50_DAY, including random uncertainty and USTAR filtering uncertainty
+            units = umol/m^2/s
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_USTAR50_DAY_JOINTUNC
+    [[RECO_NT_VUT_REF]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_REF
+            description = Ecosystem Respiration, from Nighttime partitioning method, reference selected from RECO versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_REF
+    [[RECO_NT_VUT_USTAR50]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_USTAR50
+            description = Ecosystem Respiration, from Nighttime partitioning method, based on NEE_VUT_USTAR50
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_USTAR50
+    [[RECO_NT_VUT_MEAN]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_MEAN
+            description = Ecosystem Respiration, from Nighttime partitioning method, average from RECO versions, each from corresponding NEE_VUT_XX version
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_MEAN
+    [[RECO_NT_VUT_SE]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_SE
+            description = Standard Error for Ecosystem Respiration, calculated as  (SD(RECO_NT_VUT_XX) / SQRT(40))
+            units = gC/m^2/day
+            statistic_type = standard_error
+        [[[csv]]]
+            name = RECO_NT_VUT_SE
+    [[RECO_NT_VUT_05]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_05
+            description = RECO, filtered with ustar threshold 05 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_05
+    [[RECO_NT_VUT_16]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_16
+            description = RECO, filtered with ustar threshold 16 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_16
+    [[RECO_NT_VUT_25]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_25
+            description = RECO, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_25
+    [[RECO_NT_VUT_50]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_50
+            description = RECO, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_50
+    [[RECO_NT_VUT_75]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_75
+            description = RECO, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_75
+    [[RECO_NT_VUT_84]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_84
+            description = RECO, filtered with ustar threshold 84 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_84
+    [[RECO_NT_VUT_95]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_95
+            description = RECO, filtered with ustar threshold 95 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_95
+    [[RECO_NT_CUT_REF]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_REF
+            description = Ecosystem Respiration, from Nighttime partitioning method, reference selected from RECO versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_CUT_REF
+    [[RECO_NT_CUT_USTAR50]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_USTAR50
+            description = Ecosystem Respiration, from Nighttime partitioning method, based on NEE_CUT_USTAR50
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_CUT_USTAR50
+    [[RECO_NT_CUT_MEAN]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_MEAN
+            description = Ecosystem Respiration, from Nighttime partitioning method, average from RECO versions, each from corresponding NEE_CUT_XX version
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_CUT_MEAN
+    [[RECO_NT_CUT_SE]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_SE
+            description = Standard Error for Ecosystem Respiration, calculated as  (SD(RECO_NT_CUT_XX) / SQRT(40))
+            units = gC/m^2/day
+            statistic_type = standard_error
+        [[[csv]]]
+            name = RECO_NT_CUT_SE
+    [[RECO_NT_CUT_05]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_05
+            description = RECO, filtered with ustar threshold 05 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_CUT_05
+    [[RECO_NT_CUT_16]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_16
+            description = RECO, filtered with ustar threshold 16 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_CUT_16
+    [[RECO_NT_CUT_25]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_25
+            description = RECO, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_CUT_25
+    [[RECO_NT_CUT_50]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_50
+            description = RECO, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_CUT_50
+    [[RECO_NT_CUT_75]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_75
+            description = RECO, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_CUT_75
+    [[RECO_NT_CUT_84]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_84
+            description = RECO, filtered with ustar threshold 84 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_CUT_84
+    [[RECO_NT_CUT_95]]
+        [[[Attr]]]
+            long_name = RECO_NT_CUT_95
+            description = RECO, filtered with ustar threshold 95 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_CUT_95
+    [[GPP_NT_VUT_REF]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_REF
+            description = Gross Primary Production, from Nighttime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_VUT_REF
+    [[GPP_NT_VUT_USTAR50]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_USTAR50
+            description = Gross Primary Production, from Nighttime partitioning method, based on NEE_VUT_USTAR50
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_VUT_USTAR50
+    [[GPP_NT_VUT_MEAN]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_MEAN
+            description = Gross Primary Production, from Nighttime partitioning method, average from GPP versions, each from corresponding NEE_VUT_XX version
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_VUT_MEAN
+    [[GPP_NT_VUT_SE]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_SE
+            description = Standard Error for Gross Primary Production, calculated as  (SD(GPP_NT_VUT_XX) / SQRT(40))
+            units = gC/m^2/day
+            statistic_type = standard_error
+        [[[csv]]]
+            name = GPP_NT_VUT_SE
+    [[GPP_NT_VUT_05]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_05
+            description = GPP, filtered with ustar threshold 05 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_VUT_05
+    [[GPP_NT_VUT_16]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_16
+            description = GPP, filtered with ustar threshold 16 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_VUT_16
+    [[GPP_NT_VUT_25]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_25
+            description = GPP, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_VUT_25
+    [[GPP_NT_VUT_50]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_50
+            description = GPP, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_VUT_50
+    [[GPP_NT_VUT_75]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_75
+            description = GPP, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_VUT_75
+    [[GPP_NT_VUT_84]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_84
+            description = GPP, filtered with ustar threshold 84 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_VUT_84
+    [[GPP_NT_VUT_95]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_95
+            description = GPP, filtered with ustar threshold 95 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_VUT_95
+    [[GPP_NT_CUT_REF]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_REF
+            description = Gross Primary Production, from Nighttime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_CUT_REF
+    [[GPP_NT_CUT_USTAR50]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_USTAR50
+            description = Gross Primary Production, from Nighttime partitioning method, based on NEE_CUT_USTAR50
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_CUT_USTAR50
+    [[GPP_NT_CUT_MEAN]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_MEAN
+            description = Gross Primary Production, from Nighttime partitioning method, average from GPP versions, each from corresponding NEE_CUT_XX version
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_CUT_MEAN
+    [[GPP_NT_CUT_SE]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_SE
+            description = Standard Error for Gross Primary Production, calculated as  (SD(GPP_NT_CUT_XX) / SQRT(40))
+            units = gC/m^2/day
+            statistic_type = standard_error
+        [[[csv]]]
+            name = GPP_NT_CUT_SE
+    [[GPP_NT_CUT_05]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_05
+            description = GPP, filtered with ustar threshold 05 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_CUT_05
+    [[GPP_NT_CUT_16]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_16
+            description = GPP, filtered with ustar threshold 16 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_CUT_16
+    [[GPP_NT_CUT_25]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_25
+            description = GPP, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_CUT_25
+    [[GPP_NT_CUT_50]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_50
+            description = GPP, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_CUT_50
+    [[GPP_NT_CUT_75]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_75
+            description = GPP, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_CUT_75
+    [[GPP_NT_CUT_84]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_84
+            description = GPP, filtered with ustar threshold 84 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_CUT_84
+    [[GPP_NT_CUT_95]]
+        [[[Attr]]]
+            long_name = GPP_NT_CUT_95
+            description = GPP, filtered with ustar threshold 95 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_NT_CUT_95
+    [[RECO_DT_VUT_REF]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_REF
+            description = Ecosystem Respiration, from Daytime partitioning method, reference selected from RECO versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_REF
+    [[RECO_DT_VUT_USTAR50]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_USTAR50
+            description = Ecosystem Respiration, from Daytime partitioning method, based on NEE_VUT_USTAR50
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_USTAR50
+    [[RECO_DT_VUT_MEAN]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_MEAN
+            description = Ecosystem Respiration, from Daytime partitioning method, average from RECO versions, each from corresponding NEE_VUT_XX version
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_MEAN
+    [[RECO_DT_VUT_SE]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_SE
+            description = Standard Error for Ecosystem Respiration, calculated as  (SD(RECO_DT_VUT_XX) / SQRT(40))
+            units = gC/m^2/day
+            statistic_type = standard_error
+        [[[csv]]]
+            name = RECO_DT_VUT_SE
+    [[RECO_DT_VUT_05]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_05
+            description = RECO, filtered with ustar threshold 05 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_05
+    [[RECO_DT_VUT_16]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_16
+            description = RECO, filtered with ustar threshold 16 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_16
+    [[RECO_DT_VUT_25]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_25
+            description = RECO, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_25
+    [[RECO_DT_VUT_50]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_50
+            description = RECO, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_50
+    [[RECO_DT_VUT_75]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_75
+            description = RECO, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_75
+    [[RECO_DT_VUT_84]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_84
+            description = RECO, filtered with ustar threshold 84 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_84
+    [[RECO_DT_VUT_95]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_95
+            description = RECO, filtered with ustar threshold 95 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_95
+    [[RECO_DT_CUT_REF]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_REF
+            description = Ecosystem Respiration, from Daytime partitioning method, reference selected from RECO versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_CUT_REF
+    [[RECO_DT_CUT_USTAR50]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_USTAR50
+            description = Ecosystem Respiration, from Daytime partitioning method, based on NEE_CUT_USTAR50
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_CUT_USTAR50
+    [[RECO_DT_CUT_MEAN]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_MEAN
+            description = Ecosystem Respiration, from Daytime partitioning method, average from RECO versions, each from corresponding NEE_CUT_XX version
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_CUT_MEAN
+    [[RECO_DT_CUT_SE]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_SE
+            description = Standard Error for Ecosystem Respiration, calculated as  (SD(RECO_DT_CUT_XX) / SQRT(40))
+            units = gC/m^2/day
+            statistic_type = standard_error
+        [[[csv]]]
+            name = RECO_DT_CUT_SE
+    [[RECO_DT_CUT_05]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_05
+            description = RECO, filtered with ustar threshold 05 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_CUT_05
+    [[RECO_DT_CUT_16]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_16
+            description = RECO, filtered with ustar threshold 16 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_CUT_16
+    [[RECO_DT_CUT_25]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_25
+            description = RECO, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_CUT_25
+    [[RECO_DT_CUT_50]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_50
+            description = RECO, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_CUT_50
+    [[RECO_DT_CUT_75]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_75
+            description = RECO, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_CUT_75
+    [[RECO_DT_CUT_84]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_84
+            description = RECO, filtered with ustar threshold 84 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_CUT_84
+    [[RECO_DT_CUT_95]]
+        [[[Attr]]]
+            long_name = RECO_DT_CUT_95
+            description = RECO, filtered with ustar threshold 95 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_CUT_95
+    [[GPP_DT_VUT_REF]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_REF
+            description = Gross Primary Production, from Daytime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_VUT_REF
+    [[GPP_DT_VUT_USTAR50]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_USTAR50
+            description = Gross Primary Production, from Daytime partitioning method, based on NEE_VUT_USTAR50
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_VUT_USTAR50
+    [[GPP_DT_VUT_MEAN]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_MEAN
+            description = Gross Primary Production, from Daytime partitioning method, average from GPP versions, each from corresponding NEE_VUT_XX version
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_VUT_MEAN
+    [[GPP_DT_VUT_SE]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_SE
+            description = Standard Error for Gross Primary Production, calculated as  (SD(GPP_DT_VUT_XX) / SQRT(40))
+            units = gC/m^2/day
+            statistic_type = standard_error
+        [[[csv]]]
+            name = GPP_DT_VUT_SE
+    [[GPP_DT_VUT_05]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_05
+            description = GPP, filtered with ustar threshold 05 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_VUT_05
+    [[GPP_DT_VUT_16]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_16
+            description = GPP, filtered with ustar threshold 16 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_VUT_16
+    [[GPP_DT_VUT_25]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_25
+            description = GPP, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_VUT_25
+    [[GPP_DT_VUT_50]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_50
+            description = GPP, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_VUT_50
+    [[GPP_DT_VUT_75]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_75
+            description = GPP, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_VUT_75
+    [[GPP_DT_VUT_84]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_84
+            description = GPP, filtered with ustar threshold 84 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_VUT_84
+    [[GPP_DT_VUT_95]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_95
+            description = GPP, filtered with ustar threshold 95 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_VUT_95
+    [[GPP_DT_CUT_REF]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_REF
+            description = Gross Primary Production, from Daytime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_CUT_REF
+    [[GPP_DT_CUT_USTAR50]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_USTAR50
+            description = Gross Primary Production, from Daytime partitioning method, based on NEE_CUT_USTAR50
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_CUT_USTAR50
+    [[GPP_DT_CUT_MEAN]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_MEAN
+            description = Gross Primary Production, from Daytime partitioning method, average from GPP versions, each from corresponding NEE_CUT_XX version
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_CUT_MEAN
+    [[GPP_DT_CUT_SE]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_SE
+            description = Standard Error for Gross Primary Production, calculated as  (SD(GPP_DT_CUT_XX) / SQRT(40))
+            units = gC/m^2/day
+            statistic_type = standard_error
+        [[[csv]]]
+            name = GPP_DT_CUT_SE
+    [[GPP_DT_CUT_05]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_05
+            description = GPP, filtered with ustar threshold 05 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_CUT_05
+    [[GPP_DT_CUT_16]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_16
+            description = GPP, filtered with ustar threshold 16 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_CUT_16
+    [[GPP_DT_CUT_25]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_25
+            description = GPP, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_CUT_25
+    [[GPP_DT_CUT_50]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_50
+            description = GPP, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_CUT_50
+    [[GPP_DT_CUT_75]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_75
+            description = GPP, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_CUT_75
+    [[GPP_DT_CUT_84]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_84
+            description = GPP, filtered with ustar threshold 84 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_CUT_84
+    [[GPP_DT_CUT_95]]
+        [[[Attr]]]
+            long_name = GPP_DT_CUT_95
+            description = GPP, filtered with ustar threshold 95 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = GPP_DT_CUT_95
+    [[RECO_SR]]
+        [[[Attr]]]
+            long_name = RECO_SR
+            description = Ecosystem Respiration, from Sundown Respiration partitioning method
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_SR
+    [[RECO_SR_N]]
+        [[[Attr]]]
+            long_name = RECO_SR_N
+            description = Fraction between 0-1, indicating the percentage of data avaiable in the averaging period to parametrize the respiration model
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_SR_N

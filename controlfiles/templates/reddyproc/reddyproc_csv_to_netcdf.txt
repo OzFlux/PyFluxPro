@@ -1,0 +1,896 @@
+level = L1
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.csv, *.tsv)
+    in_firstdatarow = 3
+    in_headerrow = 1
+    out_filename = Right click to browse (*.nc)
+[Global]
+    Conventions = CF-1.8
+    acknowledgement = '''This work used eddy covariance data collected by the TERN Ecosystem 
+Processes facility. Ecosystem Processes would like to acknowledge the financial support of the 
+Australian Federal Government via the National Collaborative Research Infrastructure Scheme 
+and the Education Investment Fund.'''
+    altitude = <altitude>m
+    canopy_height = <canopy_height>m
+    comment = 
+    contact = 
+    data_link = http://data.ozflux.org.au/
+    featureType = timeSeries
+    fluxnet_id = 
+    history = 
+    institution = 
+    latitude = <latitude>
+    license = https://creativecommons.org/licenses/by/4.0/
+    license_name = CC BY 4.0
+    longitude = <longitude>
+    metadata_link = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
+    ozflux_link = http://ozflux.org.au/
+    publisher_name = TERN Ecosystem Processes,OzFlux
+    references = 
+    site_name = <site_name>
+    site_pi = 
+    soil = 
+    source = 
+    time_step = 30
+    time_zone = <country>/<time_zone>
+    title = ONEFlux subset output for the <site_name> site
+    tower_height = 
+    vegetation = 
+[Variables]
+    [[E_0_U05]]
+        [[[Attr]]]
+            description = Activation energy from NEE u* filtered 5% quantile
+            long_name = Activation energy
+            statistic_type = average
+            units = K
+        [[[csv]]]
+            name = E_0_U05
+    [[E_0_U50]]
+        [[[Attr]]]
+            description = Activation energy from NEE u* filtered 50% quantile
+            long_name = Activation energy
+            statistic_type = average
+            units = K
+        [[[csv]]]
+            name = E_0_U50
+    [[E_0_U95]]
+        [[[Attr]]]
+            description = Activation energy from NEE u* filtered 95% quantile
+            long_name = Activation energy
+            statistic_type = average
+            units = K
+        [[[csv]]]
+            name = E_0_U95
+    [[E_0_uStar]]
+        [[[Attr]]]
+            description = Activation energy from NEE u* filtered non-bootstrapped
+            long_name = Activation energy
+            statistic_type = average
+            units = K
+        [[[csv]]]
+            name = E_0_uStar
+    [[FP_NEEnight_U05]]
+        [[[Attr]]]
+            description = NEE, nighttime, u* filtered 5% quantile
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = FP_NEEnight_U05
+    [[FP_NEEnight_U50]]
+        [[[Attr]]]
+            description = NEE, nighttime, u* filtered 50% quantile
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = FP_NEEnight_U50
+    [[FP_NEEnight_U95]]
+        [[[Attr]]]
+            description = NEE, nighttime, u* filtered 95% quantile
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = FP_NEEnight_U95
+    [[FP_NEEnight_uStar]]
+        [[[Attr]]]
+            description = NEE, nighttime, u* filtered non-bootstrapped
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = FP_NEEnight_uStar
+    [[FP_Temp_U05]]
+        [[[Attr]]]
+            description = Air temperature
+            long_name = Air temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = FP_Temp_U05
+    [[FP_Temp_U50]]
+        [[[Attr]]]
+            description = Air temperature
+            long_name = Air temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = FP_Temp_U50
+    [[FP_Temp_U95]]
+        [[[Attr]]]
+            description = Air temperature
+            long_name = Air temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = FP_Temp_U95
+    [[FP_Temp_uStar]]
+        [[[Attr]]]
+            description = Air temperature
+            long_name = Air temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = FP_Temp_uStar
+    [[GPP_U05_f]]
+        [[[Attr]]]
+            description = Gross primary productivity from nighttime method, u* filtered 5% quantile
+            long_name = Gross primary productivity
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = GPP_U05_f
+    [[GPP_U05_fqc]]
+        [[[Attr]]]
+            description = GPP QC flag, 0=original, 1=most reliable, 2=medium, 3=least reliable
+            long_name = GPP QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = GPP_U05_fqc
+    [[GPP_U50_f]]
+        [[[Attr]]]
+            description = Gross primary productivity from nighttime method, u* filtered 50% quantile
+            long_name = Gross primary productivity
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = GPP_U50_f
+    [[GPP_U50_fqc]]
+        [[[Attr]]]
+            description = GPP QC flag, 0=original, 1=most reliable, 2=medium, 3=least reliable
+            long_name = GPP QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = GPP_U50_fqc
+    [[GPP_U95_f]]
+        [[[Attr]]]
+            description = Gross primary productivity from nighttime method, u* filtered 95% quantile
+            long_name = Gross primary productivity
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = GPP_U95_f
+    [[GPP_U95_fqc]]
+        [[[Attr]]]
+            description = GPP QC flag, 0=original, 1=most reliable, 2=medium, 3=least reliable
+            long_name = GPP QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = GPP_U95_fqc
+    [[GPP_uStar_f]]
+        [[[Attr]]]
+            description = Gross primary productivity from nighttime method, u* filtered non-bootstrapped
+            long_name = Gross primary productivity
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = GPP_uStar_f
+    [[GPP_uStar_fqc]]
+        [[[Attr]]]
+            description = GPP QC flag, 0=original, 1=most reliable, 2=medium, 3=least reliable
+            long_name = GPP QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = GPP_uStar_fqc
+    [[H]]
+        [[[Attr]]]
+            description = Sensible heat flux
+            long_name = Sensible heat flux
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = H
+    [[LE]]
+        [[[Attr]]]
+            description = Latent heat flux
+            long_name = Latent heat flux
+            standard_name = surface_upward_latent_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = LE
+    [[NEE]]
+        [[[Attr]]]
+            description = Net ecosystem exchange
+            long_name = Net ecosystem exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE
+    [[NEE_U05_f]]
+        [[[Attr]]]
+            description = NEE filtered using 5th percentile, gap filled using MDS
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U05_f
+    [[NEE_U05_fall]]
+        [[[Attr]]]
+            description = NEE filtered by u* 5th percentile, MDS gap filled, average over window
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U05_fall
+    [[NEE_U05_fall_qc]]
+        [[[Attr]]]
+            description = NEE QC flag, 0 observation, 1 gap filled
+            long_name = NEE MDS QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U05_fall_qc
+    [[NEE_U05_fmeth]]
+        [[[Attr]]]
+            description = NEE filtered by u* 5th percentile, MDS gap filling method
+            long_name = NEE MDS method
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U05_fmeth
+    [[NEE_U05_fnum]]
+        [[[Attr]]]
+            description = NEE filtered by u* 5th percentile, MDS gap filled, number each window
+            long_name = NEE MDS number
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U05_fnum
+    [[NEE_U05_fqc]]
+        [[[Attr]]]
+            description = NEE QC flag, 0 observation, 1 gap filled
+            long_name = NEE QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U05_fqc
+    [[NEE_U05_fsd]]
+        [[[Attr]]]
+            description = NEE filtered by u* 5th percentile, MDS gap filled, standard deviation over window
+            long_name = NEE MDS standard deviation
+            statistic_type = standard_deviation
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U05_fsd
+    [[NEE_U05_fwin]]
+        [[[Attr]]]
+            description = NEE MDS window width
+            long_name = NEE MDS window width
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U05_fwin
+    [[NEE_U05_orig]]
+        [[[Attr]]]
+            description = NEE filtered by 5th percentile u*
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U05_orig
+    [[NEE_U50_f]]
+        [[[Attr]]]
+            description = NEE filtered using 50th percentile, gap filled using MDS
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U50_f
+    [[NEE_U50_fall]]
+        [[[Attr]]]
+            description = NEE filtered by u* 50th percentile, MDS gap filled, average over window
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U50_fall
+    [[NEE_U50_fall_qc]]
+        [[[Attr]]]
+            description = NEE QC flag, 0 observation, 1 gap filled
+            long_name = NEE MDS QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U50_fall_qc
+    [[NEE_U50_fmeth]]
+        [[[Attr]]]
+            description = NEE filtered by u* 50th percentile, MDS gap filling method
+            long_name = NEE MDS method
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U50_fmeth
+    [[NEE_U50_fnum]]
+        [[[Attr]]]
+            description = NEE filtered by u* 50th percentile, MDS gap filled, number each window
+            long_name = NEE MDS number
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U50_fnum
+    [[NEE_U50_fqc]]
+        [[[Attr]]]
+            description = NEE QC flag, 0 observation, 1 gap filled
+            long_name = NEE QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U50_fqc
+    [[NEE_U50_fsd]]
+        [[[Attr]]]
+            description = NEE filtered by u* 50th percentile, MDS gap filled, standard deviation over window
+            long_name = NEE MDS standard deviation
+            statistic_type = standard_deviation
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U50_fsd
+    [[NEE_U50_fwin]]
+        [[[Attr]]]
+            description = NEE MDS window width
+            long_name = NEE MDS window width
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U50_fwin
+    [[NEE_U50_orig]]
+        [[[Attr]]]
+            description = NEE filtered by 50th percentile u*
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U50_orig
+    [[NEE_U95_f]]
+        [[[Attr]]]
+            description = NEE filtered using 95th percentile, gap filled using MDS
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U95_f
+    [[NEE_U95_fall]]
+        [[[Attr]]]
+            description = NEE filtered by u* 95th percentile, MDS gap filled, average over window
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U95_fall
+    [[NEE_U95_fall_qc]]
+        [[[Attr]]]
+            description = NEE QC flag, 0 observation, 1 gap filled
+            long_name = NEE MDS QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U95_fall_qc
+    [[NEE_U95_fmeth]]
+        [[[Attr]]]
+            description = NEE filtered by u* 95th percentile, MDS gap filling method
+            long_name = NEE MDS method
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U95_fmeth
+    [[NEE_U95_fnum]]
+        [[[Attr]]]
+            description = NEE filtered by u* 95th percentile, MDS gap filled, number each window
+            long_name = NEE MDS number
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U95_fnum
+    [[NEE_U95_fqc]]
+        [[[Attr]]]
+            description = NEE QC flag, 0 observation, 1 gap filled
+            long_name = NEE QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U95_fqc
+    [[NEE_U95_fsd]]
+        [[[Attr]]]
+            description = NEE filtered by u* 95th percentile, MDS gap filled, standard deviation over window
+            long_name = NEE MDS standard deviation
+            statistic_type = standard_deviation
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U95_fsd
+    [[NEE_U95_fwin]]
+        [[[Attr]]]
+            description = NEE MDS window width
+            long_name = NEE MDS window width
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_U95_fwin
+    [[NEE_U95_orig]]
+        [[[Attr]]]
+            description = NEE filtered by 95th percentile u*
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_U95_orig
+    [[NEE_uStar_f]]
+        [[[Attr]]]
+            description = NEE gap filled using MDS
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_uStar_f
+    [[NEE_uStar_fall]]
+        [[[Attr]]]
+            description = NEE filtered by u*, MDS gap filled, average over window
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_uStar_fall
+    [[NEE_uStar_fall_qc]]
+        [[[Attr]]]
+            description = NEE QC flag, 0 observation, 1 gap filled
+            long_name = NEE MDS QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_uStar_fall_qc
+    [[NEE_uStar_fmeth]]
+        [[[Attr]]]
+            description = NEE filtered by u*, MDS gap filling method
+            long_name = NEE MDS method
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_uStar_fmeth
+    [[NEE_uStar_fnum]]
+        [[[Attr]]]
+            description = NEE filtered by u*, MDS gap filled, number each window
+            long_name = NEE MDS number
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_uStar_fnum
+    [[NEE_uStar_fqc]]
+        [[[Attr]]]
+            description = NEE QC flag, 0 observation, 1 gap filled
+            long_name = NEE QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_uStar_fqc
+    [[NEE_uStar_fsd]]
+        [[[Attr]]]
+            description = NEE filtered by u*, MDS gap filled, standard deviation over window
+            long_name = NEE MDS standard deviation
+            statistic_type = standard_deviation
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_uStar_fsd
+    [[NEE_uStar_fwin]]
+        [[[Attr]]]
+            description = NEE MDS window width
+            long_name = NEE MDS window width
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_uStar_fwin
+    [[NEE_uStar_orig]]
+        [[[Attr]]]
+            description = NEE filtered by u*
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_uStar_orig
+    [[PotRad_U05]]
+        [[[Attr]]]
+            description = Downwelling shortwave radiation, calculated
+            long_name = Downwelling shortwave radiation
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = PotRad_U05
+    [[PotRad_U50]]
+        [[[Attr]]]
+            description = Downwelling shortwave radiation, calculated
+            long_name = Downwelling shortwave radiation
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = PotRad_U50
+    [[PotRad_U95]]
+        [[[Attr]]]
+            description = Downwelling shortwave radiation, calculated
+            long_name = Downwelling shortwave radiation
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = PotRad_U95
+    [[PotRad_uStar]]
+        [[[Attr]]]
+            description = Downwelling shortwave radiation, calculated
+            long_name = Downwelling shortwave radiation
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = PotRad_uStar
+    [[R_ref_U05]]
+        [[[Attr]]]
+            description = Reference respiration from nighttime method, u* filtered 5% quantile
+            long_name = Reference respiration
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = R_ref_U05
+    [[R_ref_U50]]
+        [[[Attr]]]
+            description = Reference respiration from nighttime method, u* filtered 50% quantile
+            long_name = Reference respiration
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = R_ref_U50
+    [[R_ref_U95]]
+        [[[Attr]]]
+            description = Reference respiration from nighttime method, u* filtered 95% quantile
+            long_name = Reference respiration
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = R_ref_U95
+    [[R_ref_uStar]]
+        [[[Attr]]]
+            description = Reference respiration from nighttime method, u* filtered non-bootstrapped
+            long_name = Reference respiration
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = R_ref_uStar
+    [[Reco_U05]]
+        [[[Attr]]]
+            description = Ecosystem respiration from nighttimer method, u* filltered 5% quantile
+            long_name = Ecosystem respiration
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = Reco_U05
+    [[Reco_U50]]
+        [[[Attr]]]
+            description = Ecosystem respiration from nighttimer method, u* filltered 50% quantile
+            long_name = Ecosystem respiration
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = Reco_U50
+    [[Reco_U95]]
+        [[[Attr]]]
+            description = Ecosystem respiration from nighttimer method, u* filltered 95% quantile
+            long_name = Ecosystem respiration
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = Reco_U95
+    [[Reco_uStar]]
+        [[[Attr]]]
+            description = Ecosystem respiration from nighttimer method, u* filltered non-bootstrapped
+            long_name = Ecosystem respiration
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = Reco_uStar
+    [[Rg]]
+        [[[Attr]]]
+            description = Downwelling shortwave radiation
+            long_name = Downwelling shortwave radiation
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = Rg
+    [[Tair]]
+        [[[Attr]]]
+            description = Air temperature
+            long_name = Air temperature
+            standard_name = air_temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = Tair
+    [[Tair_f]]
+        [[[Attr]]]
+            description = Air temperature, gap filled using MDS
+            long_name = Air temperature
+            standard_name = air_temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = Tair_f
+    [[Tair_fall]]
+        [[[Attr]]]
+            description = Air temperature, MDS gap filled, average over window
+            long_name = Air temperature
+            standard_name = air_temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = Tair_fall
+    [[Tair_fall_qc]]
+        [[[Attr]]]
+            description = Air temperature, QC flag, 0 observation, 1 gap filled
+            long_name = Ta MDS QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = Tair_fall_qc
+    [[Tair_fmeth]]
+        [[[Attr]]]
+            description = Ta MDS gap filling method
+            long_name = Ta MDS method
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = Tair_fmeth
+    [[Tair_fnum]]
+        [[[Attr]]]
+            description = Ta MDS gap filled, number each window
+            long_name = Ta MDS number
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = Tair_fnum
+    [[Tair_fqc]]
+        [[[Attr]]]
+            description = Ta QC flag, 0 observation, 1 gap filled
+            long_name = Ta QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = Tair_fqc
+    [[Tair_fsd]]
+        [[[Attr]]]
+            description = Ta MDS gap filled, standard deviation over window
+            long_name = Air temperature
+            statistic_type = standard_deviation
+            units = degC
+        [[[csv]]]
+            name = Tair_fsd
+    [[Tair_fwin]]
+        [[[Attr]]]
+            description = Ta MDS window width
+            long_name = Ta MDS window width
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = Tair_fwin
+    [[Tair_orig]]
+        [[[Attr]]]
+            description = Air temperature, observations
+            long_name = Air temperature
+            standard_name = air_temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = Tair_orig
+    [[Tsoil]]
+        [[[Attr]]]
+            description = Soil temperature
+            long_name = Soil temperature
+            standard_name = soil_temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = Tsoil
+    [[Ustar]]
+        [[[Attr]]]
+            description = Friction velocity
+            long_name = Friction velocity
+            statistic_type = average
+            units = m/s
+        [[[csv]]]
+            name = Ustar
+    [[Ustar_U05_Thres]]
+        [[[Attr]]]
+            description = u* threshold, 5th percentile
+            long_name = u* threshold 5th percentile
+            statistic_type = average
+            units = m/s
+        [[[csv]]]
+            name = Ustar_U05_Thres
+    [[Ustar_U05_fqc]]
+        [[[Attr]]]
+            description = 0 above, 1 below, 4 missing
+            long_name = u* threshold 5th percentile flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = Ustar_U05_fqc
+    [[Ustar_U50_Thres]]
+        [[[Attr]]]
+            description = u* threshold, 50th percentile
+            long_name = u* threshold 50th percentile
+            statistic_type = average
+            units = m/s
+        [[[csv]]]
+            name = Ustar_U50_Thres
+    [[Ustar_U50_fqc]]
+        [[[Attr]]]
+            description = 0 above, 1 below, 4 missing
+            long_name = u* threshold 50th percentile flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = Ustar_U50_fqc
+    [[Ustar_U95_Thres]]
+        [[[Attr]]]
+            description = u* threshold, 95th percentile
+            long_name = u* threshold 95th percentile
+            statistic_type = average
+            units = m/s
+        [[[csv]]]
+            name = Ustar_U95_Thres
+    [[Ustar_U95_fqc]]
+        [[[Attr]]]
+            description = 0 above, 1 below, 4 missing
+            long_name = u* threshold 95th percentile flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = Ustar_U95_fqc
+    [[Ustar_uStar_Thres]]
+        [[[Attr]]]
+            description = u* threshold for year
+            long_name = u* threshold for year
+            statistic_type = average
+            units = m/s
+        [[[csv]]]
+            name = Ustar_uStar_Thres
+    [[Ustar_uStar_fqc]]
+        [[[Attr]]]
+            description = 0 above, 1 below, 4 missing
+            long_name = u* threshold flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = Ustar_uStar_fqc
+    [[VPD]]
+        [[[Attr]]]
+            description = Vapour pressure deficit
+            long_name = Vapour pressure deficit
+            standard_name = water_vapor_saturation_deficit_in_air
+            statistic_type = average
+            units = hPa
+        [[[csv]]]
+            name = VPD
+        [[[Function]]]
+            func = hPa_to_kPa(VPD)
+    [[VPD_f]]
+        [[[Attr]]]
+            description = Vapour pressure deficit, gap filled using MDS
+            long_name = Vapour pressure deficit
+            standard_name = water_vapor_saturation_deficit_in_air
+            statistic_type = average
+            units = hPa
+        [[[csv]]]
+            name = VPD_f
+        [[[Function]]]
+            func = hPa_to_kPa(VPD_f)
+    [[VPD_fall]]
+        [[[Attr]]]
+            description = Vapour pressure deficit, MDS gap filled, average over window
+            long_name = Vapour pressure deficit
+            standard_name = water_vapor_saturation_deficit_in_air
+            statistic_type = average
+            units = hPa
+        [[[csv]]]
+            name = VPD_fall
+        [[[Function]]]
+            func = hPa_to_kPa(VPD_fall)
+    [[VPD_fall_qc]]
+        [[[Attr]]]
+            description = Vapour pressure defcit, QC flag, 0 observation, 1 gap filled
+            long_name = VPD MDS QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = VPD_fall_qc
+    [[VPD_fmeth]]
+        [[[Attr]]]
+            description = VPD MDS gap filling method
+            long_name = VPD MDS method
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = VPD_fmeth
+    [[VPD_fnum]]
+        [[[Attr]]]
+            description = VPD MDS gap filled, number each window
+            long_name = VPD MDS number
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = VPD_fnum
+    [[VPD_fqc]]
+        [[[Attr]]]
+            description = VPD QC flag, 0 observation, 1 gap filled
+            long_name = VPD QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = VPD_fqc
+    [[VPD_fsd]]
+        [[[Attr]]]
+            description = VPD MDS gap filled, standard deviation over window
+            long_name = VPD MDS standard deviation
+            statistic_type = standard_deviation
+            units = hPa
+        [[[csv]]]
+            name = VPD_fsd
+        [[[Function]]]
+            func = hPa_to_kPa(VPD_fsd)
+    [[VPD_fwin]]
+        [[[Attr]]]
+            description = VPD MDS window width
+            long_name = VPD MDS window width
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = VPD_fwin
+    [[VPD_orig]]
+        [[[Attr]]]
+            description = Vapour pressure deficit, observations
+            long_name = Vapour pressure deficit
+            standard_name = water_vapor_saturation_deficit_in_air
+            statistic_type = average
+            units = hPa
+        [[[csv]]]
+            name = VPD_orig
+        [[[Function]]]
+            func = hPa_to_kPa(VPD_orig)
+    [[VPDfromDew]]
+        [[[Attr]]]
+            description = Vapour pressure defcit
+            long_name = Vapour pressure deficit
+            standard_name = water_vapor_saturation_deficit_in_air
+            statistic_type = average
+            units = hPa
+        [[[csv]]]
+            name = VPDfromDew
+        [[[Function]]]
+            func = hPa_to_kPa(VPDfromDew)
+    [[rH]]
+        [[[Attr]]]
+            description = Relative humidity
+            long_name = Relative humidity
+            statistic_type = average
+            units = percent
+        [[[csv]]]
+            name = rH
+
