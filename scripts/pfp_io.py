@@ -520,10 +520,7 @@ def DataFrameToDataStructure(df, l1_info):
         var["Data"] = numpy.ma.masked_values(var["Data"], c.missing_value)
         # set the QC flag to 1 for masked data
         mask = numpy.ma.getmaskarray(var["Data"])
-        try:
-            var["Flag"] = numpy.where(mask == False, zeros, ones)
-        except:
-            print("oi va vey")
+        var["Flag"] = numpy.where(mask == False, zeros, ones)
         var["Attr"] = l1ire["Variables"][label]["Attr"]
         pfp_utils.CreateVariable(ds, var)
     return ds
