@@ -762,12 +762,12 @@ def L6_summary_createseriesdict(ds, l6_info):
         if numpy.ma.count_masked(var["Data"]) != 0:
             sdl["co2"].remove(label)
         else:
-            series_dict["daily"][item] = {}
-            series_dict["cumulative"][item] = {}
-            series_dict["daily"][item]["operator"] = "sum"
-            series_dict["daily"][item]["format"] = "0.00"
-            series_dict["cumulative"][item]["operator"] = "sum"
-            series_dict["cumulative"][item]["format"] = "0.00"
+            series_dict["daily"][label] = {}
+            series_dict["cumulative"][label] = {}
+            series_dict["daily"][label]["operator"] = "sum"
+            series_dict["daily"][label]["format"] = "0.00"
+            series_dict["cumulative"][label]["operator"] = "sum"
+            series_dict["cumulative"][label]["format"] = "0.00"
     sdl["ET"] = [item for item in labels if "ET" in item[0:2]]
     sdl["Precip"] = [item for item in labels if "Precip" in item[0:6]]
     sdl["h2o"] = sdl["ET"]+sdl["Precip"]
@@ -777,8 +777,8 @@ def L6_summary_createseriesdict(ds, l6_info):
         if numpy.ma.count_masked(var["Data"]) != 0:
             sdl["h2o"].remove(label)
         else:
-            series_dict["daily"][item] = {"operator":"sum","format":"0.00"}
-            series_dict["cumulative"][item] = {"operator":"sum","format":"0.00"}
+            series_dict["daily"][label] = {"operator":"sum","format":"0.00"}
+            series_dict["cumulative"][label] = {"operator":"sum","format":"0.00"}
     if "AH" in labels:
         series_dict["daily"]["AH"] = {"operator":"average","format":"0.00"}
     if "CO2" in labels:
