@@ -8708,6 +8708,18 @@ class edit_cfg_L6(QtWidgets.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
+    def add_maxgapdays(self):
+        """ Add MaxGapDays to the [Options] section."""
+        dict_to_add = {"MaxGapDays": "180"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
+    def add_minpercentday(self):
+        """ Add MinPercentDay to the [Options] section."""
+        dict_to_add = {"MinPercentDay": "10"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
     def add_er_variable(self, method):
         """ Add a variable to the EcosystemRespiration section."""
         if method == "SOLO":
@@ -8811,7 +8823,9 @@ class edit_cfg_L6(QtWidgets.QWidget):
     def add_options_section(self):
         """ Add an Options section."""
         self.sections["Options"] = QtGui.QStandardItem("Options")
-        new_options = {"Fsd_threshold": "10", "PlotRawData": "No"}
+        new_options = {"Fsd_threshold": "10", "PlotRawData": "No",
+                       "MaxGapInterpolate": "3", "MaxGapDays": "180",
+                       "MinPercentDay": "10",}
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
@@ -9021,6 +9035,16 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
                     self.context_menu.addAction(self.context_menu.actionAddMaxGapInterpolate)
                     self.context_menu.actionAddMaxGapInterpolate.triggered.connect(self.add_maxgapinterpolate)
+                if "MaxGapDays" not in existing_entries:
+                    self.context_menu.actionAddMaxGapDays = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMaxGapDays.setText("MaxGapDays")
+                    self.context_menu.addAction(self.context_menu.actionAddMaxGapDays)
+                    self.context_menu.actionAddMaxGapDays.triggered.connect(self.add_maxgapdays)
+                if "MinPercentDay" not in existing_entries:
+                    self.context_menu.actionAddMinPercentDay = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMinPercentDay.setText("MinPercentDay")
+                    self.context_menu.addAction(self.context_menu.actionAddMinPercentDay)
+                    self.context_menu.actionAddMinPercentDay.triggered.connect(self.add_minpercentday)
             elif selected_text == "GUI":
                 self.context_menu.actionRemoveGUISection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveGUISection.setText("Remove section")

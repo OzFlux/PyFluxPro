@@ -48,12 +48,18 @@ def do_2dinterpolation(array_2d, tile="no", method="linear"):
     # Define an index that will return all valid data for the array
     index = numpy.where(data_1d != c.missing_value)
     # Do the interpolation
-    grid_z = griddata(data_coords[index], data_1d[index], (coords_x, coords_y), method = 'linear')
-    if tile.lower() == "yes":
-        # Retrieve the central tile
-        array_2d_filled = grid_z[num_y // 3: num_y // 3 * 2, num_x // 3: num_x // 3 * 2]
-    else:
-        array_2d_filled = grid_z
+    try:
+        grid_z = griddata(data_coords[index], data_1d[index], (coords_x, coords_y), method = 'linear')
+        if tile.lower() == "yes":
+            # Retrieve the central tile
+            array_2d_filled = grid_z[num_y // 3: num_y // 3 * 2, num_x // 3: num_x // 3 * 2]
+        else:
+            array_2d_filled = grid_z
+    except ValueError:
+        # The Richie Glitchie!
+        msg = "  2D interpolation failed, most likely no good data"
+        logger.warning(msg)
+        array_2d_filled = array_2d.copy()
     # Check something...
     if WasMA:
         array_2d_filled = numpy.ma.masked_values(array_2d_filled, c.missing_value)
