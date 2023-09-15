@@ -2863,7 +2863,7 @@ def l6_update_cfg_syntax(cfg):
                 cfg2 = cfg[key1][key2]
                 cfg2 = parse_cfg_values(key2, cfg2, strip_list)
                 cfg[key1][key2] = cfg2
-        elif key1 in ["Options"]:
+        elif key1 in ["Imports", "Options"]:
             # no options section in L6 control file yet
             pass
         elif key1 in ["EcosystemRespiration"]:

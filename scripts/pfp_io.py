@@ -1334,10 +1334,11 @@ def TruncateDataStructure(ds, info):
     opt = pfp_utils.get_keyvaluefromcf(info["cfg"], ["Options"], "Truncate", default="No")
     if opt.lower() == "no":
         return
-    msg = " Truncating data structure (" + opt + ")"
-    logger.info(msg)
-    if opt.lower() == "first missing":
-        labels = sorted(list(info["cfg"]["Drivers"].keys()))
+    if ((opt.lower() == "first missing") and (info["cfg"]["level"].lower() == "l4")):
+        for item in ["Variables", "Drivers", "Fluxes"]:
+            if item in list(info["cfg"].keys()):
+                break
+        labels = sorted(list(info["cfg"][item].keys()))
         ts = int(ds.root["Attributes"]["time_step"])
         first_missing_dates = []
         for label in labels:
@@ -1348,6 +1349,8 @@ def TruncateDataStructure(ds, info):
             else:
                 pass
         if len(first_missing_dates) > 0:
+            msg = " Truncating data structure (" + opt + ")"
+            logger.info(msg)
             first_missing_date = min(first_missing_dates)
             last_good_date = first_missing_date - datetime.timedelta(minutes=ts)
             msg = "  All variables truncated to " + last_good_date.strftime("%Y-%m-%d")
@@ -1358,14 +1361,42 @@ def TruncateDataStructure(ds, info):
                 pfp_utils.CreateVariable(ds, var)
             dt = pfp_utils.GetVariable(ds, "DateTime")
             ds.root["Attributes"]["nc_nrecs"] = int(len(dt["Data"]))
+            ds.root["Attributes"]["time_coverage_start"] = str(dt["Data"][0])
             ds.root["Attributes"]["time_coverage_end"] = str(dt["Data"][-1])
         else:
             pass
     elif opt.lower() == "to imports":
-        msg = " Option " + opt + " not implemented yet"
-        logger.warning(msg)
+        if "ImportSeries" not in info:
+            return
+        ldt = pfp_utils.GetVariable(ds, "DateTime")
+        import_labels = list(info["ImportSeries"].keys())
+        start_dates = []
+        end_dates = []
+        for import_label in import_labels:
+            start_dates.append(info["ImportSeries"][import_label]["start"])
+            end_dates.append(info["ImportSeries"][import_label]["end"])
+        start = max(start_dates)
+        end = min(end_dates)
+        if ((start > ldt["Data"][0]) or (end < ldt["Data"][-1])):
+            msg = " Truncating data structure (" + opt + ")"
+            logger.info(msg)
+            msg = "  All variables truncated to " + start.strftime("%Y-%m-%d")
+            msg += " and " + end.strftime("%Y-%m-%d")
+            logger.info(msg)
+            labels = sorted(list(ds.root["Variables"].keys()))
+            # do DateTime last because it is used to pick dates by GetVariable()
+            if "DateTime" in labels:
+                labels.remove("DateTime")
+            for label in labels:
+                var = pfp_utils.GetVariable(ds, label, start=start, end=end)
+                pfp_utils.CreateVariable(ds, var)
+            dt = pfp_utils.GetVariable(ds, "DateTime", start=start, end=end)
+            pfp_utils.CreateVariable(ds, dt)
+            ds.root["Attributes"]["nc_nrecs"] = int(len(dt["Data"]))
+            ds.root["Attributes"]["time_coverage_start"] = str(dt["Data"][0])
+            ds.root["Attributes"]["time_coverage_end"] = str(dt["Data"][-1])
     else:
-        msg = "Unrecognised truncate option (" + opt + ")"
+        msg = "Unrecognised truncate option (" + opt + "), no action taken ..."
         logger.warning(msg)
     return
 
