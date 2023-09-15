@@ -3454,7 +3454,7 @@ def xl_write_data(xl_sheet, dsg, labels=None, xlCol=0):
         xl_sheet.write(1, xlCol, item)
         d_xf = xlwt.easyxf(num_format_str=dsg["Variables"][item]["Attr"]["format"])
         if numpy.ma.isMA(dsg["Variables"][item]["Data"]):
-            tmp = numpy.ma.filled(dsg["Variables"][item]["Data"],fill_value=numpy.NaN)
+            tmp = numpy.ma.filled(dsg["Variables"][item]["Data"],fill_value=c.missing_value)
         else:
             tmp = dsg["Variables"][item]["Data"]
         for j in range(nrows):

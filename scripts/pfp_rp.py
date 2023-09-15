@@ -412,7 +412,7 @@ def GetERFromFco2(ds, l6_info):
         ER["Attr"][item] = daynight_indicator["attr"][item]
     pfp_utils.CreateVariable(ds, ER)
     pc1 = int((100*float(numpy.ma.count(ER["Data"]))/float(len(idx))) + 0.5)
-    pc2 = int((100*float(numpy.ma.count(ER["Data"]))/float(ER["Data"].size)) + 0.5)
+    pc2 = int((100*float(numpy.ma.count(ER["Data"]))/float(len(ER["Data"]))) + 0.5)
     msg = " ER contains " + str(pc1) + "% of all nocturnal data ("
     msg += str(pc2) + "% of all data)"
     logger.info(msg)
@@ -429,6 +429,8 @@ def L6_summary(ds, l6_info):
     logger.info(" Doing the L6 summary")
     # set up a dictionary of lists
     series_dict = L6_summary_createseriesdict(ds, l6_info)
+    # mask long gaps
+    L6_summary_mask_long_gaps(ds, l6_info)
     # open the Excel workbook
     out_name = os.path.join(l6_info["Files"]["file_path"],
                             l6_info["Files"]["out_filename"])
@@ -484,43 +486,43 @@ def L6_summary(ds, l6_info):
     pfp_io.nc_write_globalattributes(nc_annual, ds, flag_defs=False)
     pfp_io.nc_write_group(nc_annual, ds_summary, "Annual")
     nc_annual.close()
-    # cumulative totals
-    ts = int(float(ds.root["Attributes"]["time_step"]))
-    dt = pfp_utils.GetVariable(ds, "DateTime")
-    cdt = dt["Data"] - datetime.timedelta(minutes=ts)
-    years = sorted(list(set([ldt.year for ldt in cdt])))
-    # loop over individual years
-    for year in years:
-        dss = L6_summary_cumulative(ds, series_dict, year=year)
-        setattr(ds_summary, "Cumulative_"+str(year), dss.Cumulative)
-        nc_group = nc_summary.createGroup("Cumulative_"+str(year))
-        pfp_io.nc_write_group(nc_group, ds_summary, "Cumulative_"+str(year))
-        nrecs = len(dss.Cumulative["Variables"]["DateTime"]["Data"])
-        if nrecs < 65530:
-            sheet = "Cumulative(" + str(year) + ")"
-            group = "Cumulative_" + str(year)
-            L6_summary_write_xlfile(xl_file, sheet, ds_summary, group=group)
-        else:
-            msg = "L6 cumulative: too many rows for .xls workbook, skipping "+year
-            logger.warning(msg)
-    # all years
-    dss = L6_summary_cumulative(ds, series_dict, year="all")
-    setattr(ds_summary, "Cumulative_all", dss.Cumulative)
-    nc_group = nc_summary.createGroup("Cumulative_all")
-    pfp_io.nc_write_group(nc_group, ds_summary, "Cumulative_all")
+    ## cumulative totals
+    #ts = int(float(ds.root["Attributes"]["time_step"]))
+    #dt = pfp_utils.GetVariable(ds, "DateTime")
+    #cdt = dt["Data"] - datetime.timedelta(minutes=ts)
+    #years = sorted(list(set([ldt.year for ldt in cdt])))
+    ## loop over individual years
+    #for year in years:
+        #dss = L6_summary_cumulative(ds, series_dict, year=year)
+        #setattr(ds_summary, "Cumulative_"+str(year), dss.Cumulative)
+        #nc_group = nc_summary.createGroup("Cumulative_"+str(year))
+        #pfp_io.nc_write_group(nc_group, ds_summary, "Cumulative_"+str(year))
+        #nrecs = len(dss.Cumulative["Variables"]["DateTime"]["Data"])
+        #if nrecs < 65530:
+            #sheet = "Cumulative(" + str(year) + ")"
+            #group = "Cumulative_" + str(year)
+            #L6_summary_write_xlfile(xl_file, sheet, ds_summary, group=group)
+        #else:
+            #msg = "L6 cumulative: too many rows for .xls workbook, skipping "+year
+            #logger.warning(msg)
+    ## all years
+    #dss = L6_summary_cumulative(ds, series_dict, year="all")
+    #setattr(ds_summary, "Cumulative_all", dss.Cumulative)
+    #nc_group = nc_summary.createGroup("Cumulative_all")
+    #pfp_io.nc_write_group(nc_group, ds_summary, "Cumulative_all")
     # close the summary netCDF file
     nc_summary.close()
-    # separate cumulative file
-    nc_cumulative = pfp_io.nc_open_write(out_name.replace(".nc", "_Cumulative.nc"))
-    pfp_io.nc_write_globalattributes(nc_cumulative, ds, flag_defs=False)
-    pfp_io.nc_write_group(nc_cumulative, ds_summary, "Cumulative_all")
-    nc_cumulative.close()
+    ## separate cumulative file
+    #nc_cumulative = pfp_io.nc_open_write(out_name.replace(".nc", "_Cumulative.nc"))
+    #pfp_io.nc_write_globalattributes(nc_cumulative, ds, flag_defs=False)
+    #pfp_io.nc_write_group(nc_cumulative, ds_summary, "Cumulative_all")
+    #nc_cumulative.close()
     # close the Excel workbook
     xl_file.save(xl_name)
     # plot the daily averages and sums
     L6_summary_plotdaily(ds_summary, l6_info)
-    # plot the cumulative sums
-    L6_summary_plotcumulative(ds_summary, l6_info)
+    ## plot the cumulative sums
+    #L6_summary_plotcumulative(ds_summary, l6_info)
     return
 
 def L6_summary_plotdaily(ds_summary, l6_info):
@@ -915,6 +917,101 @@ def L6_summary_write_xlfile(xl_file, sheet_name, ds, group=None, labels=None):
     pfp_io.xl_write_data(xl_sheet, dsg, labels=labels)
     return
 
+def L6_summary_mask_long_gaps(ds, info):
+    """
+    Purpose:
+     Mask gap filled variables where the gap is longer than a user specified
+     number of days (default is 180).
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: September 2023
+    """
+    opt = pfp_utils.get_keyvaluefromcf(info, ["Options"], "MaxGapDays", default="180")
+    max_gap_days = int(opt)
+    if max_gap_days == 0:
+        return
+    opt = pfp_utils.get_keyvaluefromcf(info, ["Options"], "MinPercentDay", default="10")
+    min_day_percent = int(opt)
+    msg = " Masking gaps longer than " + str(max_gap_days)
+    msg += " days (<" + str(min_day_percent) + "% per day)"
+    logger.info(msg)
+    long_gap_code = 603
+    # get the time step
+    ts = int(ds.root["Attributes"]["time_step"])
+    # get the number of time steps per day
+    ntsperday = int(24*60/ts)
+    # get the start and end indices of whole days
+    vdt = pfp_utils.GetVariable(ds, "DateTime")
+    si = pfp_utils.GetDateIndex(vdt["DateTime"], vdt["DateTime"][0], ts=ts, match="startnextday")
+    ei = pfp_utils.GetDateIndex(vdt["DateTime"], vdt["DateTime"][-1], ts=ts, match="endpreviousday")
+    # get the number of days
+    ndays = int(len(vdt["Data"][si:ei+1])/ntsperday)
+    # specify the dependencies
+    labels = list(ds.root["Variables"].keys())
+    dependencies = {"Fco2": ["NEE", "NEP", "GPP", "ER"], "Fe": ["ET"]}
+    dependents = []
+    for key in dependencies.keys():
+        deps = [l for l in labels if l.split("_")[0] in list(dependencies[key])]
+        dependencies[key] = deps
+        dependents = dependents + deps
+    labels = [l for l in labels if l not in dependents]
+    for label in labels:
+        # do the variable first
+        var = pfp_utils.GetVariable(ds, label)
+        # check to see if this variable has been gap filled
+        if not numpy.any(numpy.unique(var["Flag"]) > 400):
+            # skip this variable if it has not been gap filled
+            continue
+        # reshape the data into a 2D array with days as rows, hours as columns
+        daily = {"Data": var["Data"][si:ei+1].reshape(ndays, ntsperday),
+                 "Flag": var["Flag"][si:ei+1].reshape(ndays, ntsperday),
+                 "DateTime": var["DateTime"][si:ei+1].reshape(ndays, ntsperday)}
+        # get the daily dates
+        dates = daily["DateTime"][:, 0]
+        # get the percentage of good data per day
+        percent = 100*numpy.sum(daily["Flag"] == 0, axis=1)/ntsperday
+        # get the gap durations
+        cond = numpy.zeros(len(percent))
+        idx = numpy.where(percent <= min_day_percent)[0]
+        cond[idx] = 1
+        gap_start_end = pfp_utils.contiguous_regions(cond)
+        gap_duration = gap_start_end[:, 1] - gap_start_end[:, 0]
+        # indices of gaps longer than maximum gap length
+        idx = numpy.where(gap_duration >= max_gap_days)[0]
+        # check to see if this variable has been filled over the maximum gap length
+        if len(idx) > 0:
+            # if it has, loop over the long gaps
+            for i in idx:
+                # get the start and end date of the long gap
+                start = dates[gap_start_end[i, 0]]
+                end = dates[gap_start_end[i, 1]]
+                # mask the data for the long gap
+                condition =  ((var["DateTime"] >= start) & (var["DateTime"] <= end))
+                var["Data"] = numpy.ma.masked_where(condition, var["Data"])
+                # set the QC flag
+                idxf = numpy.where(condition)[0]
+                var["Flag"][idxf] = int(long_gap_code)
+            # put the modified variable back in the data structure
+            pfp_utils.CreateVariable(ds, var)
+            # check to see if this variable has any dependencies
+            if label in list(dependencies.keys()):
+                # if it has, loop over the dependencies
+                for deplab in dependencies[label]:
+                    # get the dependent variable
+                    depvar = pfp_utils.GetVariable(ds, deplab)
+                    # mask dependent variable where the variable flag is equal to long_gap_code
+                    depvar["Data"] = numpy.ma.masked_where(var["Flag"] == long_gap_code,
+                                                           depvar["Data"])
+                    # set the QC flag for the dependent variable
+                    idx = numpy.where(var["Flag"] == long_gap_code)[0]
+                    depvar["Flag"][idx] = int(long_gap_code)
+                    # put the modified variable back in the data structure
+                    pfp_utils.CreateVariable(ds, depvar)
+        else:
+            pass
+    return
+
 def L6_summary_monthly(ds, series_dict):
     """
     Purpose:
@@ -973,10 +1070,16 @@ def L6_summary_monthly(ds, series_dict):
             else:
                 mdv[item]["Attr"]["units"] = variable["Attr"]["units"]
             if series_dict["monthly"][item]["operator"].lower() == "average":
-                val = numpy.ma.average(variable["Data"])
+                if numpy.ma.count_masked(variable["Data"]) == 0:
+                    val = numpy.ma.average(variable["Data"])
+                else:
+                    val = c.missing_value
                 mdv[item]["Data"] = numpy.append(mdv[item]["Data"], val)
             elif series_dict["monthly"][item]["operator"].lower()=="sum":
-                val = numpy.ma.sum(variable["Data"])
+                if numpy.ma.count_masked(variable["Data"]) == 0:
+                    val = numpy.ma.sum(variable["Data"])
+                else:
+                    val = c.missing_value
                 mdv[item]["Data"] = numpy.append(mdv[item]["Data"], val)
                 mdv[item]["Attr"]["units"] = mdv[item]["Attr"]["units"] + "/month"
             else:
@@ -1064,9 +1167,15 @@ def L6_summary_annual(ds, series_dict):
             else:
                 adv[item]["Attr"]["units"] = variable["Attr"]["units"]
             if series_dict["annual"][item]["operator"].lower()=="average":
-                adv[item]["Data"][i] = numpy.ma.average(variable["Data"])
+                if numpy.ma.count_masked(variable["Data"]) == 0:
+                    adv[item]["Data"][i] = numpy.ma.average(variable["Data"])
+                else:
+                    adv[item]["Data"][i] = c.missing_value
             elif series_dict["annual"][item]["operator"].lower()=="sum":
-                adv[item]["Data"][i] = numpy.ma.sum(variable["Data"])
+                if numpy.ma.count_masked(variable["Data"]) == 0:
+                    adv[item]["Data"][i] = numpy.ma.sum(variable["Data"])
+                else:
+                    adv[item]["Data"][i] = c.missing_value
                 adv[item]["Attr"]["units"] = adv[item]["Attr"]["units"]+"/year"
             else:
                 msg = "L6_summary_annual: unrecognised operator"
