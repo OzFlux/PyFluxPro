@@ -30,6 +30,10 @@ def GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info, called_by):
     '''
     # set the default return code
     ds4.info["returncodes"]["message"] = "normal"
+    # update the start and end dates
+    ldt = ds4.root["Variables"]["DateTime"]["Data"]
+    l4_info[called_by]["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    l4_info[called_by]["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
     # get the alternate data information
     if l4_info[called_by]["info"]["call_mode"] == "interactive":
         # put up a plot of the data coverage at L3

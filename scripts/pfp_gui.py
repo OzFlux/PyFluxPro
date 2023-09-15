@@ -7716,9 +7716,9 @@ class edit_cfg_L5(QtWidgets.QWidget):
         self.model.appendRow(self.sections["SummaryPlots"])
         self.update_tab_text()
 
-    def add_truncatetoimports(self):
-        """ Add TruncateToImports to the [Options] section."""
-        dict_to_add = {"TruncateToImports": "Yes"}
+    def add_truncate(self):
+        """ Add Truncate to the [Options] section."""
+        dict_to_add = {"Truncate": "No"}
         # add the subsection
         self.add_subsection(dict_to_add)
 
@@ -7922,12 +7922,12 @@ class edit_cfg_L5(QtWidgets.QWidget):
         level = self.get_level_selected_item()
         # initialise logical for inserting a separator
         add_separator = False
+        # get a list of the section headings at the root level
+        self.section_headings = []
+        root = self.model.invisibleRootItem()
+        for i in range(root.rowCount()):
+            self.section_headings.append(str(root.child(i).text()))
         if level == 0:
-            # get a list of the section headings at the root level
-            self.section_headings = []
-            root = self.model.invisibleRootItem()
-            for i in range(root.rowCount()):
-                self.section_headings.append(str(root.child(i).text()))
             # sections with only 1 level
             if selected_text == "Files":
                 # get a list of existing entries in this section
@@ -8012,11 +8012,11 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddFsd_threshold.setText("Fsd_threshold")
                     self.context_menu.addAction(self.context_menu.actionAddFsd_threshold)
                     self.context_menu.actionAddFsd_threshold.triggered.connect(self.add_fsdthreshold)
-                if "TruncateToImports" not in existing_entries:
-                    self.context_menu.actionAddTruncateToImports = QtWidgets.QAction(self)
-                    self.context_menu.actionAddTruncateToImports.setText("TruncateToImports")
-                    self.context_menu.addAction(self.context_menu.actionAddTruncateToImports)
-                    self.context_menu.actionAddTruncateToImports.triggered.connect(self.add_truncatetoimports)
+                if "Truncate" not in existing_entries:
+                    self.context_menu.actionAddTruncate = QtWidgets.QAction(self)
+                    self.context_menu.actionAddTruncate.setText("Truncate")
+                    self.context_menu.addAction(self.context_menu.actionAddTruncate)
+                    self.context_menu.actionAddTruncate.triggered.connect(self.add_truncate)
                 if "KeepIntermediateSeries" not in existing_entries:
                     self.context_menu.actionAddKeepIntermediateSeries = QtWidgets.QAction(self)
                     self.context_menu.actionAddKeepIntermediateSeries.setText("KeepIntermediateSeries")
@@ -8147,17 +8147,18 @@ class edit_cfg_L5(QtWidgets.QWidget):
                         self.context_menu.actionChangeKeepIntermediateSeries.setText("No")
                         self.context_menu.addAction(self.context_menu.actionChangeKeepIntermediateSeries)
                         self.context_menu.actionChangeKeepIntermediateSeries.triggered.connect(lambda:self.change_selected_text("No"))
-                elif (selected_item.column() == 1) and (key == "TruncateToImports"):
-                    if selected_text != "Yes":
-                        self.context_menu.actionChangeTruncateToImports = QtWidgets.QAction(self)
-                        self.context_menu.actionChangeTruncateToImports.setText("Yes")
-                        self.context_menu.addAction(self.context_menu.actionChangeTruncateToImports)
-                        self.context_menu.actionChangeTruncateToImports.triggered.connect(lambda:self.change_selected_text("Yes"))
+                elif (selected_item.column() == 1) and (key in ["Truncate"]):
+                    if selected_text != "To imports":
+                        if "Imports" in self.section_headings:
+                            self.context_menu.actionChangeTruncate1 = QtWidgets.QAction(self)
+                            self.context_menu.actionChangeTruncate1.setText("To imports")
+                            self.context_menu.addAction(self.context_menu.actionChangeTruncate1)
+                            self.context_menu.actionChangeTruncate1.triggered.connect(lambda:self.change_selected_text("To imports"))
                     if selected_text != "No":
-                        self.context_menu.actionChangeTruncateToImports = QtWidgets.QAction(self)
-                        self.context_menu.actionChangeTruncateToImports.setText("No")
-                        self.context_menu.addAction(self.context_menu.actionChangeTruncateToImports)
-                        self.context_menu.actionChangeTruncateToImports.triggered.connect(lambda:self.change_selected_text("No"))
+                        self.context_menu.actionChangeTruncate2 = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeTruncate2.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeTruncate2)
+                        self.context_menu.actionChangeTruncate2.triggered.connect(lambda:self.change_selected_text("No"))
                 elif (selected_item.column() == 1) and (key == "TurbulenceFilter"):
                     existing_entry = str(parent.child(selected_item.row(),1).text())
                     for item in ["ustar (basic)", "ustar (EvGB)", "ustar (FluxNet)",
@@ -8825,7 +8826,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
         self.sections["Options"] = QtGui.QStandardItem("Options")
         new_options = {"Fsd_threshold": "10", "PlotRawData": "No",
                        "MaxGapInterpolate": "3", "MaxGapDays": "180",
-                       "MinPercentDay": "10",}
+                       "MinPercentDay": "10", "Truncate": "No"}
         for key in new_options:
             value = new_options[key]
             child0 = QtGui.QStandardItem(key)
@@ -8890,6 +8891,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
             subsection.appendRow(subsubsection)
         self.update_tab_text()
 
+    def add_truncate(self):
+        """ Add Truncate to the [Options] section."""
+        dict_to_add = {"Truncate": "No"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
     def browse_file_path(self):
         """ Browse for the data file path."""
         # get the index of the selected item
@@ -8910,6 +8917,27 @@ class edit_cfg_L6(QtWidgets.QWidget):
             new_dir = os.path.join(tmp_dir, "")
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
+
+    def browse_imports_file(self):
+        """ Browse for the imports file path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # set the file filter
+        file_filter = "*.nc"
+        # get the file path from the selected item
+        file_path = os.path.split(str(idx.data()))[0]
+        file_path = os.path.join(file_path,"")
+        # dialog for open file
+        new_file = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an Imports file ...",
+                                                     directory=file_path, filter=file_filter)[0]
+        # update the model
+        if len(str(new_file)) > 0:
+            new_file = QtCore.QDir.toNativeSeparators(str(new_file))
+            parent.child(selected_item.row(), 1).setText(new_file)
 
     def browse_input_file(self):
         """ Browse for the input data file path."""
@@ -8971,26 +8999,14 @@ class edit_cfg_L6(QtWidgets.QWidget):
         level = self.get_level_selected_item()
         # initialise logical for inserting a separator
         add_separator = False
+        # get a list of the section headings at the root level
+        self.section_headings = []
+        root = self.model.invisibleRootItem()
+        for i in range(root.rowCount()):
+            self.section_headings.append(str(root.child(i).text()))
         if level == 0:
             add_separator = False
             selected_text = str(idx.data())
-            # get a list of the section headings at the root level
-            self.section_headings = []
-            root = self.model.invisibleRootItem()
-            for i in range(root.rowCount()):
-                self.section_headings.append(str(root.child(i).text()))
-            #if "Imports" not in self.section_headings and selected_text == "Files":
-                #self.context_menu.actionAddImportsSection = QtWidgets.QAction(self)
-                #self.context_menu.actionAddImportsSection.setText("Add Imports section")
-                #self.context_menu.addAction(self.context_menu.actionAddImportsSection)
-                #self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
-                #add_separator = True
-            if "Options" not in self.section_headings and selected_text == "Files":
-                self.context_menu.actionAddOptionsSection = QtWidgets.QAction(self)
-                self.context_menu.actionAddOptionsSection.setText("Add Options section")
-                self.context_menu.addAction(self.context_menu.actionAddOptionsSection)
-                self.context_menu.actionAddOptionsSection.triggered.connect(self.add_options_section)
-                add_separator = True
             if selected_text == "Files":
                 # get a list of existing entries in this section
                 existing_entries = self.get_existing_entries()
@@ -9015,6 +9031,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     self.context_menu.actionAddImportsSection.setText("Add Imports section")
                     self.context_menu.addAction(self.context_menu.actionAddImportsSection)
                     self.context_menu.actionAddImportsSection.triggered.connect(self.add_imports_section)
+                    add_separator = True
+                if "Options" not in self.section_headings:
+                    self.context_menu.actionAddOptionsSection = QtWidgets.QAction(self)
+                    self.context_menu.actionAddOptionsSection.setText("Add Options section")
+                    self.context_menu.addAction(self.context_menu.actionAddOptionsSection)
+                    self.context_menu.actionAddOptionsSection.triggered.connect(self.add_options_section)
                     add_separator = True
             elif selected_text == "Imports":
                 self.context_menu.actionAddImportsVariable = QtWidgets.QAction(self)
@@ -9045,6 +9067,11 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     self.context_menu.actionAddMinPercentDay.setText("MinPercentDay")
                     self.context_menu.addAction(self.context_menu.actionAddMinPercentDay)
                     self.context_menu.actionAddMinPercentDay.triggered.connect(self.add_minpercentday)
+                if "Truncate" not in existing_entries and "Imports" in self.section_headings:
+                    self.context_menu.actionAddTruncate = QtWidgets.QAction(self)
+                    self.context_menu.actionAddTruncate.setText("Truncate")
+                    self.context_menu.addAction(self.context_menu.actionAddTruncate)
+                    self.context_menu.actionAddTruncate.triggered.connect(self.add_truncate)
             elif selected_text == "GUI":
                 self.context_menu.actionRemoveGUISection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveGUISection.setText("Remove section")
@@ -9104,7 +9131,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.context_menu.actionRemoveGlobalAttribute.triggered.connect(self.remove_item)
             elif str(parent.text()) == "Options":
                 key = str(parent.child(selected_item.row(),0).text())
-                if (selected_item.column() == 1) and (key in ["PlotRawData"]):
+                if (selected_item.column() == 0):
+                    self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
+                    self.context_menu.actionRemoveOption.setText("Remove option")
+                    self.context_menu.addAction(self.context_menu.actionRemoveOption)
+                    self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
+                elif (selected_item.column() == 1) and (key in ["PlotRawData"]):
                     if selected_text != "Yes":
                         self.context_menu.actionChangeOption = QtWidgets.QAction(self)
                         self.context_menu.actionChangeOption.setText("Yes")
@@ -9115,13 +9147,34 @@ class edit_cfg_L6(QtWidgets.QWidget):
                         self.context_menu.actionChangeOption.setText("No")
                         self.context_menu.addAction(self.context_menu.actionChangeOption)
                         self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("No"))
+                elif (selected_item.column() == 1) and (key in ["Truncate"]):
+                    if selected_text != "To imports":
+                        if "Imports" in self.section_headings:
+                            self.context_menu.actionChangeTruncate1 = QtWidgets.QAction(self)
+                            self.context_menu.actionChangeTruncate1.setText("To imports")
+                            self.context_menu.addAction(self.context_menu.actionChangeTruncate1)
+                            self.context_menu.actionChangeTruncate1.triggered.connect(lambda:self.change_selected_text("To imports"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeTruncate2 = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeTruncate2.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeTruncate2)
+                        self.context_menu.actionChangeTruncate2.triggered.connect(lambda:self.change_selected_text("No"))
             elif (str(parent.text()) == "EcosystemRespiration") and (selected_item.column() == 0):
                 self.context_menu.actionRemoveERVariable = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveERVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveERVariable)
                 self.context_menu.actionRemoveERVariable.triggered.connect(self.remove_er_variable)
         elif level == 2:
-            pass
+            # sections with 3 levels
+            parent = selected_item.parent()
+            grand_parent = selected_item.parent().parent()
+            if str(grand_parent.text() == "Imports"):
+                key = str(parent.child(selected_item.row(),0).text())
+                if (key == "file_name") and (selected_item.column() == 1):
+                    self.context_menu.actionBrowseImportsFile = QtWidgets.QAction(self)
+                    self.context_menu.actionBrowseImportsFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseImportsFile)
+                    self.context_menu.actionBrowseImportsFile.triggered.connect(self.browse_imports_file)
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
@@ -9175,7 +9228,8 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
                     cfg[key1][key2] = val2
-            elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity", "GUI"]:
+            elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity",
+                          "Imports", "GUI"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
@@ -9286,7 +9340,8 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     child1 = QtGui.QStandardItem(val)
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
-            elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity", "GUI"]:
+            elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity",
+                          "Imports", "GUI"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 self.sections[key1].setEditable(False)

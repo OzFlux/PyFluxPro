@@ -334,8 +334,13 @@ def do_file_split_browse_input_filename(ui):
     ui.info["input_file_path"] = input_file_path
     ui.lineEdit_InputFileName.setText(os.path.basename(input_file_path))
     ncfile = netCDF4.Dataset(input_file_path, 'r')
-    ui.label_FileStartDate_value.setText(ncfile.getncattr("time_coverage_start"))
-    ui.label_FileEndDate_value.setText(ncfile.getncattr("time_coverage_end"))
+    gattrs = ncfile.ncattrs()
+    for item in ["start_date", "start_datetime", "time_coverage_start"]:
+        if item in gattrs:
+            ui.label_FileStartDate_value.setText(ncfile.getncattr(item))
+    for item in ["end_date", "end_datetime", "time_coverage_end"]:
+        if item in gattrs:
+            ui.label_FileEndDate_value.setText(ncfile.getncattr(item))
     ncfile.close()
 def do_file_split_browse_output_filename(ui):
     if "input_file_path" in ui.info:

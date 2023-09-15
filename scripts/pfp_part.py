@@ -216,11 +216,13 @@ class partition(object):
                 if result.success:
                     # confidence interval may fail so we wrap it in a try...except block
                     try:
-                        E0_se = (result.conf_interval()['Eo'][4][1] -
-                                 result.conf_interval()['Eo'][2][1]) / 2
-                        rb_se = (result.conf_interval()['rb'][4][1] -
-                                 result.conf_interval()['rb'][2][1]) / 2
-                        self.results["E0"][n]["E0_se"] = E0_se
+                        #E0_se = (result.conf_interval()['Eo'][4][1] -
+                                 #result.conf_interval()['Eo'][2][1]) / 2
+                        #rb_se = (result.conf_interval()['rb'][4][1] -
+                                 #result.conf_interval()['rb'][2][1]) / 2
+                        #self.results["E0"][n]["E0_se"] = E0_se
+                        E0_se = result.params["Eo"].stderr
+                        rb_se = result.params["rb"].stderr
                         self.results["E0"][n]["rb_se"] = rb_se
                         if ((50 < result.params['Eo'].value < 400) and
                             (E0_se < result.params['Eo'].value / 2.0)):

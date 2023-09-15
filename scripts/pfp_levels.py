@@ -96,7 +96,7 @@ def l3qc(cf, ds2):
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds3, "L3")
     # check to see if we have any imports
-    pfp_gf.ImportSeries(cf,ds3)
+    #pfp_gf.ImportSeries(cf,ds3)
     # apply linear corrections to the data
     pfp_ck.do_linear(cf,ds3)
     # parse the control file for information on how the user wants to do the gap filling
@@ -224,15 +224,13 @@ def l4qc(main_gui, cf, ds3):
         return ds4
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds4, "L4")
-    # check to see if we have any imports
-    pfp_gf.ImportSeries(cf, ds4)
-    # re-apply the quality control checks (range, diurnal and rules)
-    pfp_ck.do_qcchecks(cf, ds4)
-    # now do the meteorological driver gap filling
     # parse the control file for information on how the user wants to do the gap filling
     l4_info = pfp_gf.ParseL4ControlFile(cf, ds4)
-    if ds4.info["returncodes"]["value"] != 0:
-        return ds4
+    # check to see if we have any imports
+    pfp_gf.ImportSeries(ds4, l4_info)
+    # re-apply the quality control checks (range, diurnal and rules)
+    #pfp_ck.do_qcchecks(cf, ds4)
+    # now do the meteorological driver gap filling
     # *** start of the section that does the gap filling of the drivers ***
     # fill short gaps using interpolation
     pfp_gf.GapFillUsingInterpolation(cf, ds4)
@@ -280,15 +278,12 @@ def l5qc(main_gui, cf, ds4):
     pfp_utils.UpdateGlobalAttributes(cf, ds5, "L5")
     # parse the control file for information on how the user wants to do the gap filling
     l5_info = pfp_gf.ParseL5ControlFile(cf, ds5)
-    if ds5.info["returncodes"]["value"] != 0:
-        return ds5
     # check to see if we have any imports
-    pfp_gf.ImportSeries(cf, ds5)
-    # re-apply the quality control checks (range, diurnal and rules)
-    pfp_ck.do_qcchecks(cf, ds5)
+    pfp_gf.ImportSeries(ds5, l5_info)
+    # truncate data structure if requested
+    pfp_io.TruncateDataStructure(ds5, l5_info)
+    # check for missing data in the drivers
     pfp_gf.CheckL5Drivers(ds5, l5_info)
-    if ds5.info["returncodes"]["value"] != 0:
-        return ds5
     # now do the flux gap filling methods
     # *** start of the section that does the gap filling of the fluxes ***
     pfp_gf.CheckGapLengths(cf, ds5, l5_info)
@@ -340,7 +335,9 @@ def l6qc(main_gui, cf, ds5):
     # parse the control file
     l6_info = pfp_rp.ParseL6ControlFile(cf, ds6)
     # check to see if we have any imports
-    pfp_gf.ImportSeries(cf, ds6)
+    pfp_gf.ImportSeries(ds6, l6_info)
+    # truncate data structure if requested
+    pfp_io.TruncateDataStructure(ds6, l6_info)
     # check units of Fco2
     pfp_utils.CheckFco2Units(ds6, "umol/m^2/s", convert_units=True)
     # get ER from the observed Fco2

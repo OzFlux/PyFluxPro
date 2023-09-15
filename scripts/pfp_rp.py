@@ -329,6 +329,10 @@ def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     if called_by not in l6_info:
         return
     l6_info["Options"]["called_by"] = called_by
+    # update the start and end dates
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
+    l6_info[called_by]["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    l6_info[called_by]["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
     if l6_info[called_by]["info"]["call_mode"].lower() == "interactive":
         # call the ERUsingSOLO GUI
         pfp_gfSOLO.gfSOLO_gui(main_gui, ds, l6_info, called_by)
@@ -1255,7 +1259,7 @@ def L6_summary_cumulative(ds, series_dict, year="all"):
                 cdv[item]["Attr"][attr] = variable["Attr"][attr]
     return dsc
 
-def ParseL6ControlFile(cf, ds):
+def ParseL6ControlFile(cfg, ds):
     """
     Purpose:
      Parse the L6 control file.
@@ -1266,6 +1270,7 @@ def ParseL6ControlFile(cf, ds):
     """
     # create the L6 information dictionary
     l6_info = {}
+    l6_info["cfg"] = copy.deepcopy(cfg)
     # summary section
     l6_info["Summary"] = {"EcosystemRespiration":[],
                           "NetEcosystemExchange": [],
@@ -1273,40 +1278,40 @@ def ParseL6ControlFile(cf, ds):
     # merge section
     l6_info["MergeSeries"] = {"standard": {}}
     # propagate the ['Files'] section
-    l6_info["Files"] = copy.deepcopy(cf["Files"])
+    l6_info["Files"] = copy.deepcopy(cfg["Files"])
     # propagate the ['Options'] section
-    l6_info["Options"] = copy.deepcopy(cf["Options"])
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Fsd_threshold", default=10)
+    l6_info["Options"] = copy.deepcopy(cfg["Options"])
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "Fsd_threshold", default=10)
     l6_info["Options"]["noct_threshold"] = int(float(opt))
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ConvertToPhotons", default=True)
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "ConvertToPhotons", default=True)
     l6_info["Options"]["convert_to_photons"] = opt
     l6_info["Options"]["plot_raw_data"] = False
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "PlotRawData", default="No")
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "PlotRawData", default="No")
     if opt.lower() == "yes":
         l6_info["Options"]["plot_raw_data"] = True
     # some useful global attributes
     l6_info["Global"] = {"site_name": ds.root["Attributes"]["site_name"],
                          "time_step": int(float(ds.root["Attributes"]["time_step"]))}
     # add key for suppressing output of intermediate variables e.g. Ta_aws
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
     l6_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
-    if "EcosystemRespiration" in list(cf.keys()):
-        l6_info["EcosystemRespiration"] = copy.deepcopy(cf["EcosystemRespiration"])
-        for output in list(cf["EcosystemRespiration"].keys()):
-            if "ERUsingSOLO" in list(cf["EcosystemRespiration"][output].keys()):
-                rpSOLO_createdict(cf, ds, l6_info, output, "ERUsingSOLO", 610)
-            if "ERUsingLloydTaylor" in list(cf["EcosystemRespiration"][output].keys()):
-                rp_createdict(cf, ds, l6_info, output, "ERUsingLloydTaylor", 620)
-            if "ERUsingLasslop" in list(cf["EcosystemRespiration"][output].keys()):
-                rp_createdict(cf, ds, l6_info, output, "ERUsingLasslop", 630)
-    if "NetEcosystemExchange" in list(cf.keys()):
+    if "EcosystemRespiration" in list(cfg.keys()):
+        l6_info["EcosystemRespiration"] = copy.deepcopy(cfg["EcosystemRespiration"])
+        for output in list(cfg["EcosystemRespiration"].keys()):
+            if "ERUsingSOLO" in list(cfg["EcosystemRespiration"][output].keys()):
+                rpSOLO_createdict(cfg, ds, l6_info, output, "ERUsingSOLO", 610)
+            if "ERUsingLloydTaylor" in list(cfg["EcosystemRespiration"][output].keys()):
+                rp_createdict(cfg, ds, l6_info, output, "ERUsingLloydTaylor", 620)
+            if "ERUsingLasslop" in list(cfg["EcosystemRespiration"][output].keys()):
+                rp_createdict(cfg, ds, l6_info, output, "ERUsingLasslop", 630)
+    if "NetEcosystemExchange" in list(cfg.keys()):
         l6_info["NetEcosystemExchange"] = {}
-        for output in list(cf["NetEcosystemExchange"].keys()):
-            rpNEE_createdict(cf, ds, l6_info["NetEcosystemExchange"], output)
-    if "GrossPrimaryProductivity" in list(cf.keys()):
+        for output in list(cfg["NetEcosystemExchange"].keys()):
+            rpNEE_createdict(cfg, ds, l6_info["NetEcosystemExchange"], output)
+    if "GrossPrimaryProductivity" in list(cfg.keys()):
         l6_info["GrossPrimaryProductivity"] = {}
-        for output in list(cf["GrossPrimaryProductivity"].keys()):
-            rpGPP_createdict(cf, ds, l6_info["GrossPrimaryProductivity"], output)
+        for output in list(cfg["GrossPrimaryProductivity"].keys()):
+            rpGPP_createdict(cfg, ds, l6_info["GrossPrimaryProductivity"], output)
     return l6_info
 
 def PartitionNEE(ds, l6_info):
@@ -2088,8 +2093,8 @@ def rp_createdict_info(cf, ds, l6_info, called_by):
     # local pointer to the datetime series
     ldt = ds.root["Variables"]["DateTime"]["Data"]
     # add an info section to the info["solo"] dictionary
-    erl["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
-    erl["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    #erl["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    #erl["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
     erl["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
     erl["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
     erl["info"]["called_by"] = called_by
