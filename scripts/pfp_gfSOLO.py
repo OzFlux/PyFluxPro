@@ -32,10 +32,11 @@ def GapFillUsingSOLO(main_gui, ds, l5_info, called_by):
     # set the default return code
     ds.info["returncodes"]["value"] = 0
     ds.info["returncodes"]["message"] = "normal"
-    # check the SOLO drivers for missing data
-    #pfp_gf.CheckDrivers(ds, l5_info, called_by)
-    #if ds.info["returncodes"]["value"] != 0:
-        #return ds
+    # update the start and end dates
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
+    l5_info[called_by]["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    l5_info[called_by]["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    # are we running in interactive or batch mode?
     if l5_info[called_by]["info"]["call_mode"].lower() == "interactive":
         l5_info["GapFillUsingSOLO"]["gui"]["show_plots"] = True
         # put up a plot of the data coverage at L4

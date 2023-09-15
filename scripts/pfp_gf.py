@@ -217,7 +217,7 @@ def ParseL4ControlFile(cfg, ds):
         ds.info["returncodes"]["value"] = 1
     return l4_info
 
-def ParseL5ControlFile(cf, ds):
+def ParseL5ControlFile(cfg, ds):
     """
     Purpose:
      Create the L5 information and setting dictionary.
@@ -229,29 +229,30 @@ def ParseL5ControlFile(cf, ds):
     ds.info["returncodes"]["message"] = "OK"
     ds.info["returncodes"]["value"] = 0
     l5_info = {}
+    l5_info["cfg"] = copy.deepcopy(cfg)
     # add key for suppressing output of intermediate variables e.g. Ta_aws
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
     l5_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
-    targets = sorted(list(cf["Fluxes"].keys()))
+    targets = sorted(list(cfg["Fluxes"].keys()))
     l5_info["CheckL5Targets"] = {"targets": targets}
     l5_info["CheckL5Drivers"] = {"drivers": []}
     for target in targets:
-        if "GapFillUsingSOLO" in list(cf["Fluxes"][target].keys()):
-            gfSOLO_createdict(cf, ds, l5_info, target, "GapFillUsingSOLO", 510)
+        if "GapFillUsingSOLO" in list(cfg["Fluxes"][target].keys()):
+            gfSOLO_createdict(cfg, ds, l5_info, target, "GapFillUsingSOLO", 510)
             # check to see if something went wrong
             if ds.info["returncodes"]["value"] != 0:
                 # if it has, return to calling routine
                 return l5_info
-        if "GapFillLongSOLO" in list(cf["Fluxes"][target].keys()):
-            gfSOLO_createdict(cf, ds, l5_info, target, "GapFillLongSOLO", 520)
+        if "GapFillLongSOLO" in list(cfg["Fluxes"][target].keys()):
+            gfSOLO_createdict(cfg, ds, l5_info, target, "GapFillLongSOLO", 520)
             if ds.info["returncodes"]["value"] != 0:
                 return l5_info
-        if "GapFillUsingMDS" in list(cf["Fluxes"][target].keys()):
-            gfMDS_createdict(cf, ds, l5_info, target, "GapFillUsingMDS", 530)
+        if "GapFillUsingMDS" in list(cfg["Fluxes"][target].keys()):
+            gfMDS_createdict(cfg, ds, l5_info, target, "GapFillUsingMDS", 530)
             if ds.info["returncodes"]["value"] != 0:
                 return l5_info
-        if "MergeSeries" in list(cf["Fluxes"][target].keys()):
-            gfMergeSeries_createdict(cf, ds, l5_info, target, "MergeSeries")
+        if "MergeSeries" in list(cfg["Fluxes"][target].keys()):
+            gfMergeSeries_createdict(cfg, ds, l5_info, target, "MergeSeries")
     l5_info["CheckL5Drivers"]["drivers"] = list(set(l5_info["CheckL5Drivers"]["drivers"]))
     return l5_info
 
@@ -984,8 +985,8 @@ def gfSOLO_createdict_info(cf, ds, l5_info, called_by):
     # local pointer to the datetime series
     ldt = ds.root["Variables"]["DateTime"]["Data"]
     # add an info section to the l5_info[called_by] dictionary
-    l5s["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
-    l5s["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    #l5s["info"]["file_startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    #l5s["info"]["file_enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
     l5s["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
     l5s["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
     l5s["info"]["called_by"] = called_by
@@ -1257,10 +1258,12 @@ def gf_getdiurnalstats(DecHour,Data,ts):
                 Mn[i] = numpy.ma.min(Data[li])
     return Num, Hr, Av, Sd, Mx, Mn
 
-def ImportSeries(cf, ds):
+def ImportSeries(ds, info):
+    cfg = info["cfg"]
     # check to see if there is an Imports section
-    if "Imports" not in list(cf.keys()):
+    if "Imports" not in list(cfg.keys()):
         return
+    info["ImportSeries"] = {}
     # number of records
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # get the start and end datetime
@@ -1268,13 +1271,15 @@ def ImportSeries(cf, ds):
     start_date = ldt[0]
     end_date = ldt[-1]
     # loop over the series in the Imports section
-    for label in list(cf["Imports"].keys()):
-        import_filename = pfp_utils.get_keyvaluefromcf(cf, ["Imports", label], "file_name", default="")
+    for label in list(cfg["Imports"].keys()):
+        import_filename = pfp_utils.get_keyvaluefromcf(cfg, ["Imports", label],
+                                                       "file_name", default="")
         if import_filename == "":
             msg = " ImportSeries: import filename not found in control file, skipping ..."
             logger.warning(msg)
             continue
-        var_name = pfp_utils.get_keyvaluefromcf(cf, ["Imports", label], "var_name", default="")
+        var_name = pfp_utils.get_keyvaluefromcf(cfg, ["Imports", label],
+                                                "var_name", default="")
         if var_name == "":
             msg = " ImportSeries: variable name not found in control file, skipping ..."
             logger.warning(msg)
@@ -1282,10 +1287,18 @@ def ImportSeries(cf, ds):
         ds_import = pfp_io.NetCDFRead(import_filename)
         if ds_import.info["returncodes"]["value"] != 0:
             return
+        if label not in list(ds_import.root["Variables"].keys()):
+            msg = " Requested variable not found in imported data"
+            logger.warning(msg)
+            continue
+        msg = "  Importing variable " + label
+        logger.info(msg)
         ts_import = int(float(ds_import.root["Attributes"]["time_step"]))
         ldt_import = ds_import.root["Variables"]["DateTime"]["Data"]
-        si = pfp_utils.GetDateIndex(ldt_import, start_date, ts=ts_import, default=0, match="exact")
-        ei = pfp_utils.GetDateIndex(ldt_import, end_date, ts=ts_import, default=len(ldt_import)-1, match="exact")
+        si = pfp_utils.GetDateIndex(ldt_import, start_date, ts=ts_import,
+                                    default=0, match="exact")
+        ei = pfp_utils.GetDateIndex(ldt_import, end_date, ts=ts_import,
+                                    default=len(ldt_import)-1, match="exact")
         var_import = pfp_utils.GetVariable(ds_import, var_name, start=si, end=ei)
         var_import["Attr"]["time_coverage_start"] = ldt_import[0].strftime("%Y-%m-%d %H:%M")
         var_import["Attr"]["time_coverage_end"] = ldt_import[-1].strftime("%Y-%m-%d %H:%M")
@@ -1295,4 +1308,6 @@ def ImportSeries(cf, ds):
         var["Data"][indbina] = var_import["Data"][indainb]
         var["Flag"][indbina] = var_import["Flag"][indainb]
         pfp_utils.CreateVariable(ds, var)
+        info["ImportSeries"][label] = {"start": ldt[indbina[0]],
+                                       "end": ldt[indbina[-1]]}
     return

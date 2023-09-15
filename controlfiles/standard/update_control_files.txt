@@ -88,8 +88,8 @@ dump_dataset,no_bootstrapping,no_forward_mode_2,forward_mode,forward_mode_3,
 back_mode,back_mode_2,back_mode_3,groupby,seasons_group_allow_duplicates,threshold_check"""
     L4 = MaxGapInterpolate,InterpolateType,KeepIntermediateSeries,Truncate
     L5 = """MaxGapInterpolate,MaxShortGapDays,FilterList,TurbulenceFilter,DayNightFilter,
-AcceptDayTimes,Fsd_threshold,TruncateToImports,KeepIntermediateSeries"""
-    L6 = MaxGapInterpolate
+AcceptDayTimes,Fsd_threshold,Truncate,KeepIntermediateSeries"""
+    L6 = MaxGapInterpolate,Truncate
 
 [Variables]
     # exclude variables that start with these strings
