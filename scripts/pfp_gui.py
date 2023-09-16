@@ -7547,7 +7547,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
 
     def add_maxshortgapdays(self):
         """ Add MaxShortGapDays to the [Options] section."""
-        dict_to_add = {"MaxShortGapDays": "14"}
+        dict_to_add = {"MaxShortGapDays": "30"}
         # add the subsection
         self.add_subsection(dict_to_add)
 
