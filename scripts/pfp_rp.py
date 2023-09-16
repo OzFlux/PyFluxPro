@@ -949,14 +949,19 @@ def L6_summary_mask_long_gaps(ds, info):
     ndays = int(len(vdt["Data"][si:ei+1])/ntsperday)
     # specify the dependencies
     labels = list(ds.root["Variables"].keys())
+    long_gap_labels = []
+    for label in labels:
+        attr = ds.root["Variables"][label]["Attr"]
+        if "description_L5" in attr:
+            if "gap filled using" in attr["description_L5"]:
+                long_gap_labels.append(label)
     dependencies = {"Fco2": ["NEE", "NEP", "GPP", "ER"], "Fe": ["ET"]}
     dependents = []
     for key in dependencies.keys():
         deps = [l for l in labels if l.split("_")[0] in list(dependencies[key])]
         dependencies[key] = deps
         dependents = dependents + deps
-    labels = [l for l in labels if l not in dependents]
-    for label in labels:
+    for label in long_gap_labels:
         # do the variable first
         var = pfp_utils.GetVariable(ds, label)
         # check to see if this variable has been gap filled
@@ -984,8 +989,10 @@ def L6_summary_mask_long_gaps(ds, info):
             # if it has, loop over the long gaps
             for i in idx:
                 # get the start and end date of the long gap
-                start = dates[gap_start_end[i, 0]]
-                end = dates[gap_start_end[i, 1]]
+                gsi = max([0, gap_start_end[i, 0]])
+                start = dates[gsi]
+                gei = min([len(dates) - 1, gap_start_end[i, 1]])
+                end = dates[gei]
                 # mask the data for the long gap
                 condition =  ((var["DateTime"] >= start) & (var["DateTime"] <= end))
                 var["Data"] = numpy.ma.masked_where(condition, var["Data"])

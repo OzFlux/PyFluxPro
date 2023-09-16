@@ -304,7 +304,12 @@ def l5qc(main_gui, cf, ds4):
         if ds5.info["returncodes"]["value"] != 0:
             return ds5
     # fill long gaps using SOLO
-    if "GapFillLongSOLO" in l5_info:
+    do_it = False
+    for target in l5_info["CheckL5Targets"]["targets"]:
+        if target in list(l5_info["CheckGapLengths"].keys()):
+            if l5_info["CheckGapLengths"][target]["got_long_gaps"]:
+                do_it = True
+    if "GapFillLongSOLO" in l5_info and do_it:
         pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds5, l5_info, "GapFillLongSOLO")
         if ds5.info["returncodes"]["value"] != 0:
             return ds5

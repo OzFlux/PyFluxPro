@@ -66,7 +66,7 @@ def CheckGapLengths(cf, ds, l5_info):
     ds.info["returncodes"]["value"] = 0
     l5_info["CheckGapLengths"] = {}
     # get the maximum length for "short" gaps in days
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxShortGapLength", default=14)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxShortGapDays", default=30)
     max_short_gap_days = int(opt)
     # maximum length in records
     ts = int(float(ds.root["Attributes"]["time_step"]))
