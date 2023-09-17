@@ -25,7 +25,7 @@ if (__name__ == '__main__'):
 
     # get the logger
     now = datetime.datetime.now()
-    log_file_name = "pfp_" + now.strftime("%Y%m%d%H%M") + ".log"
+    log_file_name = "batch_" + now.strftime("%Y%m%d%H%M") + ".log"
     log_file_name = os.path.join("logfiles", log_file_name)
     logger = pfp_log.CreateLogger("pfp_log", log_file_name=log_file_name,
                                   to_screen=True)
