@@ -474,7 +474,7 @@ def consistent_Fco2_storage(std, ds, site):
         # calculate single point Fc storage term
         cf = {"Options": {"zms": zms}}
         info = {"CO2": {"label": "CO2", "height": zms}}
-        pfp_ts.CalculateFco2StorageSinglePoint(cf, ds, info)
+        pfp_ts.CalculateSco2SinglePoint(cf, ds, info)
         # convert Fco2_single from mg/m2/s to umol/m2/s
         pfp_utils.CheckUnits(ds, "Fco2_single", "umol/m^2/s", convert_units=True)
     return
@@ -618,13 +618,13 @@ else:
 rp = os.path.join(os.sep, "mnt", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "WD2TB", "OzFlux", "Sites")
 #rp = os.path.join(os.sep, "home", "peter", "OzFlux", "Sites")
-#sites = ["DalyUncleared"]
-sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
-         "CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
-         "Fletcherview", "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield",
-         "Longreach", "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek",
-         "Samford", "SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra",
-         "Whroo", "WombatStateForest", "Yanco"]
+sites = ["DigbyPlantation"]
+#sites = ["AdelaideRiver", "AliceSpringsMulga", "Boyagin", "Calperum", "CapeTribulation", "Collie",
+         #"CowBay", "CumberlandPlain", "DalyPasture", "DalyUncleared", "DryRiver", "Emerald",
+         #"Fletcherview", "FoggDam", "Gingin", "GreatWesternWoodlands", "HowardSprings", "Litchfield",
+         #"Longreach", "Loxton", "Otway", "RedDirtMelonFarm", "Ridgefield", "RiggsCreek", "RobsonCreek",
+         #"Samford", "SilverPlains", "SturtPlains", "TiTreeEast", "Tumbarumba", "WallabyCreek", "Warra",
+         #"Whroo", "WombatStateForest", "Yanco"]
 for site in sites:
     sp = os.path.join(rp, site, "Data", "Portal")
     op = os.path.join(rp, site, "Data", "Processed")
