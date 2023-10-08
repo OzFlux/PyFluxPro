@@ -289,6 +289,9 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         # Pass the dataframe to the respiration class and get the results
         ptc = pfp_part.partition(df, xl_writer, l6_info)
         params_df = ptc.estimate_parameters(mode = er_mode)
+        # return if no fit parameters found
+        if params_df is None:
+            return
         ER["Data"] = numpy.ma.array(ptc.estimate_er_time_series(params_df), copy=True)
         ER["Flag"] = numpy.tile(30, len(ER["Data"]))
         # Write ER to data structure
@@ -312,6 +315,7 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
                          startdate=str(startdate),
                          enddate=str(enddate))
         rp_plot(pd, ds, output, drivers, target, iel, called_by)
+        return
 
 def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     """
