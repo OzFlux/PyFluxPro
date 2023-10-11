@@ -1974,7 +1974,11 @@ def get_variable_pfpds(ds, label, group="root", start=0, end=-1,
     nrecs = int(float(gattr["nc_nrecs"]))
     ts = gattr["time_step"]
     if ts in ["daily", "monthly", "annual"]:
-        pass
+        if isinstance(start, datetime.datetime) and isinstance(end, datetime.datetime):
+            idx = numpy.where((dt >= start) & (dt <= end))[0]
+            data = data[idx]
+            flag = flag[idx]
+            dt = dt[idx]
     else:
         ts = int(float(ts))
         match_options = {"start": {"exact": "exact",
@@ -2024,20 +2028,26 @@ def get_variable_xarray(ds, label, group="root", start=0, end=-1):
         start = ds[group]["time"].values[0]
     if not isinstance(end, numpy.datetime64):
         end = ds[group]["time"].values[-1]
-    data = ds[group][label].sel(time=slice(start, end)).values
-    if label not in ["time"]:
+    xdt = ds[group]["time"].sel(time=slice(start, end)).values.astype("datetime64[s]")
+    epoch = "1970-01-01T00:00:00"
+    xts = ((xdt - numpy.datetime64(epoch))/ numpy.timedelta64(1, "s"))
+    pydt = numpy.ma.array([datetime.datetime.utcfromtimestamp(dt) for dt in xts])
+    if label != "DateTime":
+        data = ds[group][label].sel(time=slice(start, end)).values
         data = numpy.ma.masked_values(data, c.missing_value)
+        attr = ds[group][label].attrs
+    else:
+        data = pydt
+        attr = {"long_name": "Datetime in local timezone", "units": ""}
     if label + "_QCFlag" in list(ds[group].keys()):
         flag = ds[group][label+"_QCFlag"].sel(time=slice(start, end)).values
     else:
         flag = numpy.zeros(len(data), dtype=numpy.int32)
-    dt = ds[group]["time"].sel(time=slice(start, end)).values
-    attr = ds[group][label].attrs
     variable = {"Label": label,
                 "Data": data,
                 "Flag": flag,
                 "Attr": attr,
-                "DateTime": dt,
+                "DateTime": pydt,
                 "time_step": time_step}
     return variable
 
