@@ -1424,7 +1424,8 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts', Sws_i
     # get the data
     Fg = pfp_utils.GetVariable(ds, Fg_in)
     Ts = pfp_utils.GetVariable(ds, Ts_in)
-    Sws = pfp_utils.GetVariable(ds, Sws_in)
+    sws_label = pfp_utils.get_keyvaluefromcf(info, ["Soil"], "SwsSeries", default="Sws")
+    Sws = pfp_utils.GetVariable(ds, sws_label)
     iom = numpy.where(numpy.mod(Sws["Flag"], 10) != 0)[0]
     if len(iom) != 0:
         msg = "  CorrectFgForStorage: default soil moisture used for "

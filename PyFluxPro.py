@@ -789,7 +789,9 @@ class pfp_main_ui(QWidget):
                 pfp_top_level.do_run_l2(cfg)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "L3":
-            pfp_top_level.do_run_l3(cfg)
+            # check the L3 control file to see if it is OK to run
+            if pfp_compliance.check_l3_controlfile(cfg):
+                pfp_top_level.do_run_l3(cfg)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "concatenate":
             pfp_top_level.do_file_concatenate(cfg)
