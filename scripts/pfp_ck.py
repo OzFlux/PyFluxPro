@@ -273,15 +273,6 @@ def cliptorange(data, lower, upper):
     data = rangecheckseriesupper(data,upper)
     return data
 
-def CreateNewSeries(cf,ds):
-    '''Create a new series using the MergeSeries or AverageSeries instructions.'''
-    logger.info(' Checking for new series to create')
-    for ThisOne in list(cf['Variables'].keys()):
-        if 'MergeSeries' in list(cf['Variables'][ThisOne].keys()):
-            pfp_ts.MergeSeries(cf,ds,ThisOne)
-        if 'AverageSeries' in list(cf['Variables'][ThisOne].keys()):
-            pfp_ts.AverageSeriesByElements(cf,ds,ThisOne)
-
 def do_SONICcheck(cf, ds, code=3):
     """
     Purpose:

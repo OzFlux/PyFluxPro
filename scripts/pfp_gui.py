@@ -3076,7 +3076,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         """ Add correct individual Fg to the [Options] section."""
         child0 = QtGui.QStandardItem("CorrectIndividualFg")
         child0.setEditable(False)
-        child1 = QtGui.QStandardItem("Yes")
+        child1 = QtGui.QStandardItem("No")
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 

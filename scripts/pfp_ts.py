@@ -1195,7 +1195,7 @@ def CalculateSco2SinglePoint(cf, ds, info, Sco2_out="Sco2_single"):
         ldt = pfp_utils.GetVariable(ds, "DateTime")
         Sco2_single = pfp_utils.CreateEmptyVariable(Sco2_out, nRecs, datetime=ldt["Data"])
         # get the input data
-        CO2 = pfp_utils.GetVariable(ds, info["CO2"]["label"])
+        CO2 = pfp_utils.GetVariable(ds, info["variables"]["CO2"]["label"])
         Ta = pfp_utils.GetVariable(ds, "Ta")
         ps = pfp_utils.GetVariable(ds, "ps")
         # check the CO2 concentration units
@@ -1211,13 +1211,13 @@ def CalculateSco2SinglePoint(cf, ds, info, Sco2_out="Sco2_single"):
         seconds = numpy.array([(dt-epoch).total_seconds() for dt in ldt["Data"]])
         dt = numpy.ediff1d(seconds, to_begin=float(ts)*60)
         # calculate the CO2 flux based on storage below the measurement height
-        Sco2_single["Data"] = info["CO2"]["height"]*dc/dt
+        Sco2_single["Data"] = info["variables"]["CO2"]["height"]*dc/dt
         # do the attributes
         Sco2_single["Attr"] = {}
         for attr in ["instrument", "height"]:
             if attr in CO2["Attr"]:
                 Sco2_single["Attr"][attr] = CO2["Attr"][attr]
-        Sco2_single["Attr"]["height"] = info["CO2"]["height"]
+        Sco2_single["Attr"]["height"] = info["variables"]["CO2"]["height"]
         Sco2_single["Attr"]["units"] = "umol/m^2/s"
         Sco2_single["Attr"]["standard_name"] = "surface_upward_mole_flux_of_carbon_dioxide"
         Sco2_single["Attr"]["long_name"] = "Storage term of CO2 flux"
@@ -1386,7 +1386,7 @@ def CorrectIndividualFgForStorage(cf,ds):
             CorrectFgForStorage(cf,ds,Fg_out=CFgArgs[0],Fg_in=CFgArgs[1],Ts_in=CFgArgs[2],Sws_in=CFgArgs[3])
         return
 
-def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts', Sws_in='Sws'):
+def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts'):
     """
         Correct ground heat flux for storage in the layer above the heat flux plate
 
@@ -1417,16 +1417,23 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts', Sws_i
     logger.info(' Correcting soil heat flux for storage')
     # get the soil properties needed to calculate soil specific heat capacity
     d = max(0.0,min(0.5,float(cf['Soil']['FgDepth'])))
-    bd = max(1200.0,min(2500.0,float(cf['Soil']['BulkDensity'])))
+    bd = max(100.0,min(2500.0,float(cf['Soil']['BulkDensity'])))
     oc = max(0.0,min(1.0,float(cf['Soil']['OrganicContent'])))
     mc = 1.0 - oc
     Sws_default = min(1.0,max(0.0,float(cf['Soil']['SwsDefault'])))
     # get the data
     Fg = pfp_utils.GetVariable(ds, Fg_in)
     Ts = pfp_utils.GetVariable(ds, Ts_in)
-    sws_label = pfp_utils.get_keyvaluefromcf(info, ["Soil"], "SwsSeries", default="Sws")
+    # mask is True if Fg or Ts are masked
+    m1 = numpy.ma.getmaskarray(Fg["Data"])
+    m2 = numpy.ma.getmaskarray(Ts["Data"])
+    mask = numpy.ma.mask_or(m1, m2, copy=True, shrink=False)
+    # get the soil moisture label
+    sws_label = pfp_utils.get_keyvaluefromcf(info, ["cfg", "Soil"], "SwsSeries", default="Sws")
     Sws = pfp_utils.GetVariable(ds, sws_label)
-    iom = numpy.where(numpy.mod(Sws["Flag"], 10) != 0)[0]
+    # index of records where soil moisture is missing but Fg and Ts are not
+    iom = numpy.ma.where((numpy.ma.getmaskarray(Sws["Data"])==True) & (mask==False))[0]
+    # tell the user we are using the default soil moisture value
     if len(iom) != 0:
         msg = "  CorrectFgForStorage: default soil moisture used for "
         msg += str(len(iom)) + " values"
@@ -1825,13 +1832,21 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
 
         Accepts meteorological constants or variables
         """
+    # check the ApplyWPL option is consistent with the IRGA type
+    apply_wpl = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
     irga_type = str(ds.root["Attributes"]["irga_type"])
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
-    if (opt.lower() == "no"):
-        msg = " WPL correction for Fco2 disabled in control file (" + irga_type + ")"
-        logger.warning(msg)
-        return 0
-    irga_type = str(ds.root["Attributes"]["irga_type"])
+    # define the known IRGAs, this should be an external settings option
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
+    # check to see if the IRGA type and ApplyWPL option are consistent
+    if ((apply_wpl.lower() == "yes" and irga_type in open_path_irgas) or
+        (apply_wpl.lower() == "no" and irga_type in closed_path_irgas)):
+        # all good
+        pass
+    else:
+        # not all good
+        msg = "Wrong ApplyWPL option ("+apply_wpl+") for IRGA type ("+irga_type+")"
+        raise RuntimeError(msg)
     msg = " Applying WPL correction to Fco2 (IRGA type is " + irga_type + ")"
     logger.info(msg)
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
