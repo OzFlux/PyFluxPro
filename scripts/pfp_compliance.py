@@ -2,6 +2,7 @@
 import copy
 import inspect
 import logging
+import numbers
 import os
 import platform
 import traceback
@@ -555,7 +556,7 @@ def ParseL1ControlFile(cf):
     l1ire["Variables"] = copy.deepcopy(cf["Variables"])
     return l1_info
 
-def ParseL3ControlFile(cf, ds):
+def ParseL3ControlFile(cfg, ds):
     """
     Purpose:
      Parse the L3 control file and return contents in the l3_info dictionary.
@@ -566,24 +567,64 @@ def ParseL3ControlFile(cf, ds):
     """
     # PRI 7/10/2021 the code to get zms will give unpredictable results if CO2
     #   profile data present
-    ds.info["returncodes"]["message"] = "OK"
-    ds.info["returncodes"]["value"] = 0
-    l3_info = {"CO2": {}, "Fco2": {}, "Sco2": {}, "status": {"value": 0, "message": "OK"}}
+    #l3_info = {"CO2": {}, "Fco2": {}, "Sco2": {}, "status": {"value": 0, "message": "OK"},
+               #"Files": {}, "Options": {}, "Soil": {}, "Variables": {}, "Plots": {}}
+    l3_info = {"status": {"value": 0, "message": "OK"},
+               "cfg": {},
+               "variables": {"CO2": {}, "Fco2": {}, "Sco2": {}},
+               "CombineSeries": {}}
+    # copy the control file sections to the l3_info dictionary
+    for section in list(cfg.keys()):
+        l3_info["cfg"][section] = copy.deepcopy(cfg[section])
     # add key for suppressing output of intermediate variables e.g. Cpd etc
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
     l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     # find out what label is used for CO2
-    if "CO2" in list(cf["Variables"].keys()):
-        l3_info["CO2"]["label"] = "CO2"
+    parse_l3_co2_label(l3_info)
+    # get the height of the CO2 measurement
+    parse_l3_co2_height(ds, l3_info)
+    # get lists of variables to be merged or averaged
+    parse_l3_combine(l3_info)
+    return l3_info
+
+def parse_l3_combine(info):
+    """ Get a list of variables to be merged or averaged at L3. """
+    cfg = info["cfg"]
+    cfv = cfg["Variables"]
+    labels = list(cfv.keys())
+    # list of labels that are explicitly referenced in pfp_levels.l3qc()
+    l3_labels = ["CO2", "Fco2", "Fg", "Fsd", "Fn", "Sco2", "Sws", "Ta", "Ts", "Wd", "Ws"]
+    # cs_labels is a list of all variables using MergeSeries or AverageSeries
+    cs_labels = []
+    # loop over L3 labels
+    for label in l3_labels:
+        info["CombineSeries"][label] = [l for l in labels if l.split("_")[0] == label]
+        cs_labels = cs_labels + info["CombineSeries"][label]
+    cs_labels = list(set(cs_labels))
+    # now get a list of any other variables using MergeSeries of AverageSeries that
+    # are not in cs_labels
+    merge_extras = [l for l in labels if l not in cs_labels and "MergeSeries" in cfv[l]]
+    average_extras = [l for l in labels if l not in cs_labels and "AverageSeries" in cfv[l]]
+    info["CombineSeries"]["extras"] = merge_extras + average_extras
+    return
+
+def parse_l3_co2_label(info):
+    """ Get the CO2 variable label."""
+    if "CO2" in list(info["cfg"]["Variables"].keys()):
+        info["variables"]["CO2"]["label"] = "CO2"
     else:
         msg = " Label for CO2 not found in control file"
-        l3_info["status"]["value"] = 1
-        l3_info["status"]["message"] = msg
-        return l3_info
-    # get the height of the CO2 measurement
+        logger.warning(msg)
+        info["status"]["value"] = 1
+        info["status"]["message"] = msg
+    return
+
+def parse_l3_co2_height(ds, info):
+    """ Get the height of the CO2 measurement from various sources."""
+    cfg = info["cfg"]
     got_zms = False
     labels = list(ds.root["Variables"].keys())
-    CO2_label = l3_info["CO2"]["label"]
+    CO2_label = info["variables"]["CO2"]["label"]
     # try and get the height from the CO2 variable
     if CO2_label in labels:
         # get height from attributes if the CO2 variable is already in the data structure
@@ -593,10 +634,10 @@ def ParseL3ControlFile(cf, ds):
             got_zms = True
         except:
             pass
-    if not got_zms and "MergeSeries" in list(cf["Variables"][CO2_label].keys()):
+    if not got_zms and "MergeSeries" in list(cfg["Variables"][CO2_label].keys()):
         # get the height from the variables listed in MergeSeries
         try:
-            source = cf["Variables"][CO2_label]["MergeSeries"]["source"]
+            source = cfg["Variables"][CO2_label]["MergeSeries"]["source"]
             source = pfp_utils.convert_csv_string_to_list(source)
             for item in source:
                 var = pfp_utils.GetVariable(ds, item)
@@ -605,10 +646,10 @@ def ParseL3ControlFile(cf, ds):
                 break
         except:
             pass
-    if not got_zms and "AverageSeries" in list(cf["Variables"][CO2_label].keys()):
+    if not got_zms and "AverageSeries" in list(cfg["Variables"][CO2_label].keys()):
         # get the height from the variables listed in AverageSeries
         try:
-            source = cf["Variables"][CO2_label]["AverageSeries"]["source"]
+            source = cfg["Variables"][CO2_label]["AverageSeries"]["source"]
             source = pfp_utils.convert_csv_string_to_list(source)
             for item in source:
                 var = pfp_utils.GetVariable(ds, item)
@@ -623,32 +664,20 @@ def ParseL3ControlFile(cf, ds):
             got_zms = True
         except:
             pass
-    if not got_zms and pfp_utils.cfkeycheck(cf, Base="Options", ThisOne="zms"):
+    if not got_zms and pfp_utils.cfkeycheck(cfg, Base="Options", ThisOne="zms"):
         try:
-            zms = float(pfp_utils.strip_non_numeric(cf["Options"]["zms"]))
+            zms = float(pfp_utils.strip_non_numeric(cfg["Options"]["zms"]))
             got_zms = True
         except:
             pass
     if got_zms:
-        l3_info["CO2"]["height"] = zms
+        info["variables"]["CO2"]["height"] = zms
     else:
         msg = " Unable to find height for CO2 (" + CO2_label + ") measurement"
-        l3_info["status"]["value"] = 1
-        l3_info["status"]["message"] = msg
-        ds.info["returncodes"]["value"] = l3_info["status"]["value"]
-        ds.info["returncodes"]["message"] = l3_info["status"]["message"]
-        return l3_info
-    # get a list of Fco2 variables to be merged
-    cfv = cf["Variables"]
-    merge_list = [l for l in list(cfv.keys()) if l[0:4] == "Fco2" and "MergeSeries" in list(cfv[l].keys())]
-    average_list = [l for l in list(cfv.keys()) if l[0:4] == "Fco2" and "AverageSeries" in list(cfv[l].keys())]
-    l3_info["Fco2"]["combine_list"] = merge_list + average_list
-    # get a list of Sco2 variables to be merged
-    cfv = cf["Variables"]
-    merge_list = [l for l in list(cfv.keys()) if l[0:4] == "Sco2" and "MergeSeries" in list(cfv[l].keys())]
-    average_list = [l for l in list(cfv.keys()) if l[0:4] == "Sco2" and "AverageSeries" in list(cfv[l].keys())]
-    l3_info["Sco2"]["combine_list"] = merge_list + average_list
-    return l3_info
+        logger.warning(msg)
+        info["status"]["value"] = 1
+        info["status"]["message"] = msg
+    return
 
 def parse_variable_attributes(attributes):
     """
@@ -907,30 +936,134 @@ def check_l2_options(cfg, ds):
     else:
         display_messages_batch(messages)
     return
-def check_l3_options(cfg, ds):
+def check_l3_controlfile(cfg):
     """
     Purpose:
-     Check the options specified in the L3 control file are consistent
-     with the contents of the L2 netCDF file.
+     Check the L3 control file to make sure it contains all information
+     needed to run L3 and that all information is correct.
     Usage:
     Side effects:
     Author: PRI
-    Date: October 2022
+    Date: October 2023
     """
-    messages = {"ERROR":[], "WARNING": [], "INFO": [], "RESULT": "ignore"}
-    check_l3_options_wpl(cfg, ds, messages)
-    check_l3_options_rotation(cfg, ds, messages)
+    ok = True
+    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    check_l3_files(cfg, messages)
+    check_l3_options(cfg, messages)
+    display_messages_interactive(messages)
+    if len(messages["ERROR"]) > 0:
+        ok = False
+    return ok
+def check_l3_files(cfg, messages):
+    """ Check the Files section in the L3 control file."""
+    # check the Files section exists
+    if ("Files" in cfg):
+        # check file_path is in the Files section
+        if "file_path" in cfg["Files"]:
+            file_path = cfg["Files"]["file_path"]
+            # check file_path directory exists
+            if os.path.isdir(file_path):
+                pass
+            else:
+                msg = "Files: " + file_path + " is not a directory"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'file_path' not in section"
+            messages["ERROR"].append(msg)
+        # check plot_path is in the Files section
+        if "plot_path" in cfg["Files"]:
+            plot_path = cfg["Files"]["plot_path"]
+            # check plot_path directory exists
+            if os.path.isdir(plot_path):
+                pass
+            else:
+                msg = "Files: " + plot_path + " doesn't exist, creating ..."
+                messages["INFO"].append(msg)
+                os.mkdir(plot_path)
+        else:
+            msg = "Files: 'plot_path' not in section"
+            messages["ERROR"].append(msg)
+        # check in_filename is in the Files section
+        if "in_filename" in cfg["Files"]:
+            file_name = cfg["Files"]["in_filename"]
+            file_parts = os.path.splitext(file_name)
+            # check the file type is supported
+            if (file_parts[-1].lower() in  [".nc"]):
+                file_uri = os.path.join(file_path, file_name)
+                if os.path.isfile(file_uri):
+                    pass
+                else:
+                    msg = "Files: " + file_name + " not found"
+                    messages["ERROR"].append(msg)
+            else:
+                msg = "Files: " + file_name + " doesn't end with .nc"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'in_filename' not in section"
+            messages["ERROR"].append(msg)
+        # check the output file type
+        if "out_filename" in cfg["Files"]:
+            file_name = cfg["Files"]["out_filename"]
+            file_parts = os.path.splitext(file_name)
+            if (file_parts[-1].lower() in [".nc"]):
+                pass
+            else:
+                msg = "Files: " + file_name + " doesn't end with .nc"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Files: 'out_filename' not in section"
+            messages["ERROR"].append(msg)
+    else:
+        msg = "'Files' section not in control file"
+        messages["ERROR"].append(msg)
+    return
+def check_l3_options(cfg, messages):
+    """
+    Purpose:
+     Check the options specified in the L3 control file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: October 2023
+    """
+    check_l3_options_generic(cfg, messages)
+    check_l3_options_rotation(cfg, messages)
+    check_l3_options_soil(cfg, messages)
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
     if opt.lower() == "interactive":
         display_messages_interactive(messages, mode="CloseOrIgnore")
-        if messages["RESULT"] == "ignore":
-            ds.info["returncodes"]["value"] = 0
-        else:
-            ds.info["returncodes"]["value"] = 1
     else:
         display_messages_batch(messages)
     return
-def check_l3_options_rotation(cfg, ds, messages):
+def check_l3_options_generic(cfg, messages):
+    """ Check the generic L3 options."""
+    if "zms" in cfg["Options"]:
+        zms =  cfg["Options"]["zms"]
+        if isinstance(float(pfp_utils.strip_non_numeric(zms)), numbers.Number):
+            pass
+        else:
+            msg = "zms (" + zms + ") is not a number"
+            messages["ERROR"].append(msg)
+    if "CO2Units" in cfg["Options"]:
+        co2_units = cfg["Options"]["CO2Units"]
+        if co2_units not in ["umol/mol", "mg/m^3"]:
+            msg = "Unrecognised CO2 units (" + co2_units + "), must be umol/mol or mg/m^3"
+            messages["ERROR"].append(msg)
+    if "Fco2Units" in cfg["Options"]:
+        Fco2_units = cfg["Options"]["Fco2Units"]
+        if Fco2_units not in ["umol/m^2/s", "mg/m^2/s"]:
+            msg = "Unrecognised Fco2 units (" + Fco2_units + "), must be umol/m^2/s or mg/m^2/s"
+            messages["ERROR"].append(msg)
+    for item in ["2DCoordRotation", "ApplyFco2Storage", "ApplyWPL", "CalculateFluxes",
+                 "CorrectFgForStorage", "CorrectIndividualFg", "KeepIntermediateSeries",
+                 "MassmanCorrection", ]:
+        if item in cfg["Options"]:
+            opt = cfg["Options"][item]
+            if opt.lower() not in ["yes", "no"]:
+                msg = "Unrecognised " + item + " option (" + opt + "), must be Yes or No"
+                messages["ERROR"].append(msg)
+    return
+def check_l3_options_rotation(cfg, messages):
     """ Check the rotation option."""
     # get the CalculateFluxes setting from the [Options] section
     calculate_fluxes_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "CalculateFluxes",
@@ -946,38 +1079,30 @@ def check_l3_options_rotation(cfg, ds, messages):
         # error message if calculating fluxes at L3 but 2D coordinate rotation turned off
         msg = "Coordinate rotation disabled"
         messages["ERROR"].append(msg)
-        # set the return code to non-zero to indicate a problem
-        ds.info["returncodes"]["value"] = 1
     else:
         # all good
         pass
     return
-def check_l3_options_wpl(cfg, ds, messages):
-    """ Check the WPL option against the IRGA type."""
-    # get the CalculateFluxes setting from the [Options] section
-    calculate_fluxes_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "CalculateFluxes",
-                                                           default="Yes")
-    # if we are not calculating fluxes at L3, we do not need to check the 2DCoordRotation option
-    if calculate_fluxes_option.lower() == "no":
-        return
-    # define the known IRGAs, this should be an external settings option
-    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
-    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
-    # get the IRGA type from the global attributes
-    irga_type = str(ds.root["Attributes"]["irga_type"])
-    # get the ApplyWPL setting from the L3 [Options] section
-    apply_wpl_option = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "ApplyWPL", default="Yes")
-    # check to see if the IRGA type and ApplyWPL option are consistent
-    if ((apply_wpl_option.lower() == "yes" and irga_type in open_path_irgas) or
-        (apply_wpl_option.lower() == "no" and irga_type in closed_path_irgas)):
-        # all good
+def check_l3_options_soil(cfg, messages):
+    """ Check the entries of the Soil section."""
+    # check the numbers
+    for item in ["BulkDensity", "FgDepth", "OrganicContent", "SwsDefault"]:
+        if item in cfg["Soil"]:
+            opt =  cfg["Soil"][item]
+            if isinstance(float(pfp_utils.strip_non_numeric(opt)), numbers.Number):
+                pass
+            else:
+                msg = item + " (" + opt + ") is not a number"
+                messages["ERROR"].append(msg)
+        else:
+            msg = "Required entry " + item + " missing from Soil section"
+            messages["ERROR"].append(msg)
+    # check the soil moisture series
+    if "SwsSeries" in cfg["Soil"]:
         pass
     else:
-        # not all good
-        msg = "Wrong ApplyWPL option ("+apply_wpl_option+") for IRGA type ("+irga_type+")"
+        msg = "SwsSeries entry not in Soil section"
         messages["ERROR"].append(msg)
-        # set the return code to non-zero to indicate a problem
-        ds.info["returncodes"]["value"] = 1
     return
 def check_l5_controlfile(cfg):
     """
@@ -2511,55 +2636,54 @@ def update_cfg_options(cfg, std):
     Author: PRI
     Date: May 2020
     """
+    # make sure there is an Options section
+    if "Options" not in cfg:
+        cfg["Options"] = {}
     # move items from the General section (if it exists) to the Options section.
     if "General" in cfg:
-        if "Options" not in cfg:
-            cfg["Options"] = {}
         for item in cfg["General"]:
             cfg["Options"][item] = cfg["General"][item]
         del cfg["General"]
     # update the units in the Options section
     if cfg["level"] == "L2":
-        if "Options" in cfg:
-            if "irga_type" in cfg["Options"]:
-                irga_type = cfg["Options"]["irga_type"]
-                if irga_type in ["Li-7500A (<V6.5)", "Li-7500A (>=V6.5)"]:
-                    cfg["Options"]["irga_type"] = "Li-7500A"
+        if "irga_type" in cfg["Options"]:
+            irga_type = cfg["Options"]["irga_type"]
+            if irga_type in ["Li-7500A (<V6.5)", "Li-7500A (>=V6.5)"]:
+                cfg["Options"]["irga_type"] = "Li-7500A"
     elif cfg["level"] == "L3":
-        if "Options" in cfg:
-            for item in list(cfg["Options"].keys()):
-                if item in ["ApplyFcStorage", "FcUnits", "ReplaceFcStorage", "DisableFcWPL"]:
-                    cfg["Options"].rename(item, item.replace("Fc", "Fco2"))
-                if item in ["CcUnits"]:
-                    cfg["Options"].rename(item, item.replace("Cc", "CO2"))
-            if "DisableFco2WPL" in list(cfg["Options"].keys()):
-                opt = cfg["Options"]["DisableFco2WPL"]
-                if opt.lower() == "no":
-                    apply_wpl = "Yes"
-                else:
-                    apply_wpl = "No"
-                cfg["Options"].pop("DisableFco2WPL")
-                cfg["Options"]["ApplyWPL"] = apply_wpl
-            if "DisableFeWPL" in list(cfg["Options"].keys()):
-                opt = cfg["Options"]["DisableFeWPL"]
-                if opt.lower() == "no":
-                    apply_wpl = "Yes"
-                else:
-                    apply_wpl = "No"
-                cfg["Options"].pop("DisableFeWPL")
-                cfg["Options"]["ApplyWPL"] = apply_wpl
-            if "UseL2Fluxes" in list(cfg["Options"].keys()):
-                opt = cfg["Options"]["UseL2Fluxes"]
-                if opt.lower() == "no":
-                    calculate_fluxes = "Yes"
-                else:
-                    calculate_fluxes = "No"
-                cfg["Options"].pop("UseL2Fluxes")
-                cfg["Options"]["CalculateFluxes"] = calculate_fluxes
-            old_units = list(std["Variables"]["units_map"].keys())
-            for item in list(cfg["Options"].keys()):
-                if cfg["Options"][item] in old_units:
-                    cfg["Options"][item] = std["Variables"]["units_map"][cfg["Options"][item]]
+        for item in list(cfg["Options"].keys()):
+            if item in ["ApplyFcStorage", "FcUnits", "ReplaceFcStorage", "DisableFcWPL"]:
+                cfg["Options"].rename(item, item.replace("Fc", "Fco2"))
+            if item in ["CcUnits"]:
+                cfg["Options"].rename(item, item.replace("Cc", "CO2"))
+        if "DisableFco2WPL" in list(cfg["Options"].keys()):
+            opt = cfg["Options"]["DisableFco2WPL"]
+            if opt.lower() == "no":
+                apply_wpl = "Yes"
+            else:
+                apply_wpl = "No"
+            cfg["Options"].pop("DisableFco2WPL")
+            cfg["Options"]["ApplyWPL"] = apply_wpl
+        if "DisableFeWPL" in list(cfg["Options"].keys()):
+            opt = cfg["Options"]["DisableFeWPL"]
+            if opt.lower() == "no":
+                apply_wpl = "Yes"
+            else:
+                apply_wpl = "No"
+            cfg["Options"].pop("DisableFeWPL")
+            cfg["Options"]["ApplyWPL"] = apply_wpl
+        if "UseL2Fluxes" in list(cfg["Options"].keys()):
+            opt = cfg["Options"]["UseL2Fluxes"]
+            if opt.lower() == "no":
+                calculate_fluxes = "Yes"
+            else:
+                calculate_fluxes = "No"
+            cfg["Options"].pop("UseL2Fluxes")
+            cfg["Options"]["CalculateFluxes"] = calculate_fluxes
+        old_units = list(std["Variables"]["units_map"].keys())
+        for item in list(cfg["Options"].keys()):
+            if cfg["Options"][item] in old_units:
+                cfg["Options"][item] = std["Variables"]["units_map"][cfg["Options"][item]]
     elif cfg["level"] == "L5":
         # rename exact variable name matches
         renames_exact = list(std["Variables"]["rename_exact"].keys())
