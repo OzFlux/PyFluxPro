@@ -592,12 +592,17 @@ def parse_l3_combine(info):
     cfg = info["cfg"]
     cfv = cfg["Variables"]
     labels = list(cfv.keys())
+    # list of labels that are explicitly referenced in pfp_levels.l3qc()
     l3_labels = ["CO2", "Fco2", "Fg", "Fsd", "Fn", "Sco2", "Sws", "Ta", "Ts", "Wd", "Ws"]
+    # cs_labels is a list of all variables using MergeSeries or AverageSeries
     cs_labels = []
+    # loop over L3 labels
     for label in l3_labels:
         info["CombineSeries"][label] = [l for l in labels if l.split("_")[0] == label]
         cs_labels = cs_labels + info["CombineSeries"][label]
     cs_labels = list(set(cs_labels))
+    # now get a list of any other variables using MergeSeries of AverageSeries that
+    # are not in cs_labels
     merge_extras = [l for l in labels if l not in cs_labels and "MergeSeries" in cfv[l]]
     average_extras = [l for l in labels if l not in cs_labels and "AverageSeries" in cfv[l]]
     info["CombineSeries"]["extras"] = merge_extras + average_extras
