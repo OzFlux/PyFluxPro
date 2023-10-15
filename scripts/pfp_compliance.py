@@ -567,8 +567,6 @@ def ParseL3ControlFile(cfg, ds):
     """
     # PRI 7/10/2021 the code to get zms will give unpredictable results if CO2
     #   profile data present
-    #l3_info = {"CO2": {}, "Fco2": {}, "Sco2": {}, "status": {"value": 0, "message": "OK"},
-               #"Files": {}, "Options": {}, "Soil": {}, "Variables": {}, "Plots": {}}
     l3_info = {"status": {"value": 0, "message": "OK"},
                "cfg": {},
                "variables": {"CO2": {}, "Fco2": {}, "Sco2": {}},
@@ -806,25 +804,6 @@ def check_l2_controlfile(cfg):
         l2_check_options(cfg, messages)
         # check the variables section
         #l2_check_variables_section(cfg, std, messages)
-        ## check variables whose name exactly matches an entry in the settings/l1.txt control file
-        #done = []
-        #label_matches = [l for l in cfg_labels if l in std_labels]
-        #for cfg_label in label_matches:
-            #std_label = cfg_label
-            ## check variable 'Attr' section
-            #l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
-            ## append this variable name to the done list
-            #done.append(cfg_label)
-        ## check variables where the first characters of the name match an entry in settings/l1.txt
-        #cfg_labels = sorted(list(cfg["Variables"].keys()))
-        #for std_label in std_labels:
-            #lsl = len(std_label)
-            #label_matches = [l for l in cfg_labels if l[:min([len(l),lsl])] == std_label and l not in done]
-            #for cfg_label in label_matches:
-                ## check variable 'Attr' section
-                #l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
-                ## append this variable name to the done list
-                #done.append(cfg_label)
         display_messages_interactive(messages)
         if len(messages["ERROR"]) > 0:
             ok = False
