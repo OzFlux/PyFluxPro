@@ -155,8 +155,7 @@ def do_L3_batch(main_ui, cf_level):
             ds2 = pfp_io.NetCDFRead(infilename)
             if ds2.info["returncodes"]["value"] != 0:
                 return
-            pfp_compliance.check_l3_options(cf_l3, ds2)
-            if ds2.info["returncodes"]["value"] != 0:
+            if not pfp_compliance.check_l3_controlfile(cf_l3):
                 return
             ds3 = pfp_levels.l3qc(cf_l3, ds2)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l3)
