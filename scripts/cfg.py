@@ -1,5 +1,9 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.15"
+version_number = "V3.4.16"
+# V3.4.16 - November 2023
+#         - fix "Ignore" when control file throws errors during compliance check
+#         - implement conversion of ONEFlux SUBSET_HH file to L1 netCDF
+#         - allow multiple variables from 1 CSV column
 # V3.4.15 - August 2023
 #         - implement function to calculate wind speed and wind direction from
 #           components at L1
