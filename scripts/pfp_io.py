@@ -644,8 +644,6 @@ def ReadCSVFile(l1_info):
     file_names = l1ire["Files"]["in_filename"].split(",")
     in_header_rows = l1ire["Files"]["in_headerrow"].split(",")
     first_data_rows = l1ire["Files"]["in_firstdatarow"].split(",")
-    all_csv_labels = []
-    found_csv_labels = []
     for n, file_name in enumerate(file_names):
         msg = " Reading CSV file " + file_name
         logger.info(msg)
@@ -666,21 +664,6 @@ def ReadCSVFile(l1_info):
                              skip_blank_lines=False)
         # check the requested variables are in the file
         headers = list(df)
-        # list of csv variable names
-        csv_labels = []
-        # dictionary of csv to nc name mapping
-        column_name_map = {}
-        for nc_label in list(l1ire["Variables"].keys()):
-            csv_label = l1ire["Variables"][nc_label]["csv"]["name"]
-            all_csv_labels.append(csv_label)
-            if csv_label in headers:
-                csv_labels.append(csv_label)
-                found_csv_labels.append(csv_label)
-                column_name_map[csv_label] = nc_label
-            else:
-                pass
-        # remove duplicate CSV labels
-        csv_labels = list(set(csv_labels))
         # check for a timestamp
         # are we dealing with a FluxNet or AmeriFlux file?
         if ("TIMESTAMP_END" in headers):
@@ -716,18 +699,21 @@ def ReadCSVFile(l1_info):
         df.set_index(timestamp, inplace=True)
         # round the datetime index to the nearest second
         df.index = df.index.round('1S')
-        # drop columns except those wanted by the user
-        df = df[csv_labels]
+        # create dataframe with required columns and rename columns
+        df2 = pandas.DataFrame()
+        df2.index = df.index
+        for nc_label in list(l1ire["Variables"].keys()):
+            csv_label = l1ire["Variables"][nc_label]["csv"]["name"]
+            if csv_label not in headers:
+                msg = csv_label + "(" + nc_label + ") not found in CSV file"
+                logger.warning(msg)
+                continue
+            df2[nc_label] = df[csv_label]
         # coerce all columns with dtype "object" to "float64"
-        cols = df.columns[df.dtypes.eq(object)]
-        df[cols] = df[cols].apply(pandas.to_numeric, errors='coerce')
-        # rename the data frame columns
-        dfs[file_name] = df.rename(columns=column_name_map)
-    # check to see if any variables were not found in the CSV files
-    for item in all_csv_labels:
-        if item not in found_csv_labels:
-            msg = " " + item + " not found in input files, skipped ..."
-            logger.warning(msg)
+        cols = df2.columns[df2.dtypes.eq(object)]
+        df2[cols] = df2[cols].apply(pandas.to_numeric, errors='coerce')
+        # save the dataframe with the requested and renamed coloumns
+        dfs[file_name] = df2
     # return a dictionary to be compatible with ReadExcelWorkbook
     return dfs
 
