@@ -89,6 +89,14 @@
                 long_name = CO2 concentration
             [[[[umol^2/mol^2]]]]
                 long_name = CO2 concentration
+    [[CO2_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 concentration ONEFlux QC flag
+    [[CO2_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 concentration QC flag
     [[CO2_Samples]]
         [[[sum]]]
             [[[[1]]]]
@@ -132,6 +140,14 @@
         [[[average]]]
             [[[[1]]]]
                 long_name = CO2 flux EddyPro QC flag
+    [[Fco2_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 flux ONEFlux QC flag
+    [[Fco2_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 flux ONEFlux QC flag
     [[Fe]]
         [[[average]]]
             [[[[W/m^2]]]]
@@ -153,11 +169,27 @@
         [[[average]]]
             [[[[1]]]]
                 long_name = Latent heat flux EddyPro QC flag
+    [[Fe_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Latent heat flux ONEFlux QC flag
+    [[Fe_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Latent heat flux QC flag
     [[Fg]]
         [[[average]]]
             [[[[W/m^2]]]]
                 long_name = Ground heat flux
                 standard_name = downward_heat_flux_at_ground_level_in_soil
+    [[Fg_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Ground heat flux ONEFlux QC flag
+    [[Fg_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Ground heat flux QC flag
     [[Fh]]
         [[[average]]]
             [[[[W/m^2]]]]
@@ -179,6 +211,14 @@
         [[[average]]]
             [[[[1]]]]
                 long_name = Sensible heat flux EddyPro QC flag
+    [[Fh_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Sensible heat flux ONEFlux QC flag
+    [[Fh_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Sensible heat flux QC flag
     [[Fh2o]]
         [[[average]]]
             [[[[mmol/m^2/s]]]]
@@ -196,6 +236,14 @@
             [[[[W/m^2]]]]
                 long_name = Down-welling longwave radiation
                 standard_name = surface_downwelling_longwave_flux_in_air
+    [[Fld_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling longwave radiation ONEFlux QC flag
+    [[Fld_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling longwave radiation QC flag
     [[Flu]]
         [[[average]]]
             [[[[W/m^2]]]]
@@ -232,6 +280,14 @@
             [[[[W/m^2]]]]
                 long_name = Down-welling shortwave radiation
                 standard_name = surface_downwelling_shortwave_flux_in_air
+    [[Fsd_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling shortwave radiation ONEFlux QC flag
+    [[Fsd_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling shortwave radiation QC flag
     [[Fsu]]
         [[[average]]]
             [[[[W/m^2]]]]
@@ -273,6 +329,14 @@
             [[[[mm]]]]
                 long_name = Rainfall
                 standard_name = thickness_of_rainfall_amount
+    [[Precip_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Rainfall ONEFlux QC flag
+    [[Precip_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Rainfall QC flag
     [[ps]]
         [[[average]]]
             [[[[Pa]]]]
@@ -284,6 +348,14 @@
             [[[[kPa]]]]
                 long_name = Surface air pressure
                 standard_name = surface_air_pressure
+    [[ps_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Surface air pressure ONEFlux QC flag
+    [[ps_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Surface air pressure QC flag
     [[RH]]
         [[[average]]]
             [[[[percent]]]]
@@ -327,6 +399,14 @@
             [[[[percent]]]]
                 long_name = Soil water content
                 standard_name = volume_fraction_of_condensed_water_in_soil
+    [[Sws_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Soil water content ONEFlux QC flag
+    [[Sws_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Soil water content QC flag
     [[Ta]]
         [[[average]]]
             [[[[degC]]]]
@@ -345,6 +425,14 @@
                 long_name = Air temperature
             [[[[K^2]]]]
                 long_name = Air temperature
+    [[Ta_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Air temperature ONEFlux QC flag
+    [[Ta_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Air temperature QC flag
     [[Ts]]
         [[[average]]]
             [[[[degC]]]]
@@ -353,6 +441,14 @@
             [[[[K]]]]
                 long_name = Soil temperature
                 standard_name = soil_temperature
+    [[Ts_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Soil temperature ONEFlux QC flag
+    [[Ts_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Soil temperature QC flag
     [[Tv]]
         [[[average]]]
             [[[[degC]]]]
@@ -527,6 +623,14 @@
             [[[[kPa]]]]
                 long_name = Vapour pressure deficit
                 standard_name = water_vapor_saturation_deficit_in_air
+    [[VPD_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Vapour pressure deficit ONEFlux QC flag
+    [[VPD_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Vapour pressure deficit QC flag
     [[VPsat]]
         [[[average]]]
             [[[[hPa]]]]
@@ -564,4 +668,12 @@
                 long_name = Wind speed
         [[[variance]]]
             [[[[m^2/s^2]]]]
-                long_name = Wind direction
+                long_name = Wind speed
+    [[Ws_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Wind speed ONEFlux QC flag
+    [[Ws_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Wind speed QC flag

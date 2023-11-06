@@ -742,7 +742,7 @@ def check_l1_controlfile(cfg):
         std = ConfigObj(std_name, indent_type="    ", list_values=False, write_empty_values=True)
         std_labels = sorted(list(std["Variables"].keys()))
         # initialise the messages dictionary
-        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": []}
+        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
         # check the files section
         l1_check_files(cfg, std, messages)
         # check the global attributes section
@@ -759,8 +759,8 @@ def check_l1_controlfile(cfg):
         # check variables where the first characters of the name match an entry in settings/l1.txt
         cfg_labels = sorted(list(cfg["Variables"].keys()))
         for std_label in std_labels:
-            lsl = len(std_label)
-            label_matches = [l for l in cfg_labels if l[:min([len(l),lsl])] == std_label and l not in done]
+            label_matches = [l for l in cfg_labels if l.split("_")[0] == std_label
+                             and l not in done and "_QC" not in l]
             for cfg_label in label_matches:
                 # check variable 'Attr' section
                 l1_check_variables_sections(cfg, std, cfg_label, std_label, messages)
@@ -774,7 +774,7 @@ def check_l1_controlfile(cfg):
         l1_check_irga_sonic_type(cfg, messages)
         # display and messages
         display_messages_interactive(messages, mode="CloseOrIgnore")
-        if len(messages["ERROR"]) > 0:
+        if messages["RESULT"].lower() != "ignore":
             ok = False
     except Exception:
         ok = False
@@ -797,7 +797,7 @@ def check_l2_controlfile(cfg):
     try:
         ok = True
         # initialise the messages dictionary
-        messages = {"ERROR":[], "WARNING": [], "INFO": []}
+        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "close"}
         # check the files section
         l2_check_files(cfg, messages)
         # check the options section
@@ -805,7 +805,7 @@ def check_l2_controlfile(cfg):
         # check the variables section
         #l2_check_variables_section(cfg, std, messages)
         display_messages_interactive(messages)
-        if len(messages["ERROR"]) > 0:
+        if messages["RESULT"].lower() != "ignore":
             ok = False
     except Exception:
         ok = False
@@ -926,11 +926,11 @@ def check_l3_controlfile(cfg):
     Date: October 2023
     """
     ok = True
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "close"}
     check_l3_files(cfg, messages)
     check_l3_options(cfg, messages)
     display_messages_interactive(messages)
-    if len(messages["ERROR"]) > 0:
+    if messages["RESULT"].lower() != "ignore":
         ok = False
     return ok
 def check_l3_files(cfg, messages):
@@ -1243,10 +1243,14 @@ def display_messages_batch(messages):
                 logger.warning(msg)
             elif msg_type == "INFO":
                 logger.info(msg)
+            elif msg_type == "DEBUG":
+                logger.debug(msg)
             elif msg_type == "RESULT":
                 pass
             else:
-                raise RuntimeError("display_messages_batch: Unrecognised message in messages")
+                msg = "display_messages_batch: Unrecognised message type ("
+                msg += msg_type + " in messages"
+                logger.error(msg)
     return
 def display_messages_interactive(messages, mode="Close"):
     # gather variable error messages into a single list
@@ -1553,14 +1557,15 @@ def l1_check_input_labels(cfg, messages):
     if len(duplicate_labels) > 0:
         for duplicate_label in duplicate_labels:
             nc_duplicate_labels = []
-            nc_duplicate_sheets = []
+            #nc_duplicate_sheets = []
             for cfg_label in cfg_labels:
                 if source in cfg["Variables"][cfg_label]:
                     if "name" in cfg["Variables"][cfg_label][source]:
                         if cfg["Variables"][cfg_label][source]["name"] == duplicate_label:
                             nc_duplicate_labels.append(cfg_label)
-                            nc_duplicate_sheets.append(cfg["Variables"][cfg_label][source]["sheet"])
-            if nc_duplicate_sheets[0] == nc_duplicate_sheets[1]:
+                            #nc_duplicate_sheets.append(cfg["Variables"][cfg_label][source]["sheet"])
+            #if nc_duplicate_sheets[0] == nc_duplicate_sheets[1]:
+            if len(nc_duplicate_labels) > 1:
                 msg = "Duplicate input label " + duplicate_label + " used for "
                 msg += ",".join(nc_duplicate_labels)
                 messages["WARNING"].append(msg)
@@ -1625,6 +1630,8 @@ def l1_check_irga_only(cfg, irga_only_labels, messages):
     for label in list(irga_only_labels):
         if label not in cfg_labels:
             irga_only_labels.remove(label)
+    if len(irga_only_labels) == 0:
+        return
     irga_check = {}
     for label in irga_only_labels:
         if "instrument" in cfg["Variables"][label]["Attr"]:

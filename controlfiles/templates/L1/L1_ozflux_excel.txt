@@ -18,7 +18,7 @@ and the Education Investment Fund.'''
     data_link = http://data.ozflux.org.au/
     featureType = timeSeries
     fluxnet_id = 
-    history = June 2021 processing
+    history = 
     institution = 
     latitude = <latitude>
     license = https://creativecommons.org/licenses/by/4.0/
@@ -33,7 +33,7 @@ and the Education Investment Fund.'''
     soil = 
     source = 
     time_step = 30
-    time_zone = <country>/<time_zone>
+    time_zone = <country>/<city>
     title = Flux tower data set from the <site_name> site for the calendar year <year>
     tower_height = 
     vegetation = 

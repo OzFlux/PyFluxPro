@@ -1,0 +1,435 @@
+level = L1
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.csv)
+    in_firstdatarow = 2
+    in_headerrow = 1
+    out_filename = Right click to browse (*.nc)
+[Global]
+    Conventions = CF-1.8
+    acknowledgement = 
+    altitude = <altitude>m
+    canopy_height = <canopy_height>m
+    comment = 
+    contact = 
+    data_link = http://data.ozflux.org.au/
+    featureType = timeSeries
+    fluxnet_id = 
+    history = 
+    institution = 
+    latitude = <latitude>
+    license = https://creativecommons.org/licenses/by/4.0/
+    license_name = CC BY 4.0
+    longitude = <longitude>
+    metadata_link = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
+    ozflux_link = http://ozflux.org.au/
+    publisher_name = TERN Ecosystem Processes,OzFlux
+    references = 
+    site_name = <site_name>
+    site_pi = 
+    soil = 
+    source = 
+    time_step = 30
+    time_zone = <country>/<city>
+    title = ONEFlux subset output for the <site_name> site
+    tower_height = 
+    vegetation = 
+[Variables]
+    [[CO2]]
+        [[[Attr]]]
+            description = CO2 mole fraction, gapfilled with MDS
+            height = <height>m
+            instrument = <irga_type>
+            long_name = CO2 concentration
+            standard_name = mole_fraction_of_carbon_dioxide_in_air
+            statistic_type = average
+            units = umol/mol
+        [[[csv]]]
+            name = CO2_F_MDS
+    [[CO2_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for CO2_F_MDS
+            height = <height>m
+            instrument = <irga_type>
+            long_name = CO2 concentration ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = CO2_F_MDS_QC
+    [[ER_DT]]
+        [[[Attr]]]
+            description = Ecosystem Respiration, from Daytime partitioning method, reference selected from RECO versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            long_name = Ecosystem Respiration
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = RECO_DT_VUT_REF
+    [[ER_NT]]
+        [[[Attr]]]
+            description = Ecosystem Respiration, from Nighttime partitioning method, reference selected from RECO versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            long_name = Ecosystem Respiration
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = RECO_NT_VUT_REF
+    [[Fco2]]
+        [[[Attr]]]
+            description = Net Ecosystem Exchange, using Variable Ustar Threshold (VUT) for each year, reference selected on the basis of the model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            height = <height>m
+            instrument = <sonic_type>,<irga_type>
+            long_name = CO2 flux
+            standard_name = surface_upward_mole_flux_of_carbon_dioxide
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_VUT_REF
+    [[Fco2_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for NEE_VUT_REF, 0 = measured; 1 = good quality gapfill; 2 = medium; 3 = poor
+            height = <height>m
+            instrument = <sonic_type>,<irga_type>
+            long_name = CO2 flux ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_VUT_REF_QC
+    [[Fco2_OF_RANDUNC]]
+        [[[Attr]]]
+            description = Random uncertainty for NEE_VUT_REF, from measured only data
+            height = <height>m
+            instrument = <sonic_type>,<irga_type>
+            long_name = CO2 flux
+            standard_name = surface_upward_mole_flux_of_carbon_dioxide
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_VUT_REF_RANDUNC
+    [[Fe]]
+        [[[Attr]]]
+            description = Latent heat flux, gapfilled using MDS method
+            height = <height>m
+            instrument = <sonic_type>,<irga_type>
+            long_name = Latent heat flux
+            standard_name = surface_upward_latent_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = LE_F_MDS
+    [[Fe_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for LE_F_MDS, LE_CORR, LE_CORR25, and LE_CORR75, 0 = measured; 1 = good quality gapfill; 2 = medium; 3 = poor
+            height = <height>m
+            instrument = <sonic_type>,<irga_type>
+            long_name = Latent heat flux ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = LE_F_MDS_QC
+    [[Fe_OF_RANDUNC]]
+        [[[Attr]]]
+            description = Random uncertainty of LE, from measured only data
+            height = <height>m
+            instrument = <sonic_type>,<irga_type>
+            long_name = Latent heat flux
+            standard_name = surface_upward_latent_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = LE_RANDUNC
+    [[Fg]]
+        [[[Attr]]]
+            description = Soil heat flux
+            long_name = Ground heat flux
+            standard_name = downward_heat_flux_at_ground_level_in_soil
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = G_F_MDS
+    [[Fg_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag of G_F_MDS
+            long_name = Ground heat flux ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = G_F_MDS_QC
+    [[Fh]]
+        [[[Attr]]]
+            description = Sensible heat flux, gapfilled using MDS method
+            height = <height>m
+            instrument = <sonic_type>
+            long_name = Sensible heat flux
+            standard_name = surface_upward_sensible_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = H_F_MDS
+    [[Fh_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for H_F_MDS, H_CORR, H_CORR25, and H_CORR75, 0 = measured; 1 = good quality gapfill; 2 = medium; 3 = poor
+            height = <height>m
+            instrument = <sonic_type>
+            long_name = Sensible heat flux ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = H_F_MDS_QC
+    [[Fh_OF_RANDUNC]]
+        [[[Attr]]]
+            description = Random uncertainty of H, from measured only data
+            height = <height>m
+            instrument = <sonic_type>
+            long_name = Sensible heat flux
+            standard_name = surface_upward_sensible_heat_flux
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = H_RANDUNC
+    [[Fld]]
+        [[[Attr]]]
+            description = Consolidated from LW_IN_F_MDS and LW_IN_ERA
+            long_name = Down-welling longwave radiation
+            standard_name = surface_downwelling_longwave_flux_in_air
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = LW_IN_F
+    [[Fld_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for LW_IN_F
+            long_name = Down-welling longwave radiation ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = LW_IN_F_QC
+    [[Flu]]
+        [[[Attr]]]
+            description = Longwave radiation, outgoing
+            long_name = Up-welling longwave radiation
+            standard_name = surface_upwelling_longwave_flux_in_air
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = LW_OUT
+    [[Fn]]
+        [[[Attr]]]
+            description = Net radiation
+            long_name = Net radiation
+            standard_name = surface_net_downward_radiative_flux
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = NETRAD
+    [[Fsd]]
+        [[[Attr]]]
+            description = Consolidated from SW_IN_F_MDS and SW_IN_ERA (negative values set to zero)
+            long_name = Down-welling shortwave radiation
+            standard_name = surface_downwelling_shortwave_flux_in_air
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = SW_IN_F
+    [[Fsd_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for SW_IN_F
+            long_name = Down-welling shortwave radiation ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = SW_IN_F_QC
+    [[Fsu]]
+        [[[Attr]]]
+            description = Shortwave radiation, outgoing
+            long_name = Up-welling shortwave radiation
+            standard_name = surface_upwelling_shortwave_flux_in_air
+            statistic_type = average
+            units = W/m^2
+        [[[csv]]]
+            name = SW_OUT
+    [[GPP_DT]]
+        [[[Attr]]]
+            description = Gross Primary Production, from Daytime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            long_name = Gross Primary Productivity
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = GPP_DT_VUT_REF
+    [[GPP_NT]]
+        [[[Attr]]]
+            description = Gross Primary Production, from Nighttime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            long_name = Gross Primary Productivity
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = GPP_NT_VUT_REF
+    [[NEE]]
+        [[[Attr]]]
+            description = Net Ecosystem Exchange, using Variable Ustar Threshold (VUT) for each year, reference selected on the basis of the model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            long_name = Net Ecosystem Exchange
+            statistic_type = average
+            units = umol/m^2/s
+        [[[csv]]]
+            name = NEE_VUT_REF
+    [[NEE_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for NEE_VUT_REF
+            long_name = Net Ecosystem Exchange ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_VUT_REF_QC
+    [[NEE_OF_RANDUNC]]
+        [[[Attr]]]
+            description = Random uncertainty for NEE_VUT_REF, from measured only data
+            long_name = Net Ecosystem Exchange random uncertainty
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = NEE_VUT_REF_RANDUNC
+    [[Precip]]
+        [[[Attr]]]
+            description = Consolidated from P and P_ERA
+            long_name = Rainfall
+            standard_name = thickness_of_rainfall_amount
+            statistic_type = sum
+            units = mm
+        [[[csv]]]
+            name = P_F
+    [[Precip_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for P_F
+            long_name = Rainfall ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = P_F_QC
+    [[RH]]
+        [[[Attr]]]
+            description = Range 0-100
+            long_name = Relative humidity
+            standard_name = relative_humidity
+            statistic_type = average
+            units = percent
+        [[[csv]]]
+            name = RH
+    [[Sws]]
+        [[[Attr]]]
+            description = Soil water content, gapfilled with MDS
+            long_name = Soil water content
+            standard_name = volume_fraction_of_condensed_water_in_soil
+            statistic_type = average
+            units = percent
+        [[[csv]]]
+            name = SWC_F_MDS_1
+    [[Sws_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for SWC_F_MDS_
+            long_name = Soil water content ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = SWC_F_MDS_1_QC
+    [[Ta]]
+        [[[Attr]]]
+            description = Consolidated from TA_F_MDS and TA_ERA
+            long_name = Air temperature
+            standard_name = air_temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = TA_F
+    [[Ta_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for TA_F
+            long_name = Air temperature ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = TA_F_QC
+    [[Ts]]
+        [[[Attr]]]
+            description = Soil temperature, gapfilled with MDS
+            long_name = Soil temperature
+            standard_name = soil_temperature
+            statistic_type = average
+            units = degC
+        [[[csv]]]
+            name = TS_F_MDS_1
+    [[Ts_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for TS_F_MDS_
+            long_name = Soil temperature ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = TS_F_MDS_1_QC
+    [[VPD]]
+        [[[Attr]]]
+            description = Consolidated from VPD_F_MDS and VPD_ERA
+            long_name = Vapour pressure deficit
+            standard_name = water_vapor_saturation_deficit_in_air
+            statistic_type = average
+            units = hPa
+        [[[csv]]]
+            name = VPD_F
+    [[VPD_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for VPD_F
+            long_name = Vapour pressure deficit ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = VPD_F_QC
+    [[Wd]]
+        [[[Attr]]]
+            description = Wind direction
+            long_name = Wind direction
+            standard_name = wind_from_direction
+            statistic_type = average
+            units = degrees
+        [[[csv]]]
+            name = WD
+    [[Ws]]
+        [[[Attr]]]
+            description = Consolidated from WS and WS_ERA
+            long_name = Wind speed
+            standard_name = wind_speed
+            statistic_type = average
+            units = m/s
+        [[[csv]]]
+            name = WS_F
+    [[Ws_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag of WS_F
+            long_name = Wind speed ONEFlux QC flag
+            statistic_type = average
+            units = 1
+        [[[csv]]]
+            name = WS_F_QC
+    [[ps]]
+        [[[Attr]]]
+            description = Consolidated from PA and PA_ERA
+            long_name = Surface air pressure
+            standard_name = surface_air_pressure
+            statistic_type = average
+            units = kPa
+            instrument = Li-7500RS
+        [[[csv]]]
+            name = PA_F
+    [[ps_OF_QC]]
+        [[[Attr]]]
+            description = Quality flag for PA_F
+            long_name = Surface air pressure ONEFlux QC flag
+            statistic_type = average
+            units = 1
+            instrument = Li-7500RS
+        [[[csv]]]
+            name = PA_F_QC
+    [[ustar]]
+        [[[Attr]]]
+            description = Friction velocity
+            long_name = Friction velocity
+            statistic_type = average
+            units = m/s
+        [[[csv]]]
+            name = USTAR
