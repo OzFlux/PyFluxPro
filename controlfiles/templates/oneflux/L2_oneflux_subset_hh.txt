@@ -1,0 +1,23 @@
+level = L2
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.nc)
+    out_filename = Right click to browse (*.nc)
+    plot_path = Right click to browse
+[Options]
+    SONIC_Check = No
+    IRGA_Check = No
+[Variables]
+    [[Fco2]]
+        [[[DependencyCheck]]]
+            source = Fco2_OF_QC
+        [[[RangeCheck]]]
+            lower = -50
+            upper = 50
+    [[Fco2_OF_QC]]
+        [[[RangeCheck]]]
+            lower = -0.5
+            upper = 0.5
+[Plots]
+    [[Turbulent fluxes]]
+        variables = ustar,Fh,Fe,Fco2

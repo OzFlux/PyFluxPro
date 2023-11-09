@@ -1,0 +1,20 @@
+level = L5
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.nc)
+    out_filename = Right click to browse (*.nc)
+    plot_path = Right click to browse
+[Options]
+    MaxGapInterpolate = 3
+    FilterList = Fco2
+    TurbulenceFilter = none
+    DayNightFilter = Fsd
+    AcceptDayTimes = Yes
+[Fluxes]
+    [[Fco2]]
+        [[[MergeSeries]]]
+            source = Fco2,Fco2_MDS
+        [[[GapFillUsingMDS]]]
+            [[[[Fco2_MDS]]]]
+                drivers = Fsd,Ta,VPD
+                tolerances = (20,50),2.5,0.5
