@@ -797,7 +797,7 @@ def check_l2_controlfile(cfg):
     try:
         ok = True
         # initialise the messages dictionary
-        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "close"}
+        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
         # check the files section
         l2_check_files(cfg, messages)
         # check the options section
@@ -824,7 +824,7 @@ def check_l2_options(cfg, ds):
     Author: PRI
     Date: October 2022
     """
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     irga_types = open_path_irgas + closed_path_irgas
@@ -926,7 +926,7 @@ def check_l3_controlfile(cfg):
     Date: October 2023
     """
     ok = True
-    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "close"}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
     check_l3_files(cfg, messages)
     check_l3_options(cfg, messages)
     display_messages_interactive(messages)
@@ -1095,7 +1095,7 @@ def check_l5_controlfile(cfg):
     """
     ok = True
     # initialise the messages dictionary
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
     # check to see if both cpd_filename and ustar_threshold section exist
     if "ustar_threshold"in cfg:
         if "cpd_filename" in cfg["Files"]:
@@ -1117,7 +1117,7 @@ def check_l6_controlfile(cfg):
     """
     ok = True
     # initialise the messages dictionary
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
     l6_check_files(cfg, messages)
     l6_check_options(cfg, messages)
     l6_check_ecosystemrespiration(cfg, messages)
@@ -1144,7 +1144,7 @@ def check_windrose_controlfile(cfg):
     """
     ok = True
     # initialise the messages dictionary
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
     check_windrose_files_section(cfg, messages)
     check_windrose_options_section(cfg, messages)
     check_windrose_variables_section(cfg, messages)

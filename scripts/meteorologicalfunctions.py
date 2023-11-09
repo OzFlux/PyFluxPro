@@ -303,7 +303,7 @@ def mixingratio(ps,vp):
 def molen(T,AH,p,ustar,heatflux,fluxtype='sensible'):
     # Calculate the Monin-Obukhov length
     ustar = numpy.ma.sqrt(numpy.square(ustar))    # force the sign of ustar to be positive
-    vp = vapourpressure(AH,T)       # calculate the vapour pressure
+    vp = vapourpressurefromabsolutehumidity(AH,T)       # calculate the vapour pressure
     mr = mixingratio(p,vp)          # calculate the mixing ratio
     Tv = theta(T,p)                 # calculate potential temperature
     Tvp = virtualtheta(Tv,mr)
@@ -335,7 +335,7 @@ def relativehumidityfromabsolutehumidity(AH, Ta):
     AH, WasND = pfp_utils.SeriestoMA(AH)
     Ta, dummy = pfp_utils.SeriestoMA(Ta)
     # do the job
-    VP = vapourpressure(AH, Ta)
+    VP = vapourpressurefromabsolutehumidity(AH, Ta)
     RH = float(100)*VP/VPsat(Ta)
     # convert back to ndarray if input is not a masked array
     if WasND: RH, _ = pfp_utils.MAtoSeries(RH)
@@ -464,7 +464,7 @@ def theta(T,p):
     #  theta - potential temperature, K
     return (T+273.15)*(100/p)**0.286
 
-def vapourpressure(AH,Ta):
+def vapourpressurefromabsolutehumidity(AH, Ta):
     # Calculate vapour pressure from absolute humidity and temperature
     #  AH - absolute humidity, g/m^3
     #  Ta - air temperature, degC
@@ -472,6 +472,16 @@ def vapourpressure(AH,Ta):
     #  vp - vapour pressure, kPa
     vp = 0.000001*AH*(Ta+273.15)*c.R/c.Mv
     return vp
+
+def vapourpressurefromrelativehumidity(RH, Ta):
+    # Calculate vapour pressure from relative humidity and temperature
+    #  RH - relative humidity, %
+    #  Ta - air temperature, degC
+    # Returns
+    #  VP - vapour pressure, kPa
+    vpsat = VPsat(Ta)
+    VP = vpsat * (RH / float(100))
+    return VP
 
 def virtualtheta(theta_in, mr):
     # Calculate virtual potential temperature

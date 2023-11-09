@@ -310,21 +310,30 @@ def CalculateHumidities(ds):
      March 2015
     Author: PRI
     """
-    if "AH" not in list(ds.root["Variables"].keys()):
-        if "SH" in list(ds.root["Variables"].keys()):
-            AbsoluteHumidityFromSpecificHumidity(ds)   # calculate AH from SH
-        elif "RH" in list(ds.root["Variables"].keys()):
-            AbsoluteHumidityFromRelativeHumidity(ds)   # calculate AH from RH
-    if "SH" not in list(ds.root["Variables"].keys()):
-        if "AH" in list(ds.root["Variables"].keys()):
+    labels = list(ds.root["Variables"].keys())
+    if "AH" not in labels:
+        if "SH" in labels:
+            # calculate AH from SH
+            AbsoluteHumidityFromSpecificHumidity(ds)
+        elif "RH" in labels:
+            # calculate AH from RH
+            AbsoluteHumidityFromRelativeHumidity(ds)
+    if "SH" not in labels:
+        if "AH" in labels:
             SpecificHumidityFromAbsoluteHumidity(ds)
-        elif "RH" in list(ds.root["Variables"].keys()):
+        elif "RH" in labels:
             SpecificHumidityFromRelativeHumidity(ds)
-    if "RH" not in list(ds.root["Variables"].keys()):
-        if "AH" in list(ds.root["Variables"].keys()):
+    if "RH" not in labels:
+        if "AH" in labels:
             RelativeHumidityFromAbsoluteHumidity(ds)
-        elif "SH" in list(ds.root["Variables"].keys()):
+        elif "SH" in labels:
             RelativeHumidityFromSpecificHumidity(ds)
+    if "VP" not in labels:
+        if "RH" in labels:
+            VapourPressureFromRelativeHumidity(ds)
+        elif "AH" in labels:
+            VapourPressureFromAbsoluteHumidity(ds)
+    return
 
 def CalculateHumiditiesAfterGapFill(ds, info):
     """
@@ -360,10 +369,12 @@ def CalculateHumiditiesAfterGapFill(ds, info):
     if "AH" in gf_list:
         if "SH" not in gf_list: SpecificHumidityFromAbsoluteHumidity(ds)
         if "RH" not in gf_list: RelativeHumidityFromAbsoluteHumidity(ds)
+        if "VP" not in gf_list: VapourPressureFromAbsoluteHumidity(ds)
     # ... or was relative humidity (RH) gap filled ...
     elif "RH" in gf_list:
         if "AH" not in gf_list: AbsoluteHumidityFromRelativeHumidity(ds)
         if "SH" not in gf_list: SpecificHumidityFromRelativeHumidity(ds)
+        if "VP" not in gf_list: VapourPressureFromRelativeHumidity(ds)
     # ... or was specific humidity (SH) gap filled ...
     elif "SH" in gf_list:
         if "AH" not in gf_list: AbsoluteHumidityFromSpecificHumidity(ds)
@@ -659,7 +670,7 @@ def CalculateMeteorologicalVariables(ds, info, Ta_name='Ta', Tv_name='Tv_SONIC_A
     # do the calculations
     # vapour pressure from absolute humidity and temperature
     VP = pfp_utils.CreateEmptyVariable("VP", nrecs)
-    VP["Data"] = pfp_mf.vapourpressure(AH["Data"], Ta["Data"])
+    VP["Data"] = pfp_mf.vapourpressurefromabsolutehumidity(AH["Data"], Ta["Data"])
     VP["Attr"] = {"long_name": "Vapour pressure", "units": "kPa",
                   "standard_name": "water_vapor_partial_pressure_in_air",
                   descr_level: "Vapour pressure calculated from AH, Ta and ps",
@@ -785,9 +796,20 @@ def CalculateMoninObukhovLength(ds):
     """
     logger.info(' Calculating Monin-Obukhov length')
     # create a variable dictionary for L
+    labels = list(ds.root["Variables"].keys())
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
-    ldt = pfp_utils.GetVariable(ds, "DateTime")
-    L = pfp_utils.CreateEmptyVariable("L", nrecs, datetime=ldt["Data"])
+    L = pfp_utils.CreateEmptyVariable("L", nrecs)
+    # check to see if we have the required data
+    missing = []
+    got_data = True
+    for label in ["Ta", "ps", "VP", "Fh", "ustar"]:
+        if label not in labels:
+            got_data = False
+            missing.append(label)
+    if not got_data:
+        msg = "  " + ",".join(missing) + " missing, L not calculated"
+        logger.warning(msg)
+        return
     # create QC flags
     zeros = numpy.zeros(nrecs, dtype=numpy.int32)
     ones = numpy.ones(nrecs, dtype=numpy.int32)
@@ -3002,7 +3024,7 @@ def TaFromTv(cf, ds, Ta_out="Ta_SONIC_Av", Tv_in="Tv_SONIC_Av", AH_in="AH",
         SH = pfp_utils.GetVariable(ds, SH_in)
     elif AH_in in list(ds.root["Variables"].keys()):
         AH = pfp_utils.GetVariable(ds, AH_in)
-        vp = pfp_mf.vapourpressure(AH["Data"], Tv["Data"])
+        vp = pfp_mf.vapourpressurefromabsolutehumidity(AH["Data"], Tv["Data"])
         mr = pfp_mf.mixingratio(ps["Data"], vp)
         SH["Data"] = pfp_mf.specifichumidity(mr)
     elif RH_in in list(ds.root["Variables"].keys()):
@@ -3017,4 +3039,99 @@ def TaFromTv(cf, ds, Ta_out="Ta_SONIC_Av", Tv_in="Tv_SONIC_Av", AH_in="AH",
                   descr_level: "Ta calculated from Tv using " + Tv_in, "units": "degC",
                   "standard_name": "air_temperature", "statistic_type": "average"}
     pfp_utils.CreateVariable(ds, Ta)
+    return
+
+def VapourPressureFromAbsoluteHumidity(ds):
+    """ Calculate vapour pressure from absolute humidity."""
+    msg = " Calculating vapour pressure from relative humidity"
+    logger.info(msg)
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+    zeros = numpy.zeros(nrecs, dtype=numpy.int32)
+    ones = numpy.ones(nrecs, dtype=numpy.int32)
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
+    attr = {"long_name": "Vapour pressure", "units": "kPa",
+            "standard_name": "water_vapor_partial_pressure_in_air",
+            descr_level: "Vapour pressure calculated from AH and Ta",
+            "statistic_type": "average"}
+    VP = pfp_utils.CreateEmptyVariable("VP", nrecs, attr=attr)
+    labels = list(ds.root["Variables"].keys())
+    got_data = True
+    missing = []
+    for label in ["Ta", "AH"]:
+        if label not in labels:
+            got_data = False
+            missing.append(label)
+    if got_data:
+        AH = pfp_utils.GetVariable(ds, "AH")
+        Ta = pfp_utils.GetVariable(ds, "Ta")
+        VP["Data"] = pfp_mf.vapourpressurefromabsolutehumidity(AH["Data"], Ta["Data"])
+        VP["Flag"] = numpy.where(numpy.ma.getmaskarray(VP["Data"]) == True, ones, zeros)
+    else:
+        msg = "  " + ",".join(missing) + " missing, VP not calculated"
+        logger.warning(msg)
+    pfp_utils.CreateVariable(ds, VP)
+    return
+
+def VapourPressureFromRelativeHumidity(ds):
+    """ Calculate vapour pressure from relative humidity."""
+    msg = " Calculating vapour pressure from relative humidity"
+    logger.info(msg)
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+    zeros = numpy.zeros(nrecs, dtype=numpy.int32)
+    ones = numpy.ones(nrecs, dtype=numpy.int32)
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
+    attr = {"long_name": "Vapour pressure", "units": "kPa",
+            "standard_name": "water_vapor_partial_pressure_in_air",
+            descr_level: "Vapour pressure calculated from RH and Ta",
+            "statistic_type": "average"}
+    VP = pfp_utils.CreateEmptyVariable("VP", nrecs, attr=attr)
+    labels = list(ds.root["Variables"].keys())
+    got_data = True
+    missing = []
+    for label in ["Ta", "RH"]:
+        if label not in labels:
+            got_data = False
+            missing.append(label)
+    if got_data:
+        RH = pfp_utils.GetVariable(ds, "RH")
+        Ta = pfp_utils.GetVariable(ds, "Ta")
+        VP["Data"] = pfp_mf.vapourpressurefromrelativehumidity(RH["Data"], Ta["Data"])
+        VP["Flag"] = numpy.where(numpy.ma.getmaskarray(VP["Data"]) == True, ones, zeros)
+    else:
+        msg = "  " + ",".join(missing) + " missing, VP not calculated"
+        logger.warning(msg)
+    pfp_utils.CreateVariable(ds, VP)
+    return
+
+def VapourPressureFromSpecificHumidity(ds):
+    """ Calculate vapour pressure from specific humidity."""
+    msg = " Calculating vapour pressure from specific humidity"
+    logger.info(msg)
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+    zeros = numpy.zeros(nrecs, dtype=numpy.int32)
+    ones = numpy.ones(nrecs, dtype=numpy.int32)
+    descr_level = "description_" + ds.root["Attributes"]["processing_level"]
+    attr = {"long_name": "Vapour pressure", "units": "kPa",
+            "standard_name": "water_vapor_partial_pressure_in_air",
+            descr_level: "Vapour pressure calculated from SH, Ta and ps",
+            "statistic_type": "average"}
+    VP = pfp_utils.CreateEmptyVariable("VP", nrecs, attr=attr)
+    labels = list(ds.root["Variables"].keys())
+    got_data = True
+    missing = []
+    for label in ["Ta", "SH", "ps"]:
+        if label not in labels:
+            got_data = False
+            missing.append(label)
+    if got_data:
+        SH = pfp_utils.GetVariable(ds, "SH")
+        Ta = pfp_utils.GetVariable(ds, "Ta")
+        ps = pfp_utils.GetVariable(ds, "ps")
+        rh = pfp_mf.relativehumidityfromspecifichumidity(SH["Data"], Ta["Data"], ps["Data"])
+        VP["Data"] = pfp_mf.vapourpressurefromrelativehumidity(rh, Ta["Data"])
+        VP["Flag"] = numpy.where(numpy.ma.getmaskarray(VP["Data"]) == True, ones, zeros)
+    else:
+        msg = "  " + ",".join(missing) + " missing, VP not calculated"
+        logger.warning(msg)
+    pfp_utils.CreateVariable(ds, VP)
     return

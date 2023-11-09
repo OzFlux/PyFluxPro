@@ -316,6 +316,8 @@ def l5qc(main_gui, cf, ds4):
     pfp_gf.CheckL5Targets(ds5, l5_info)
     if ds5.info["returncodes"]["value"] != 0:
         return ds5
+    # make sure we have vapour pressure (required by CalculateMoninObukhovLength())
+    pfp_ts.CalculateHumidities(ds5)
     # calculate Monin-Obukhov length
     pfp_ts.CalculateMoninObukhovLength(ds5)
     # write the percentage of good data as a variable attribute

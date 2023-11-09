@@ -144,6 +144,10 @@
         [[[average]]]
             [[[[1]]]]
                 long_name = CO2 flux ONEFlux QC flag
+    [[Fco2_OF_RANDUNC]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = CO2 flux ONEFlux random uncertainty
     [[Fco2_QC]]
         [[[average]]]
             [[[[1]]]]
@@ -173,6 +177,10 @@
         [[[average]]]
             [[[[1]]]]
                 long_name = Latent heat flux ONEFlux QC flag
+    [[Fe_OF_RANDUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux ONEFlux random uncertainty
     [[Fe_QC]]
         [[[average]]]
             [[[[1]]]]
@@ -215,6 +223,10 @@
         [[[average]]]
             [[[[1]]]]
                 long_name = Sensible heat flux ONEFlux QC flag
+    [[Fh_OF_RANDUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Sensible heat flux ONEFlux random uncertainty
     [[Fh_QC]]
         [[[average]]]
             [[[[1]]]]

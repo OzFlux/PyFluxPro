@@ -908,8 +908,8 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
     # now fill the driver data array
     i = 0
     badlines = []
-    baddates = []
-    badvalues = []
+    #baddates = []
+    #badvalues = []
     for label in drivers:
         driver = pfp_utils.GetVariable(dsb, label, start=si, end=ei)
         driver["Data"] = numpy.ma.filled(driver["Data"], c.missing_value)
@@ -918,13 +918,14 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
             msg = " GapFillUsingSOLO: missing value found in driver " + label + " at lines " + str(index)
             logger.error(msg)
             badlines = badlines + index.tolist()
-            for n in index:
-                baddates.append(dsb.root["Variables"]["DateTime"]["Data"][n])
-                badvalues.append(dsb.root["Variables"][label]["Data"][n])
-            msg = " GapFillUsingSOLO: driver values: " + str(badvalues)
-            logger.error(msg)
-            msg = " GapFillUsingSOLO: datetimes: " + str(baddates)
-            logger.error(msg)
+            # PRI 08/11/2023
+            #for n in index:
+                #baddates.append(dsb.root["Variables"]["DateTime"]["Data"][n])
+                #badvalues.append(dsb.root["Variables"][label]["Data"][n])
+            #msg = " GapFillUsingSOLO: driver values: " + str(badvalues)
+            #logger.error(msg)
+            #msg = " GapFillUsingSOLO: datetimes: " + str(baddates)
+            #logger.error(msg)
         sofminputdata[:, i] = driver["Data"][:]
         i = i + 1
     if len(badlines) != 0:
