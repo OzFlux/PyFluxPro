@@ -281,7 +281,9 @@ class pfp_main_ui(QWidget):
         logger = logging.getLogger(name="pfp_log")
         # get the control file path
         if not file_uri:
-            file_uri = QFileDialog.getOpenFileName(caption="Choose a file ...")[0]
+            filter_text = "All (*.txt *.nc)"
+            file_uri = QFileDialog.getOpenFileName(caption="Choose a file ...",
+                                                   filter=filter_text)[0]
             # check to see if file open was cancelled
             if len(str(file_uri)) == 0:
                 return
