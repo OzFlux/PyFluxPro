@@ -7,7 +7,10 @@ level = L1
     out_filename = Right click to browse (*.nc)
 [Global]
     Conventions = CF-1.8
-    acknowledgement = 
+    acknowledgement = '''This work used eddy covariance data collected by the TERN Ecosystem 
+Processes facility. Ecosystem Processes would like to acknowledge the financial support of the 
+Australian Federal Government via the National Collaborative Research Infrastructure Scheme 
+and the Education Investment Fund.'''
     altitude = <height>m
     canopy_height = <canopy_height>m
     comment = 
@@ -15,7 +18,7 @@ level = L1
     data_link = http://data.ozflux.org.au/
     featureType = timeSeries
     fluxnet_id = 
-    history = ONEFlux processing
+    history = June 2021 processing
     institution = 
     latitude = <latitude>
     license = https://creativecommons.org/licenses/by/4.0/
@@ -39,7 +42,6 @@ level = L1
         [[[Attr]]]
             description = CO2 mole fraction, gapfilled with MDS
             long_name = CO2 concentration
-            not_required = height
             standard_name = mole_fraction_of_carbon_dioxide_in_air
             statistic_type = average
             units = umol/mol
@@ -49,7 +51,6 @@ level = L1
         [[[Attr]]]
             description = Quality flag for CO2_F_MDS
             long_name = CO2 flux quality control flag
-            not_required = height
             statistic_type = average
             units = 1
         [[[csv]]]

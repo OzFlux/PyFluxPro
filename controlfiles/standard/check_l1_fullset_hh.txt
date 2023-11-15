@@ -1,0 +1,547 @@
+[fullset_hh]
+    [[CO2_F_MDS]]
+        [[[average]]]
+            [[[[umol/mol]]]]
+                long_name = CO2 concentration
+                standard_name = mole_fraction_of_carbon_dioxide_in_air
+    [[CO2_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 flux quality control flag
+    [[EBC_CF_METHOD]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = EBC_CF_METHOD
+    [[EBC_CF_N]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = EBC_CF_N
+    [[GPP_DT_CUT_MEAN]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_DT_CUT_MEAN
+    [[GPP_DT_CUT_REF]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_DT_CUT_REF
+    [[GPP_DT_CUT_SE]]
+        [[[standard_error]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_DT_CUT_SE
+    [[GPP_DT_CUT_USTAR50]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_DT_CUT_USTAR50
+    [[GPP_DT_VUT_MEAN]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_DT_VUT_MEAN
+    [[GPP_DT_VUT_REF]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_DT_VUT_REF
+    [[GPP_DT_VUT_SE]]
+        [[[standard_error]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_DT_VUT_SE
+    [[GPP_DT_VUT_USTAR50]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_DT_VUT_USTAR50
+    [[GPP_NT_CUT_MEAN]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_NT_CUT_MEAN
+    [[GPP_NT_CUT_REF]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_NT_CUT_REF
+    [[GPP_NT_CUT_SE]]
+        [[[standard_error]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_NT_CUT_SE
+    [[GPP_NT_CUT_USTAR50]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_NT_CUT_USTAR50
+    [[GPP_NT_VUT_MEAN]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_NT_VUT_MEAN
+    [[GPP_NT_VUT_REF]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_NT_VUT_REF
+    [[GPP_NT_VUT_SE]]
+        [[[standard_error]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_NT_VUT_SE
+    [[GPP_NT_VUT_USTAR50]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = GPP_NT_VUT_USTAR50
+    [[G_F_MDS]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = G_F_MDS
+    [[G_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = G_F_MDS_QC
+    [[H_CORR]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = H_CORR
+    [[H_CORR_25]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = H_CORR_25
+    [[H_CORR_75]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = H_CORR_75
+    [[H_CORR_JOINTUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = H_CORR_JOINTUNC
+    [[H_F_MDS]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = H_F_MDS
+    [[H_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = H_F_MDS_QC
+    [[H_RANDUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = H_RANDUNC
+    [[H_RANDUNC_METHOD]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = H_RANDUNC_METHOD
+    [[H_RANDUNC_N]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = H_RANDUNC_N
+    [[LE_CORR]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_CORR_25]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_CORR_75]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_CORR_JOINTUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_F_MDS]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Latent heat flux quality control flag
+    [[LE_RANDUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_RANDUNC_METHOD]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = LE_RANDUNC_METHOD
+    [[LE_RANDUNC_N]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = LE_RANDUNC_N
+    [[LW_IN_ERA]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = LW_IN_ERA
+    [[LW_IN_F]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Down-welling longwave radiation
+                standard_name = surface_downwelling_longwave_flux_in_air
+    [[LW_IN_F_MDS]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Down-welling longwave radiation
+                standard_name = surface_downwelling_longwave_flux_in_air
+    [[LW_IN_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = LW_IN_F_MDS_QC
+    [[LW_IN_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling longwave radiation quality control flag
+    [[LW_IN_JSB]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = LW_IN_JSB
+    [[LW_IN_JSB_ERA]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = LW_IN_JSB_ERA
+    [[LW_IN_JSB_F]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = LW_IN_JSB_F
+    [[LW_IN_JSB_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = LW_IN_JSB_F_QC
+    [[LW_IN_JSB_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = LW_IN_JSB_QC
+    [[LW_OUT]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Up-welling longwave radiation
+                standard_name = surface_upwelling_longwave_flux_in_air
+    [[NEE_CUT_MEAN]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_CUT_MEAN
+    [[NEE_CUT_MEAN_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_CUT_MEAN_QC
+    [[NEE_CUT_REF]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_CUT_REF
+    [[NEE_CUT_REF_JOINTUNC]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_CUT_REF_JOINTUNC
+    [[NEE_CUT_REF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_CUT_REF_QC
+    [[NEE_CUT_REF_RANDUNC]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_CUT_REF_RANDUNC
+    [[NEE_CUT_REF_RANDUNC_METHOD]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_CUT_REF_RANDUNC_METHOD
+    [[NEE_CUT_REF_RANDUNC_N]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_CUT_REF_RANDUNC_N
+    [[NEE_CUT_SE]]
+        [[[standard_error]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_CUT_SE
+    [[NEE_CUT_USTAR50]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_CUT_USTAR50
+    [[NEE_CUT_USTAR50_JOINTUNC]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_CUT_USTAR50_JOINTUNC
+    [[NEE_CUT_USTAR50_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_CUT_USTAR50_QC
+    [[NEE_CUT_USTAR50_RANDUNC]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_CUT_USTAR50_RANDUNC
+    [[NEE_CUT_USTAR50_RANDUNC_METHOD]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_CUT_USTAR50_RANDUNC_METHOD
+    [[NEE_CUT_USTAR50_RANDUNC_N]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_CUT_USTAR50_RANDUNC_N
+    [[NEE_VUT_MEAN]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_VUT_MEAN
+    [[NEE_VUT_MEAN_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_VUT_MEAN_QC
+    [[NEE_VUT_REF]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_VUT_REF
+    [[NEE_VUT_REF_JOINTUNC]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_VUT_REF_JOINTUNC
+    [[NEE_VUT_REF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_VUT_REF_QC
+    [[NEE_VUT_REF_RANDUNC]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_VUT_REF_RANDUNC
+    [[NEE_VUT_REF_RANDUNC_METHOD]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_VUT_REF_RANDUNC_METHOD
+    [[NEE_VUT_REF_RANDUNC_N]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_VUT_REF_RANDUNC_N
+    [[NEE_VUT_SE]]
+        [[[standard_error]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_VUT_SE
+    [[NEE_VUT_USTAR50]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_VUT_USTAR50
+    [[NEE_VUT_USTAR50_JOINTUNC]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_VUT_USTAR50_JOINTUNC
+    [[NEE_VUT_USTAR50_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_VUT_USTAR50_QC
+    [[NEE_VUT_USTAR50_RANDUNC]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = NEE_VUT_USTAR50_RANDUNC
+    [[NEE_VUT_USTAR50_RANDUNC_METHOD]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_VUT_USTAR50_RANDUNC_METHOD
+    [[NEE_VUT_USTAR50_RANDUNC_N]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NEE_VUT_USTAR50_RANDUNC_N
+    [[NETRAD]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = NETRAD
+    [[NIGHT]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = NIGHT
+    [[P]]
+        [[[sum]]]
+            [[[[mm]]]]
+                long_name = P
+    [[PA]]
+        [[[average]]]
+            [[[[kPa]]]]
+                long_name = PA
+    [[PA_ERA]]
+        [[[average]]]
+            [[[[kPa]]]]
+                long_name = PA_ERA
+    [[PA_F]]
+        [[[average]]]
+            [[[[kPa]]]]
+                long_name = PA_F
+    [[PA_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = PA_F_QC
+    [[P_ERA]]
+        [[[sum]]]
+            [[[[mm]]]]
+                long_name = P_ERA
+    [[P_F]]
+        [[[sum]]]
+            [[[[mm]]]]
+                long_name = P_F
+    [[P_F_QC]]
+        [[[sum]]]
+            [[[[1]]]]
+                long_name = P_F_QC
+    [[RECO_DT_CUT_MEAN]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_DT_CUT_MEAN
+    [[RECO_DT_CUT_REF]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_DT_CUT_REF
+    [[RECO_DT_CUT_SE]]
+        [[[standard_error]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_DT_CUT_SE
+    [[RECO_DT_CUT_USTAR50]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_DT_CUT_USTAR50
+    [[RECO_DT_VUT_MEAN]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_DT_VUT_MEAN
+    [[RECO_DT_VUT_REF]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_DT_VUT_REF
+    [[RECO_DT_VUT_SE]]
+        [[[standard_error]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_DT_VUT_SE
+    [[RECO_DT_VUT_USTAR50]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_DT_VUT_USTAR50
+    [[RECO_NT_CUT_MEAN]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_NT_CUT_MEAN
+    [[RECO_NT_CUT_REF]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_NT_CUT_REF
+    [[RECO_NT_CUT_SE]]
+        [[[standard_error]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_NT_CUT_SE
+    [[RECO_NT_CUT_USTAR50]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_NT_CUT_USTAR50
+    [[RECO_NT_VUT_MEAN]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_NT_VUT_MEAN
+    [[RECO_NT_VUT_REF]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_NT_VUT_REF
+    [[RECO_NT_VUT_SE]]
+        [[[standard_error]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_NT_VUT_SE
+    [[RECO_NT_VUT_USTAR50]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_NT_VUT_USTAR50
+    [[RECO_SR]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = RECO_SR
+    [[RECO_SR_N]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = RECO_SR_N
+    [[RH]]
+        [[[average]]]
+            [[[[percent]]]]
+                long_name = Relative humidity
+                standard_name = relative_humidity
+    [[SW_IN_ERA]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = SW_IN_ERA
+    [[SW_IN_F]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = SW_IN_F
+    [[SW_IN_F_MDS]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = SW_IN_F_MDS
+    [[SW_IN_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = SW_IN_F_MDS_QC
+    [[SW_IN_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = SW_IN_F_QC
+    [[SW_IN_POT]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = SW_IN_POT
+    [[SW_OUT]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = SW_OUT
+    [[TA_ERA]]
+        [[[average]]]
+            [[[[degC]]]]
+                long_name = TA_ERA
+    [[TA_F]]
+        [[[average]]]
+            [[[[degC]]]]
+                long_name = TA_F
+    [[TA_F_MDS]]
+        [[[average]]]
+            [[[[degC]]]]
+                long_name = TA_F_MDS
+    [[TA_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = TA_F_MDS_QC
+    [[TA_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = TA_F_QC
+    [[USTAR]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = USTAR
+    [[VPD_ERA]]
+        [[[average]]]
+            [[[[hPa]]]]
+                long_name = Vapour pressure deficit
+                standard_name = water_vapor_saturation_deficit_in_air
+    [[VPD_F]]
+        [[[average]]]
+            [[[[hPa]]]]
+                long_name = Vapour pressure deficit
+                standard_name = water_vapor_saturation_deficit_in_air
+    [[VPD_F_MDS]]
+        [[[average]]]
+            [[[[hPa]]]]
+                long_name = Vapour pressure deficit
+                standard_name = water_vapor_saturation_deficit_in_air
+    [[VPD_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = VPD_F_MDS_QC
+    [[VPD_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Vapour pressure deficit quality control flag
+    [[WD]]
+        [[[average]]]
+            [[[[degrees]]]]
+                long_name = WD
+    [[WS]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = WS
+    [[WS_ERA]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = WS_ERA
+    [[WS_F]]
+        [[[average]]]
+            [[[[m/s]]]]
+                long_name = WS_F
+    [[WS_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = WS_F_QC

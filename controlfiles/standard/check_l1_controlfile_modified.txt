@@ -89,6 +89,23 @@
                 long_name = CO2 concentration
             [[[[umol^2/mol^2]]]]
                 long_name = CO2 concentration
+    [[CO2_F_MDS]]
+        [[[average]]]
+            [[[[umol/mol]]]]
+                long_name = CO2 concentration
+                standard_name = mole_fraction_of_carbon_dioxide_in_air
+    [[CO2_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 flux quality control flag
+    [[CO2_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 concentration ONEFlux QC flag
+    [[CO2_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 concentration QC flag
     [[CO2_Samples]]
         [[[sum]]]
             [[[[1]]]]
@@ -132,6 +149,18 @@
         [[[average]]]
             [[[[1]]]]
                 long_name = CO2 flux EddyPro QC flag
+    [[Fco2_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 flux ONEFlux QC flag
+    [[Fco2_OF_RANDUNC]]
+        [[[average]]]
+            [[[[umol/m^2/s]]]]
+                long_name = CO2 flux ONEFlux random uncertainty
+    [[Fco2_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = CO2 flux ONEFlux QC flag
     [[Fe]]
         [[[average]]]
             [[[[W/m^2]]]]
@@ -153,11 +182,31 @@
         [[[average]]]
             [[[[1]]]]
                 long_name = Latent heat flux EddyPro QC flag
+    [[Fe_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Latent heat flux ONEFlux QC flag
+    [[Fe_OF_RANDUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux ONEFlux random uncertainty
+    [[Fe_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Latent heat flux QC flag
     [[Fg]]
         [[[average]]]
             [[[[W/m^2]]]]
                 long_name = Ground heat flux
                 standard_name = downward_heat_flux_at_ground_level_in_soil
+    [[Fg_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Ground heat flux ONEFlux QC flag
+    [[Fg_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Ground heat flux QC flag
     [[Fh]]
         [[[average]]]
             [[[[W/m^2]]]]
@@ -179,6 +228,18 @@
         [[[average]]]
             [[[[1]]]]
                 long_name = Sensible heat flux EddyPro QC flag
+    [[Fh_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Sensible heat flux ONEFlux QC flag
+    [[Fh_OF_RANDUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Sensible heat flux ONEFlux random uncertainty
+    [[Fh_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Sensible heat flux QC flag
     [[Fh2o]]
         [[[average]]]
             [[[[mmol/m^2/s]]]]
@@ -196,6 +257,14 @@
             [[[[W/m^2]]]]
                 long_name = Down-welling longwave radiation
                 standard_name = surface_downwelling_longwave_flux_in_air
+    [[Fld_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling longwave radiation ONEFlux QC flag
+    [[Fld_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling longwave radiation QC flag
     [[Flu]]
         [[[average]]]
             [[[[W/m^2]]]]
@@ -232,11 +301,83 @@
             [[[[W/m^2]]]]
                 long_name = Down-welling shortwave radiation
                 standard_name = surface_downwelling_shortwave_flux_in_air
+    [[Fsd_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling shortwave radiation ONEFlux QC flag
+    [[Fsd_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling shortwave radiation QC flag
     [[Fsu]]
         [[[average]]]
             [[[[W/m^2]]]]
                 long_name = Up-welling shortwave radiation
                 standard_name = surface_upwelling_shortwave_flux_in_air
+    [[GPP_DT_CUT_MEAN]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_DT_CUT_MEAN
+    [[GPP_DT_CUT_REF]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_DT_CUT_REF
+    [[GPP_DT_CUT_SE]]
+        [[[standard_error]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_DT_CUT_SE
+    [[GPP_DT_CUT_USTAR50]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_DT_CUT_USTAR50
+    [[GPP_DT_VUT_MEAN]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_DT_VUT_MEAN
+    [[GPP_DT_VUT_REF]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_DT_VUT_REF
+    [[GPP_DT_VUT_SE]]
+        [[[standard_error]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_DT_VUT_SE
+    [[GPP_DT_VUT_USTAR50]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_DT_VUT_USTAR50
+    [[GPP_NT_CUT_MEAN]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_NT_CUT_MEAN
+    [[GPP_NT_CUT_REF]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_NT_CUT_REF
+    [[GPP_NT_CUT_SE]]
+        [[[standard_error]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_NT_CUT_SE
+    [[GPP_NT_CUT_USTAR50]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_NT_CUT_USTAR50
+    [[GPP_NT_VUT_MEAN]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_NT_VUT_MEAN
+    [[GPP_NT_VUT_REF]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_NT_VUT_REF
+    [[GPP_NT_VUT_SE]]
+        [[[standard_error]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_NT_VUT_SE
+    [[GPP_NT_VUT_USTAR50]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = GPP_NT_VUT_USTAR50
     [[H2O]]
         [[[average]]]
             [[[[mmol/mol]]]]
@@ -260,6 +401,165 @@
         [[[average]]]
             [[[[m]]]]
                 long_name = Monin-Obukhov length
+    [[LE_CORR]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_CORR_25]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_CORR_75]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_CORR_JOINTUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_F_MDS]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+                standard_name = surface_upward_latent_heat_flux
+    [[LE_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Latent heat flux quality control flag
+    [[LE_RANDUNC]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Latent heat flux
+    [[LE_RANDUNC_METHOD]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = LE_RANDUNC_METHOD
+    [[LE_RANDUNC_N]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = LE_RANDUNC_N
+    [[LW_IN_ERA]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = LW_IN_ERA
+    [[LW_IN_F]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Down-welling longwave radiation
+                standard_name = surface_downwelling_longwave_flux_in_air
+    [[LW_IN_F_MDS]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Down-welling longwave radiation
+                standard_name = surface_downwelling_longwave_flux_in_air
+    [[LW_IN_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = LW_IN_F_MDS_QC
+    [[LW_IN_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Down-welling longwave radiation quality control flag
+    [[LW_IN_JSB]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = LW_IN_JSB
+    [[LW_IN_JSB_ERA]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = LW_IN_JSB_ERA
+    [[LW_IN_JSB_F]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = LW_IN_JSB_F
+    [[LW_IN_JSB_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = LW_IN_JSB_F_QC
+    [[LW_IN_JSB_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = LW_IN_JSB_QC
+    [[LW_OUT]]
+        [[[average]]]
+            [[[[W/m^2]]]]
+                long_name = Up-welling longwave radiation
+    [[NEE_CUT_MEAN]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_CUT_MEAN
+    [[NEE_CUT_REF]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_CUT_REF
+    [[NEE_CUT_REF_JOINTUNC]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_CUT_REF_JOINTUNC
+    [[NEE_CUT_REF_RANDUNC]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_CUT_REF_RANDUNC
+    [[NEE_CUT_SE]]
+        [[[standard_error]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_CUT_SE
+    [[NEE_CUT_USTAR50]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_CUT_USTAR50
+    [[NEE_CUT_USTAR50_JOINTUNC]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_CUT_USTAR50_JOINTUNC
+    [[NEE_CUT_USTAR50_RANDUNC]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_CUT_USTAR50_RANDUNC
+    [[NEE_VUT_MEAN]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_VUT_MEAN
+    [[NEE_VUT_REF]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_VUT_REF
+    [[NEE_VUT_REF_JOINTUNC]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_VUT_REF_JOINTUNC
+    [[NEE_VUT_REF_RANDUNC]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_VUT_REF_RANDUNC
+    [[NEE_VUT_SE]]
+        [[[standard_error]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_VUT_SE
+    [[NEE_VUT_USTAR50]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_VUT_USTAR50
+    [[NEE_VUT_USTAR50_JOINTUNC]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_VUT_USTAR50_JOINTUNC
+    [[NEE_VUT_USTAR50_RANDUNC]]
+        [[[average]]]
+            [[[[gC/m^2/day]]]]
+                long_name = NEE_VUT_USTAR50_RANDUNC
+    [[P_ERA]]
+        [[[sum]]]
+            [[[[mm/day]]]]
+                long_name = P_ERA
+    [[P_F]]
+        [[[sum]]]
+            [[[[mm/day]]]]
+                long_name = P_F
     [[PAR]]
         [[[average]]]
             [[[[umol/m^2/s]]]]
@@ -273,6 +573,14 @@
             [[[[mm]]]]
                 long_name = Rainfall
                 standard_name = thickness_of_rainfall_amount
+    [[Precip_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Rainfall ONEFlux QC flag
+    [[Precip_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Rainfall QC flag
     [[ps]]
         [[[average]]]
             [[[[Pa]]]]
@@ -284,6 +592,14 @@
             [[[[kPa]]]]
                 long_name = Surface air pressure
                 standard_name = surface_air_pressure
+    [[ps_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Surface air pressure ONEFlux QC flag
+    [[ps_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Surface air pressure QC flag
     [[RH]]
         [[[average]]]
             [[[[percent]]]]
@@ -327,6 +643,14 @@
             [[[[percent]]]]
                 long_name = Soil water content
                 standard_name = volume_fraction_of_condensed_water_in_soil
+    [[Sws_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Soil water content ONEFlux QC flag
+    [[Sws_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Soil water content QC flag
     [[Ta]]
         [[[average]]]
             [[[[degC]]]]
@@ -345,6 +669,14 @@
                 long_name = Air temperature
             [[[[K^2]]]]
                 long_name = Air temperature
+    [[Ta_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Air temperature ONEFlux QC flag
+    [[Ta_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Air temperature QC flag
     [[Ts]]
         [[[average]]]
             [[[[degC]]]]
@@ -353,6 +685,14 @@
             [[[[K]]]]
                 long_name = Soil temperature
                 standard_name = soil_temperature
+    [[Ts_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Soil temperature ONEFlux QC flag
+    [[Ts_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Soil temperature QC flag
     [[Tv]]
         [[[average]]]
             [[[[degC]]]]
@@ -527,6 +867,27 @@
             [[[[kPa]]]]
                 long_name = Vapour pressure deficit
                 standard_name = water_vapor_saturation_deficit_in_air
+    [[VPD_F_MDS]]
+        [[[average]]]
+            [[[[hPa]]]]
+                long_name = Vapour pressure deficit
+                standard_name = water_vapor_saturation_deficit_in_air
+    [[VPD_F_MDS_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = VPD_F_MDS_QC
+    [[VPD_F_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Vapour pressure deficit quality control flag
+    [[VPD_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Vapour pressure deficit ONEFlux QC flag
+    [[VPD_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Vapour pressure deficit QC flag
     [[VPsat]]
         [[[average]]]
             [[[[hPa]]]]
@@ -564,4 +925,12 @@
                 long_name = Wind speed
         [[[variance]]]
             [[[[m^2/s^2]]]]
-                long_name = Wind direction
+                long_name = Wind speed
+    [[Ws_OF_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Wind speed ONEFlux QC flag
+    [[Ws_QC]]
+        [[[average]]]
+            [[[[1]]]]
+                long_name = Wind speed QC flag
