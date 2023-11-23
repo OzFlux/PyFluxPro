@@ -2990,7 +2990,8 @@ def l6_update_cfg_syntax(cfg):
                             cfg4 = cfg3[key4.lower()]
                             cfg4 = parse_cfg_variables_value(key3, cfg4)
                             cfg[key1][key2][key3][key4.lower()] = cfg4
-        elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity"]:
+        elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity",
+                      "EvapoTranspiration"]:
             for key2 in cfg[key1]:
                 for key3 in cfg[key1][key2]:
                     cfg3 = cfg[key1][key2][key3]

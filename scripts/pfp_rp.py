@@ -1283,6 +1283,8 @@ def ParseL6ControlFile(cfg, ds):
         l6_info["GrossPrimaryProductivity"] = {}
         for output in list(cfg["GrossPrimaryProductivity"].keys()):
             rpGPP_createdict(cfg, ds, l6_info["GrossPrimaryProductivity"], output)
+    if "EvapoTranspiration" in list(cfg.keys()):
+        l6_info["EvapoTranspiration"] = copy.deepcopy(cfg["EvapoTranspiration"])
     return l6_info
 
 def PartitionNEE(ds, l6_info):

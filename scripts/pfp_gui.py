@@ -9229,7 +9229,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     val2 = str(section.child(j, 1).text())
                     cfg[key1][key2] = val2
             elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity",
-                          "Imports", "GUI"]:
+                          "EvapoTranspiration", "Imports", "GUI"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
@@ -9341,7 +9341,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
             elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity",
-                          "Imports", "GUI"]:
+                          "EvapoTranspiration", "Imports", "GUI"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 self.sections[key1].setEditable(False)

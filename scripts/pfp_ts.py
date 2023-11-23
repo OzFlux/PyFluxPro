@@ -191,7 +191,7 @@ def CalculateAvailableEnergy(ds, Fa_out="Fa", Fn_in="Fn", Fg_in="Fg"):
     pfp_utils.CreateVariable(ds, Fa)
     return
 
-def CalculateET(ds):
+def CalculateET(ds, info):
     """
     Purpose:
      Calculate ET from Fe
@@ -208,8 +208,14 @@ def CalculateET(ds):
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     dsv = ds.root["Variables"]
     labels = list(ds.root["Variables"].keys())
-    Fe_labels = [l for l in labels if l[0:2]=="Fe" and dsv[l]["Attr"]["units"]=="W/m^2"]
+    if "EvapoTranspiration" in info:
+        iET = info["EvapoTranspiration"]
+        Fe_labels = [iET[l]["Fe"] for l in list(iET.keys())]
+    else:
+        Fe_labels = [l for l in labels if l[0:2]=="Fe" and dsv[l]["Attr"]["units"]=="W/m^2"]
+    # loop over the latent heat fluxes
     for label in Fe_labels:
+        # get the latent heat flux
         Fe = pfp_utils.GetVariable(ds, label)
         if "standard_name" in Fe["Attr"]:
             if Fe["Attr"]["standard_name"] == "surface_upward_latent_heat_flux":
