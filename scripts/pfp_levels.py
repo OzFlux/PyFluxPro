@@ -197,6 +197,8 @@ def l3qc(cf, ds2):
     pfp_ts.CalculateAvailableEnergy(ds3)
     # create additional variables using MergeSeries or AverageSeries
     pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["extras"])
+    # calculate ET from Fe
+    pfp_ts.CalculateET(ds3)
     # Calculate Monin-Obukhov length
     pfp_ts.CalculateMoninObukhovLength(ds3)
     # re-apply the quality control checks (range, diurnal and rules)
@@ -378,7 +380,7 @@ def l6qc(main_gui, cf, ds5):
     # calculate NEP from NEE
     pfp_rp.CalculateNEP(ds6, l6_info)
     # calculate ET from Fe
-    pfp_rp.CalculateET(ds6)
+    pfp_ts.CalculateET(ds6)
     # partition NEE into GPP and ER
     pfp_rp.PartitionNEE(ds6, l6_info)
     # write the percentage of good data as a variable attribute

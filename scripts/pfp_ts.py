@@ -32,7 +32,8 @@ def ApplyLinear(cf,ds,ThisOne):
         """
     if ThisOne not in list(ds.root["Variables"].keys()): return
     if pfp_utils.incf(cf,ThisOne) and pfp_utils.haskey(cf,ThisOne,'Linear'):
-        logger.info('  Applying linear correction to '+ThisOne)
+        msg = " Applying linear correction to " + ThisOne
+        logger.info(msg)
         data = numpy.ma.masked_where(ds.root["Variables"][ThisOne]['Data']==float(c.missing_value),ds.root["Variables"][ThisOne]['Data'])
         flag = ds.root["Variables"][ThisOne]['Flag'].copy()
         ldt = ds.root["Variables"]['DateTime']['Data']
@@ -188,6 +189,45 @@ def CalculateAvailableEnergy(ds, Fa_out="Fa", Fn_in="Fn", Fg_in="Fg"):
         if (("instrument" in Fn["Attr"]) and ("instrument" in Fg["Attr"])):
             Fa["Attr"]["instrument"] = Fn["Attr"]["instrument"] + ", " + Fg["Attr"]["instrument"]
     pfp_utils.CreateVariable(ds, Fa)
+    return
+
+def CalculateET(ds):
+    """
+    Purpose:
+     Calculate ET from Fe
+    Usage:
+     pfp_ts.CalculateET(ds)
+      where ds is a data structure
+    Side effects:
+     Series to hold the ET data are created in ds.
+    Author: PRI
+    Date: June 2015
+    """
+    msg = " Calculating ET from Fe"
+    logger.info(msg)
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+    dsv = ds.root["Variables"]
+    labels = list(ds.root["Variables"].keys())
+    Fe_labels = [l for l in labels if l[0:2]=="Fe" and dsv[l]["Attr"]["units"]=="W/m^2"]
+    for label in Fe_labels:
+        Fe = pfp_utils.GetVariable(ds, label)
+        if "standard_name" in Fe["Attr"]:
+            if Fe["Attr"]["standard_name"] == "surface_upward_latent_heat_flux":
+                et_label =  label.replace("Fe", "ET")
+                if et_label in labels:
+                    msg = "  ET variable " + et_label + " already exists, not replacing ..."
+                    logger.warning(msg)
+                else:
+                    ET = pfp_utils.CreateEmptyVariable(et_label, nrecs)
+                    ET["Data"] = Fe["Data"]/c.Lv
+                    ET["Attr"]["long_name"] = "Evapo-transpiration"
+                    ET["Attr"]["standard_name"] = "water_evapotranspiration_flux"
+                    ET["Attr"]["units"] = "kg/m^2/s"
+                    pfp_utils.CreateVariable(ds, ET)
+            else:
+                continue
+        else:
+            continue
     return
 
 def CalculateFluxes(cf, ds):
