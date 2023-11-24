@@ -682,14 +682,19 @@ def L6_summary_plotcumulative(ds_summary, l6_info):
             cdyt = cdyv["DateTime"]["Data"]
             year = cdyt[0].year
             cyf = [pfp_utils.get_yearfractionfromdatetime(dt) - int(year) for dt in cdyt]
-            plt.plot(cyf, cdyv["ET"]["Data"],color=color_list[numpy.mod(n,8)],
-                     label=str(year))
-            plt.plot(cyf, cdyv["Precip"]["Data"],color=color_list[numpy.mod(n,8)],
-                     linestyle='--')
+            if "ET" in cdyv:
+                plt.plot(cyf, cdyv["ET"]["Data"], color=color_list[numpy.mod(n, 8)],
+                         label=str(year))
+                ylabel = cdyv["ET"]["Attr"]["units"]
+            if "Precip" in cdyv:
+                plt.plot(cyf, cdyv["Precip"]["Data"], color=color_list[numpy.mod(n, 8)],
+                         linestyle='--')
+                if "ET" not in cdyv:
+                    ylabel = cdyv["Precip"]["Attr"]["units"]
         plt.xlim([0, 1])
         pylab.xticks(xlabel_posn, xlabels)
         plt.xlabel("Month")
-        plt.ylabel(cdyv["ET"]["Attr"]["units"])
+        plt.ylabel(ylabel)
         plt.legend(loc='upper left',prop={'size':8})
         plt.tight_layout(rect=[0, 0, 1, 0.98])
         # save a hard copy of the plot

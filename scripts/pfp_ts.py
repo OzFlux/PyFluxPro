@@ -212,7 +212,9 @@ def CalculateET(ds, info):
         iET = info["EvapoTranspiration"]
         Fe_labels = [iET[l]["Fe"] for l in list(iET.keys())]
     else:
-        Fe_labels = [l for l in labels if l[0:2]=="Fe" and dsv[l]["Attr"]["units"]=="W/m^2"]
+        Fe_labels = [l for l in labels
+                     if l[0:2] == "Fe"
+                     and dsv[l]["Attr"]["units"] == "W/m^2"]
     # loop over the latent heat fluxes
     for label in Fe_labels:
         # get the latent heat flux
@@ -226,6 +228,7 @@ def CalculateET(ds, info):
                 else:
                     ET = pfp_utils.CreateEmptyVariable(et_label, nrecs)
                     ET["Data"] = Fe["Data"]/c.Lv
+                    ET["Flag"] = Fe["Flag"]
                     ET["Attr"]["long_name"] = "Evapo-transpiration"
                     ET["Attr"]["standard_name"] = "water_evapotranspiration_flux"
                     ET["Attr"]["units"] = "kg/m^2/s"

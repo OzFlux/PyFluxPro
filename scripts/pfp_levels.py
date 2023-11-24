@@ -95,12 +95,10 @@ def l3qc(cf, ds2):
     ds3 = copy.deepcopy(ds2)
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds3, "L3")
-    # check to see if we have any imports
-    #pfp_gf.ImportSeries(cf,ds3)
-    # apply linear corrections to the data
-    pfp_ck.do_linear(cf,ds3)
     # parse the control file for information on how the user wants to do the gap filling
     l3_info = pfp_compliance.ParseL3ControlFile(cf, ds3)
+    # check to see if we have any imports
+    pfp_gf.ImportSeries(ds3, l3_info)
     # ************************
     # *** Merge humidities ***
     # ************************
@@ -227,8 +225,6 @@ def l4qc(main_gui, cf, ds3):
     l4_info = pfp_gf.ParseL4ControlFile(cf, ds4)
     # check to see if we have any imports
     pfp_gf.ImportSeries(ds4, l4_info)
-    # re-apply the quality control checks (range, diurnal and rules)
-    #pfp_ck.do_qcchecks(cf, ds4)
     # now do the meteorological driver gap filling
     # *** start of the section that does the gap filling of the drivers ***
     # fill short gaps using interpolation

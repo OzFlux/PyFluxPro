@@ -1287,7 +1287,7 @@ def ImportSeries(ds, info):
         ds_import = pfp_io.NetCDFRead(import_filename)
         if ds_import.info["returncodes"]["value"] != 0:
             return
-        if label not in list(ds_import.root["Variables"].keys()):
+        if var_name not in list(ds_import.root["Variables"].keys()):
             msg = " Requested variable not found in imported data"
             logger.warning(msg)
             continue

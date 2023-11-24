@@ -2831,6 +2831,7 @@ def l6_update_controlfile(cfg):
         pfp_gui.MsgBox_Quit(msg, title="Critical")
         return ok
     try:
+        cfg = l6_update_cfg_sections(cfg)
         cfg = l6_update_cfg_syntax(cfg)
     except Exception:
         ok = False
@@ -2946,6 +2947,20 @@ def l6_check_options(cfg, messages):
         # 'Options' section is optional
         pass
     return
+def l6_update_cfg_sections(cfg):
+    """
+    Purpose:
+     Add the EvapoTranspiration section to the L6 control file
+     if it is not present.
+    Usage:
+    Side effects:
+     Adds the EvapoTranspiration section to an L6 control file.
+    Author: PRI
+    Date: November 2023
+    """
+    if "EvapoTranspiration" not in cfg:
+        cfg["EvapoTranspiration"] = {"ET": {"Fe": "Fe"}}
+    return cfg
 def l6_update_cfg_syntax(cfg):
     """
     Purpose:

@@ -105,6 +105,11 @@
         [[[average]]]
             [[[[dS/m]]]]
                 long_name = Electrical conductivity
+    [[ET]]
+        [[[average]]]
+            [[[[kg/m^2/s]]]]
+                long_name = Evapotranspiration
+                standard_name = water_evapotranspiration_flux
     [[Fa]]
         [[[average]]]
             [[[[W/m^2]]]]
