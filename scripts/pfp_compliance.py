@@ -928,6 +928,7 @@ def check_l3_controlfile(cfg):
     ok = True
     messages = {"ERROR":[], "WARNING": [], "INFO": []}
     check_l3_files(cfg, messages)
+    check_l3_imports(cfg, messages)
     check_l3_options(cfg, messages)
     display_messages_interactive(messages)
     if len(messages["ERROR"]) > 0:
@@ -995,6 +996,22 @@ def check_l3_files(cfg, messages):
     else:
         msg = "'Files' section not in control file"
         messages["ERROR"].append(msg)
+    return
+def check_l3_imports(cfg, messages):
+    """ Check the Imports section."""
+    if ("Imports" in cfg):
+        import_labels = list(cfg["Imports"].keys())
+        for import_label in import_labels:
+            if "file_name" in cfg["Imports"][import_label]:
+                import_uri = cfg["Imports"][import_label]["file_name"]
+                if os.path.isfile(import_uri):
+                    pass
+                else:
+                    msg = "Imports: " + import_uri + " not found"
+                    messages["ERROR"].append(msg)
+            else:
+                msg = "Imports: 'file_name' not found"
+                messages["ERROR"].append(msg)
     return
 def check_l3_options(cfg, messages):
     """
