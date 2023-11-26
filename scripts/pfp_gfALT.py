@@ -1074,6 +1074,13 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     return
 
 def gfalternate_plotsummary(l4_info):
+    """
+    Purpose:
+     Plot a summary of fit statistics from the GapFillFromAlternate gap filling
+     routine at L4.
+    Author: PRI
+    Date: November 2023
+    """
     for i in plt.get_fignums():
         plt.close(i)
     called_by = "GapFillFromAlternate"
