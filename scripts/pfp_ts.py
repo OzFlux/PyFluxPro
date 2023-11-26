@@ -206,23 +206,30 @@ def CalculateET(ds, info):
     msg = " Calculating ET from Fe"
     logger.info(msg)
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
-    dsv = ds.root["Variables"]
     labels = list(ds.root["Variables"].keys())
-    if "EvapoTranspiration" in info:
-        iET = info["EvapoTranspiration"]
-        Fe_labels = [iET[l]["Fe"] for l in list(iET.keys())]
+    if "EvapoTranspiration" not in list(info.keys()):
+        replace = False
+        info["EvapoTranspiration"] = {}
+        dsv = ds.root["Variables"]
+        labels = list(dsv.keys())
+        fe_labels = [l for l in labels if l[0:2] == "Fe"]
+        for fe_label in fe_labels:
+            if "standard_name" in dsv[fe_label]["Attr"]:
+                if dsv[fe_label]["Attr"]["standard_name"] == "surface_upward_latent_heat_flux":
+                    et_label = fe_label.replace("Fe", "ET")
+                    info["EvapoTranspiration"][et_label] = {"Fe": fe_label}
     else:
-        Fe_labels = [l for l in labels
-                     if l[0:2] == "Fe"
-                     and dsv[l]["Attr"]["units"] == "W/m^2"]
+        replace = True
+    iET = info["EvapoTranspiration"]
     # loop over the latent heat fluxes
-    for label in Fe_labels:
+    et_labels = list(iET.keys())
+    for et_label in et_labels:
         # get the latent heat flux
-        Fe = pfp_utils.GetVariable(ds, label)
+        fe_label = iET[et_label]["Fe"]
+        Fe = pfp_utils.GetVariable(ds, fe_label)
         if "standard_name" in Fe["Attr"]:
             if Fe["Attr"]["standard_name"] == "surface_upward_latent_heat_flux":
-                et_label =  label.replace("Fe", "ET")
-                if et_label in labels:
+                if ((et_label in labels) and not replace):
                     msg = "  ET variable " + et_label + " already exists, not replacing ..."
                     logger.warning(msg)
                 else:

@@ -3317,10 +3317,12 @@ def xl_write_AlternateStats(ds, l4_info):
     xlfile.save(l4a["info"]["xl_file_name"])
 
 def xl_write_SOLOStats(ds, l5_info):
-    if "solo" not in list(l5_info.keys()):
+    if "GapFillUsingSOLO" not in list(l5_info.keys()):
         return
+    # local pointer to l5_info outputs
+    l5io = l5_info["GapFillUsingSOLO"]["outputs"]
     # get the output file name
-    out_filename = get_outfilenamefromcf(l5_info["cf"])
+    out_filename = get_outfilenamefromcf(l5_info["cfg"])
     # get the Excel file name
     xl_filename = out_filename.replace('.nc', '_SOLOStats.xls')
     xl_name = os.path.split(xl_filename)
@@ -3331,11 +3333,11 @@ def xl_write_SOLOStats(ds, l5_info):
     date_list = ["startdate", "enddate"]
     # loop over the series that have been gap filled using ACCESS data
     d_xf = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
-    outputs = list(l5_info["solo"]["outputs"].keys())
+    outputs = list(l5io.keys())
     outputs.sort()
     for output in outputs:
         # get the list of values to output with the start and end dates removed
-        stats = list(l5_info["solo"]["outputs"][output]["results"].keys())
+        stats = list(l5io[output]["results"].keys())
         for item in date_list:
             if item in outputs:
                 outputs.remove(item)
@@ -3345,7 +3347,7 @@ def xl_write_SOLOStats(ds, l5_info):
         xlCol = 0
         for dt in date_list:
             xlResultsSheet.write(xlRow, xlCol, dt)
-            for item in l5_info["solo"]["outputs"][output]["results"][dt]:
+            for item in l5io[output]["results"][dt]:
                 xlRow = xlRow + 1
                 xlResultsSheet.write(xlRow, xlCol, item, d_xf)
             xlRow = 10
@@ -3355,8 +3357,7 @@ def xl_write_SOLOStats(ds, l5_info):
         for stat in stats:
             xlResultsSheet.write(xlRow, xlCol, stat)
             # convert masked array to ndarray
-            output_array = numpy.ma.filled(l5_info["solo"]["outputs"][output]["results"][stat],
-                                           float(c.missing_value))
+            output_array = numpy.ma.filled(l5io[output]["results"][stat], float(c.missing_value))
             for item in output_array:
                 xlRow = xlRow + 1
                 # xlwt under Anaconda seems to only allow float64!
