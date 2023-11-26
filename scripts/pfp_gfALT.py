@@ -1093,6 +1093,7 @@ def gfalternate_plotsummary(l4_info):
     results = ["r", "Bias", "RMSE", "Var ratio"]
     ylabels = ["r", "Bias", "RMSE", "Var ratio"]
     colours = ["blue","red","green","yellow","magenta","black","cyan","brown"]
+    markers = ["o", "P", "s", "*", "v", "X", "D", "^"]
     MTLoc = mdt.AutoDateLocator(minticks=3, maxticks=5)
     MTFmt = mdt.DateFormatter('%b')
     dt_start = []
@@ -1125,13 +1126,12 @@ def gfalternate_plotsummary(l4_info):
                     y = []
                     for i in range(len(l4io[label]["results"]["startdate"])):
                         sdt = dateutil.parser.parse(l4io[label]["results"]["startdate"][i])
-                        x.append(sdt)
-                        y.append(l4io[label]["results"][rlabel][i])
                         edt = dateutil.parser.parse(l4io[label]["results"]["enddate"][i])
-                        x.append(edt)
+                        x.append(sdt+(edt-sdt)/2)
                         y.append(l4io[label]["results"][rlabel][i])
                     y = numpy.ma.masked_values(y, c.missing_value)
-                    axs[row, col].plot(x, y, color=colours[numpy.mod(n, 8)], label=label)
+                    axs[row, col].plot(x, y, color=colours[numpy.mod(n, 8)],
+                                       marker=markers[numpy.mod(n, 8)], label=label)
                 axs[row, col].legend(prop={'size':8})
                 axs[row, col].xaxis.set_major_locator(MTLoc)
                 if col == 0:

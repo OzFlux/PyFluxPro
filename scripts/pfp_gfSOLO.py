@@ -214,13 +214,12 @@ def gfSOLO_done(solo_gui):
     called_by = solo_gui.called_by
     l5s = l5_info[called_by]
     # plot the summary statistics if gap filling was done manually
-    cl = ["GapFillUsingSOLO", "GapFillLongSOLO"]
-    if (l5s["info"]["called_by"] in cl):
+    if (l5s["info"]["called_by"] in ["GapFillUsingSOLO", "GapFillLongSOLO"]):
         # write Excel spreadsheet with fit statistics
         pfp_io.xl_write_SOLOStats(ds, l5_info)
-    # close any open plots
-    for i in plt.get_fignums():
-        plt.close(i)
+        # close any open plots
+        for i in plt.get_fignums():
+            plt.close(i)
     # destroy the SOLO GUI
     solo_gui.close()
     # set the return codes
