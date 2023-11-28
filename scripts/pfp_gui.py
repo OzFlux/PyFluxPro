@@ -7567,6 +7567,12 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 sources = sources + "," + var_name
                 selected_item.child(i).child(0,1).setText(sources)
 
+    def add_mds_target(self):
+        """ Add MDS target to a variable."""
+        dict_to_add = {"target":""}
+        # add the subsubsection
+        self.add_subsection(dict_to_add)
+
     def add_new_variable(self):
         """ Add a new variable."""
         gfSOLO = {"<var>_SOLO": {"drivers": ""}}
@@ -8296,6 +8302,13 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
                 self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_item)
+            elif parent_text == "GapFillUsingMDS":
+                existing_entries = self.get_existing_entries()
+                if "target" not in existing_entries:
+                    self.context_menu.actionAddMDStarget = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMDStarget.setText("Add target")
+                    self.context_menu.addAction(self.context_menu.actionAddMDStarget)
+                    self.context_menu.actionAddMDStarget.triggered.connect(self.add_mds_target)
         elif level == 4:
             selected_text = str(idx.data())
             if selected_text in ["solo_settings"]:

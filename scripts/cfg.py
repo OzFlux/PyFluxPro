@@ -1,5 +1,11 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.15"
+version_number = "V3.4.16"
+# V3.4.16 - November 2023
+#         - fix Ignore when checking L1 to L3 control files
+#         - allow propagtion of ET from L1 to L6, means ET from EddyPro can
+#           be safely read in at L1
+#         - reinstate plotting of L4 fit statistics
+#         - reinstate output of L5 fit statistics
 # V3.4.15 - August 2023
 #         - implement function to calculate wind speed and wind direction from
 #           components at L1
