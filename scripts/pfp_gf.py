@@ -51,7 +51,7 @@ def CheckL5Drivers(ds, l5_info):
         ds.info["returncodes"] = {"value": 1, "message": msg}
     return
 
-def CheckGapLengths(cf, ds, l5_info):
+def CheckGapLengths(cfg, ds, l5_info):
     """
     Purpose:
      Check to see if any of the series being gap filled have long gaps and
@@ -66,14 +66,29 @@ def CheckGapLengths(cf, ds, l5_info):
     ds.info["returncodes"]["value"] = 0
     l5_info["CheckGapLengths"] = {}
     # get the maximum length for "short" gaps in days
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxShortGapDays", default=30)
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "MaxShortGapDays", default=30)
     max_short_gap_days = int(opt)
     # maximum length in records
     ts = int(float(ds.root["Attributes"]["time_step"]))
     nperday = 24 * 60//ts
     max_short_gap_records = max_short_gap_days * nperday
     # get a list of variables being gap filled
-    targets = list(cf["Fluxes"].keys())
+    targets = list(cfg["Fluxes"].keys())
+    gf_methods = []
+    for target in list(targets):
+        gf_methods = [m for m in cfg["Fluxes"][target].keys() if m != "MergeSeries"]
+        gf_method_labels = []
+        gf_method_targets = []
+        for gf_method in list(gf_methods):
+            gf_method_labels += list(cfg["Fluxes"][target][gf_method].keys())
+            #print(target, gf_methods, gf_method, gf_method_labels)
+            for gf_method_label in list(gf_method_labels):
+                if "target" in cfg["Fluxes"][target][gf_method][gf_method_label]:
+                    real_target = cfg["Fluxes"][target][gf_method][gf_method_label]["target"]
+                    gf_method_targets.append(real_target)
+                    targets[targets.index(target)] = real_target
+    targets = targets + gf_method_targets
+    targets = sorted(list(set(targets)))
     targets_with_long_gaps = []
     # loop over the targets, get the duration and check to see if any exceed the maximum
     for target in targets:
@@ -82,7 +97,7 @@ def CheckGapLengths(cf, ds, l5_info):
                                               "got_long_gap_method": False}
         # loop over possible long gap filling methods
         for long_gap_method in ["GapFillLongSOLO"]:
-            if long_gap_method in list(cf["Fluxes"][target].keys()):
+            if long_gap_method in list(cfg["Fluxes"][target].keys()):
                 # set logical true if long gap filling method present
                 l5_info["CheckGapLengths"][target]["got_long_gap_method"] = True
         # get the data
@@ -113,7 +128,7 @@ def CheckGapLengths(cf, ds, l5_info):
             targets_without.append(target)
     # if we have any, put up a warning message and let the user decide
     if len(targets_without) != 0:
-        if cf["Options"]["call_mode"].lower() == "interactive":
+        if cfg["Options"]["call_mode"].lower() == "interactive":
             # put up a message box, continue or quit
             msg = "The following series have long gaps but no long gap filling method\n"
             msg = msg + "is specified in the control file.\n"
@@ -719,7 +734,8 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
     l5mo = l5_info[called_by]["outputs"]
     for output in outputs:
         # disable output to netCDF file for this variable
-        l5_info["RemoveIntermediateSeries"]["not_output"].append(output)
+        if output not in list(cf["Fluxes"].keys()):
+            l5_info["RemoveIntermediateSeries"]["not_output"].append(output)
         # create the dictionary keys for this series
         l5mo[output] = {}
         # get the target
