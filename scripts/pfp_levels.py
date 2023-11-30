@@ -228,7 +228,7 @@ def l4qc(main_gui, cf, ds3):
     # now do the meteorological driver gap filling
     # *** start of the section that does the gap filling of the drivers ***
     # fill short gaps using interpolation
-    pfp_gf.GapFillUsingInterpolation(cf, ds4)
+    pfp_gf.GapFillUsingInterpolation(ds4, l4_info)
     # gap fill using climatology
     if "GapFillFromClimatology" in l4_info:
         pfp_gf.GapFillFromClimatology(ds4, l4_info, "GapFillFromClimatology")
