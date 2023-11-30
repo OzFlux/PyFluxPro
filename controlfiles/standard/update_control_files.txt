@@ -213,6 +213,7 @@ Ta,Ts,ustar,U_,V_,VP,VPD,W_,Wd,Ws"""
         K2 = K^2
         K.g/m^3 = K.g/m^3
         kg/kg = kg/kg
+        kg/m^2/s = kg/m^2/s
         kg/m/s2 = kg/m/s^2
         kg/m3 = kg/m^3
         kPa = kPa

@@ -7567,6 +7567,12 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 sources = sources + "," + var_name
                 selected_item.child(i).child(0,1).setText(sources)
 
+    def add_mds_target(self):
+        """ Add MDS target to a variable."""
+        dict_to_add = {"target":""}
+        # add the subsubsection
+        self.add_subsection(dict_to_add)
+
     def add_new_variable(self):
         """ Add a new variable."""
         gfSOLO = {"<var>_SOLO": {"drivers": ""}}
@@ -8296,6 +8302,13 @@ class edit_cfg_L5(QtWidgets.QWidget):
                 self.context_menu.actionRemoveGFMethodVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveGFMethodVariable)
                 self.context_menu.actionRemoveGFMethodVariable.triggered.connect(self.remove_item)
+            elif parent_text == "GapFillUsingMDS":
+                existing_entries = self.get_existing_entries()
+                if "target" not in existing_entries:
+                    self.context_menu.actionAddMDStarget = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMDStarget.setText("Add target")
+                    self.context_menu.addAction(self.context_menu.actionAddMDStarget)
+                    self.context_menu.actionAddMDStarget.triggered.connect(self.add_mds_target)
         elif level == 4:
             selected_text = str(idx.data())
             if selected_text in ["solo_settings"]:
@@ -8821,6 +8834,25 @@ class edit_cfg_L6(QtWidgets.QWidget):
             section.appendRow(parent2)
         self.update_tab_text()
 
+    def add_et_variable(self):
+        """ Add a variable to the ET section"""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        section = idx.model().itemFromIndex(idx)
+        var_to_add = {"New variable": {"Fe": ""}}
+        for key1 in var_to_add:
+            parent = QtGui.QStandardItem(key1)
+            #parent.setEditable(False)
+            for key2 in var_to_add[key1]:
+                val = var_to_add[key1][key2]
+                child0 = QtGui.QStandardItem(key2)
+                child0.setEditable(False)
+                child1 = QtGui.QStandardItem(val)
+                parent.appendRow([child0, child1])
+            section.appendRow(parent)
+        self.update_tab_text()
+
     def add_options_section(self):
         """ Add an Options section."""
         self.sections["Options"] = QtGui.QStandardItem("Options")
@@ -9099,6 +9131,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     self.context_menu.actionAddLLVariable.setText("Add Lasslop variable")
                     self.context_menu.addAction(self.context_menu.actionAddLLVariable)
                     self.context_menu.actionAddLLVariable.triggered.connect(lambda: self.add_er_variable("LL"))
+            elif selected_text in ["EvapoTranspiration"]:
+                existing_entries = self.get_existing_entries()
+                self.context_menu.actionAddETVariable = QtWidgets.QAction(self)
+                self.context_menu.actionAddETVariable.setText("Add ET variable")
+                self.context_menu.addAction(self.context_menu.actionAddETVariable)
+                self.context_menu.actionAddETVariable.triggered.connect(lambda: self.add_et_variable())
             elif selected_text in ["NetEcosystemExchange"]:
                 pass
             elif selected_text in ["GrossPrimaryProductivity"]:
@@ -9164,6 +9202,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 self.context_menu.actionRemoveERVariable.setText("Remove variable")
                 self.context_menu.addAction(self.context_menu.actionRemoveERVariable)
                 self.context_menu.actionRemoveERVariable.triggered.connect(self.remove_er_variable)
+            elif ((str(parent.text()) == "EvapoTranspiration") and (selected_item.column() == 0) and
+                  (selected_text != "ET")):
+                self.context_menu.actionRemoveETVariable = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveETVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveETVariable)
+                self.context_menu.actionRemoveETVariable.triggered.connect(self.remove_item)
         elif level == 2:
             # sections with 3 levels
             parent = selected_item.parent()
@@ -9229,7 +9273,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     val2 = str(section.child(j, 1).text())
                     cfg[key1][key2] = val2
             elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity",
-                          "Imports", "GUI"]:
+                          "EvapoTranspiration", "Imports", "GUI"]:
                 # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
@@ -9341,7 +9385,7 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
             elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity",
-                          "Imports", "GUI"]:
+                          "EvapoTranspiration", "Imports", "GUI"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 self.sections[key1].setEditable(False)

@@ -32,7 +32,8 @@ def ApplyLinear(cf,ds,ThisOne):
         """
     if ThisOne not in list(ds.root["Variables"].keys()): return
     if pfp_utils.incf(cf,ThisOne) and pfp_utils.haskey(cf,ThisOne,'Linear'):
-        logger.info('  Applying linear correction to '+ThisOne)
+        msg = " Applying linear correction to " + ThisOne
+        logger.info(msg)
         data = numpy.ma.masked_where(ds.root["Variables"][ThisOne]['Data']==float(c.missing_value),ds.root["Variables"][ThisOne]['Data'])
         flag = ds.root["Variables"][ThisOne]['Flag'].copy()
         ldt = ds.root["Variables"]['DateTime']['Data']
@@ -188,6 +189,61 @@ def CalculateAvailableEnergy(ds, Fa_out="Fa", Fn_in="Fn", Fg_in="Fg"):
         if (("instrument" in Fn["Attr"]) and ("instrument" in Fg["Attr"])):
             Fa["Attr"]["instrument"] = Fn["Attr"]["instrument"] + ", " + Fg["Attr"]["instrument"]
     pfp_utils.CreateVariable(ds, Fa)
+    return
+
+def CalculateET(ds, info):
+    """
+    Purpose:
+     Calculate ET from Fe
+    Usage:
+     pfp_ts.CalculateET(ds)
+      where ds is a data structure
+    Side effects:
+     Series to hold the ET data are created in ds.
+    Author: PRI
+    Date: June 2015
+    """
+    msg = " Calculating ET from Fe"
+    logger.info(msg)
+    nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
+    labels = list(ds.root["Variables"].keys())
+    if "EvapoTranspiration" not in list(info.keys()):
+        replace = False
+        info["EvapoTranspiration"] = {}
+        dsv = ds.root["Variables"]
+        labels = list(dsv.keys())
+        fe_labels = [l for l in labels if l[0:2] == "Fe"]
+        for fe_label in fe_labels:
+            if "standard_name" in dsv[fe_label]["Attr"]:
+                if dsv[fe_label]["Attr"]["standard_name"] == "surface_upward_latent_heat_flux":
+                    et_label = fe_label.replace("Fe", "ET")
+                    info["EvapoTranspiration"][et_label] = {"Fe": fe_label}
+    else:
+        replace = True
+    iET = info["EvapoTranspiration"]
+    # loop over the latent heat fluxes
+    et_labels = list(iET.keys())
+    for et_label in et_labels:
+        # get the latent heat flux
+        fe_label = iET[et_label]["Fe"]
+        Fe = pfp_utils.GetVariable(ds, fe_label)
+        if "standard_name" in Fe["Attr"]:
+            if Fe["Attr"]["standard_name"] == "surface_upward_latent_heat_flux":
+                if ((et_label in labels) and not replace):
+                    msg = "  ET variable " + et_label + " already exists, not replacing ..."
+                    logger.warning(msg)
+                else:
+                    ET = pfp_utils.CreateEmptyVariable(et_label, nrecs)
+                    ET["Data"] = Fe["Data"]/c.Lv
+                    ET["Flag"] = Fe["Flag"]
+                    ET["Attr"]["long_name"] = "Evapo-transpiration"
+                    ET["Attr"]["standard_name"] = "water_evapotranspiration_flux"
+                    ET["Attr"]["units"] = "kg/m^2/s"
+                    pfp_utils.CreateVariable(ds, ET)
+            else:
+                continue
+        else:
+            continue
     return
 
 def CalculateFluxes(cf, ds):

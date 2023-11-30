@@ -742,7 +742,7 @@ def check_l1_controlfile(cfg):
         std = ConfigObj(std_name, indent_type="    ", list_values=False, write_empty_values=True)
         std_labels = sorted(list(std["Variables"].keys()))
         # initialise the messages dictionary
-        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": []}
+        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
         # check the files section
         l1_check_files(cfg, std, messages)
         # check the global attributes section
@@ -774,7 +774,7 @@ def check_l1_controlfile(cfg):
         l1_check_irga_sonic_type(cfg, messages)
         # display and messages
         display_messages_interactive(messages, mode="CloseOrIgnore")
-        if len(messages["ERROR"]) > 0:
+        if messages["RESULT"].lower() != "ignore":
             ok = False
     except Exception:
         ok = False
@@ -797,7 +797,7 @@ def check_l2_controlfile(cfg):
     try:
         ok = True
         # initialise the messages dictionary
-        messages = {"ERROR":[], "WARNING": [], "INFO": []}
+        messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
         # check the files section
         l2_check_files(cfg, messages)
         # check the options section
@@ -805,7 +805,7 @@ def check_l2_controlfile(cfg):
         # check the variables section
         #l2_check_variables_section(cfg, std, messages)
         display_messages_interactive(messages)
-        if len(messages["ERROR"]) > 0:
+        if messages["RESULT"].lower() != "ignore":
             ok = False
     except Exception:
         ok = False
@@ -926,11 +926,12 @@ def check_l3_controlfile(cfg):
     Date: October 2023
     """
     ok = True
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
     check_l3_files(cfg, messages)
+    check_l3_imports(cfg, messages)
     check_l3_options(cfg, messages)
     display_messages_interactive(messages)
-    if len(messages["ERROR"]) > 0:
+    if messages["RESULT"].lower() != "ignore":
         ok = False
     return ok
 def check_l3_files(cfg, messages):
@@ -996,6 +997,22 @@ def check_l3_files(cfg, messages):
         msg = "'Files' section not in control file"
         messages["ERROR"].append(msg)
     return
+def check_l3_imports(cfg, messages):
+    """ Check the Imports section."""
+    if ("Imports" in cfg):
+        import_labels = list(cfg["Imports"].keys())
+        for import_label in import_labels:
+            if "file_name" in cfg["Imports"][import_label]:
+                import_uri = cfg["Imports"][import_label]["file_name"]
+                if os.path.isfile(import_uri):
+                    pass
+                else:
+                    msg = "Imports: " + import_uri + " not found"
+                    messages["ERROR"].append(msg)
+            else:
+                msg = "Imports: 'file_name' not found"
+                messages["ERROR"].append(msg)
+    return
 def check_l3_options(cfg, messages):
     """
     Purpose:
@@ -1008,11 +1025,6 @@ def check_l3_options(cfg, messages):
     check_l3_options_generic(cfg, messages)
     check_l3_options_rotation(cfg, messages)
     check_l3_options_soil(cfg, messages)
-    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "call_mode", default="interactive")
-    if opt.lower() == "interactive":
-        display_messages_interactive(messages, mode="CloseOrIgnore")
-    else:
-        display_messages_batch(messages)
     return
 def check_l3_options_generic(cfg, messages):
     """ Check the generic L3 options."""
@@ -1095,7 +1107,7 @@ def check_l5_controlfile(cfg):
     """
     ok = True
     # initialise the messages dictionary
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
     # check to see if both cpd_filename and ustar_threshold section exist
     if "ustar_threshold"in cfg:
         if "cpd_filename" in cfg["Files"]:
@@ -1117,7 +1129,7 @@ def check_l6_controlfile(cfg):
     """
     ok = True
     # initialise the messages dictionary
-    messages = {"ERROR":[], "WARNING": [], "INFO": []}
+    messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
     l6_check_files(cfg, messages)
     l6_check_options(cfg, messages)
     l6_check_ecosystemrespiration(cfg, messages)
@@ -2831,6 +2843,7 @@ def l6_update_controlfile(cfg):
         pfp_gui.MsgBox_Quit(msg, title="Critical")
         return ok
     try:
+        cfg = l6_update_cfg_sections(cfg)
         cfg = l6_update_cfg_syntax(cfg)
     except Exception:
         ok = False
@@ -2946,6 +2959,20 @@ def l6_check_options(cfg, messages):
         # 'Options' section is optional
         pass
     return
+def l6_update_cfg_sections(cfg):
+    """
+    Purpose:
+     Add the EvapoTranspiration section to the L6 control file
+     if it is not present.
+    Usage:
+    Side effects:
+     Adds the EvapoTranspiration section to an L6 control file.
+    Author: PRI
+    Date: November 2023
+    """
+    if "EvapoTranspiration" not in cfg:
+        cfg["EvapoTranspiration"] = {"ET": {"Fe": "Fe"}}
+    return cfg
 def l6_update_cfg_syntax(cfg):
     """
     Purpose:
@@ -2990,7 +3017,8 @@ def l6_update_cfg_syntax(cfg):
                             cfg4 = cfg3[key4.lower()]
                             cfg4 = parse_cfg_variables_value(key3, cfg4)
                             cfg[key1][key2][key3][key4.lower()] = cfg4
-        elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity"]:
+        elif key1 in ["NetEcosystemExchange", "GrossPrimaryProductivity",
+                      "EvapoTranspiration"]:
             for key2 in cfg[key1]:
                 for key3 in cfg[key1][key2]:
                     cfg3 = cfg[key1][key2][key3]
