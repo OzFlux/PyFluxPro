@@ -197,8 +197,7 @@ def ParseL4ControlFile(cfg, ds):
                                             "MaxGapInterpolate": int(max_gap_interpolate)}
     # get a list of keys in the control file
     labels = list(cfg["Drivers"].keys())
-    # get a list of targets being gap filled, this may not simply be a list of keys
-    # in the control file if 'target' is specified in the gap filling method
+    # get a list of targets being gap filled
     targets = sorted(list(cfg["Drivers"].keys()))
     l4_info["GapFillUsingInterpolation"]["targets"] = targets.copy()
     # loop over target variables
