@@ -72,25 +72,9 @@ def CheckGapLengths(cfg, ds, l5_info):
     ts = int(float(ds.root["Attributes"]["time_step"]))
     nperday = 24 * 60//ts
     max_short_gap_records = max_short_gap_days * nperday
-    # get a list of variables being gap filled
-    targets = list(cfg["Fluxes"].keys())
-    gf_methods = []
-    for target in list(targets):
-        gf_methods = [m for m in cfg["Fluxes"][target].keys() if m != "MergeSeries"]
-        gf_method_labels = []
-        gf_method_targets = []
-        for gf_method in list(gf_methods):
-            gf_method_labels += list(cfg["Fluxes"][target][gf_method].keys())
-            #print(target, gf_methods, gf_method, gf_method_labels)
-            for gf_method_label in list(gf_method_labels):
-                if "target" in cfg["Fluxes"][target][gf_method][gf_method_label]:
-                    real_target = cfg["Fluxes"][target][gf_method][gf_method_label]["target"]
-                    gf_method_targets.append(real_target)
-                    targets[targets.index(target)] = real_target
-    targets = targets + gf_method_targets
-    targets = sorted(list(set(targets)))
     targets_with_long_gaps = []
     # loop over the targets, get the duration and check to see if any exceed the maximum
+    targets = l5_info["CheckL5Targets"]["targets"]
     for target in targets:
         # initialise dictionary entry
         l5_info["CheckGapLengths"][target] = {"got_long_gaps": False,
@@ -248,26 +232,49 @@ def ParseL5ControlFile(cfg, ds):
     # add key for suppressing output of intermediate variables e.g. Ta_aws
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
     l5_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
-    targets = sorted(list(cfg["Fluxes"].keys()))
+    # add key for interpolation
+    interpolate_type = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "InterpolateType", default="Akima")
+    max_gap_interpolate = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "MaxGapInterpolate", default=3)
+    l5_info["GapFillUsingInterpolation"] = {"InterpolateType": str(interpolate_type),
+                                            "MaxGapInterpolate": int(max_gap_interpolate)}
+    # get a list of keys in the control file
+    labels = sorted(list(cfg["Fluxes"].keys()))
+    # get a list of targets being gap filled, this may not simply be a list of keys
+    # in the control file if 'target' is specified in the gap filling method
+    targets = list(cfg["Fluxes"].keys())
+    gf_methods = []
+    for target in list(targets):
+        gf_methods = [m for m in cfg["Fluxes"][target].keys() if m != "MergeSeries"]
+        gf_method_labels = []
+        gf_method_targets = []
+        for gf_method in list(gf_methods):
+            gf_method_labels += list(cfg["Fluxes"][target][gf_method].keys())
+            for gf_method_label in list(gf_method_labels):
+                if "target" in cfg["Fluxes"][target][gf_method][gf_method_label]:
+                    real_target = cfg["Fluxes"][target][gf_method][gf_method_label]["target"]
+                    gf_method_targets.append(real_target)
+                    targets[targets.index(target)] = real_target
+    targets = targets + gf_method_targets
+    targets = sorted(list(set(targets)))
     l5_info["CheckL5Targets"] = {"targets": targets}
     l5_info["CheckL5Drivers"] = {"drivers": []}
-    for target in targets:
-        if "GapFillUsingSOLO" in list(cfg["Fluxes"][target].keys()):
-            gfSOLO_createdict(cfg, ds, l5_info, target, "GapFillUsingSOLO", 510)
+    for label in labels:
+        if "GapFillUsingSOLO" in list(cfg["Fluxes"][label].keys()):
+            gfSOLO_createdict(cfg, ds, l5_info, label, "GapFillUsingSOLO", 510)
             # check to see if something went wrong
             if ds.info["returncodes"]["value"] != 0:
                 # if it has, return to calling routine
                 return l5_info
-        if "GapFillLongSOLO" in list(cfg["Fluxes"][target].keys()):
-            gfSOLO_createdict(cfg, ds, l5_info, target, "GapFillLongSOLO", 520)
+        if "GapFillLongSOLO" in list(cfg["Fluxes"][label].keys()):
+            gfSOLO_createdict(cfg, ds, l5_info, label, "GapFillLongSOLO", 520)
             if ds.info["returncodes"]["value"] != 0:
                 return l5_info
-        if "GapFillUsingMDS" in list(cfg["Fluxes"][target].keys()):
-            gfMDS_createdict(cfg, ds, l5_info, target, "GapFillUsingMDS", 530)
+        if "GapFillUsingMDS" in list(cfg["Fluxes"][label].keys()):
+            gfMDS_createdict(cfg, ds, l5_info, label, "GapFillUsingMDS", 530)
             if ds.info["returncodes"]["value"] != 0:
                 return l5_info
-        if "MergeSeries" in list(cfg["Fluxes"][target].keys()):
-            gfMergeSeries_createdict(cfg, ds, l5_info, target, "MergeSeries")
+        if "MergeSeries" in list(cfg["Fluxes"][label].keys()):
+            gfMergeSeries_createdict(cfg, ds, l5_info, label, "MergeSeries")
     l5_info["CheckL5Drivers"]["drivers"] = list(set(l5_info["CheckL5Drivers"]["drivers"]))
     return l5_info
 
@@ -1222,7 +1229,7 @@ def gfClimatology_monthly(ds, series, output, xlbook):
     ds.root["Variables"][output]["Flag"][index] = numpy.int32(460)
 
 # functions for GapFillUsingInterpolation
-def GapFillUsingInterpolation(cf, ds):
+def GapFillUsingInterpolation(ds, l5_info):
     """
     Purpose:
      Gap fill variables in the data structure using interpolation.
@@ -1236,21 +1243,22 @@ def GapFillUsingInterpolation(cf, ds):
     Date: September 2016
     """
     # get the maximum gap length to be filled by interpolation
-    max_length_hours = int(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxGapInterpolate", default=3))
+    max_length_hours = l5_info["GapFillUsingInterpolation"]["MaxGapInterpolate"]
     # bug out if interpolation disabled in control file
     if max_length_hours == 0:
         msg = " Gap fill by interpolation disabled in control file"
         logger.info(msg)
         return
     # get list of variables from control file
-    labels = pfp_utils.get_label_list_from_cf(cf)
+    targets = l5_info["CheckL5Targets"]["targets"]
     # get the interpolation type
-    int_type = str(pfp_utils.get_keyvaluefromcf(cf, ["Options"], "InterpolateType", default="Akima"))
+    int_type = l5_info["GapFillUsingInterpolation"]["InterpolateType"]
     # tell the user what we are doing
     msg = " Using " + int_type +" interpolation (max. gap = " + str(max_length_hours) +" hours)"
     logger.info(msg)
     # do the business
-    pfp_ts.InterpolateOverMissing(ds, labels, max_length_hours=max_length_hours, int_type=int_type)
+    pfp_ts.InterpolateOverMissing(ds, targets, max_length_hours=max_length_hours, int_type=int_type)
+    return
 
 # miscellaneous L4 routines
 def gf_getdiurnalstats(DecHour,Data,ts):

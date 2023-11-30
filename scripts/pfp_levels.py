@@ -289,7 +289,7 @@ def l5qc(main_gui, cf, ds4):
     if ds5.info["returncodes"]["value"] != 0:
         return ds5
     # fill short gaps using interpolation
-    pfp_gf.GapFillUsingInterpolation(cf, ds5)
+    pfp_gf.GapFillUsingInterpolation(ds5, l5_info)
     # gap fill using marginal distribution sampling
     if "GapFillUsingMDS" in l5_info:
         pfp_gfMDS.GapFillUsingMDS(ds5, l5_info, "GapFillUsingMDS")
