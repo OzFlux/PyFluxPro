@@ -1096,7 +1096,7 @@ def convert_anglestring(anglestring):
     quadlist = ["N", "E", "S", "W"]
     direction = {'N':1, 'S':-1, 'E': 1, 'W':-1}
     # replace the degrees, minutes and seconds symbols with spaces
-    new = anglestring.replace('\B0', ' ').replace('\'', ' ').replace('"', ' ').strip()
+    new = anglestring.replace(r'\B0', ' ').replace('\'', ' ').replace('"', ' ').strip()
     try:
         # simple casting may work, who knows?
         anglefloat = float(new)

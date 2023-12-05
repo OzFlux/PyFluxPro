@@ -763,7 +763,7 @@ def plot_ustar_threshold(df, num_cats=30, ustar_threshold=None):
     fig, ax1 = plt.subplots(1, figsize = (12, 8))
     fig.patch.set_facecolor('white')
     ax1.set_ylabel(r'$R_e\/(\mu mol\/m^{-2}\/s^{-1})$', fontsize = 18)
-    ax1.set_xlabel('$u_{*}\/(m\/s^{-1})$', fontsize = 18)
+    ax1.set_xlabel(r'$u_{*}\/(m\/s^{-1})$', fontsize = 18)
     ax1.tick_params(axis = 'x', labelsize = 14)
     ax1.tick_params(axis = 'y', labelsize = 14)
     ax1.yaxis.set_ticks_position('left')

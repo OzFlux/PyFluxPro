@@ -463,8 +463,8 @@ class partition(object):
         ax.tick_params(axis = 'y', labelsize = 14)
         ax.tick_params(axis = 'x', labelsize = 14)
         ax.set_title(dt.datetime.strftime(date, '%Y-%m-%d'), fontsize = 18)
-        ax.set_xlabel('$Temperature\/(^oC)$', fontsize = 18)
-        ax.set_ylabel('$NEE\/(\mu molC\/m^{-2}\/s^{-1})$', fontsize = 18)
+        ax.set_xlabel('$Temperature (degC)', fontsize = 18)
+        ax.set_ylabel('$NEE (umol/m^2/s)', fontsize = 18)
         labels_dict = {'night': 'Night Eo and rb', 'day': 'Night Eo, day rb'}
         styles_dict = {'night': '--', 'day': ':'}
         ax.plot(df.TC, df.NEE, color = 'None', marker = 'o',
@@ -511,9 +511,9 @@ class partition(object):
         ax.tick_params(axis = 'x', labelsize = 14)
         ax.set_title(dt.datetime.strftime(date.to_pydatetime(), '%Y-%m-%d'),
                      fontsize = 18)
-        ax.set_xlabel('$PPFD\/(\mu mol\/photons\/m^{-2}\/s^{-1})$',
+        ax.set_xlabel(r'$PPFD\/(\mu mol\/photons\/m^{-2}\/s^{-1})$',
                       fontsize = 18)
-        ax.set_ylabel('$NEE\/(\mu molC\/m^{-2}\/s^{-1})$', fontsize = 18)
+        ax.set_ylabel(r'$NEE\/(\mu molC\/m^{-2}\/s^{-1})$', fontsize = 18)
         labels_dict = {'night': 'Night Eo and rb', 'day': 'Night Eo, day rb'}
         markers_dict = {'night': '+', 'day': 'x'}
         colors_dict = {'night': 'blue', 'day': 'magenta'}
