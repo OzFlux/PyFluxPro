@@ -398,7 +398,7 @@ def csv_read_parse_cf(cf):
     # define the missing values and the value with which to fill them
     info["missing_values"] = "NA,N/A,NAN,NaN,nan,#NAME?,#VALUE!,#DIV/0!,#REF!,Infinity,-Infinity"
     info["filling_values"] = c.missing_value
-    info["deletechars"] = set("""~!@#$%^&=+~\|]}[{';: ?.>,<""")
+    info["deletechars"] = set("""~!@#$%^&=+~|]}[{';: ?.>,<""")
 
     info["cf_ok"] = True
 
