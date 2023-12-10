@@ -247,18 +247,15 @@ def ParseL5ControlFile(cfg, ds):
     max_gap_interpolate = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "MaxGapInterpolate", default=3)
     l5_info["GapFillUsingInterpolation"] = {"InterpolateType": str(interpolate_type),
                                             "MaxGapInterpolate": int(max_gap_interpolate)}
-    # get a list of keys in the control file
-    labels = sorted(list(cfg["Fluxes"].keys()))
     # get a list of targets being gap filled, this may not simply be a list of keys
     # in the control file if 'target' is specified in the gap filling method
     targets = list(cfg["Fluxes"].keys())
     gf_methods = []
     for target in list(targets):
         gf_methods = [m for m in cfg["Fluxes"][target].keys() if m != "MergeSeries"]
-        gf_method_labels = []
         gf_method_targets = []
         for gf_method in list(gf_methods):
-            gf_method_labels += list(cfg["Fluxes"][target][gf_method].keys())
+            gf_method_labels = list(cfg["Fluxes"][target][gf_method].keys())
             for gf_method_label in list(gf_method_labels):
                 if "target" in cfg["Fluxes"][target][gf_method][gf_method_label]:
                     real_target = cfg["Fluxes"][target][gf_method][gf_method_label]["target"]
@@ -269,6 +266,8 @@ def ParseL5ControlFile(cfg, ds):
     l5_info["GapFillUsingInterpolation"]["targets"] = targets.copy()
     l5_info["CheckL5Targets"] = {"targets": targets.copy()}
     l5_info["CheckL5Drivers"] = {"drivers": []}
+    # get a list of keys in the control file
+    labels = sorted(list(cfg["Fluxes"].keys()))
     for label in labels:
         if "GapFillUsingSOLO" in list(cfg["Fluxes"][label].keys()):
             gfSOLO_createdict(cfg, ds, l5_info, label, "GapFillUsingSOLO", 510)
