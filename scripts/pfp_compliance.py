@@ -1737,17 +1737,18 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
                 itl = [l.strip() for l in instrument_type.split(",")]
                 if len(itl) == 2:
                     for item in itl:
+                        if ((item not in known_sonics) and (item not in known_irgas)):
+                            msg = "Unrecognised instrument (" + item + ") for " + sonic_irga_label
+                            messages["ERROR"].append(msg)
+                            continue
                         if item in known_sonics:
                             if item not in sonic_check:
                                 sonic_check[item] = []
                             sonic_check[item].append(sonic_irga_label)
-                        elif item in known_irgas:
+                        if item in known_irgas:
                             if item not in irga_check:
                                 irga_check[item] = []
                             irga_check[item].append(sonic_irga_label)
-                        else:
-                            msg = "Unrecognised instrument (" + item + ") for " + sonic_irga_label
-                            messages["ERROR"].append(msg)
                 else:
                     msg = "'instrument' attribute must have 2 entries separated by a comma, got "
                     msg += instrument_type + " for " + sonic_irga_label
