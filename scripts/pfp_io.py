@@ -880,15 +880,23 @@ def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
     Author: PRI
     Date: Back in the day
     """
+    # get the global attribute time step
     ts = int(l1_info["read_excel"]["Global"]["time_step"])
+    # get the data frame for this worksheet
     df = dfs[df_name]
+    # initialise logicals
     got_timestamp = False
     more_than_one = False
+    # first check for columns that qualify
     if not got_timestamp:
+        # get a list of columns where dtype is datetime64
         dt_columns = [c for c in df.columns if pandas.api.types.is_datetime64_dtype(df[c])]
+        # check to see if there is more than 1
         if len(dt_columns) > 1:
             more_than_one = True
+        # loop over candidate columns
         for dt_column in dt_columns:
+            # try casting column as datetime
             try:
                 df[dt_column] = pandas.to_datetime(df[dt_column])
                 # get the time step for this column
@@ -903,6 +911,7 @@ def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
                     # and exit the for loop
                     break
             except (ParserError, TypeError, ValueError):
+                # pass silently on these errors
                 pass
     if not got_timestamp:
         obj_columns = [c for c in df.columns[df.dtypes=='object']]
@@ -924,17 +933,22 @@ def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
                     break
             except (ParserError, TypeError, ValueError):
                 pass
+    # check to see if we have a timestamp for this sheet
     if got_timestamp:
         if more_than_one:
+            # if there was more than 1 timestamp, tell the user which one we are using
             msg = " Using column " + timestamp + " as the timestamp for sheet " + df_name
             logger.info(msg)
     else:
+        # tell the user we couldn't find a timestamp for this sheet
         msg = "!!!!! Unable to find a timestamp for " + df_name + ", deleting sheet ..."
         logger.error("!!!!!")
         logger.error(msg)
         logger.error("!!!!!")
+        # delete the sheet
         del dfs[df_name]
         del l1_info["read_excel"]["xl_sheets"][df_name]
+        # set the timestamp to None
         timestamp = None
     return timestamp
 
