@@ -274,7 +274,7 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         # Write to excel
         sheet_name = output + " " + l6_info[called_by]["info"]["sheet_suffix"]
         params_df.to_excel(xl_writer, sheet_name)
-        xl_writer.close()
+        #xl_writer.close()
         # Do plotting
         startdate = str(ds.root["Variables"]["DateTime"]["Data"][0])
         enddate = str(ds.root["Variables"]["DateTime"]["Data"][-1])
