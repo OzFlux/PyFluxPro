@@ -16,7 +16,7 @@ from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-def CheckL5Drivers(ds, l5_info):
+def CheckDrivers(ds, l5_info):
     """
     Purpose:
      Check the drvers specified for gap filling for missing data.
@@ -28,7 +28,7 @@ def CheckL5Drivers(ds, l5_info):
     msg = " Checking drivers for missing data"
     logger.info(msg)
     drivers_with_missing = []
-    for label in list(l5_info["CheckL5Drivers"]["drivers"]):
+    for label in list(l5_info["CheckDrivers"]["drivers"]):
         if label not in ds.root["Variables"].keys():
             msg = "  Requested driver (" + label + ") not found in data structure"
             logger.error(msg)
@@ -74,7 +74,7 @@ def CheckGapLengths(cfg, ds, l5_info):
     max_short_gap_records = max_short_gap_days * nperday
     targets_with_long_gaps = []
     # loop over the targets, get the duration and check to see if any exceed the maximum
-    targets = l5_info["CheckL5Targets"]["targets"]
+    targets = l5_info["CheckTargets"]["targets"]
     for target in targets:
         # initialise dictionary entry
         l5_info["CheckGapLengths"][target] = {"got_long_gaps": False,
@@ -142,7 +142,7 @@ def CheckGapLengths(cfg, ds, l5_info):
                 l5_info["GapFillUsingMDS"]["info"].pop("MaxShortGapRecords", None)
     return
 
-def CheckL5Targets(ds, l5_info):
+def CheckTargets(ds, l5_info):
     """
     Purpose:
      Check the targets specified for gap filling at L5 to see if any of them
@@ -155,7 +155,7 @@ def CheckL5Targets(ds, l5_info):
     msg = " Checking targets for missing data"
     logger.info(msg)
     # get a list of target variables
-    targets = l5_info["CheckL5Targets"]["targets"]
+    targets = l5_info["CheckTargets"]["targets"]
     series_with_missing_data = []
     for target in targets:
         var = pfp_utils.GetVariable(ds, target)
@@ -264,8 +264,8 @@ def ParseL5ControlFile(cfg, ds):
     targets = targets + gf_method_targets
     targets = sorted(list(set(targets)))
     l5_info["GapFillUsingInterpolation"]["targets"] = targets.copy()
-    l5_info["CheckL5Targets"] = {"targets": targets.copy()}
-    l5_info["CheckL5Drivers"] = {"drivers": []}
+    l5_info["CheckTargets"] = {"targets": targets.copy()}
+    l5_info["CheckDrivers"] = {"drivers": []}
     # get a list of keys in the control file
     labels = sorted(list(cfg["Fluxes"].keys()))
     for label in labels:
@@ -285,7 +285,7 @@ def ParseL5ControlFile(cfg, ds):
                 return l5_info
         if "MergeSeries" in list(cfg["Fluxes"][label].keys()):
             gfMergeSeries_createdict(cfg, ds, l5_info, label, "MergeSeries")
-    l5_info["CheckL5Drivers"]["drivers"] = list(set(l5_info["CheckL5Drivers"]["drivers"]))
+    l5_info["CheckDrivers"]["drivers"] = list(set(l5_info["CheckDrivers"]["drivers"]))
     return l5_info
 
 def ReadAlternateFiles(ds, l4_info):
@@ -775,7 +775,7 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
             if len(drivers_string.split(",")) == 3:
                 l5mo[output]["drivers"] = drivers_string.split(",")
                 # append to list of drivers to be checked for gaps
-                l5_info["CheckL5Drivers"]["drivers"] += drivers_string.split(",")
+                l5_info["CheckDrivers"]["drivers"] += drivers_string.split(",")
             else:
                 msg = " MDS: incorrect number of drivers for " + label + ", skipping ..."
                 logger.error(msg)
@@ -893,7 +893,7 @@ def gfSOLO_createdict(cf, ds, l5_info, target_label, called_by, flag_code):
     # create an empty series in ds if the SOLO output series doesn't exist yet
     outputs = list(cf["Fluxes"][target_label][called_by].keys())
     for output in outputs:
-        l5_info["CheckL5Drivers"]["drivers"] += l5_info[called_by]["outputs"][output]["drivers"]
+        l5_info["CheckDrivers"]["drivers"] += l5_info[called_by]["outputs"][output]["drivers"]
         if output not in list(ds.root["Variables"].keys()):
             # disable output to netCDF file for this variable
             l5_info["RemoveIntermediateSeries"]["not_output"].append(output)
@@ -1074,14 +1074,16 @@ def gfSOLO_createdict_outputs(cf, l5_info, target, called_by, flag_code):
     iris = l5_info["RemoveIntermediateSeries"]
     so = l5_info[called_by]["outputs"]
     # loop over the outputs listed in the control file
-    if level == "L5":
+    if ((called_by == "GapFillUsingSOLO") or
+        (called_by == "GapFillLongSOLO")):
+    #if level == "L5":
         section = "Fluxes"
         drivers = "Fn,Fg,SHD,SH,Ta,Ts"
         source = target
-    elif level == "L6":
+    elif called_by == "ERUsingSOLO":
+    #elif level == "L6":
         section = "EcosystemRespiration"
         drivers = "Ta,Ts,Sws"
-        #source = "Fco2"
         source = target
     else:
         msg = "Unrecognised control file level (must be L5 or L6)"
