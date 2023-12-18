@@ -38,6 +38,8 @@ def CalculateNEE(ds, l6_info):
     """
     if "NetEcosystemExchange" not in l6_info:
         return
+    msg = " Calculating NEE from Fco2 and ER"
+    logger.info(msg)
     # make the L6 "description" attribute for the target variable
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     # get the Fsd threshold
@@ -101,6 +103,8 @@ def CalculateNEP(ds, l6_info):
     Author: PRI
     Date: May 2015
     """
+    msg = " Calculating NEP from NEE"
+    logger.info(msg)
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     # make the L6 "description" attribute for the target variable
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -271,7 +275,8 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         ER["Attr"]["comment1"] = "Drivers were {}".format(str(drivers))
         pfp_utils.CreateVariable(ds, ER)
         # Write to excel
-        params_df.to_excel(xl_writer, output)
+        sheet_name = output + " " + l6_info[called_by]["info"]["sheet_suffix"]
+        params_df.to_excel(xl_writer, sheet_name)
         xl_writer.close()
         # Do plotting
         startdate = str(ds.root["Variables"]["DateTime"]["Data"][0])
@@ -349,6 +354,8 @@ def GetERFromFco2(ds, l6_info):
     Author: PRI
     Date: October 2015
     """
+    msg = " Calculating ER from Fco2"
+    logger.info(msg)
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     ER = {"Label": "ER"}
     # get the CO2 flux
@@ -1308,6 +1315,8 @@ def PartitionNEE(ds, l6_info):
     """
     if "GrossPrimaryProductivity" not in l6_info:
         return
+    msg = " Calculating GPP from NEE and ER"
+    logger.info(msg)
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     # make the L6 "description" attribute for the target variable
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
