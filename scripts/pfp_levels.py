@@ -283,7 +283,7 @@ def l5qc(main_gui, cf, ds4):
     # truncate data structure if requested
     pfp_io.TruncateDataStructure(ds5, l5_info)
     # check for missing data in the drivers
-    pfp_gf.CheckL5Drivers(ds5, l5_info)
+    pfp_gf.CheckDrivers(ds5, l5_info)
     if ds5.info["returncodes"]["value"] != 0:
         return ds5
     # now do the flux gap filling methods
@@ -307,7 +307,7 @@ def l5qc(main_gui, cf, ds4):
             return ds5
     # fill long gaps using SOLO
     do_it = False
-    for target in l5_info["CheckL5Targets"]["targets"]:
+    for target in l5_info["CheckTargets"]["targets"]:
         if target in list(l5_info["CheckGapLengths"].keys()):
             if l5_info["CheckGapLengths"][target]["got_long_gaps"]:
                 do_it = True
@@ -318,7 +318,7 @@ def l5qc(main_gui, cf, ds4):
     # merge the gap filled drivers into a single series
     pfp_ts.MergeSeriesUsingDict(ds5, l5_info, merge_order="standard")
     # check that all targets were gap filled
-    pfp_gf.CheckL5Targets(ds5, l5_info)
+    pfp_gf.CheckTargets(ds5, l5_info)
     if ds5.info["returncodes"]["value"] != 0:
         return ds5
     # calculate Monin-Obukhov length
