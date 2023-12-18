@@ -346,10 +346,14 @@ def l6qc(main_gui, cf, ds5):
     pfp_rp.ERUsingSOLO(main_gui, ds6, l6_info, "ERUsingSOLO")
     # estimate ER using Lloyd-Taylor
     if "ERUsingLloydTaylor" in list(l6_info.keys()):
-        # open the Excel file for writing all outputs
-        xl_name = l6_info["ERUsingLloydTaylor"]["info"]["data_file_path"]
-        xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
-        pfp_rp.ERUsingLloydTaylor(ds6, l6_info, xl_writer)
+        try:
+            # open the Excel file for writing all outputs
+            xl_name = l6_info["ERUsingLloydTaylor"]["info"]["data_file_path"]
+            xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
+            pfp_rp.ERUsingLloydTaylor(ds6, l6_info, xl_writer)
+        except RuntimeError:
+            msg = " Error using Lloyd-Taylor to estimate ER"
+            logger.error(msg)
         xl_writer.close()
     else:
         msg = "The Lloyd-Taylor ER method is disabled in the control file"
@@ -361,11 +365,10 @@ def l6qc(main_gui, cf, ds5):
             xl_name = l6_info["ERUsingLasslop"]["info"]["data_file_path"]
             xl_writer = pandas.ExcelWriter(xl_name, engine = "xlsxwriter")
             pfp_rp.ERUsingLasslop(ds6, l6_info, xl_writer)
-            xl_writer.close()
         except RuntimeError:
-            xl_writer.close()
             msg = " Error using Lasslop et al to estimate ER"
             logger.error(msg)
+        xl_writer.close()
     else:
         msg = "The Lasslop ER method is disabled in the control file"
         logger.warning(msg)
