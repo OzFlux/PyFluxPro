@@ -125,7 +125,7 @@ def CalculateNEP(ds, l6_info):
         pfp_utils.CreateVariable(ds, NEP)
     return
 
-def ERUsingLasslop(ds, l6_info, xl_writer):
+def ERUsingLasslop(ds, l6_info, xl_writer=None):
     """
     Purpose:
     Usage:
@@ -154,7 +154,7 @@ def ERUsingLasslop(ds, l6_info, xl_writer):
             raise RuntimeError(msg)
     return
 
-def ERUsingLloydTaylor(ds, l6_info, xl_writer):
+def ERUsingLloydTaylor(ds, l6_info, xl_writer=None):
     """
     Purpose:
     Usage:
@@ -275,8 +275,9 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         ER["Attr"]["comment1"] = "Drivers were {}".format(str(drivers))
         pfp_utils.CreateVariable(ds, ER)
         # Write to excel
-        sheet_name = output + " " + l6_info[called_by]["info"]["sheet_suffix"]
-        params_df.to_excel(xl_writer, sheet_name)
+        if xl_writer is not None:
+            sheet_name = output + " " + l6_info[called_by]["info"]["sheet_suffix"]
+            params_df.to_excel(xl_writer, sheet_name)
         # Do plotting
         startdate = str(ds.root["Variables"]["DateTime"]["Data"][0])
         enddate = str(ds.root["Variables"]["DateTime"]["Data"][-1])
