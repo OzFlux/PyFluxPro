@@ -252,8 +252,9 @@ class partition(object):
                 # delete the attribute
                 delattr(self, "LL_fignum")
         E0_results = pd.DataFrame.from_dict(self.results["E0"], orient="index")
-        sheet_name = "E0 results " + self.l6_info[called_by]["info"]["sheet_suffix"]
-        E0_results.to_excel(self.xl_writer, sheet_name)
+        if self.xl_writer is not None:
+            sheet_name = "E0 results " + self.l6_info[called_by]["info"]["sheet_suffix"]
+            E0_results.to_excel(self.xl_writer, sheet_name)
         if len(Eo_list) == 0:
             msg = "***** Could not find any valid estimates of E0, exiting..."
             logger.warning(msg)

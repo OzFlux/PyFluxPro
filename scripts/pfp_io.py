@@ -3307,9 +3307,28 @@ def nc_write_group(nc_obj, ds, group):
     Author: PRI
     Date: January 2018
     """
-    dsr = getattr(ds, "root")
-    dsg = getattr(ds, group)
+    if isinstance(ds, DataStructure):
+        if hasattr(ds, "root"):
+            dsr = getattr(ds, "root")
+        else:
+            msg = " DataStructure object has no 'root' attribute"
+            logger.error(msg)
+            raise RuntimeError(msg)
+        if hasattr(ds, group):
+            dsg = getattr(ds, group)
+        else:
+            msg = " DataStructure object has no " + group + " attribute"
+            logger.error(msg)
+            raise RuntimeError(msg)
+    else:
+        msg = " Unexpected object (" + type(ds) + ")"
+        logger.error(msg)
+        raise RuntimeError(msg)
     # sanity check
+    if "Attributes" not in list(dsr.keys()):
+        msg = " Data structure has no global 'Attributes'"
+        logger.error(msg)
+        raise RuntimeError(msg)
     if "Attributes" not in list(dsg.keys()):
         msg = " Data structure group " + group + " has no 'Attributes'"
         logger.error(msg)
