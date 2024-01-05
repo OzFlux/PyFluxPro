@@ -1085,7 +1085,7 @@ def do_utilities_ustar_cpd_mchugh_custom(main_ui):
     Purpose:
      Calculate the u* threshold using the Change Point Detection method described in
      Barr et al. 2013, AFM 171-172, pp31-45.
-     This code is the original implementation by Ian McHugh and is a wee bit slow.
+     This code is the original implementation by Ian McHugh.
     """
     try:
         cfg = main_ui.tabs.tab_dict[main_ui.tabs.tab_index_running].get_data_from_model()
@@ -1105,7 +1105,7 @@ def do_utilities_ustar_cpd_mchugh_standard(main_ui, nc_file_uri):
     Purpose:
      Calculate the u* threshold using the Change Point Detection method described in
      Barr et al. 2013, AFM 171-172, pp31-45.
-     This code is the original implementation by Ian McHugh and is a wee bit slow.
+     This code is the original implementation by Ian McHugh.
     """
     try:
         logger.info("Starting CPD u* threshold detection (McHugh)")

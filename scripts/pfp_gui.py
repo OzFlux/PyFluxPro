@@ -3225,6 +3225,25 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_madcheck(self):
+        """ Add the MAD check to a variable."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        if selected_item.text().split("_")[0] == "Fco2":
+            edge_threshold = 6
+        elif selected_item.text().split("_")[0] in ["Fe", "Fh"]:
+            edge_threshold = 100
+        else:
+            edge_threshold = ""
+        new_qc = {"MADCheck":{"Fsd_threshold": 12, "edge_threshold": edge_threshold,
+                              "window_size": 13, "zfc": 5.5,}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
     def add_massmancorrection(self):
         """ Add Massman correction to the [Options] section."""
         child0 = QtGui.QStandardItem("MassmanCorrection")
@@ -3726,6 +3745,11 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
                     self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
                     self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+                if "MADCheck" not in existing_entries:
+                    self.context_menu.actionAddMADCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMADCheck.setText("Add MADCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddMADCheck)
+                    self.context_menu.actionAddMADCheck.triggered.connect(self.add_madcheck)
                 if "ExcludeDates" not in existing_entries:
                     self.context_menu.actionAddExcludeDates = QtWidgets.QAction(self)
                     self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
@@ -3800,12 +3824,12 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 self.context_menu.addSeparator()
                 add_separator = False
             if str(idx.data()) in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
-                                   "LowerCheck", "UpperCheck"]:
+                                   "MADCheck", "LowerCheck", "UpperCheck"]:
                 self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
                 self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
-            if (str(idx.data()) in ["AverageSeries", "MergeSeries"]):
+            if (str(idx.data()) in ["AverageSeries", "ApplyFco2Storage", "MergeSeries"]):
                 self.context_menu.actionRemoveMergeSeriesItem = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveMergeSeriesItem.setText("Remove item")
                 self.context_menu.addAction(self.context_menu.actionRemoveMergeSeriesItem)
@@ -4002,6 +4026,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in sorted(list(self.cfg[key1][key2].keys())):
                         if key3 in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
+                                    "LowerCheck", "UpperCheck", "MADCheck",
                                     "ApplyFco2Storage", "MergeSeries", "AverageSeries"]:
                             parent3 = QtGui.QStandardItem(key3)
                             parent3.setEditable(False)

@@ -1225,6 +1225,42 @@ def CalculateComponentsFromWsWd(ds):
     pfp_utils.CreateVariable(ds, u)
     pfp_utils.CreateVariable(ds, v)
 
+def CalculateSco2ONEFlux(ds, CO2_in="CO2", Sco2_out="Sco2_oneflux"):
+    """
+    Purpose:
+     Calculate the CO2 flux storage term from a single point measurement of CO2.
+     This routine uses the method coded in ONEFlux/oneflux_steps/qc_auto.  This
+     uses a factor of 0.024 to approximate the correction from umol/mol to
+     umol/m^3.  The factor of 0.024 is approximately correct for a pressure of
+     101 kPa and a temperature of 22 degC.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: January 2024
+    """
+    msg = " Calculating Sco2 (single point, ONEFlux method)"
+    logger.info(msg)
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    ts = int(ds.root["Attributes"]["time_step"])
+    ones = numpy.ones(nrecs, dtype=int)
+    zeros = numpy.zeros(nrecs, dtype=int)
+    CO2 = pfp_utils.GetVariable(ds, CO2_in)
+    if CO2["Attr"]["units"] != "umol/mol":
+        msg = "  CO2 units must be umol/mol (" + CO2["Attr"]["units"] + "), Sco2 not calculated"
+        logger.error(msg)
+        return
+    attr = {"height": pfp_utils.strip_non_numeric(str(CO2["Attr"]["height"])),
+            "instrument": CO2["Attr"]["instrument"],
+            "long_name": "Storage term of CO2 flux using ONEFlux method",
+            "statistic_type": "average",
+            "units": "umol/m^2/s"}
+    Sco2 = pfp_utils.CreateEmptyVariable(Sco2_out, nrecs, attr=attr)
+    Sco2["Data"][1:nrecs] = ((CO2["Data"][1:nrecs] - CO2["Data"][0:nrecs-1])/(ts*60)*
+                             (float(Sco2["Attr"]["height"])/0.024))
+    Sco2["Flag"] = numpy.where(numpy.ma.getmaskarray(Sco2["Data"]), ones, zeros)
+    pfp_utils.CreateVariable(ds, Sco2)
+    return
+
 def CalculateSco2SinglePoint(cf, ds, info, Sco2_out="Sco2_single"):
     """
     Calculate CO2 flux storage term in the air column beneath the CO2 instrument.  This

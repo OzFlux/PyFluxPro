@@ -273,108 +273,6 @@ def cliptorange(data, lower, upper):
     data = rangecheckseriesupper(data,upper)
     return data
 
-def do_SONICcheck(cf, ds, code=3):
-    """
-    Purpose:
-     Does an implicit dependency check using the sonic diagnostic.
-    Usage:
-    Side effects:
-    Assumptions:
-    History:
-     Started life in OzFluxQC as do_CSATcheck()
-    Author: PRI
-    Date: Back in the day
-    """
-    # check to see if the user has disabled the IRGA check
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SONIC_Check", default="Yes")
-    if opt.lower() == "no":
-        msg = " *** SONIC_Check disbled in control file"
-        logger.warning(msg)
-        return
-    msg = " Doing the SONIC check"
-    logger.info(msg)
-    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
-    labels = list(ds.root["Variables"].keys())
-    # list of variables to be modified by this QC check
-    dependents = ["UxA", "UxC", "UxT", "UxUy", "UxUz",
-                  "Ux_SONIC_Av", "Ux_SONIC_Sd", "Ux_SONIC_Vr",
-                  "UyA", "UyC", "UyT", "UyUz",
-                  "Uy_SONIC_Av", "Uy_SONIC_Sd", "Uy_SONIC_Vr",
-                  "UzA", "UzC", "UzT",
-                  "Uz_SONIC_Av", "Uz_SONIC_Sd", "Uz_SONIC_Vr",
-                  "Tv_SONIC_Av", "Tv_SONIC_Sd", "Tv_SONIC_Vr",
-                  "U_SONIC_Av", "U_SONIC_Sd", "U_SONIC_Vr",
-                  "V_SONIC_Av", "V_SONIC_Sd", "V_SONIC_Vr",
-                  "W_SONIC_Av", "W_SONIC_Sd", "W_SONIC_Vr"]
-    # check these are in the data structure
-    for label in list(dependents):
-        if label not in labels:
-            dependents.remove(label)
-    # return if there are no dependents to check
-    if len(dependents) == 0:
-        msg = "  No dependent variables found, skipping SONIC check ..."
-        logger.info(msg)
-        return
-    # list for conditional variables
-    conditionals = []
-    # check if we have the SONIC diagnostic
-    got_diag = False
-    for diag in ["Diag_SONIC", "Diag_CSAT"]:
-        if diag in labels:
-            got_diag = True
-            conditionals.append(diag)
-            break
-    if not got_diag:
-        msg = " Sonic diagnostic (Diag_SONIC) not found in data"
-        logger.warning(msg)
-    # check if we have Uz standard deviation or vaiance (only use one)
-    got_uz = False
-    for uz in ["Uz_SONIC_Sd", "W_SONIC_Sd", "Uz_SONIC_Vr", "W_SONIC_Vr"]:
-        if uz in labels:
-            got_uz = True
-            conditionals.append(uz)
-            break
-    if not got_uz:
-        msg = " Neither Uz or W standard deviation or variance used in SONIC check (not in data structure)"
-        logger.warning(msg)
-    # check if we have Tv standard deviation or variance (only use one)
-    got_tv = False
-    for tv in ["Tv_SONIC_Sd", "Tv_SONIC_Vr"]:
-        if tv in labels:
-            got_tv = True
-            conditionals.append(tv)
-            break
-    if not got_tv:
-        msg = " Tv standard deviation or variance not used in SONIC check (not in data structure)"
-        logger.warning(msg)
-    # return if we found no conditionals
-    if len(conditionals) == 0:
-        msg = " No conditional variables found, skipping SONIC check ..."
-        logger.warning(msg)
-        return
-    # create an index series, 0 ==> not OK, 1 ==> OK
-    cidx = numpy.ones(nrecs, dtype=int)
-    for conditional in conditionals:
-        variable = pfp_utils.GetVariable(ds, conditional)
-        idx = numpy.where(numpy.ma.getmaskarray(variable["Data"]) == True)[0]
-        msg = "  SONIC check: " + conditional + " rejected " + str(numpy.size(idx)) + " points"
-        logger.info(msg)
-        cidx[idx] = int(0)
-    rejected = numpy.count_nonzero(cidx == 0)
-    percent = int(numpy.rint(100*rejected/nrecs))
-    msg = "  SONIC check: total number of points rejected was " + str(rejected)
-    msg += " (" + str(percent) + "%)"
-    logger.info(msg)
-    # use the conditional series to mask the dependents
-    for dependent in dependents:
-        variable = pfp_utils.GetVariable(ds, dependent)
-        variable["Data"] = numpy.ma.masked_where(cidx == int(0), variable["Data"])
-        idx = numpy.where(cidx == int(0))[0]
-        variable["Flag"][idx] = int(code)
-        variable["Attr"]["sonic_check"] = ",".join(dependents)
-        pfp_utils.CreateVariable(ds, variable)
-    return
-
 def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     """
     Purpose:
@@ -864,40 +762,286 @@ def do_linear(cf,ds):
         if pfp_utils.haskey(cf,ThisOne,'Linear'):
             pfp_ts.ApplyLinear(cf,ds,ThisOne)
 
-def do_wd_offset(cf, ds):
-    labels = list(cf["Variables"].keys())
-    for label in labels:
-        if pfp_utils.haskey(cf, label, "Wd offset"):
-            pfp_ts.ApplyWdOffset(cf, ds, label)
-
-def parse_rangecheck_limit(s):
+def do_lowercheck(cf,ds,section,series,code=2):
     """
     Purpose:
-     Parse the RangeCheck upper or lower value string.
-     Valid string formats are;
-      '100'
-      '[100]*12'
-      '[1,2,3,4,5,6,7,8,9,10,11,12]'
-      '1,2,3,4,5,6,7,8,9,10,11,12'
+    Usage:
     Author: PRI
-    Date: August 2018
+    Date: February 2017
     """
-    val_list = []
-    try:
-        val_list = [float(s)]*12
-    except ValueError:
-        if ("[" in s) and ("]" in s) and ("*" in s):
-            val = s[s.index("[")+1:s.index("]")]
-            val_list = [float(val)]*12
-        elif ("[" in s) and ("]" in s) and ("," in s) and ("*" not in s):
-            s = s.replace("[","").replace("]","")
-            val_list = [float(n) for n in s.split(",")]
-        elif ("[" not in s) and ("]" not in s) and ("," in s) and ("*" not in s):
-            val_list = [float(n) for n in s.split(",")]
-        else:
-            msg = " Unrecognised format for RangeCheck limit ("+s+")"
-            logger.error(msg)
-    return val_list
+    # check to see if LowerCheck requested for this variable
+    if "LowerCheck" not in cf[section][series]:
+        return
+    # Check to see if limits have been specified
+    if len(list(cf[section][series]["LowerCheck"].keys())) == 0:
+        msg = "do_lowercheck: no date ranges specified"
+        logger.info(msg)
+        return
+
+    ldt = ds.root["Variables"]["DateTime"]["Data"]
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    var = pfp_utils.GetVariable(ds, series)
+
+    lc_list = list(cf[section][series]["LowerCheck"].keys())
+    for n,item in enumerate(lc_list):
+        # this should be a list and we should probably check for compliance
+        lwr_string = cf[section][series]["LowerCheck"][item]
+        var["Attr"]["lowercheck_"+str(n)] = lwr_string
+        lwr_list = lwr_string.split(",")
+        start_date = dateutil.parser.parse(lwr_list[0])
+        sl = float(lwr_list[1])
+        end_date = dateutil.parser.parse(lwr_list[2])
+        el = float(lwr_list[3])
+        # get the start and end indices
+        si = pfp_utils.GetDateIndex(ldt, start_date, ts=ts, default=0, match="exact")
+        ei = pfp_utils.GetDateIndex(ldt, end_date, ts=ts, default=len(ldt)-1, match="exact")
+        # get the segment of data between this start and end date
+        seg_data = var["Data"][si:ei+1]
+        seg_flag = var["Flag"][si:ei+1]
+        x = numpy.arange(si, ei+1, 1)
+        lower = numpy.interp(x, [si, ei], [sl, el])
+        index = numpy.ma.where((seg_data < lower))[0]
+        seg_data[index] = numpy.ma.masked
+        seg_flag[index] = numpy.int32(code)
+        var["Data"][si:ei+1] = seg_data
+        var["Flag"][si:ei+1] = seg_flag
+    # now put the data back into the data structure
+    pfp_utils.CreateVariable(ds, var)
+    return
+
+def do_madfilter(cf, ds, section, series, code=24):
+    """
+    Purpose:
+     Apply the MAD filter used in ONEFlux, see Pastorello et al 2020 and
+     Papale et al 2006 for details.
+    Some notes:
+     Pastorello et al 2020 give the Fsd threshold for day/nught as 20 W/m^2
+     but qc_auto uses 12 W/m^2.  qc_auto runs the MAD check 3 times with
+     zfc values of 4.0, 5.5 and 7.0 but only the results from zfc=5.5
+     are used.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: January 2024
+    """
+    # check that the MAD filter has been requested for this series
+    if "MADCheck" not in list(cf[section][series].keys()):
+        return
+    msg = " Applying the MAD (despike) filter to " + series
+    logger.info(msg)
+    # get the processing level and description attribute name
+    level = str(ds.root["Attributes"]["processing_level"])
+    description = "description_" + level
+    # get the MAD filter options
+    opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "Fsd_threshold", default=12)
+    Fsd_threshold = float(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "window_size", default=13)
+    window_size = int(float(opt))
+    opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "zfc", default=5.5)
+    zfc = float(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "edge_threshold", default=6)
+    edge_threshold = float(opt)
+    # get required constants
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    ts = int(ds.root["Attributes"]["time_step"])
+    nperday = int(24*60/ts)
+    # calculate the window size that results in the size of the last window being
+    # as close as possible to the size of the other windows
+    window_nrecs = window_size * nperday
+    n_windows = int(nrecs/window_nrecs)
+    n_windows_nrecs = window_nrecs * n_windows
+    leftover_nrecs = nrecs - n_windows_nrecs
+    addons = int(leftover_nrecs/n_windows)
+    # new size for all windows but the last one
+    window_nrecs = window_nrecs + addons
+    # size of the last window
+    last_window_nrecs = window_nrecs + (nrecs - n_windows * window_nrecs)
+    # arrays of ones and zeros for general use and an array of MAD flags
+    ones = numpy.ones(nrecs, dtype=int)
+    zeros = numpy.zeros(nrecs, dtype=int)
+    mad_flags = numpy.full(nrecs, int(code), dtype=int)
+    cidx = numpy.zeros(nrecs, dtype=int)
+    # get the data
+    #ldt = pfp_utils.GetVariable(ds, "DateTime")
+    Fsd = pfp_utils.GetVariable(ds, "Fsd")
+    var = pfp_utils.GetVariable(ds, series)
+    midx = numpy.where(var["Flag"] != 0)[0]
+    # save a copy of the unfiltered variable
+    var_notMAD = pfp_utils.CopyVariable(var)
+    var_notMAD["Label"] = var["Label"] + "_notMAD"
+    pfp_utils.append_to_attribute(var_notMAD["Attr"], {description: "not MAD filtered"})
+    pfp_utils.CreateVariable(ds, var_notMAD)
+    # get the day/night indicators based on the Fsd thtreshold.
+    # NOTE: qc_auto uses 12 W/m^2 not 20 W/m^2 as stated in Pastorello et al 2020
+    # the first and last day time records are included in the night time indicator
+    # and vice versa see Papale et al 2006.
+    inds = {"day": numpy.ma.where(Fsd["Data"] > Fsd_threshold, ones, zeros),
+            "night": numpy.ma.where(Fsd["Data"] <= Fsd_threshold, ones, zeros)}
+    inds["day_extended"] = inds["day"] + numpy.roll(inds["day"], 1) + numpy.roll(inds["day"], -1)
+    inds["day_extended"] = numpy.where(inds["day_extended"] > 0, ones, zeros)
+    inds["night_extended"] = inds["night"] + numpy.roll(inds["night"], 1) + numpy.roll(inds["night"], -1)
+    inds["night_extended"] = numpy.where(inds["night_extended"] > 0, ones, zeros)
+    # do the business
+    # add a dictionary for this z value to the variable
+    var[str(zfc)] = {}
+    # night time data
+    var[str(zfc)]["night"] = {"Data": numpy.ma.masked_where(inds["night_extended"] < 1, var["Data"]),
+                              "Flag": numpy.ma.masked_where(inds["night_extended"] < 1, var["Flag"]),
+                              "differences": numpy.ma.array(numpy.zeros(nrecs, dtype=float), mask=True),
+                              "upr": numpy.zeros(nrecs, dtype=float), "lwr": numpy.zeros(nrecs, dtype=float)}
+    # day time data
+    var[str(zfc)]["day"] = {"Data": numpy.ma.masked_where(inds["day_extended"] < 1, var["Data"]),
+                            "Flag": numpy.ma.masked_where(inds["day_extended"] < 1, var["Flag"]),
+                            "differences": numpy.ma.array(numpy.zeros(nrecs, dtype=float), mask=True),
+                            "upr": numpy.zeros(nrecs, dtype=float), "lwr": numpy.zeros(nrecs, dtype=float)}
+    # combined night and day time daya after MAD filtering with this value of z
+    var[str(zfc)]["Data"] = numpy.ma.array(numpy.zeros(nrecs, dtype=float), mask=True)
+    var[str(zfc)]["Flag"] = numpy.ma.array(numpy.ones(nrecs, dtype=float), mask=True)
+    # loop over day and night times
+    for item in ["night", "day"]:
+        # local pointer to the dictionary for this z value
+        vzi = var[str(zfc)][item]
+        # calculate the second differential of the variable
+        dm1 = vzi["Data"][1:nrecs-1] - vzi["Data"][0:nrecs-2]
+        dp1 = vzi["Data"][2:] - vzi["Data"][1:nrecs-1]
+        vzi["differences"][1:nrecs-1] = (dm1 - dp1)
+        # loop over the windows, default is 13 days
+        for i in range(n_windows):
+            si = i * window_nrecs
+            ei = si + window_nrecs
+            if i == n_windows-1:
+                ei = si + last_window_nrecs
+            vzi_diff2 = vzi["differences"][si:ei]
+            median = numpy.ma.median(vzi_diff2)
+            median_abs = numpy.ma.median(numpy.abs(vzi_diff2 - median))
+            if numpy.ma.is_masked(median) or numpy.ma.is_masked(median_abs):
+                continue
+            upr = median + (zfc*median_abs/0.6745)
+            lwr = median - (zfc*median_abs/0.6745)
+            upr = max([upr, lwr])
+            lwr = min([upr, lwr])
+            # cidx=2 for observations that fail the MAD test
+            fidx = numpy.ma.where((vzi_diff2 > upr) | (vzi_diff2 < lwr))[0]
+            cidx[si:ei][fidx] = 2
+            # cidx=3 for observations that pass the MAD test
+            pidx = numpy.ma.where((vzi_diff2 >= lwr) & (vzi_diff2 <= upr))[0]
+            cidx[si:ei][pidx] = 3
+            vzi["Data"][si:ei] = numpy.ma.masked_where(((vzi_diff2 > upr) |
+                                                        (vzi_diff2 < lwr)),
+                                                        var["Data"][si:ei])
+            vzi["upr"][si:ei] = upr
+            vzi["lwr"][si:ei] = lwr
+    # construct the data series for this value of zfc
+    idx = numpy.where(inds["day"] == 1)[0]
+    var[str(zfc)]["Data"][idx] = var[str(zfc)]["day"]["Data"][idx]
+    idx = numpy.where(inds["night"] == 1)[0]
+    var[str(zfc)]["Data"][idx] = var[str(zfc)]["night"]["Data"][idx]
+    # second stage of spike rejection to deal with observations at the start and end of gaps
+    # get an index of gap edges, these have a cidx value of 0
+    eidx = numpy.where(cidx == 0)[0]
+    # reject the end values so we can do differences
+    idx = numpy.where((eidx > 0) & (eidx < nrecs-1))[0]
+    eidx = eidx[idx]
+    # indices of points immediately before and after the gap start and end
+    emidx = eidx - 1
+    epidx = eidx + 1
+    # indices of differences at the start of gaps that are greater than the threshold
+    mdiff = numpy.ma.abs(var["Data"][eidx] - var["Data"][emidx])
+    mdiff_fidx = numpy.ma.where(mdiff > edge_threshold)[0]
+    # set cidx=2 to indicate this point fails the second stage check
+    cidx[eidx[mdiff_fidx]] = 2
+    # indices of differences at the start of gaps that are less than the threshold
+    mdiff_pidx = numpy.ma.where(numpy.ma.abs(var["Data"][eidx] - var["Data"][emidx]) <= edge_threshold)[0]
+    # set cidx=3 to indicate this point passes the second stage check
+    cidx[eidx[mdiff_pidx]] = 3
+    # indices of differences at the end of gaps that are greater than the threshold
+    pdiff_fidx = numpy.ma.where(numpy.ma.abs(var["Data"][epidx] - var["Data"][eidx]) > edge_threshold)[0]
+    # set cidx=2 to indicate this point fails the second stage check
+    cidx[eidx[pdiff_fidx]] = 2
+    # indices of differences at the end of gaps that are greater than the threshold
+    pdiff_pidx = numpy.ma.where(numpy.ma.abs(var["Data"][epidx] - var["Data"][eidx]) <= edge_threshold)[0]
+    # set cidx=3 to indicate this point passes the second stage check
+    cidx[eidx[pdiff_pidx]] = 3
+    # mask data points where cidx!=3, these observations have failed the first or second
+    # stage spike check
+    var["Data"] = numpy.ma.masked_where(cidx != 3, var["Data"])
+    # and set the QC flag for these points
+    flag = numpy.where(cidx != 3, mad_flags, var["Flag"])
+    flag[midx] = var["Flag"][midx]
+    var["Flag"] = flag
+    # save the conditional index
+    var["cidx"] = cidx
+    nfail = len(flag[flag==24])
+    pfail = int(100*nfail/nrecs+0.5)
+    msg = "  MAD check removed " + str(nfail) + " points (" + str(pfail) + "%)"
+    if pfail < 10:
+        logger.info(msg)
+    else:
+        logger.warning(msg)
+    pfp_utils.append_to_attribute(var["Attr"],{description: "MAD filter applied"})
+    pfp_utils.CreateVariable(ds, var)
+    return var
+
+def do_qcchecks(cf,ds,mode="verbose"):
+    if "processing_level" in ds.root["Attributes"]:
+        level = str(ds.root["Attributes"]["processing_level"])
+        if mode!="quiet": logger.info(" Doing the QC checks at level "+str(level))
+    else:
+        if mode!="quiet": logger.info(" Doing the QC checks")
+    # get the series list from the control file
+    series_list = []
+    for item in ["Variables","Drivers","Fluxes"]:
+        if item in cf:
+            section = item
+            series_list = list(cf[item].keys())
+    if len(series_list)==0:
+        msg = " do_qcchecks: Variables, Drivers or Fluxes section not found in control file, skipping QC checks ..."
+        logger.warning(msg)
+        return
+    # loop over the series specified in the control file
+    # first time for general QC checks
+    for series in series_list:
+        # check the series is in the data structure
+        if series not in list(ds.root["Variables"].keys()):
+            if mode!="quiet":
+                msg = " QC checks: series "+series+" not found in data structure, skipping ..."
+                logger.warning(msg)
+            continue
+        # if so, do the QC checks
+        do_qcchecks_oneseries(cf,ds,section,series)
+    # loop over the series in the control file
+    # second time for dependencies
+    for series in series_list:
+        # check the series is in the data structure
+        if series not in list(ds.root["Variables"].keys()):
+            if mode!="quiet":
+                msg = " Dependencies: series "+series+" not found in data structure, skipping ..."
+                logger.warning(msg)
+            continue
+        # if so, do dependency check
+        do_dependencycheck(cf,ds,section,series,code=23,mode="quiet")
+
+def do_qcchecks_oneseries(cf, ds, section, series):
+    if len(section) == 0:
+        section = pfp_utils.get_cfsection(cf, series, mode='quiet')
+        if section == None:
+            return
+    # do the range check
+    do_rangecheck(cf, ds, section, series, code=2)
+    # do the lower range check
+    do_lowercheck(cf, ds, section, series, code=2)
+    # do the upper range check
+    do_uppercheck(cf, ds, section, series, code=2)
+    # do the diurnal check
+    do_diurnalcheck(cf, ds, section, series, code=5)
+    # do the EP QC flag check
+    do_EPQCFlagCheck(cf, ds, section, series, code=9)
+    # do exclude dates
+    do_excludedates(cf, ds, section, series, code=6)
+    # do exclude hours
+    do_excludehours(cf, ds, section, series, code=7)
+    # do the MAD check
+    do_madfilter(cf, ds, section, series, code=24)
 
 def do_rangecheck(cf, ds, section, series, code=2):
     """
@@ -956,132 +1100,106 @@ def do_rangecheck(cf, ds, section, series, code=2):
     # now we can return
     return
 
-def do_qcchecks(cf,ds,mode="verbose"):
-    if "processing_level" in ds.root["Attributes"]:
-        level = str(ds.root["Attributes"]["processing_level"])
-        if mode!="quiet": logger.info(" Doing the QC checks at level "+str(level))
-    else:
-        if mode!="quiet": logger.info(" Doing the QC checks")
-    # get the series list from the control file
-    series_list = []
-    for item in ["Variables","Drivers","Fluxes"]:
-        if item in cf:
-            section = item
-            series_list = list(cf[item].keys())
-    if len(series_list)==0:
-        msg = " do_qcchecks: Variables, Drivers or Fluxes section not found in control file, skipping QC checks ..."
-        logger.warning(msg)
-        return
-    # loop over the series specified in the control file
-    # first time for general QC checks
-    for series in series_list:
-        # check the series is in the data structure
-        if series not in list(ds.root["Variables"].keys()):
-            if mode!="quiet":
-                msg = " QC checks: series "+series+" not found in data structure, skipping ..."
-                logger.warning(msg)
-            continue
-        # if so, do the QC checks
-        do_qcchecks_oneseries(cf,ds,section,series)
-    # loop over the series in the control file
-    # second time for dependencies
-    for series in series_list:
-        # check the series is in the data structure
-        if series not in list(ds.root["Variables"].keys()):
-            if mode!="quiet":
-                msg = " Dependencies: series "+series+" not found in data structure, skipping ..."
-                logger.warning(msg)
-            continue
-        # if so, do dependency check
-        do_dependencycheck(cf,ds,section,series,code=23,mode="quiet")
-
-def do_qcchecks_oneseries(cf, ds, section, series):
-    if len(section) == 0:
-        section = pfp_utils.get_cfsection(cf, series, mode='quiet')
-        if section == None:
-            return
-    # do the range check
-    do_rangecheck(cf,ds,section,series,code=2)
-    # do the lower range check
-    do_lowercheck(cf,ds,section,series,code=2)
-    # do the upper range check
-    do_uppercheck(cf,ds,section,series,code=2)
-    # do the diurnal check
-    do_diurnalcheck(cf,ds,section,series,code=5)
-    # do the EP QC flag check
-    do_EPQCFlagCheck(cf,ds,section,series,code=9)
-    # do exclude dates
-    do_excludedates(cf,ds,section,series,code=6)
-    # do exclude hours
-    do_excludehours(cf,ds,section,series,code=7)
-
-def rangecheckserieslower(data,lower):
-    if lower is None:
-        logger.info(' rangecheckserieslower: no lower bound set')
-        return data
-    if numpy.ma.isMA(data):
-        data = numpy.ma.masked_where(data<lower,data)
-    else:
-        index = numpy.where((abs(data-numpy.float64(c.missing_value))>c.eps)&(data<lower))[0]
-        data[index] = numpy.float64(c.missing_value)
-    return data
-
-def rangecheckseriesupper(data,upper):
-    if upper is None:
-        logger.info(' rangecheckserieslower: no upper bound set')
-        return data
-    if numpy.ma.isMA(data):
-        data = numpy.ma.masked_where(data>upper,data)
-    else:
-        index = numpy.where((abs(data-numpy.float64(c.missing_value))>c.eps)&(data>upper))[0]
-        data[index] = numpy.float64(c.missing_value)
-    return data
-
-def do_lowercheck(cf,ds,section,series,code=2):
+def do_SONICcheck(cf, ds, code=3):
     """
     Purpose:
+     Does an implicit dependency check using the sonic diagnostic.
     Usage:
+    Side effects:
+    Assumptions:
+    History:
+     Started life in OzFluxQC as do_CSATcheck()
     Author: PRI
-    Date: February 2017
+    Date: Back in the day
     """
-    # check to see if LowerCheck requested for this variable
-    if "LowerCheck" not in cf[section][series]:
+    # check to see if the user has disabled the IRGA check
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SONIC_Check", default="Yes")
+    if opt.lower() == "no":
+        msg = " *** SONIC_Check disbled in control file"
+        logger.warning(msg)
         return
-    # Check to see if limits have been specified
-    if len(list(cf[section][series]["LowerCheck"].keys())) == 0:
-        msg = "do_lowercheck: no date ranges specified"
+    msg = " Doing the SONIC check"
+    logger.info(msg)
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    labels = list(ds.root["Variables"].keys())
+    # list of variables to be modified by this QC check
+    dependents = ["UxA", "UxC", "UxT", "UxUy", "UxUz",
+                  "Ux_SONIC_Av", "Ux_SONIC_Sd", "Ux_SONIC_Vr",
+                  "UyA", "UyC", "UyT", "UyUz",
+                  "Uy_SONIC_Av", "Uy_SONIC_Sd", "Uy_SONIC_Vr",
+                  "UzA", "UzC", "UzT",
+                  "Uz_SONIC_Av", "Uz_SONIC_Sd", "Uz_SONIC_Vr",
+                  "Tv_SONIC_Av", "Tv_SONIC_Sd", "Tv_SONIC_Vr",
+                  "U_SONIC_Av", "U_SONIC_Sd", "U_SONIC_Vr",
+                  "V_SONIC_Av", "V_SONIC_Sd", "V_SONIC_Vr",
+                  "W_SONIC_Av", "W_SONIC_Sd", "W_SONIC_Vr"]
+    # check these are in the data structure
+    for label in list(dependents):
+        if label not in labels:
+            dependents.remove(label)
+    # return if there are no dependents to check
+    if len(dependents) == 0:
+        msg = "  No dependent variables found, skipping SONIC check ..."
         logger.info(msg)
         return
-
-    ldt = ds.root["Variables"]["DateTime"]["Data"]
-    ts = int(float(ds.root["Attributes"]["time_step"]))
-    var = pfp_utils.GetVariable(ds, series)
-
-    lc_list = list(cf[section][series]["LowerCheck"].keys())
-    for n,item in enumerate(lc_list):
-        # this should be a list and we should probably check for compliance
-        lwr_string = cf[section][series]["LowerCheck"][item]
-        var["Attr"]["lowercheck_"+str(n)] = lwr_string
-        lwr_list = lwr_string.split(",")
-        start_date = dateutil.parser.parse(lwr_list[0])
-        sl = float(lwr_list[1])
-        end_date = dateutil.parser.parse(lwr_list[2])
-        el = float(lwr_list[3])
-        # get the start and end indices
-        si = pfp_utils.GetDateIndex(ldt, start_date, ts=ts, default=0, match="exact")
-        ei = pfp_utils.GetDateIndex(ldt, end_date, ts=ts, default=len(ldt)-1, match="exact")
-        # get the segment of data between this start and end date
-        seg_data = var["Data"][si:ei+1]
-        seg_flag = var["Flag"][si:ei+1]
-        x = numpy.arange(si, ei+1, 1)
-        lower = numpy.interp(x, [si, ei], [sl, el])
-        index = numpy.ma.where((seg_data < lower))[0]
-        seg_data[index] = numpy.ma.masked
-        seg_flag[index] = numpy.int32(code)
-        var["Data"][si:ei+1] = seg_data
-        var["Flag"][si:ei+1] = seg_flag
-    # now put the data back into the data structure
-    pfp_utils.CreateVariable(ds, var)
+    # list for conditional variables
+    conditionals = []
+    # check if we have the SONIC diagnostic
+    got_diag = False
+    for diag in ["Diag_SONIC", "Diag_CSAT"]:
+        if diag in labels:
+            got_diag = True
+            conditionals.append(diag)
+            break
+    if not got_diag:
+        msg = " Sonic diagnostic (Diag_SONIC) not found in data"
+        logger.warning(msg)
+    # check if we have Uz standard deviation or vaiance (only use one)
+    got_uz = False
+    for uz in ["Uz_SONIC_Sd", "W_SONIC_Sd", "Uz_SONIC_Vr", "W_SONIC_Vr"]:
+        if uz in labels:
+            got_uz = True
+            conditionals.append(uz)
+            break
+    if not got_uz:
+        msg = " Neither Uz or W standard deviation or variance used in SONIC check (not in data structure)"
+        logger.warning(msg)
+    # check if we have Tv standard deviation or variance (only use one)
+    got_tv = False
+    for tv in ["Tv_SONIC_Sd", "Tv_SONIC_Vr"]:
+        if tv in labels:
+            got_tv = True
+            conditionals.append(tv)
+            break
+    if not got_tv:
+        msg = " Tv standard deviation or variance not used in SONIC check (not in data structure)"
+        logger.warning(msg)
+    # return if we found no conditionals
+    if len(conditionals) == 0:
+        msg = " No conditional variables found, skipping SONIC check ..."
+        logger.warning(msg)
+        return
+    # create an index series, 0 ==> not OK, 1 ==> OK
+    cidx = numpy.ones(nrecs, dtype=int)
+    for conditional in conditionals:
+        variable = pfp_utils.GetVariable(ds, conditional)
+        idx = numpy.where(numpy.ma.getmaskarray(variable["Data"]) == True)[0]
+        msg = "  SONIC check: " + conditional + " rejected " + str(numpy.size(idx)) + " points"
+        logger.info(msg)
+        cidx[idx] = int(0)
+    rejected = numpy.count_nonzero(cidx == 0)
+    percent = int(numpy.rint(100*rejected/nrecs))
+    msg = "  SONIC check: total number of points rejected was " + str(rejected)
+    msg += " (" + str(percent) + "%)"
+    logger.info(msg)
+    # use the conditional series to mask the dependents
+    for dependent in dependents:
+        variable = pfp_utils.GetVariable(ds, dependent)
+        variable["Data"] = numpy.ma.masked_where(cidx == int(0), variable["Data"])
+        idx = numpy.where(cidx == int(0))[0]
+        variable["Flag"][idx] = int(code)
+        variable["Attr"]["sonic_check"] = ",".join(dependents)
+        pfp_utils.CreateVariable(ds, variable)
     return
 
 def do_uppercheck(cf,ds,section,series,code=2):
@@ -1129,6 +1247,63 @@ def do_uppercheck(cf,ds,section,series,code=2):
     # now put the data back into the data structure
     pfp_utils.CreateVariable(ds, var)
     return
+
+def do_wd_offset(cf, ds):
+    labels = list(cf["Variables"].keys())
+    for label in labels:
+        if pfp_utils.haskey(cf, label, "Wd offset"):
+            pfp_ts.ApplyWdOffset(cf, ds, label)
+
+def parse_rangecheck_limit(s):
+    """
+    Purpose:
+     Parse the RangeCheck upper or lower value string.
+     Valid string formats are;
+      '100'
+      '[100]*12'
+      '[1,2,3,4,5,6,7,8,9,10,11,12]'
+      '1,2,3,4,5,6,7,8,9,10,11,12'
+    Author: PRI
+    Date: August 2018
+    """
+    val_list = []
+    try:
+        val_list = [float(s)]*12
+    except ValueError:
+        if ("[" in s) and ("]" in s) and ("*" in s):
+            val = s[s.index("[")+1:s.index("]")]
+            val_list = [float(val)]*12
+        elif ("[" in s) and ("]" in s) and ("," in s) and ("*" not in s):
+            s = s.replace("[","").replace("]","")
+            val_list = [float(n) for n in s.split(",")]
+        elif ("[" not in s) and ("]" not in s) and ("," in s) and ("*" not in s):
+            val_list = [float(n) for n in s.split(",")]
+        else:
+            msg = " Unrecognised format for RangeCheck limit ("+s+")"
+            logger.error(msg)
+    return val_list
+
+def rangecheckserieslower(data,lower):
+    if lower is None:
+        logger.info(' rangecheckserieslower: no lower bound set')
+        return data
+    if numpy.ma.isMA(data):
+        data = numpy.ma.masked_where(data<lower,data)
+    else:
+        index = numpy.where((abs(data-numpy.float64(c.missing_value))>c.eps)&(data<lower))[0]
+        data[index] = numpy.float64(c.missing_value)
+    return data
+
+def rangecheckseriesupper(data,upper):
+    if upper is None:
+        logger.info(' rangecheckserieslower: no upper bound set')
+        return data
+    if numpy.ma.isMA(data):
+        data = numpy.ma.masked_where(data>upper,data)
+    else:
+        index = numpy.where((abs(data-numpy.float64(c.missing_value))>c.eps)&(data>upper))[0]
+        data[index] = numpy.float64(c.missing_value)
+    return data
 
 def UpdateVariableAttributes_QC(cf, variable):
     """
