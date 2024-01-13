@@ -833,14 +833,66 @@ def do_madfilter(cf, ds, section, series, code=24):
     level = str(ds.root["Attributes"]["processing_level"])
     description = "description_" + level
     # get the MAD filter options
+    info = {"ApplyMADFilter": {"Options": {}, "Variables": [series]}}
+    inao = info["ApplyMADFilter"]["Options"]
     opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "Fsd_threshold", default=12)
-    Fsd_threshold = float(opt)
+    inao["Fsd_threshold"] = float(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "window_size", default=13)
-    window_size = int(float(opt))
+    inao["window_size"] = int(float(opt))
     opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "zfc", default=5.5)
-    zfc = float(opt)
+    inao["zfc"] = float(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "edge_threshold", default=6)
-    edge_threshold = float(opt)
+    inao["edge_threshold"] = float(opt)
+    # apply the first stage of the MAD filter
+    do_madfilter_1(ds, info)
+
+    # second stage of spike rejection to deal with observations at the start and end of gaps
+    # get an index of gap edges, these have a cidx value of 0
+    eidx = numpy.where(cidx == 0)[0]
+    # reject the end values so we can do differences
+    idx = numpy.where((eidx > 0) & (eidx < nrecs-1))[0]
+    eidx = eidx[idx]
+    # indices of points immediately before and after the gap start and end
+    emidx = eidx - 1
+    epidx = eidx + 1
+    # indices of differences at the start of gaps that are greater than the threshold
+    mdiff = numpy.ma.abs(var["Data"][eidx] - var["Data"][emidx])
+    mdiff_fidx = numpy.ma.where(mdiff > edge_threshold)[0]
+    # set cidx=2 to indicate this point fails the second stage check
+    cidx[eidx[mdiff_fidx]] = 2
+    # indices of differences at the start of gaps that are less than the threshold
+    mdiff_pidx = numpy.ma.where(numpy.ma.abs(var["Data"][eidx] - var["Data"][emidx]) <= edge_threshold)[0]
+    # set cidx=3 to indicate this point passes the second stage check
+    cidx[eidx[mdiff_pidx]] = 3
+    # indices of differences at the end of gaps that are greater than the threshold
+    pdiff_fidx = numpy.ma.where(numpy.ma.abs(var["Data"][epidx] - var["Data"][eidx]) > edge_threshold)[0]
+    # set cidx=2 to indicate this point fails the second stage check
+    cidx[eidx[pdiff_fidx]] = 2
+    # indices of differences at the end of gaps that are greater than the threshold
+    pdiff_pidx = numpy.ma.where(numpy.ma.abs(var["Data"][epidx] - var["Data"][eidx]) <= edge_threshold)[0]
+    # set cidx=3 to indicate this point passes the second stage check
+    cidx[eidx[pdiff_pidx]] = 3
+    # mask data points where cidx!=3, these observations have failed the first or second
+    # stage spike check
+    var["Data"] = numpy.ma.masked_where(cidx != 3, var["Data"])
+    # and set the QC flag for these points
+    flag = numpy.where(cidx != 3, mad_flags, var["Flag"])
+    flag[midx] = var["Flag"][midx]
+    var["Flag"] = flag
+    # save the conditional index
+    var["cidx"] = cidx
+    nfail = len(flag[flag==24])
+    pfail = int(100*nfail/nrecs+0.5)
+    msg = "  MAD check removed " + str(nfail) + " points (" + str(pfail) + "%)"
+    if pfail < 10:
+        logger.info(msg)
+    else:
+        logger.warning(msg)
+    pfp_utils.append_to_attribute(var["Attr"],{description: "MAD filter applied"})
+    pfp_utils.CreateVariable(ds, var)
+    return var
+
+def do_madfilter_1(ds, info, code=24):
     # get required constants
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     ts = int(ds.root["Attributes"]["time_step"])
@@ -936,51 +988,7 @@ def do_madfilter(cf, ds, section, series, code=24):
     var[str(zfc)]["Data"][idx] = var[str(zfc)]["day"]["Data"][idx]
     idx = numpy.where(inds["night"] == 1)[0]
     var[str(zfc)]["Data"][idx] = var[str(zfc)]["night"]["Data"][idx]
-    # second stage of spike rejection to deal with observations at the start and end of gaps
-    # get an index of gap edges, these have a cidx value of 0
-    eidx = numpy.where(cidx == 0)[0]
-    # reject the end values so we can do differences
-    idx = numpy.where((eidx > 0) & (eidx < nrecs-1))[0]
-    eidx = eidx[idx]
-    # indices of points immediately before and after the gap start and end
-    emidx = eidx - 1
-    epidx = eidx + 1
-    # indices of differences at the start of gaps that are greater than the threshold
-    mdiff = numpy.ma.abs(var["Data"][eidx] - var["Data"][emidx])
-    mdiff_fidx = numpy.ma.where(mdiff > edge_threshold)[0]
-    # set cidx=2 to indicate this point fails the second stage check
-    cidx[eidx[mdiff_fidx]] = 2
-    # indices of differences at the start of gaps that are less than the threshold
-    mdiff_pidx = numpy.ma.where(numpy.ma.abs(var["Data"][eidx] - var["Data"][emidx]) <= edge_threshold)[0]
-    # set cidx=3 to indicate this point passes the second stage check
-    cidx[eidx[mdiff_pidx]] = 3
-    # indices of differences at the end of gaps that are greater than the threshold
-    pdiff_fidx = numpy.ma.where(numpy.ma.abs(var["Data"][epidx] - var["Data"][eidx]) > edge_threshold)[0]
-    # set cidx=2 to indicate this point fails the second stage check
-    cidx[eidx[pdiff_fidx]] = 2
-    # indices of differences at the end of gaps that are greater than the threshold
-    pdiff_pidx = numpy.ma.where(numpy.ma.abs(var["Data"][epidx] - var["Data"][eidx]) <= edge_threshold)[0]
-    # set cidx=3 to indicate this point passes the second stage check
-    cidx[eidx[pdiff_pidx]] = 3
-    # mask data points where cidx!=3, these observations have failed the first or second
-    # stage spike check
-    var["Data"] = numpy.ma.masked_where(cidx != 3, var["Data"])
-    # and set the QC flag for these points
-    flag = numpy.where(cidx != 3, mad_flags, var["Flag"])
-    flag[midx] = var["Flag"][midx]
-    var["Flag"] = flag
-    # save the conditional index
-    var["cidx"] = cidx
-    nfail = len(flag[flag==24])
-    pfail = int(100*nfail/nrecs+0.5)
-    msg = "  MAD check removed " + str(nfail) + " points (" + str(pfail) + "%)"
-    if pfail < 10:
-        logger.info(msg)
-    else:
-        logger.warning(msg)
-    pfp_utils.append_to_attribute(var["Attr"],{description: "MAD filter applied"})
-    pfp_utils.CreateVariable(ds, var)
-    return var
+    return
 
 def do_qcchecks(cf,ds,mode="verbose"):
     if "processing_level" in ds.root["Attributes"]:
