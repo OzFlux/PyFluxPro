@@ -2021,7 +2021,7 @@ def netcdf_concatenate_apply_mad_filter(ds, info):
         return
     # should be safe to do the business
     for filter_label in filter_labels:
-        pfp_ck.do_madfilter
+        pfp_ck.do_madfilter_1(ds, label, info, code=24)
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):
