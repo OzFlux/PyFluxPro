@@ -499,6 +499,8 @@ def ParseConcatenateControlFile(cf):
     if not os.path.isdir(file_path):
         os.makedirs(file_path)
     # work through the choices in the [Options] section
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyMADFilter", default = "")
+    inc["ApplyMADFilter"] = str(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "NumberOfDimensions", default=3)
     inc["NumberOfDimensions"] = int(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxGapInterpolate", default=0)

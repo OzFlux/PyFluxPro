@@ -25,6 +25,7 @@ from PyQt5 import QtWidgets
 from scripts import cfg
 from scripts import constants as c
 from scripts import meteorologicalfunctions as pfp_mf
+from scripts import pfp_ck
 from scripts import pfp_log
 from scripts import pfp_plot
 from scripts import pfp_ts
@@ -1988,6 +1989,8 @@ def NetCDFConcatenate(info):
     pfp_utils.CheckUnits(ds_out, Fc_list, "umol/m^2/s", convert_units=True)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds_out)
+    # use the MAD filer is requested
+    netcdf_concatenate_apply_mad_filter(ds_out, info)
     # update the coverage statistics
     pfp_utils.get_coverage_individual(ds_out)
     pfp_utils.get_coverage_groups(ds_out)
@@ -2000,6 +2003,25 @@ def NetCDFConcatenate(info):
     logger.info(" Writing data to " + os.path.split(inc["out_file_name"])[1])
     # write the concatenated data structure to file
     NetCDFWrite(inc["out_file_name"], ds_out, ndims=inc["NumberOfDimensions"])
+    return
+
+def netcdf_concatenate_apply_mad_filter(ds, info):
+    inc = info["NetCDFConcatenate"]
+    # return if MAD filter not requested for any variables
+    if inc["ApplyMADFilter"] == "":
+        return
+    filter_labels = inc["ApplyMADFilter"].split(",")
+    # check the requested variables are in the data structure
+    ds_labels = list(ds.root["Variables"].keys())
+    for filter_label in filter_labels:
+        if filter_label not in ds_labels:
+            filter_labels.remove(filter_label)
+    # return if none of the requested variables are in the data structure
+    if len(filter_labels) == 0:
+        return
+    # should be safe to do the business
+    for filter_label in filter_labels:
+        pfp_ck.do_madfilter
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):
