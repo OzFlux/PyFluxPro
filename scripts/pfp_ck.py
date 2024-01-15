@@ -883,7 +883,7 @@ def do_madfilter_1(ds, label, info, code=24):
     var_notMAD["Label"] = var["Label"] + "_notMAD"
     pfp_utils.append_to_attribute(var_notMAD["Attr"], {description: "not MAD filtered"})
     mad_attr = [Fsd_threshold, window_size, zfc, edge_threshold]
-    var_notMAD["Attr"]["MAD filter"] = ",".join[mad_attr]
+    var_notMAD["Attr"]["MAD filter"] = ",".join(map(str, mad_attr))
     pfp_utils.CreateVariable(ds, var_notMAD)
     # get the day/night indicators based on the Fsd thtreshold.
     # NOTE: qc_auto uses 12 W/m^2 not 20 W/m^2 as stated in Pastorello et al 2020
@@ -996,7 +996,7 @@ def do_madfilter_2(ds, label, info, result, code=24):
     var["cidx"] = cidx
     nfail = len(flag[flag==24])
     pfail = int(100*nfail/nrecs+0.5)
-    msg = "  MAD check removed " + str(nfail) + " points (" + str(pfail) + "%)"
+    msg = "  MAD filter removed " + str(nfail) + " points (" + str(pfail) + "%) from " + label
     if pfail < 10:
         logger.info(msg)
     else:

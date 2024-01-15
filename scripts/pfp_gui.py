@@ -4583,6 +4583,11 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
             # sections with only 1 level
             if selected_text == "Options":
                 existing_entries = self.get_existing_entries()
+                if "ApplyMADFilter" not in existing_entries:
+                    self.context_menu.actionAddApplyMADFilter = QtWidgets.QAction(self)
+                    self.context_menu.actionAddApplyMADFilter.setText("ApplyMADFilter")
+                    self.context_menu.addAction(self.context_menu.actionAddApplyMADFilter)
+                    self.context_menu.actionAddApplyMADFilter.triggered.connect(self.add_applymadfilter)
                 if "NumberOfDimensions" not in existing_entries:
                     self.context_menu.actionAddNumberOfDimensions = QtWidgets.QAction(self)
                     self.context_menu.actionAddNumberOfDimensions.setText("NumberOfDimensions")
@@ -4755,6 +4760,12 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+
+    def add_applymadfilter(self):
+        """ Add the ApplyMADFilter option to the context menu."""
+        dict_to_add = {"ApplyMADFilter": "Fco2,Fe,Fh"}
+        # add the subsubsection (GapFillFromAlternate)
+        self.add_subsection(dict_to_add)
 
     def add_dofingerprints(self):
         """ Add the DoFingerprints option to the context menu."""

@@ -2008,9 +2008,14 @@ def NetCDFConcatenate(info):
 def netcdf_concatenate_apply_mad_filter(ds, info):
     inc = info["NetCDFConcatenate"]
     # return if MAD filter not requested for any variables
+    if "ApplyMADFilter" not in list(inc.keys()):
+        return
     if inc["ApplyMADFilter"] == "":
         return
     filter_labels = inc["ApplyMADFilter"].split(",")
+    msg = " Applying the MAD (despike) filter to "
+    msg += ",".join(map(str, filter_labels))
+    logger.info(msg)
     # check the requested variables are in the data structure
     ds_labels = list(ds.root["Variables"].keys())
     for filter_label in filter_labels:
@@ -2020,8 +2025,23 @@ def netcdf_concatenate_apply_mad_filter(ds, info):
     if len(filter_labels) == 0:
         return
     # should be safe to do the business
+    inc["ApplyMADFilter"] = {"Variables": filter_labels, "Options": {}}
+    # load the default MAD parameters into the info dictionary
+    inao = inc["ApplyMADFilter"]["Options"]
+    inao["Fsd_threshold"] = float(12)
+    inao["window_size"] = int(13)
+    inao["zfc"] = float(5.5)
     for filter_label in filter_labels:
-        pfp_ck.do_madfilter_1(ds, label, info, code=24)
+        if filter_label == "Fco2":
+            inao["edge_threshold"] = float(6)
+        elif filter_label in ["Fe", "Fh"]:
+            inao["edge_threshold"] = float(100)
+        else:
+            msg = "  When concatenating, MAD filter only for Fco2, Fe or Fh, not " + filter_label
+            logger.warning(msg)
+            return
+        result = pfp_ck.do_madfilter_1(ds, filter_label, inc, code=24)
+        pfp_ck.do_madfilter_2(ds, filter_label, inc, result, code=24)
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):
