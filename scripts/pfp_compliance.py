@@ -451,6 +451,7 @@ def ParseConcatenateControlFile(cf):
     Date: August 2019
     """
     info = {}
+    info["cfg"] = copy.deepcopy(cf)
     info["NetCDFConcatenate"] = {"OK": True}
     inc = info["NetCDFConcatenate"]
     # check the control file has a Files section
@@ -501,6 +502,8 @@ def ParseConcatenateControlFile(cf):
     # work through the choices in the [Options] section
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyMADFilter", default = "")
     inc["ApplyMADFilter"] = str(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyFco2Storage", default = "No")
+    inc["ApplyFco2Storage"] = str(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "NumberOfDimensions", default=3)
     inc["NumberOfDimensions"] = int(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxGapInterpolate", default=0)

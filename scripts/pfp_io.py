@@ -1985,12 +1985,14 @@ def NetCDFConcatenate(info):
     # and make sure we have all of the meteorological variables
     pfp_ts.CalculateMeteorologicalVariables(ds_out, info)
     # check units of Fc and convert if necessary
-    Fc_list = ["Fco2", "Fco2_single", "Fco2_profile", "Fco2_storage"]
+    Fc_list = ["Fco2", "Sco2_single", "Sco2_profile", "Sco2_storage"]
     pfp_utils.CheckUnits(ds_out, Fc_list, "umol/m^2/s", convert_units=True)
-    # check missing data and QC flags are consistent
-    pfp_utils.CheckQCFlags(ds_out)
+    # appply the Fco2 storage term if requested
+    netcdf_concatenate_apply_sco2_storage(ds_out, info)
     # use the MAD filer is requested
     netcdf_concatenate_apply_mad_filter(ds_out, info)
+    # check missing data and QC flags are consistent
+    pfp_utils.CheckQCFlags(ds_out)
     # update the coverage statistics
     pfp_utils.get_coverage_individual(ds_out)
     pfp_utils.get_coverage_groups(ds_out)
@@ -2044,10 +2046,14 @@ def netcdf_concatenate_apply_mad_filter(ds, info):
         else:
             msg = "  When concatenating, MAD filter only for Fco2, Fe or Fh, not " + filter_label
             logger.warning(msg)
-            return
+            continue
         # get the data
         Fsd = pfp_utils.GetVariable(ds, "Fsd")
         var = pfp_utils.GetVariable(ds, filter_label)
+        if "MAD filter" in var["Attr"]:
+            msg = " MAD filter already applied to " + filter_label
+            logger.warning(msg)
+            continue
         # save a copy of the unfiltered variable
         var_notMAD = pfp_utils.CopyVariable(var)
         var_notMAD["Label"] = var["Label"] + "_notMAD"
@@ -2061,6 +2067,10 @@ def netcdf_concatenate_apply_mad_filter(ds, info):
         mad_attr = [inao["Fsd_threshold"], inao["window_size"], inao["zfc"], inao["edge_threshold"]]
         var["Attr"]["MAD filter"] = ",".join(map(str, mad_attr))
         pfp_utils.CreateVariable(ds, var)
+    return
+
+def netcdf_concatenate_apply_sco2_storage(ds, info):
+    pfp_ts.CorrectFco2ForStorage(cf, ds)
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):

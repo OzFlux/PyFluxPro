@@ -827,6 +827,17 @@ def do_madfilter(cf, ds, section, label, code=24):
     # check that the MAD filter has been requested for this series
     if "MADCheck" not in list(cf[section][label].keys()):
         return
+    # get the variable t be filtered
+    if label not in list(ds.root["Variables"].keys()):
+        msg = "  " + label + " not found, skipping MADCheck ..."
+        logger.warning(msg)
+        return
+    var = pfp_utils.GetVariable(ds, label)
+    # return if the MAD filter has already been applied to this variable
+    if "MAD filter" in var["Attr"]:
+        msg = " MAD filter already applied to " + label
+        logger.warning(msg)
+        return
     msg = " Applying the MAD (despike) filter to " + label
     logger.info(msg)
     # get the MAD filter options
@@ -847,7 +858,6 @@ def do_madfilter(cf, ds, section, label, code=24):
     inag["processing_level"] = str(ds.root["Attributes"]["processing_level"])
     # get the data
     Fsd = pfp_utils.GetVariable(ds, "Fsd")
-    var = pfp_utils.GetVariable(ds, label)
     # save a copy of the unfiltered variable
     var_notMAD = pfp_utils.CopyVariable(var)
     var_notMAD["Label"] = var["Label"] + "_notMAD"
