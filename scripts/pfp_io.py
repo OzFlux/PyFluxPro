@@ -2025,9 +2025,14 @@ def netcdf_concatenate_apply_mad_filter(ds, info):
     if len(filter_labels) == 0:
         return
     # should be safe to do the business
-    inc["ApplyMADFilter"] = {"Variables": filter_labels, "Options": {}}
+    inc["ApplyMADFilter"] = {"Variables": filter_labels, "Options": {}, "General": {}}
+    # add general options
+    inag = info["NetCDFConcatenate"]["ApplyMADFilter"]["General"]
+    inag["nc_nrecs"] = int(ds.root["Attributes"]["nc_nrecs"])
+    inag["time_step"] = int(ds.root["Attributes"]["time_step"])
+    inag["processing_level"] = str(ds.root["Attributes"]["processing_level"])
     # load the default MAD parameters into the info dictionary
-    inao = inc["ApplyMADFilter"]["Options"]
+    inao = info["NetCDFConcatenate"]["ApplyMADFilter"]["Options"]
     inao["Fsd_threshold"] = float(12)
     inao["window_size"] = int(13)
     inao["zfc"] = float(5.5)
@@ -2040,8 +2045,22 @@ def netcdf_concatenate_apply_mad_filter(ds, info):
             msg = "  When concatenating, MAD filter only for Fco2, Fe or Fh, not " + filter_label
             logger.warning(msg)
             return
-        result = pfp_ck.do_madfilter_1(ds, filter_label, inc, code=24)
-        pfp_ck.do_madfilter_2(ds, filter_label, inc, result, code=24)
+        # get the data
+        Fsd = pfp_utils.GetVariable(ds, "Fsd")
+        var = pfp_utils.GetVariable(ds, filter_label)
+        # save a copy of the unfiltered variable
+        var_notMAD = pfp_utils.CopyVariable(var)
+        var_notMAD["Label"] = var["Label"] + "_notMAD"
+        pfp_utils.CreateVariable(ds, var_notMAD)
+        result = pfp_ck.do_madfilter_1(var, Fsd, inc, code=24)
+        pfp_ck.do_madfilter_2(result, inc, code=24)
+        # get the processing level and description attribute name
+        level = str(ds.root["Attributes"]["processing_level"])
+        description = "description_" + level
+        pfp_utils.append_to_attribute(var["Attr"],{description: "MAD filter applied"})
+        mad_attr = [inao["Fsd_threshold"], inao["window_size"], inao["zfc"], inao["edge_threshold"]]
+        var["Attr"]["MAD filter"] = ",".join(map(str, mad_attr))
+        pfp_utils.CreateVariable(ds, var)
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):

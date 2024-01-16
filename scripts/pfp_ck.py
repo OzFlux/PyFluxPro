@@ -809,7 +809,7 @@ def do_lowercheck(cf,ds,section,series,code=2):
     pfp_utils.CreateVariable(ds, var)
     return
 
-def do_madfilter(cf, ds, section, series, code=24):
+def do_madfilter(cf, ds, section, label, code=24):
     """
     Purpose:
      Apply the MAD filter used in ONEFlux, see Pastorello et al 2020 and
@@ -825,39 +825,56 @@ def do_madfilter(cf, ds, section, series, code=24):
     Date: January 2024
     """
     # check that the MAD filter has been requested for this series
-    if "MADCheck" not in list(cf[section][series].keys()):
+    if "MADCheck" not in list(cf[section][label].keys()):
         return
-    msg = " Applying the MAD (despike) filter to " + series
+    msg = " Applying the MAD (despike) filter to " + label
     logger.info(msg)
     # get the MAD filter options
-    info = {"ApplyMADFilter": {"Options": {}, "Variables": [series]}}
+    info = {"ApplyMADFilter": {"Options": {}, "Variables": [label], "General": {}}}
     inao = info["ApplyMADFilter"]["Options"]
-    opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "Fsd_threshold", default=12)
+    opt = pfp_utils.get_keyvaluefromcf(cf, [section, label, "MADCheck"], "Fsd_threshold", default=12)
     inao["Fsd_threshold"] = float(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "window_size", default=13)
+    opt = pfp_utils.get_keyvaluefromcf(cf, [section, label, "MADCheck"], "window_size", default=13)
     inao["window_size"] = int(float(opt))
-    opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "zfc", default=5.5)
+    opt = pfp_utils.get_keyvaluefromcf(cf, [section, label, "MADCheck"], "zfc", default=5.5)
     inao["zfc"] = float(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, [section, series, "MADCheck"], "edge_threshold", default=6)
+    opt = pfp_utils.get_keyvaluefromcf(cf, [section, label, "MADCheck"], "edge_threshold", default=6)
     inao["edge_threshold"] = float(opt)
+    # add general options
+    inag = info["ApplyMADFilter"]["General"]
+    inag["nc_nrecs"] = int(ds.root["Attributes"]["nc_nrecs"])
+    inag["time_step"] = int(ds.root["Attributes"]["time_step"])
+    inag["processing_level"] = str(ds.root["Attributes"]["processing_level"])
+    # get the data
+    Fsd = pfp_utils.GetVariable(ds, "Fsd")
+    var = pfp_utils.GetVariable(ds, label)
+    # save a copy of the unfiltered variable
+    var_notMAD = pfp_utils.CopyVariable(var)
+    var_notMAD["Label"] = var["Label"] + "_notMAD"
+    pfp_utils.CreateVariable(ds, var_notMAD)
     # apply the first stage of the MAD filter
-    result = do_madfilter_1(ds, series, info, code=24)
+    result = do_madfilter_1(var, Fsd, info, code=24)
     # apply the second stage of the MAD filter
-    var = do_madfilter_2(ds, series, info, result, code=24)
-    return var
-
-def do_madfilter_1(ds, label, info, code=24):
-    # get required constants
-    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
-    ts = int(ds.root["Attributes"]["time_step"])
-    nperday = int(24*60/ts)
+    var = do_madfilter_2(result, info, code=24)
+    # get the processing level and description attribute name
     level = str(ds.root["Attributes"]["processing_level"])
     description = "description_" + level
+    pfp_utils.append_to_attribute(var["Attr"],{description: "MAD filter applied"})
+    mad_attr = [inao["Fsd_threshold"], inao["window_size"], inao["zfc"], inao["edge_threshold"]]
+    var["Attr"]["MAD filter"] = ",".join(map(str, mad_attr))
+    pfp_utils.CreateVariable(ds, var)
+    return var
+
+def do_madfilter_1(var, Fsd, info, code=24):
+    # get required constants
+    inag = info["ApplyMADFilter"]["General"]
+    nrecs = inag["nc_nrecs"]
+    ts = inag["time_step"]
+    nperday = int(24*60/ts)
     # get the MAD filter options
     window_size = info["ApplyMADFilter"]["Options"]["window_size"]
     Fsd_threshold = info["ApplyMADFilter"]["Options"]["Fsd_threshold"]
     zfc = info["ApplyMADFilter"]["Options"]["zfc"]
-    edge_threshold = info["ApplyMADFilter"]["Options"]["edge_threshold"]
     # calculate the window size that results in the size of the last window being
     # as close as possible to the size of the other windows
     window_nrecs = window_size * nperday
@@ -873,18 +890,7 @@ def do_madfilter_1(ds, label, info, code=24):
     ones = numpy.ones(nrecs, dtype=int)
     zeros = numpy.zeros(nrecs, dtype=int)
     cidx = numpy.zeros(nrecs, dtype=int)
-    # get the data
-    #ldt = pfp_utils.GetVariable(ds, "DateTime")
-    Fsd = pfp_utils.GetVariable(ds, "Fsd")
-    var = pfp_utils.GetVariable(ds, label)
     midx = numpy.where(var["Flag"] != 0)[0]
-    # save a copy of the unfiltered variable
-    var_notMAD = pfp_utils.CopyVariable(var)
-    var_notMAD["Label"] = var["Label"] + "_notMAD"
-    pfp_utils.append_to_attribute(var_notMAD["Attr"], {description: "not MAD filtered"})
-    mad_attr = [Fsd_threshold, window_size, zfc, edge_threshold]
-    var_notMAD["Attr"]["MAD filter"] = ",".join(map(str, mad_attr))
-    pfp_utils.CreateVariable(ds, var_notMAD)
     # get the day/night indicators based on the Fsd thtreshold.
     # NOTE: qc_auto uses 12 W/m^2 not 20 W/m^2 as stated in Pastorello et al 2020
     # the first and last day time records are included in the night time indicator
@@ -952,9 +958,10 @@ def do_madfilter_1(ds, label, info, code=24):
     var[str(zfc)]["Data"][idx] = var[str(zfc)]["night"]["Data"][idx]
     return {"cidx": cidx, "midx": midx, "var": var}
 
-def do_madfilter_2(ds, label, info, result, code=24):
+def do_madfilter_2(result, info, code=24):
     # second stage of spike rejection to deal with observations at the start and end of gaps
-    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    inag = info["ApplyMADFilter"]["General"]
+    nrecs = inag["nc_nrecs"]
     cidx = result["cidx"]
     midx = result["midx"]
     var = result["var"]
@@ -996,16 +1003,11 @@ def do_madfilter_2(ds, label, info, result, code=24):
     var["cidx"] = cidx
     nfail = len(flag[flag==24])
     pfail = int(100*nfail/nrecs+0.5)
-    msg = "  MAD filter removed " + str(nfail) + " points (" + str(pfail) + "%) from " + label
+    msg = "  MAD filter removed " + str(nfail) + " points (" + str(pfail) + "%) from " + var["Label"]
     if pfail < 10:
         logger.info(msg)
     else:
         logger.warning(msg)
-    # get the processing level and description attribute name
-    level = str(ds.root["Attributes"]["processing_level"])
-    description = "description_" + level
-    pfp_utils.append_to_attribute(var["Attr"],{description: "MAD filter applied"})
-    pfp_utils.CreateVariable(ds, var)
     return var
 
 def do_qcchecks(cf,ds,mode="verbose"):
