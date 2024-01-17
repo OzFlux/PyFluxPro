@@ -164,8 +164,11 @@ def l3qc(cf, ds2):
     # *************************
     # *** Radiation section ***
     # *************************
-    # merge the incoming shortwave radiation
+    # merge the radiation components
     pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fsd"])
+    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fsu"])
+    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fld"])
+    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Flu"])
     # calculate the net radiation from the Kipp and Zonen CNR1
     pfp_ts.CalculateNetRadiation(cf, ds3)
     pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fn"])
