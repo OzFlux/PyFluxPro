@@ -1276,7 +1276,7 @@ def CalculateSco2SinglePoint(ds, Sco2_out="Sco2_single"):
         for label in ["CO2", "Ta", "ps"]:
             if label not in labels:
                 msg = " " + label + " not in data structure, Sco2 not calculated"
-                logger.warnng(msg)
+                logger.warning(msg)
                 return
         if "height" in ds.root["Variables"]["CO2"]["Attr"]:
             height = pfp_utils.strip_non_numeric(ds.root["Variables"]["CO2"]["Attr"]["height"])
