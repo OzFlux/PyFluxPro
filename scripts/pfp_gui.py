@@ -4489,7 +4489,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 self.sections[key1].setEditable(False)
-                for key2 in self.cfg[key1]:
+                for key2 in sorted(list(self.cfg[key1].keys())):
                     val = self.cfg[key1][key2]
                     child0 = QtGui.QStandardItem(key2)
                     child0.setEditable(False)
@@ -4583,6 +4583,11 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
             # sections with only 1 level
             if selected_text == "Options":
                 existing_entries = self.get_existing_entries()
+                if "ApplyFco2Storage" not in existing_entries:
+                    self.context_menu.actionAddApplyFco2Storage = QtWidgets.QAction(self)
+                    self.context_menu.actionAddApplyFco2Storage.setText("ApplyFco2Storage")
+                    self.context_menu.addAction(self.context_menu.actionAddApplyFco2Storage)
+                    self.context_menu.actionAddApplyFco2Storage.triggered.connect(self.add_applyfco2storage)
                 if "ApplyMADFilter" not in existing_entries:
                     self.context_menu.actionAddApplyMADFilter = QtWidgets.QAction(self)
                     self.context_menu.actionAddApplyMADFilter.setText("ApplyMADFilter")
@@ -4631,22 +4636,25 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         elif level == 1:
             parent = selected_item.parent()
             key = str(parent.child(selected_item.row(),0).text())
-            if (str(parent.text()) == "Options") and (selected_item.column() == 0):
-                self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveOption.setText("Remove option")
-                self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
-            elif (selected_item.column() == 1) and (key in ["Truncate", "DoFingerprints"]):
-                if selected_text != "Yes":
-                    self.context_menu.actionChangeOption = QtWidgets.QAction(self)
-                    self.context_menu.actionChangeOption.setText("Yes")
-                    self.context_menu.addAction(self.context_menu.actionChangeOption)
-                    self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("Yes"))
-                if selected_text != "No":
-                    self.context_menu.actionChangeOption = QtWidgets.QAction(self)
-                    self.context_menu.actionChangeOption.setText("No")
-                    self.context_menu.addAction(self.context_menu.actionChangeOption)
-                    self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("No"))
+            if (str(parent.text()) == "Options"):
+                if (selected_item.column() == 0):
+                    self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
+                    self.context_menu.actionRemoveOption.setText("Remove option")
+                    self.context_menu.addAction(self.context_menu.actionRemoveOption)
+                    self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
+                elif (selected_item.column() == 1) and (key in ["ApplyFco2Storage",
+                                                                "DoFingerprints",
+                                                                "Truncate"]):
+                    if selected_text != "Yes":
+                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeOption.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionChangeOption)
+                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("Yes"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeOption.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeOption)
+                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("No"))
             elif str(parent.text()) == "Files":
                 if ((selected_item.column() == 0) and (selected_text == "In")):
                     self.context_menu.actionAddInputFile = QtWidgets.QAction(self)
@@ -4761,10 +4769,16 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
 
+    def add_applyfco2storage(self):
+        """ Add the ApplyFco2Storage option to the context menu."""
+        dict_to_add = {"ApplyFco2Storage": "Yes"}
+        # add the subsubsection
+        self.add_subsection(dict_to_add)
+
     def add_applymadfilter(self):
         """ Add the ApplyMADFilter option to the context menu."""
         dict_to_add = {"ApplyMADFilter": "Fco2,Fe,Fh"}
-        # add the subsubsection (GapFillFromAlternate)
+        # add the subsubsection
         self.add_subsection(dict_to_add)
 
     def add_dofingerprints(self):

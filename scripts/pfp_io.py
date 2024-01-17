@@ -2015,9 +2015,6 @@ def netcdf_concatenate_apply_mad_filter(ds, info):
     if inc["ApplyMADFilter"] == "":
         return
     filter_labels = inc["ApplyMADFilter"].split(",")
-    msg = " Applying the MAD (despike) filter to "
-    msg += ",".join(map(str, filter_labels))
-    logger.info(msg)
     # check the requested variables are in the data structure
     ds_labels = list(ds.root["Variables"].keys())
     for filter_label in filter_labels:
@@ -2027,6 +2024,9 @@ def netcdf_concatenate_apply_mad_filter(ds, info):
     if len(filter_labels) == 0:
         return
     # should be safe to do the business
+    msg = " Applying the MAD (despike) filter to "
+    msg += ",".join(map(str, filter_labels))
+    logger.info(msg)
     inc["ApplyMADFilter"] = {"Variables": filter_labels, "Options": {}, "General": {}}
     # add general options
     inag = info["NetCDFConcatenate"]["ApplyMADFilter"]["General"]
@@ -2070,7 +2070,56 @@ def netcdf_concatenate_apply_mad_filter(ds, info):
     return
 
 def netcdf_concatenate_apply_sco2_storage(ds, info):
-    pfp_ts.CorrectFco2ForStorage(cf, ds)
+    """
+    Purpose:
+     Add the storage term to the EC CO2 flux.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: January 2024
+    """
+    if info["NetCDFConcatenate"]["ApplyFco2Storage"].lower() != "yes":
+        return
+    # sanity checks
+    labels = sorted(list(ds.root["Variables"].keys()))
+    if "Fco2" not in labels:
+        msg = " Fco2 not in data structure, can't apply storage term"
+        logger.warning(msg)
+        return
+    Fco2 = pfp_utils.GetVariable(ds, "Fco2")
+    # has Fco2 already been corrected for storage?
+    descr_attrs = [a for a in Fco2["Attr"] if a[0:11] == "description"]
+    for descr_attr in descr_attrs:
+        if "corrected for storage" in descr_attr.lower():
+            msg = " Fco2 already corrected for storage"
+            logger.warning(msg)
+            return
+    if "Sco2_single" not in labels:
+        pfp_ts.CalculateSco2SinglePoint(ds)
+    labels = sorted(list(ds.root["Variables"].keys()))
+    for sco2_label in ["Sco2", "Sco2_storage", "Sco2_profile", "Sco2_single"]:
+        if sco2_label in labels:
+            msg = " Using " + sco2_label + " as CO2 flux storage term"
+            Sco2 = pfp_utils.GetVariable(ds, sco2_label)
+            break
+    # check the units
+    if Fco2["Attr"]["units"] != Sco2["Attr"]["units"]:
+        msg = " Units of Fco2 (" + Fco2["Attr"]["units"] + ") and Sco2 ("
+        msg += Sco2["Attr"]["units"] + " are different"
+        logger.warning(msg)
+        return
+    # do the business
+    descr_level = "description_" + str(ds.root["Attributes"]["processing_level"])
+    msg = " Adding storage term " + Sco2["Label"] + " to " + Fco2["Label"]
+    logger.info(msg)
+    fco2_mask = numpy.ma.getmaskarray(Fco2["Data"])
+    sco2_mask = numpy.ma.getmaskarray(Sco2["Data"])
+    Fco2["Data"] = Fco2["Data"] + Sco2["Data"]
+    idx = numpy.where((fco2_mask==False) & (sco2_mask==True))[0]
+    Fco2["Flag"][idx] = int(25)
+    tmp = "corrected for storage using " + Sco2["Label"]
+    pfp_utils.append_to_attribute(Fco2["Attr"], {descr_level: tmp})
+    pfp_utils.CreateVariable(ds, Fco2)
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):
@@ -2812,7 +2861,7 @@ def nc_read_series(nc_file, checktimestep=True, fixtimestepmethod="round"):
             pfp_utils.FixTimeStep(ds, fixtimestepmethod=fixtimestepmethod)
     # tell the user when the data starts and ends
     ldt = ds.root["Variables"]["DateTime"]["Data"]
-    msg = " Got data from " + ldt[0].strftime("%Y-%m-%d %H:%M:%S")
+    msg = "  Got data from " + ldt[0].strftime("%Y-%m-%d %H:%M:%S")
     msg += " to " + ldt[-1].strftime("%Y-%m-%d %H:%M:%S")
     logger.info(msg)
     ds.info["returncodes"]["value"] = 0

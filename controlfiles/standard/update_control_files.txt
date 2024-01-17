@@ -76,8 +76,8 @@ xl_filename,xl_moddatetime"""
 ApplyFco2Storage,ApplyFcStorage,CorrectIndividualFg,CorrectFgForStorage,
 KeepIntermediateSeries,CcUnits,CO2Units,Fco2Units,FcUnits,DisableFco2WPL,
 DisableFcWPL,DisableFeWPL,DisableWPL,ApplyWPL"""
-    concatenate = """ApplyMADFilter,NumberOfDimensions,MaxGapInterpolate,FixTimeStepMethod,
-Truncate,DoFingerprints,TruncateThreshold,SeriesToCheck,SeriesToKeep"""
+    concatenate = """ApplyFco2Storage,ApplyMADFilter,NumberOfDimensions,MaxGapInterpolate,
+FixTimeStepMethod,Truncate,DoFingerprints,TruncateThreshold,SeriesToCheck,SeriesToKeep"""
     cpd_barr = Fsd_threshold,Num_bootstraps
     cpd_mchugh = Fsd_threshold,Num_bootstraps,Output_results,Output_plots,Plot_TClass
     cpd_mcnew = Fsd_threshold,Num_bootstraps
