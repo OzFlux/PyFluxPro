@@ -2047,8 +2047,17 @@ def FhvtoFh(cf, ds, Tv_in = "Tv_SONIC_Av"):
     flag = numpy.where(numpy.ma.getmaskarray(Fh) == True, ones, zeros)
     pfp_utils.CreateVariable(ds, {"Label": "Fh", "Data": Fh, "Flag": flag, "Attr": attr})
     pfp_utils.CreateVariable(ds, {"Label": "Fh_PFP", "Data": Fh, "Flag": flag, "Attr": attr})
-    if pfp_utils.get_optionskeyaslogical(cf, "RelaxFhvtoFh"):
+    if pfp_utils.get_optionskeyaslogical(cf, "UseFhvforFh"):
+        nok_before = (ds.root["Variables"]["Fh"]["Data"] != c.missing_value).sum()
         ReplaceWhereMissing(ds.root["Variables"]['Fh'], ds.root["Variables"]['Fh'], ds.root["Variables"]['Fhv'], FlagValue=20)
+        nok_after = (ds.root["Variables"]["Fh"]["Data"] != c.missing_value).sum()
+        percent_replaced = numpy.rint(100 * (nok_after - nok_before) / nRecs)
+        msg = "  " + str(percent_replaced) + "% of Fh values replaced with Fhv"
+        if percent_replaced < 10:
+            logger.info(msg)
+        else:
+            logger.warning(msg)
+    return
 
 def get_averages(Data):
     """

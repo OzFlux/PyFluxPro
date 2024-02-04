@@ -3362,6 +3362,14 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.sections["Options"].appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_usefhvforfh(self):
+        """ Add UseFhvforFh to the Options section."""
+        child0 = QtGui.QStandardItem("UseFhvforFh")
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("Yes")
+        self.sections["Options"].appendRow([child0, child1])
+        self.update_tab_text()
+
     def add_variable(self):
         new_var_qc = {"RangeCheck":{"lower":0, "upper": 1}}
         parent2 = QtGui.QStandardItem("New variable")
@@ -3549,31 +3557,31 @@ class edit_cfg_L3(QtWidgets.QWidget):
             elif selected_text == "Options":
                 # get a list of existing entries
                 existing_entries = self.get_existing_entries()
-                if "zms" not in existing_entries:
-                    self.context_menu.actionAddzms = QtWidgets.QAction(self)
-                    self.context_menu.actionAddzms.setText("Add zms")
-                    self.context_menu.addAction(self.context_menu.actionAddzms)
-                    self.context_menu.actionAddzms.triggered.connect(self.add_zms)
-                if "CalculateFluxes" not in existing_entries:
-                    self.context_menu.actionAddCalculateFluxes = QtWidgets.QAction(self)
-                    self.context_menu.actionAddCalculateFluxes.setText("CalculateFluxes")
-                    self.context_menu.addAction(self.context_menu.actionAddCalculateFluxes)
-                    self.context_menu.actionAddCalculateFluxes.triggered.connect(self.add_calculatefluxes)
                 if "2DCoordRotation" not in existing_entries:
                     self.context_menu.actionAdd2DCoordRotation = QtWidgets.QAction(self)
                     self.context_menu.actionAdd2DCoordRotation.setText("2DCoordRotation")
                     self.context_menu.addAction(self.context_menu.actionAdd2DCoordRotation)
                     self.context_menu.actionAdd2DCoordRotation.triggered.connect(self.add_2dcoordrotation)
-                if "MassmanCorrection" not in existing_entries:
-                    self.context_menu.actionAddMassmanCorrection = QtWidgets.QAction(self)
-                    self.context_menu.actionAddMassmanCorrection.setText("MassmanCorrection")
-                    self.context_menu.addAction(self.context_menu.actionAddMassmanCorrection)
-                    self.context_menu.actionAddMassmanCorrection.triggered.connect(self.add_massmancorrection)
                 if "ApplyFco2Storage" not in existing_entries:
                     self.context_menu.actionAddApplyFco2Storage = QtWidgets.QAction(self)
                     self.context_menu.actionAddApplyFco2Storage.setText("ApplyFco2Storage")
                     self.context_menu.addAction(self.context_menu.actionAddApplyFco2Storage)
                     self.context_menu.actionAddApplyFco2Storage.triggered.connect(self.add_applyfco2storage_to_options)
+                if "ApplyWPL" not in existing_entries:
+                    self.context_menu.actionAddApplyWPL = QtWidgets.QAction(self)
+                    self.context_menu.actionAddApplyWPL.setText("ApplyWPL")
+                    self.context_menu.addAction(self.context_menu.actionAddApplyWPL)
+                    self.context_menu.actionAddApplyWPL.triggered.connect(self.add_ApplyWPL_to_options)
+                if "CalculateFluxes" not in existing_entries:
+                    self.context_menu.actionAddCalculateFluxes = QtWidgets.QAction(self)
+                    self.context_menu.actionAddCalculateFluxes.setText("CalculateFluxes")
+                    self.context_menu.addAction(self.context_menu.actionAddCalculateFluxes)
+                    self.context_menu.actionAddCalculateFluxes.triggered.connect(self.add_calculatefluxes)
+                if "CO2Units" not in existing_entries:
+                    self.context_menu.actionAddCO2Units = QtWidgets.QAction(self)
+                    self.context_menu.actionAddCO2Units.setText("CO2Units")
+                    self.context_menu.addAction(self.context_menu.actionAddCO2Units)
+                    self.context_menu.actionAddCO2Units.triggered.connect(self.add_co2units_to_options)
                 if "CorrectIndividualFg" not in existing_entries:
                     self.context_menu.actionAddCorrectIndividualFg = QtWidgets.QAction(self)
                     self.context_menu.actionAddCorrectIndividualFg.setText("CorrectIndividualFg")
@@ -3584,26 +3592,31 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddCorrectFgForStorage.setText("CorrectFgForStorage")
                     self.context_menu.addAction(self.context_menu.actionAddCorrectFgForStorage)
                     self.context_menu.actionAddCorrectFgForStorage.triggered.connect(self.add_correctfgforstorage)
-                if "KeepIntermediateSeries" not in existing_entries:
-                    self.context_menu.actionAddKeepIntermediateSeries = QtWidgets.QAction(self)
-                    self.context_menu.actionAddKeepIntermediateSeries.setText("KeepIntermediateSeries")
-                    self.context_menu.addAction(self.context_menu.actionAddKeepIntermediateSeries)
-                    self.context_menu.actionAddKeepIntermediateSeries.triggered.connect(self.add_keepintermediateseries)
-                if "CO2Units" not in existing_entries:
-                    self.context_menu.actionAddCO2Units = QtWidgets.QAction(self)
-                    self.context_menu.actionAddCO2Units.setText("CO2Units")
-                    self.context_menu.addAction(self.context_menu.actionAddCO2Units)
-                    self.context_menu.actionAddCO2Units.triggered.connect(self.add_co2units_to_options)
                 if "Fco2Units" not in existing_entries:
                     self.context_menu.actionAddFco2Units = QtWidgets.QAction(self)
                     self.context_menu.actionAddFco2Units.setText("Fco2Units")
                     self.context_menu.addAction(self.context_menu.actionAddFco2Units)
                     self.context_menu.actionAddFco2Units.triggered.connect(self.add_fco2units_to_options)
-                if "ApplyWPL" not in existing_entries:
-                    self.context_menu.actionAddApplyWPL = QtWidgets.QAction(self)
-                    self.context_menu.actionAddApplyWPL.setText("ApplyWPL")
-                    self.context_menu.addAction(self.context_menu.actionAddApplyWPL)
-                    self.context_menu.actionAddApplyWPL.triggered.connect(self.add_ApplyWPL_to_options)
+                if "KeepIntermediateSeries" not in existing_entries:
+                    self.context_menu.actionAddKeepIntermediateSeries = QtWidgets.QAction(self)
+                    self.context_menu.actionAddKeepIntermediateSeries.setText("KeepIntermediateSeries")
+                    self.context_menu.addAction(self.context_menu.actionAddKeepIntermediateSeries)
+                    self.context_menu.actionAddKeepIntermediateSeries.triggered.connect(self.add_keepintermediateseries)
+                if "MassmanCorrection" not in existing_entries:
+                    self.context_menu.actionAddMassmanCorrection = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMassmanCorrection.setText("MassmanCorrection")
+                    self.context_menu.addAction(self.context_menu.actionAddMassmanCorrection)
+                    self.context_menu.actionAddMassmanCorrection.triggered.connect(self.add_massmancorrection)
+                if "UseFhvforFh" not in existing_entries:
+                    self.context_menu.actionAddUseFhvforFh = QtWidgets.QAction(self)
+                    self.context_menu.actionAddUseFhvforFh.setText("UseFhvforFh")
+                    self.context_menu.addAction(self.context_menu.actionAddUseFhvforFh)
+                    self.context_menu.actionAddUseFhvforFh.triggered.connect(self.add_usefhvforfh)
+                if "zms" not in existing_entries:
+                    self.context_menu.actionAddzms = QtWidgets.QAction(self)
+                    self.context_menu.actionAddzms.setText("Add zms")
+                    self.context_menu.addAction(self.context_menu.actionAddzms)
+                    self.context_menu.actionAddzms.triggered.connect(self.add_zms)
             elif selected_text == "Massman":
                 self.context_menu.actionRemoveMassmanSection = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveMassmanSection.setText("Remove section")
@@ -3670,10 +3683,11 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionRemoveOption.setText("Remove option")
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
                     self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
-                elif (selected_item.column() == 1) and (key in ["ApplyFco2Storage", "CalculateFluxes",
-                                                                "2DCoordRotation", "MassmanCorrection",
+                elif (selected_item.column() == 1) and (key in ["2DCoordRotation", "ApplyFco2Storage",
+                                                                "ApplyWPL", "CalculateFluxes",
                                                                 "CorrectIndividualFg", "CorrectFgForStorage",
-                                                                "KeepIntermediateSeries", "ApplyWPL"]):
+                                                                "KeepIntermediateSeries", "MassmanCorrection",
+                                                                "UseFhvforFh"]):
                     if selected_text != "Yes":
                         self.context_menu.actionChangeOption = QtWidgets.QAction(self)
                         self.context_menu.actionChangeOption.setText("Yes")
