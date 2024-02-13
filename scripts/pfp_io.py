@@ -18,6 +18,7 @@ import netCDF4
 import numpy
 import pandas
 from pandas.errors import ParserError
+import pytz
 import xlwt
 import xlsxwriter
 from PyQt5 import QtWidgets
@@ -1823,6 +1824,113 @@ def write_csv_fluxnet(cf):
     # close the csv file
     csvfile.close()
     return 1
+
+def write_csv_oneflux(cfg):
+    """
+    """
+    ok = True
+    # get the file names
+    nc_uri = get_infilenamefromcf(cfg)
+    if not pfp_utils.file_exists(nc_uri, mode="verbose"):
+        ok = False
+        return ok
+    ds = NetCDFRead(nc_uri)
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    ts_delta = datetime.timedelta(minutes=ts)
+    start_year = (dt["Data"][0] - ts_delta).year
+    end_year = (dt["Data"][-1] - ts_delta).year
+    years = range(start_year, end_year+1)
+    if "General" not in cfg:
+        cfg["General"] = {}
+    for year in years:
+        msg = " Converting year: " + str(year)
+        logger.info(msg)
+        cfg["General"]["year"] = str(year)
+        if not write_csv_oneflux_year(cfg, ds):
+            ok = False
+            return ok
+    return ok
+
+def write_csv_oneflux_year(cfg, ds):
+    """
+    """
+    ok = True
+    time_resolution = {30: "halfhourly", 60: "hourly"}
+    ts = int(ds.root["Attributes"]["time_step"])
+    ts_delta = datetime.timedelta(minutes=ts)
+    # get the start and end dates
+    year = int(cfg["General"]["year"])
+    start = datetime.datetime(year, 1, 1, 0, 0, 0) + ts_delta
+    end = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+    # datetime array from start to end at ts
+    cdt = numpy.array([d for d in pfp_utils.perdelta(start, end, ts_delta)])
+    nrecs = len(cdt)
+    # array for data
+    data = {"DateTime": {"data": numpy.array(cdt), "format": ""}}
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    ldt = dt["Data"]
+    indainb, indbina = pfp_utils.FindMatchingIndices(cdt, ldt)
+    # ONEFlux variable labels
+    of_labels = list(cfg["Variables"].keys())
+    for of_label in of_labels:
+        data[of_label] = {}
+        data[of_label]["data"] = numpy.full(nrecs, float(-9999))
+        fmt = cfg["Variables"][of_label]["format"]
+        if "." in fmt:
+            numdec = len(fmt) - (fmt.index(".") + 1)
+            strfmt = "{0:."+str(numdec)+"f}"
+        else:
+            strfmt = "{0:d}"
+        data[of_label]["format"] = strfmt
+        var = pfp_utils.GetVariable(ds, cfg["Variables"][of_label]["name"])
+        data[of_label]["data"][indainb] = var["Data"][indbina]
+    fluxnet_id = ds.root["Attributes"]["site_name"]
+    if "fluxnet_id" in ds.root["Attributes"]:
+        if len(ds.root["Attributes"]["fluxnet_id"]) == 6:
+            fluxnet_id = ds.root["Attributes"]["fluxnet_id"]
+    # get the UTC offset from the time zone name
+    time_zone = ds.root["Attributes"]["time_zone"]
+    now = datetime.datetime.now(pytz.timezone(time_zone))
+    utc_offset = now.utcoffset().total_seconds()/60/60
+    # get the tower height
+    tower_height = pfp_utils.strip_non_numeric(str(ds.root["Attributes"]["tower_height"]))
+    # get the data path and CSV name
+    data_path = os.path.split(ds.info["filepath"])[0]
+    csv_name = fluxnet_id + "_qcv_" + str(year) + ".csv"
+    csv_uri = os.path.join(data_path, csv_name)
+    # open the csv file
+    csv_file = open(csv_uri, 'w')
+    writer = csv.writer(csv_file)
+    # write the header lines
+    writer.writerow(["site", fluxnet_id])
+    writer.writerow(["year", str(year)])
+    writer.writerow(["lat", str(ds.root["Attributes"]["latitude"])])
+    writer.writerow(["lon", str(ds.root["Attributes"]["longitude"])])
+    writer.writerow(["timezone", str(utc_offset)])
+    writer.writerow(["htower", "{:%Y%m%d%H%M}".format(start), str(tower_height)])
+    writer.writerow(["timeres", time_resolution[ts]])
+    writer.writerow(["sc_negl", str(1)])
+    writer.writerow(["notes", "Prepared by PyFluxPro"])
+    # write the data
+    header = ["TIMESTAMP_START","TIMESTAMP_END"]
+    for of_label in of_labels:
+        header.append(of_label)
+    writer.writerow(header)
+    for n in range(nrecs):
+        timestamp_start = "{:%Y%m%d%H%M}".format(data["DateTime"]["data"][n]-ts_delta)
+        timestamp_end = "{:%Y%m%d%H%M}".format(data["DateTime"]["data"][n])
+        data_list = [timestamp_start, timestamp_end]
+        for of_label in of_labels:
+            strfmt = data[of_label]["format"]
+            if "d" in strfmt:
+                data_list.append(strfmt.format(int(round(data[of_label]["data"][n]))))
+            else:
+                data_list.append(strfmt.format(data[of_label]["data"][n]))
+        writer.writerow(data_list)
+    # close the CSV file
+    csv_file.close()
+    return ok
 
 def get_controlfilecontents(cfg_file_uri, mode="verbose"):
     """
