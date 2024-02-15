@@ -669,6 +669,51 @@ def do_run_l6(main_gui):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
+def do_run_l7(main_gui):
+    """
+    Purpose:
+     Top level routine for running the L7 uncertainty..
+    Usage:
+     pfp_top_level.do_run_l7()
+    Side effects:
+     Creates an L7 netCDF file with NEE partitioned into GPP and ER along
+     with estimates of the random, systematic (ustar) and joint uncertainties.
+    Author: PRI
+    Date: February 2024
+    Mods:
+
+    """
+    try:
+        logger.info("Starting L7 processing")
+        tab_index_running = main_gui.tabs.tab_index_running
+        cfg = main_gui.tabs.tab_dict[tab_index_running].get_data_from_model()
+        in_filepath = pfp_io.get_infilenamefromcf(cfg)
+        if not pfp_utils.file_exists(in_filepath):
+            in_filename = os.path.split(in_filepath)
+            logger.error("File "+in_filename[1]+" not found")
+            return
+        ds4 = pfp_io.NetCDFRead(in_filepath)
+        if ds4.info["returncodes"]["value"] != 0: return
+        sitename = ds4.root["Attributes"]['site_name']
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        cfg["Options"]["call_mode"] = "interactive"
+        cfg["Options"]["show_plots"] = "Yes"
+        ds7 = pfp_levels.l7_uncertainty(main_gui, cfg, ds4)
+        if ds7.info["returncodes"]["value"] != 0:
+            logger.info("Quitting L7: "+sitename)
+        else:
+            logger.info("Finished L7: "+sitename)
+            outfilename = pfp_io.get_outfilenamefromcf(cfg)
+            pfp_io.NetCDFWrite(outfilename, ds7)
+            logger.info("Finished saving L7 uncertainty data")
+        logger.info("")
+    except Exception:
+        msg = " Error running L7, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
 # top level routines for the Plot menu
 def do_plot_fcvsustar_annual():
     """

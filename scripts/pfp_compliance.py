@@ -342,7 +342,23 @@ def cpd_mcnew_update_controlfile(cfg):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return ok
-
+def l7_update_controlfile(cfg):
+    """
+    Purpose:
+     Parse the L7 control file to make sure the syntax is correct and that the
+     control file contains all of the information needed.
+    Usage:
+     result = pfp_compliance.l7_update_controlfile(cfg)
+     where cfg is a ConfigObj object
+           result is True if the L7 control file was updated successfully
+                     False if it couldn't be updated
+    Side effects:
+     The control file is overwritten with an updated version if required.
+    Author: PRI
+    Date: February 2024
+    """
+    ok = True
+    return ok
 def mpt_update_controlfile(cfg):
     """
     Purpose:
@@ -440,275 +456,6 @@ def concatenate_update_controlfile(cfg):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return ok
-
-def ParseConcatenateControlFile(cf):
-    """
-    Purpose:
-     Make the concatenate information dictionary
-    Usage:
-    Side effects:
-    Author: PRI
-    Date: August 2019
-    """
-    info = {}
-    info["NetCDFConcatenate"] = {"OK": True}
-    inc = info["NetCDFConcatenate"]
-    # check the control file has a Files section
-    if "Files" not in cf:
-        msg = " Files section missing from control file"
-        logger.error(msg)
-        inc["OK"] = False
-        return info
-    # check the [Files] section contains an [Out] section and an [In] section
-    for item in ["Out", "In"]:
-        if item not in cf["Files"]:
-            msg = " " + item + " subsection missing from Files section"
-            logger.error(msg)
-            inc["OK"] = False
-            return info
-    # check the [In] section contains at least 1 entry
-    if len(list(cf["Files"]["In"].keys())) < 2:
-        msg = " Less than 2 input files specified"
-        logger.error(msg)
-        inc["OK"] = False
-        return info
-    # get a list of the input file names
-    inc["in_file_names"] = []
-    for key in sorted(list(cf["Files"]["In"].keys())):
-        file_name = cf["Files"]["In"][key]
-        if os.path.isfile(file_name):
-            inc["in_file_names"].append(file_name)
-        else:
-            msg = " File not found (" + os.path.basename(file_name) + ")"
-            logger.warning(msg)
-    # check to see if we have any files to concatenate
-    if len(inc["in_file_names"]) == 0:
-        msg = " No input files to concatenate"
-        logger.error(msg)
-        inc["OK"] = False
-        return info
-    # get the output file name
-    if "ncFileName" not in cf["Files"]["Out"]:
-        msg = " No ncFileName key in Out subsection of Files section"
-        logger.error(msg)
-        inc["OK"] = False
-        return info
-    inc["out_file_name"] = cf["Files"]["Out"]["ncFileName"]
-    # check the output path exists, create if it doesn't
-    file_path, file_name = os.path.split(inc["out_file_name"])
-    if not os.path.isdir(file_path):
-        os.makedirs(file_path)
-    # work through the choices in the [Options] section
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "NumberOfDimensions", default=3)
-    inc["NumberOfDimensions"] = int(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxGapInterpolate", default=0)
-    inc["MaxGapInterpolate"] = int(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "FixTimeStepMethod", default="round")
-    inc["FixTimeStepMethod"] = str(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "Truncate", default="No")
-    inc["Truncate"] = str(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateThreshold", default=50)
-    inc["TruncateThreshold"] = float(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SeriesToCheck", default="all")
-    inc["SeriesToCheck"] = pfp_utils.csv_string_to_list(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "SeriesToKeep", default=None)
-    if opt is not None:
-        inc["SeriesToKeep"] = pfp_utils.csv_string_to_list(opt)
-    # now add the bits and pieces
-    inc["time_coverage_start"] = []
-    inc["time_coverage_end"] = []
-    inc["chrono_files"] = []
-    inc["labels"] = []
-    inc["attributes"] = ["height", "instrument", "long_name", "standard_name",
-                         "statistic_type", "units", "valid_range"]
-    # add key for suppressing output of intermediate variables e.g. Cpd etc
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
-    info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
-    return info
-
-def ParseL1ControlFile(cf):
-    """
-    Purpose:
-     Check the contents of the Li control file.
-     If the L1 control file contents are OK, return with the required information.
-     If the L1 control file contents are not OK, return with an error message.
-    """
-    logger.info(" Parsing the L1 control file")
-    # create the settings dictionary
-    l1_info = {"status": {"value": 0, "message": "OK"},
-              "read_excel": {}}
-    l1ire = l1_info["read_excel"]
-    # copy the files section from the control file
-    l1ire["Files"] = copy.deepcopy(cf["Files"])
-    l1ire["Files"]["file_name"] = os.path.join(cf["Files"]["file_path"], cf["Files"]["in_filename"])
-    l1ire["Files"]["in_headerrow"] = cf["Files"]["in_headerrow"]
-    l1ire["Files"]["in_firstdatarow"] = cf["Files"]["in_firstdatarow"]
-    plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="./plots/")
-    plot_path = os.path.join(plot_path, "L1", "")
-    if not os.path.exists(plot_path):
-        os.makedirs(plot_path)
-    l1ire["Files"]["plot_path"] = plot_path
-    # get the global attributes
-    l1ire["Global"] = copy.deepcopy(cf["Global"])
-    # get the options section
-    l1ire["Options"] = copy.deepcopy(cf["Options"])
-    # get the variables
-    l1ire["Variables"] = copy.deepcopy(cf["Variables"])
-    return l1_info
-
-def ParseL3ControlFile(cfg, ds):
-    """
-    Purpose:
-     Parse the L3 control file and return contents in the l3_info dictionary.
-    Usage:
-    Side effects:
-    Author: PRI
-    Date: August 2019
-    """
-    # PRI 7/10/2021 the code to get zms will give unpredictable results if CO2
-    #   profile data present
-    l3_info = {"status": {"value": 0, "message": "OK"},
-               "cfg": {},
-               "variables": {"CO2": {}, "Fco2": {}, "Sco2": {}},
-               "CombineSeries": {}}
-    # copy the control file sections to the l3_info dictionary
-    for section in list(cfg.keys()):
-        l3_info["cfg"][section] = copy.deepcopy(cfg[section])
-    # add key for suppressing output of intermediate variables e.g. Cpd etc
-    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
-    l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
-    # find out what label is used for CO2
-    parse_l3_co2_label(l3_info)
-    # get the height of the CO2 measurement
-    parse_l3_co2_height(ds, l3_info)
-    # get lists of variables to be merged or averaged
-    parse_l3_combine(l3_info)
-    return l3_info
-
-def parse_l3_combine(info):
-    """ Get a list of variables to be merged or averaged at L3. """
-    cfg = info["cfg"]
-    cfv = cfg["Variables"]
-    labels = list(cfv.keys())
-    # list of labels that are explicitly referenced in pfp_levels.l3qc()
-    l3_labels = ["CO2", "Fco2", "Fg", "Fsd", "Fn", "Sco2", "Sws", "Ta", "Ts", "Wd", "Ws"]
-    # cs_labels is a list of all variables using MergeSeries or AverageSeries
-    cs_labels = []
-    # loop over L3 labels
-    for label in l3_labels:
-        info["CombineSeries"][label] = [l for l in labels if l.split("_")[0] == label]
-        cs_labels = cs_labels + info["CombineSeries"][label]
-    cs_labels = list(set(cs_labels))
-    # now get a list of any other variables using MergeSeries of AverageSeries that
-    # are not in cs_labels
-    merge_extras = [l for l in labels if l not in cs_labels and "MergeSeries" in cfv[l]]
-    average_extras = [l for l in labels if l not in cs_labels and "AverageSeries" in cfv[l]]
-    info["CombineSeries"]["extras"] = merge_extras + average_extras
-    return
-
-def parse_l3_co2_label(info):
-    """ Get the CO2 variable label."""
-    if "CO2" in list(info["cfg"]["Variables"].keys()):
-        info["variables"]["CO2"]["label"] = "CO2"
-    else:
-        msg = " Label for CO2 not found in control file"
-        logger.warning(msg)
-        info["status"]["value"] = 1
-        info["status"]["message"] = msg
-    return
-
-def parse_l3_co2_height(ds, info):
-    """ Get the height of the CO2 measurement from various sources."""
-    cfg = info["cfg"]
-    got_zms = False
-    labels = list(ds.root["Variables"].keys())
-    CO2_label = info["variables"]["CO2"]["label"]
-    # try and get the height from the CO2 variable
-    if CO2_label in labels:
-        # get height from attributes if the CO2 variable is already in the data structure
-        try:
-            CO2 = pfp_utils.GetVariable(ds, CO2_label)
-            zms = float(pfp_utils.strip_non_numeric(CO2["Attr"]["height"]))
-            got_zms = True
-        except:
-            pass
-    if not got_zms and "MergeSeries" in list(cfg["Variables"][CO2_label].keys()):
-        # get the height from the variables listed in MergeSeries
-        try:
-            source = cfg["Variables"][CO2_label]["MergeSeries"]["source"]
-            source = pfp_utils.convert_csv_string_to_list(source)
-            for item in source:
-                var = pfp_utils.GetVariable(ds, item)
-                zms = float(pfp_utils.strip_non_numeric(var["Attr"]["height"]))
-                got_zms = True
-                break
-        except:
-            pass
-    if not got_zms and "AverageSeries" in list(cfg["Variables"][CO2_label].keys()):
-        # get the height from the variables listed in AverageSeries
-        try:
-            source = cfg["Variables"][CO2_label]["AverageSeries"]["source"]
-            source = pfp_utils.convert_csv_string_to_list(source)
-            for item in source:
-                var = pfp_utils.GetVariable(ds, item)
-                zms = float(pfp_utils.strip_non_numeric(var["Attr"]["height"]))
-                got_zms = True
-                break
-        except:
-            pass
-    if not got_zms and "tower_height" in list(ds.root["Attributes"].keys()):
-        try:
-            zms = float(pfp_utils.strip_non_numeric(ds.root["Attributes"]["tower_height"]))
-            got_zms = True
-        except:
-            pass
-    if not got_zms and pfp_utils.cfkeycheck(cfg, Base="Options", ThisOne="zms"):
-        try:
-            zms = float(pfp_utils.strip_non_numeric(cfg["Options"]["zms"]))
-            got_zms = True
-        except:
-            pass
-    if got_zms:
-        info["variables"]["CO2"]["height"] = zms
-    else:
-        msg = " Unable to find height for CO2 (" + CO2_label + ") measurement"
-        logger.warning(msg)
-        info["status"]["value"] = 1
-        info["status"]["message"] = msg
-    return
-
-def parse_variable_attributes(attributes):
-    """
-    Purpose:
-     Clean up the variable attributes.
-    Usage:
-    Author: PRI
-    Date: September 2019
-    """
-    for attr in attributes:
-        value = attributes[attr]
-        if not isinstance(value, str):
-            continue
-        if attr in ["rangecheck_lower", "rangecheck_upper", "diurnalcheck_numsd"]:
-            if ("[" in value) and ("]" in value) and ("*" in value):
-                # old style of [value]*12
-                value = value[value.index("[")+1:value.index("]")]
-            elif ("[" in value) and ("]" in value) and ("*" not in value):
-                # old style of [1,2,3,4,5,6,7,8,9,10,11,12]
-                value = value.replace("[", "").replace("]", "")
-            strip_list = [" ", '"', "'"]
-        elif ("ExcludeDates" in attr or
-              "ExcludeHours" in attr or
-              "LowerCheck" in attr or
-              "UpperCheck" in attr):
-            strip_list = ["[", "]", '"', "'"]
-        else:
-            strip_list = ['"', "'"]
-        for c in strip_list:
-            if c in value:
-                value = value.replace(c, "")
-        attributes[attr] = value
-    return attributes
 
 def check_batch_controlfile(self):
     """
@@ -1143,6 +890,18 @@ def check_l6_controlfile(cfg):
         display_messages_batch(messages)
     if len(messages["ERROR"]) > 0:
         ok = False
+    return ok
+def check_l7_controlfile(cfg):
+    """
+    Purpose:
+     Check the L7 control file to make sure it contains all information
+     needed to run L7 and that all information is correct.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: February 2024
+    """
+    ok = True
     return ok
 def check_windrose_controlfile(cfg):
     """
