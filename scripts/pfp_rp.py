@@ -10,11 +10,12 @@ import matplotlib.pyplot as plt
 import numpy
 import pandas
 import pylab
+import scipy
 # PFP modules
 from scripts import constants as c
-from scripts import pfp_gf
+#from scripts import pfp_gf
 from scripts import pfp_gfSOLO
-from scripts import pfp_gui
+#from scripts import pfp_gui
 from scripts import pfp_io
 from scripts import pfp_part
 from scripts import pfp_ts
@@ -302,7 +303,7 @@ def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     Author: PRI
     Date: Back in the day
     Mods:
-     21/8/2017 - moved GetERFromFc from pfp_ls.l6qc() to individual
+     21/8/2017 - moved GetERFromFc from pfp_ls.l6_partition() to individual
                  ER estimation routines to allow for multiple sources
                  of ER.
     """
@@ -399,6 +400,17 @@ def GetERFromFco2(ds, l6_info):
     msg += str(pc2) + "% of all data)"
     logger.info(msg)
     return
+
+def GetUstarThresholdPercentiles(ustar_results, percentile):
+    years = sorted(list(ustar_results.keys()))
+    ustar_percentiles = {}
+    for year in years:
+        ustar_percentiles[year] = {}
+        loc = ustar_results[year]["ustar_mean"]
+        scale = ustar_results[year]["ustar_sig"]
+        ustar_percentile = scipy.stats.norm.ppf(percentile, loc=loc, scale=scale)
+        ustar_percentiles[year]["ustar_mean"] = ustar_percentile
+    return ustar_percentiles
 
 def L6_summary(ds, l6_info):
     """

@@ -59,7 +59,7 @@ def do_L1_batch(main_ui, cf_level):
             cf_l1["Options"]["call_mode"] = "batch"
             cf_l1["Options"]["show_plots"] = "No"
             if pfp_compliance.check_l1_controlfile(cf_l1):
-                ds1 = pfp_levels.l1qc(cf_l1)
+                ds1 = pfp_levels.l1_read_input(cf_l1)
                 outfilename = pfp_io.get_outfilenamefromcf(cf_l1)
                 pfp_io.NetCDFWrite(outfilename, ds1)
                 msg = "Finished L1 processing with " + cf_file_name[1]
@@ -102,7 +102,7 @@ def do_L2_batch(main_ui, cf_level):
             if ds1.info["returncodes"]["value"] != 0:
                 return
             if pfp_compliance.check_l2_controlfile(cf_l2):
-                ds2 = pfp_levels.l2qc(cf_l2, ds1)
+                ds2 = pfp_levels.l2_quality_control(cf_l2, ds1)
                 outfilename = pfp_io.get_outfilenamefromcf(cf_l2)
                 pfp_io.NetCDFWrite(outfilename, ds2)
                 msg = "Finished L2 processing with " + cf_file_name[1]
@@ -157,7 +157,7 @@ def do_L3_batch(main_ui, cf_level):
                 return
             if not pfp_compliance.check_l3_controlfile(cf_l3):
                 return
-            ds3 = pfp_levels.l3qc(cf_l3, ds2)
+            ds3 = pfp_levels.l3_post_processing(cf_l3, ds2)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l3)
             pfp_io.NetCDFWrite(outfilename, ds3)
             msg = "Finished L3 processing with " + cf_file_name[1]
@@ -447,7 +447,7 @@ def do_L4_batch(main_ui, cf_level):
             infilename = pfp_io.get_infilenamefromcf(cf_l4)
             ds3 = pfp_io.NetCDFRead(infilename)
             if ds3.info["returncodes"]["value"] != 0: return
-            ds4 = pfp_levels.l4qc(None, cf_l4, ds3)
+            ds4 = pfp_levels.l4_gapfill_drivers(None, cf_l4, ds3)
             outfilename = pfp_io.get_outfilenamefromcf(cf_l4)
             pfp_io.NetCDFWrite(outfilename, ds4)
             msg = "Finished L4 processing with " + cf_file_name[1]
@@ -489,7 +489,7 @@ def do_L5_batch(main_ui, cf_level):
             if ds4.info["returncodes"]["value"] != 0:
                 return
             if pfp_compliance.check_l5_controlfile(cf_l5):
-                ds5 = pfp_levels.l5qc(None, cf_l5, ds4)
+                ds5 = pfp_levels.l5_gapfill_fluxes(None, cf_l5, ds4)
                 outfilename = pfp_io.get_outfilenamefromcf(cf_l5)
                 pfp_io.NetCDFWrite(outfilename, ds5)
                 msg = "Finished L5 processing with " + cf_file_name[1]
@@ -533,7 +533,7 @@ def do_L6_batch(main_ui, cf_level):
             if ds5.info["returncodes"]["value"] != 0:
                 return
             if pfp_compliance.check_l6_controlfile(cf_l6):
-                ds6 = pfp_levels.l6qc(None, cf_l6, ds5)
+                ds6 = pfp_levels.l6_partition(None, cf_l6, ds5)
                 outfilename = pfp_io.get_outfilenamefromcf(cf_l6)
                 pfp_io.NetCDFWrite(outfilename, ds6)
                 msg = "Finished L6 processing with " + cf_file_name[1]
