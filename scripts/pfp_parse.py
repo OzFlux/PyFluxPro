@@ -1243,6 +1243,13 @@ def ParseL7ControlFile(cfg, ds):
         l7_info["GrossPrimaryProductivity"] = {}
         for output in list(cfg["GrossPrimaryProductivity"].keys()):
             parse_rpGPP_createdict(cfg, ds, l7_info["GrossPrimaryProductivity"], output)
+    # set the batch/interactive mode and show plots switches
+    l7_info["GapFillUsingSOLO"]["info"]["call_mode"] = "batch"
+    l7_info["GapFillUsingSOLO"]["gui"]["show_plots"] = False
+    l7_info["ERUsingSOLO"]["info"]["call_mode"] = "batch"
+    l7_info["ERUsingSOLO"]["gui"]["show_plots"] = False
+    l7_info["ERUsingLloydTaylor"]["gui"]["show_plots"] = False
+    l7_info["ERUsingLasslop"]["gui"]["show_plots"] = False
     return l7_info
 
 def parse_rp_createdict(cf, ds, l6_info, output, called_by, flag_code):
