@@ -467,8 +467,8 @@ def ParseConcatenateControlFile(cf):
             inc["OK"] = False
             return info
     # check the [In] section contains at least 1 entry
-    if len(list(cf["Files"]["In"].keys())) < 2:
-        msg = " Less than 2 input files specified"
+    if len(list(cf["Files"]["In"].keys())) < 1:
+        msg = " No input files specified"
         logger.error(msg)
         inc["OK"] = False
         return info
