@@ -490,43 +490,43 @@ def L6_summary(ds, l6_info):
     pfp_io.nc_write_globalattributes(nc_annual, ds, flag_defs=False)
     pfp_io.nc_write_group(nc_annual, ds_summary, "Annual")
     nc_annual.close()
-    ## cumulative totals
-    #ts = int(float(ds.root["Attributes"]["time_step"]))
-    #dt = pfp_utils.GetVariable(ds, "DateTime")
-    #cdt = dt["Data"] - datetime.timedelta(minutes=ts)
-    #years = sorted(list(set([ldt.year for ldt in cdt])))
-    ## loop over individual years
-    #for year in years:
-        #dss = L6_summary_cumulative(ds, series_dict, year=year)
-        #setattr(ds_summary, "Cumulative_"+str(year), dss.Cumulative)
-        #nc_group = nc_summary.createGroup("Cumulative_"+str(year))
-        #pfp_io.nc_write_group(nc_group, ds_summary, "Cumulative_"+str(year))
-        #nrecs = len(dss.Cumulative["Variables"]["DateTime"]["Data"])
-        #if nrecs < 65530:
-            #sheet = "Cumulative(" + str(year) + ")"
-            #group = "Cumulative_" + str(year)
-            #L6_summary_write_xlfile(xl_file, sheet, ds_summary, group=group)
-        #else:
-            #msg = "L6 cumulative: too many rows for .xls workbook, skipping "+year
-            #logger.warning(msg)
-    ## all years
-    #dss = L6_summary_cumulative(ds, series_dict, year="all")
-    #setattr(ds_summary, "Cumulative_all", dss.Cumulative)
-    #nc_group = nc_summary.createGroup("Cumulative_all")
-    #pfp_io.nc_write_group(nc_group, ds_summary, "Cumulative_all")
+    # cumulative totals
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    cdt = dt["Data"] - datetime.timedelta(minutes=ts)
+    years = sorted(list(set([ldt.year for ldt in cdt])))
+    # loop over individual years
+    for year in years:
+        dss = L6_summary_cumulative(ds, series_dict, year=year)
+        setattr(ds_summary, "Cumulative_"+str(year), dss.Cumulative)
+        nc_group = nc_summary.createGroup("Cumulative_"+str(year))
+        pfp_io.nc_write_group(nc_group, ds_summary, "Cumulative_"+str(year))
+        nrecs = len(dss.Cumulative["Variables"]["DateTime"]["Data"])
+        if nrecs < 65530:
+            sheet = "Cumulative(" + str(year) + ")"
+            group = "Cumulative_" + str(year)
+            L6_summary_write_xlfile(xl_file, sheet, ds_summary, group=group)
+        else:
+            msg = "L6 cumulative: too many rows for .xls workbook, skipping "+year
+            logger.warning(msg)
+    # all years
+    dss = L6_summary_cumulative(ds, series_dict, year="all")
+    setattr(ds_summary, "Cumulative_all", dss.Cumulative)
+    nc_group = nc_summary.createGroup("Cumulative_all")
+    pfp_io.nc_write_group(nc_group, ds_summary, "Cumulative_all")
     # close the summary netCDF file
     nc_summary.close()
-    ## separate cumulative file
-    #nc_cumulative = pfp_io.nc_open_write(out_name.replace(".nc", "_Cumulative.nc"))
-    #pfp_io.nc_write_globalattributes(nc_cumulative, ds, flag_defs=False)
-    #pfp_io.nc_write_group(nc_cumulative, ds_summary, "Cumulative_all")
-    #nc_cumulative.close()
+    # separate cumulative file
+    nc_cumulative = pfp_io.nc_open_write(out_name.replace(".nc", "_Cumulative.nc"))
+    pfp_io.nc_write_globalattributes(nc_cumulative, ds, flag_defs=False)
+    pfp_io.nc_write_group(nc_cumulative, ds_summary, "Cumulative_all")
+    nc_cumulative.close()
     # close the Excel workbook
     xl_file.save(xl_name)
     # plot the daily averages and sums
     L6_summary_plotdaily(ds_summary, l6_info)
-    ## plot the cumulative sums
-    #L6_summary_plotcumulative(ds_summary, l6_info)
+    # plot the cumulative sums
+    L6_summary_plotcumulative(ds_summary, l6_info)
     return
 
 def L6_summary_plotdaily(ds_summary, l6_info):
