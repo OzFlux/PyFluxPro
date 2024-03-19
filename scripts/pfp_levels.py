@@ -15,17 +15,10 @@ from scripts import pfp_io
 from scripts import pfp_parse
 from scripts import pfp_rp
 from scripts import pfp_ts
+from scripts import pfp_uncertainty
 from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
-
-class Bunch:
-    """
-    Constructor class for dummy object with attributes defined by keywords
-    when instantiated.
-    """
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
 
 def l1_read_input(cfg):
     """
@@ -413,6 +406,16 @@ def l6_partition(main_gui, cf, ds5):
     return ds6
 
 def l7_uncertainty(main_gui, cf, ds4, mode="multiprocessing"):
+    """
+    Purpose:
+     Runs L7 to estimate the random, systematic (u* threshold percentiles) and joint
+     uncertainties in Fco2, Fe and Fh.
+     Follows the methodology used in ONEFlux.
+    Useage:
+    Side effects:
+    Author: PRI
+    Date: March 2024
+    """
     ds7 = pfp_io.copy_datastructure(cf, ds4)
     # parse the control file
     l7_info = pfp_parse.ParseL7ControlFile(cf, ds7)
@@ -426,9 +429,9 @@ def l7_uncertainty(main_gui, cf, ds4, mode="multiprocessing"):
     ustar_results_name = os.path.join(file_path, cpd_filename)
     ustar_results = pfp_rp.get_ustarthreshold_from_results(ustar_results_name)
     # construct the arguments list for the multiprocessing call
-    args = l7_uncertainty_construct_args(ds7, l7_info, ustar_results)
+    args = pfp_uncertainty.l7_uncertainty_construct_args(ds7, l7_info, ustar_results)
     # run the uncertainty estimation code, multiprocessing or single core
-    dsp = l7_uncertainty_run(args, mode=mode)
+    dsp = pfp_uncertainty.l7_uncertainty_run(args, mode=mode)
     # construct the output data structure
     dso = pfp_io.DataStructure()
     dso.root["Attributes"] = copy.deepcopy(ds7.root["Attributes"])
@@ -439,80 +442,3 @@ def l7_uncertainty(main_gui, cf, ds4, mode="multiprocessing"):
         setattr(dso, str(pctl), {"Attributes": ds.root["Attributes"],
                                  "Variables": ds.root["Variables"]})
     return dso
-def l7_uncertainty_construct_args(ds7, l7_info, ustar_results):
-    cfg = l7_info["cfg"]
-    er_labels = ["ER_SOLO", "ER_LT", "ER_LL"]
-    nee_labels = ["NEE_SOLO", "NEE_LT", "NEE_LL"]
-    nep_labels = ["NEP_SOLO", "NEP_LT", "NEP_LL"]
-    gpp_labels = ["GPP_SOLO", "GPP_LT", "GPP_LL"]
-    subset_labels = er_labels + nee_labels + nep_labels + gpp_labels
-    percentiles = [0.02275, 0.15865, 0.25, 0.5, 0.75, 0.84135, 0.97725]
-    args = []
-    for n, percentile in enumerate(percentiles):
-        d = {}
-        d["percentile"] = percentile
-        d["l7_info"] = copy.deepcopy(l7_info)
-        d["ustar_results"] = copy.deepcopy(ustar_results)
-        d["ds7"] = copy.deepcopy(ds7)
-        d["main_gui"] = Bunch(stop_flag=False, cfg=cfg, mode="batch")
-        d["subset_labels"] = copy.deepcopy(subset_labels)
-        args.append(d)
-    return args
-def l7_uncertainty_run(args, mode="multiprocessing"):
-    if mode.lower() == "multiprocessing":
-        # spread the load across up to 10 CPUs
-        number_cpus = min([os.cpu_count()-1, 10])
-        msg = " Starting uncertainty estimation with " + str(number_cpus) + " cores"
-        logger.info(msg)
-        msg = "  This may take several minutes, read another paper ...."
-        logger.info(msg)
-        with Pool(number_cpus) as pool:
-            dsp = pool.map(l7_uncertainty_worker, args)
-        msg = " Finished uncertainty estimation"
-        logger.info(msg)
-    else:
-        dsp = []
-        msg = " Starting uncertainty estimation on 1 core"
-        logger.info(msg)
-        msg = "  This may take several minutes, read another paper ...."
-        logger.info(msg)
-        for n, arg in enumerate(args):
-            dsw = l7_uncertainty_worker(arg)
-            dsp.append(dsw)
-        msg = " Finished uncertainty estimation"
-        logger.info(msg)
-    return dsp
-def l7_uncertainty_worker(item):
-    percentile = item["percentile"]
-    l7_info = item["l7_info"]
-    ustar_results = item["ustar_results"]
-    ds7 = item["ds7"]
-    main_gui = item["main_gui"]
-    subset_labels = item["subset_labels"]
-    #msg = " Processing percentile " + str(percentile)
-    #logger.info(msg)
-    #print(msg)
-    logger.setLevel(logging.WARNING)
-    l7_info["ERUsingLloydTaylor"]["info"]["sheet_suffix"] = str(percentile)
-    l7_info["ERUsingLasslop"]["info"]["sheet_suffix"] = str(percentile)
-    ustar_percentiles = pfp_rp.GetUstarThresholdPercentiles(ustar_results, percentile)
-    #pfp_utils.CreateVariable(ds7, pfp_utils.GetVariable(ds4, "Fco2"))
-    pfp_ck.ApplyTurbulenceFilter(ds7, l7_info, ustar_threshold=ustar_percentiles)
-    #pfp_gf.GapFillUsingInterpolation(ds7, l7_info)
-    pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds7, l7_info, "GapFillUsingSOLO")
-    pfp_ts.MergeSeriesUsingDict(ds7, l7_info, merge_order="standard")
-    pfp_rp.GetERFromFco2(ds7, l7_info)
-    pfp_rp.ERUsingSOLO(main_gui, ds7, l7_info, "ERUsingSOLO")
-    pfp_rp.ERUsingLloydTaylor(ds7, l7_info)
-    pfp_rp.ERUsingLasslop(ds7, l7_info)
-    pfp_ts.MergeSeriesUsingDict(ds7, l7_info, merge_order="standard")
-    pfp_rp.CalculateNEE(ds7, l7_info)
-    pfp_rp.CalculateNEP(ds7, l7_info)
-    pfp_rp.PartitionNEE(ds7, l7_info)
-    dss = pfp_io.SubsetDataStructure(ds7, subset_labels)
-    dss.root["Attributes"]["percentile"] = str(percentile)
-    #logger.setLevel(logging.INFO)
-    #msg = " Finished percentile " + str(percentile)
-    #logger.info(msg)
-    #print(msg)
-    return dss

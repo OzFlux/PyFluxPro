@@ -1192,6 +1192,17 @@ def ParseL7ControlFile(cfg, ds):
     l7_info["ApplyTurbulenceFilter"]["filter_list"] = filter_string.split(",")
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
     l7_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
+    # options for estimating random uncertainty
+    l7_info["EstimateRandomUncertainty"] = {}
+    l7_info["EstimateRandomUncertainty"]["labels"] = ["Fco2", "Fe", "Fh"]
+    l7_info["EstimateRandomUncertainty"]["Method1"] = {"window_size": 14, "hour_range": 1,
+                                                       "Fsd": {"tolerance": 50},
+                                                       "Ta": {"tolerance": 2.5},
+                                                       "VPD": {"tolerance": 0.5}}
+    l7_info["EstimateRandomUncertainty"]["Method2"] = {"window_size": 28,
+                                                       "Fco2" : {"tolerance": 0.2, "limit": 2},
+                                                       "Fe" : {"tolerance": 0.2, "limit": 25},
+                                                       "Fh" : {"tolerance": 0.2, "limit": 25}}
     # add key for interpolation
     interpolate_type = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "InterpolateType", default="Akima")
     max_gap_interpolate = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "MaxGapInterpolate", default=3)
