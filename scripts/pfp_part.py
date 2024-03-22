@@ -254,7 +254,7 @@ class partition(object):
         E0_results = pd.DataFrame.from_dict(self.results["E0"], orient="index")
         E0_results.to_excel(self.xl_writer, "E0 results")
         if len(Eo_list) == 0:
-            msg = "!!!!! Could not find any valid estimates of E0, exiting..."
+            msg = "***** Could not find any valid estimates of E0, exiting..."
             logger.warning(msg)
             # remove this variable from those output in L6 summary
             del self.l6_info[called_by]["outputs"][output]
@@ -267,7 +267,7 @@ class partition(object):
                   (1 / Eo_array[:, 1]).sum())
             if not 50 < Eo < 400:
                 # E0 is outside the plausible range
-                msg = "!!!!! E0 value {} outside range (50-400)".format(str(round(Eo, 2)))
+                msg = "***** E0 value {} outside range (50-400)".format(str(round(Eo, 2)))
                 logger.warning(msg)
                 # remove this variable from those output in L6 summary
                 del self.l6_info[called_by]["outputs"][output]

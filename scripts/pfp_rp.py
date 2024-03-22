@@ -80,16 +80,12 @@ def CalculateNEE(ds, l6_info):
         output_label = l6_info["NetEcosystemExchange"][label]["output"]
         if Fco2_label not in labels:
             msg = " ***** " + Fco2_label + " not found in data structure"
-            logger.warning("*****")
             logger.warning(msg)
-            logger.warning("*****")
             ds.root["Variables"].pop(output_label)
             continue
         if ER_label not in labels:
             msg = " ***** " + ER_label + " not found in data structure"
-            logger.warning("*****")
             logger.warning(msg)
-            logger.warning("*****")
             ds.root["Variables"].pop(output_label)
             continue
         Fco2 = pfp_utils.GetVariable(ds, Fco2_label)
@@ -133,9 +129,7 @@ def CalculateNEP(ds, l6_info):
     for nee_name in list(l6_info["NetEcosystemExchange"].keys()):
         if nee_name not in labels:
             msg = "***** " + nee_name + " not found in data structure"
-            logger.warning("*****")
             logger.warning(msg)
-            logger.warning("*****")
             continue
         nep_name = nee_name.replace("NEE", "NEP")
         NEE = pfp_utils.GetVariable(ds, nee_name)
@@ -1355,16 +1349,12 @@ def PartitionNEE(ds, l6_info):
         output_label = l6_info["GrossPrimaryProductivity"][label]["output"]
         if ER_label not in labels:
             msg = "***** " + ER_label + " not found in data structure"
-            logger.warning("*****")
             logger.warning(msg)
-            logger.warning("*****")
             ds.root["Variables"].pop(output_label)
             continue
         if NEE_label not in labels:
             msg = "***** " + NEE_label + " not found in data structure"
-            logger.warning("*****")
             logger.warning(msg)
-            logger.warning("*****")
             ds.root["Variables"].pop(output_label)
             continue
         NEE = pfp_utils.GetVariable(ds, NEE_label)
