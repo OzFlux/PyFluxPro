@@ -55,16 +55,12 @@ def CalculateNEE(ds, l6_info):
         output_label = l6_info["NetEcosystemExchange"][label]["output"]
         if Fco2_label not in labels:
             msg = " ***** " + Fco2_label + " not found in data structure"
-            logger.warning("*****")
             logger.warning(msg)
-            logger.warning("*****")
             ds.root["Variables"].pop(output_label)
             continue
         if ER_label not in labels:
             msg = " ***** " + ER_label + " not found in data structure"
-            logger.warning("*****")
             logger.warning(msg)
-            logger.warning("*****")
             ds.root["Variables"].pop(output_label)
             continue
         Fco2 = pfp_utils.GetVariable(ds, Fco2_label)
@@ -108,9 +104,7 @@ def CalculateNEP(ds, l6_info):
     for nee_name in list(l6_info["NetEcosystemExchange"].keys()):
         if nee_name not in labels:
             msg = "***** " + nee_name + " not found in data structure"
-            logger.warning("*****")
             logger.warning(msg)
-            logger.warning("*****")
             continue
         nep_name = nee_name.replace("NEE", "NEP")
         NEE = pfp_utils.GetVariable(ds, nee_name)
@@ -264,6 +258,9 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
         # Pass the dataframe to the respiration class and get the results
         ptc = pfp_part.partition(df, xl_writer, l6_info)
         params_df = ptc.estimate_parameters(mode = er_mode)
+        # return if no fit parameters found
+        if params_df is None:
+            return
         ER["Data"] = numpy.ma.array(ptc.estimate_er_time_series(params_df), copy=True)
         ER["Flag"] = numpy.tile(30, len(ER["Data"]))
         # Write ER to data structure
@@ -287,6 +284,7 @@ def EcoResp(ds, l6_info, called_by, xl_writer):
                          startdate=str(startdate),
                          enddate=str(enddate))
         rp_plot(pd, ds, output, drivers, target, iel, called_by)
+        return
 
 def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     """
@@ -1322,16 +1320,12 @@ def PartitionNEE(ds, l6_info):
         output_label = l6_info["GrossPrimaryProductivity"][label]["output"]
         if ER_label not in labels:
             msg = "***** " + ER_label + " not found in data structure"
-            logger.warning("*****")
             logger.warning(msg)
-            logger.warning("*****")
             ds.root["Variables"].pop(output_label)
             continue
         if NEE_label not in labels:
             msg = "***** " + NEE_label + " not found in data structure"
-            logger.warning("*****")
             logger.warning(msg)
-            logger.warning("*****")
             ds.root["Variables"].pop(output_label)
             continue
         NEE = pfp_utils.GetVariable(ds, NEE_label)
