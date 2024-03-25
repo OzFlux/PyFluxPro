@@ -2720,8 +2720,10 @@ class edit_cfg_L2(QtWidgets.QWidget):
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
+        # create a new control file object
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg.filename = self.cfg.filename
+        # set the control file level
         cfg["level"] = "L2"
         model = self.model
         # there must be a way to do this recursively
@@ -2730,11 +2732,13 @@ class edit_cfg_L2(QtWidgets.QWidget):
             key1 = str(section.text())
             cfg[key1] = {}
             if key1 in ["Files", "Options"]:
+                # sections with only 1 level
                 for j in range(section.rowCount()):
                     key2 = str(section.child(j, 0).text())
                     val2 = str(section.child(j, 1).text())
                     cfg[key1][key2] = val2
             elif key1 in ["Plots"]:
+                # sections with 2 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
@@ -2744,6 +2748,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                         val3 = str(subsection.child(k, 1).text())
                         cfg[key1][key2][key3] = val3
             elif key1 in ["Variables"]:
+                # sections with 3 levels
                 for j in range(section.rowCount()):
                     subsection = section.child(j)
                     key2 = str(subsection.text())
@@ -4165,7 +4170,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
         # there must be some way to do this recursively
         self.sections = {}
         for key1 in self.cfg:
-            if key1 in ["Files", "Global", "Output", "Options", "Soil", "Massman"]:
+            if key1 in ["Files", "Options", "Soil", "Massman"]:
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 self.sections[key1].setEditable(False)
