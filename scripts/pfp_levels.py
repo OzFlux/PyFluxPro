@@ -202,6 +202,8 @@ def l3qc(cf, ds2):
     pfp_ts.CalculateET(ds3, l3_info)
     # Calculate Monin-Obukhov length
     pfp_ts.CalculateMoninObukhovLength(ds3)
+    # apply linear corrections to the data
+    pfp_ck.do_linear(cf, ds3)
     # re-apply the quality control checks (range, diurnal and rules)
     pfp_ck.do_qcchecks(cf, ds3)
     # check missing data and QC flags are consistent
