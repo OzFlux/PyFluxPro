@@ -3898,7 +3898,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddLinear)
                     self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
                 if "ApplyFco2Storage" not in existing_entries and selected_text[0:4] == "Fco2":
-                    if selected_text not in ["Fco2_storage", "Fco2_profile", "Fco2_single"]:
+                    if selected_text not in ["Sco2", "Sco2_profile", "Sco2_single"]:
                         self.context_menu.addSeparator()
                         self.context_menu.actionAddApplyFco2Storage = QtWidgets.QAction(self)
                         self.context_menu.actionAddApplyFco2Storage.setText("Add ApplyFco2Storage")
