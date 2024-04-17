@@ -787,8 +787,8 @@ def plot_explore_timeseries(ds, selections):
             axs[n].legend()
             axs[n].set_xlim([sdt, edt])
             if n == 0:
-                title_str = site_name + ": " + numpy.datetime_as_string(sdt, "D") + " to "
-                title_str += numpy.datetime_as_string(edt, "D")
+                title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+                title_str += edt.strftime("%Y-%m-%d")
                 axs[n].set_title(title_str)
             if n == nrows-1:
                 axs[n].set_xlabel("Date")

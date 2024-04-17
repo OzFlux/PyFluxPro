@@ -1,4 +1,4 @@
-name: pfp_env
+name: pfp_bleeding_edge
 channels:
   - conda-forge
 dependencies:
