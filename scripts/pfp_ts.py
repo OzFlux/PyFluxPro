@@ -1724,7 +1724,7 @@ def DoFunctions(ds, info):
                 msg = " Units for " + label + " converted from " + old_units + " to " + new_units
                 logger.info(msg)
             else:
-                msg = label + " calculated from " + ','.join(functions[label]["arguments"])
+                msg = " " + label + " calculated from " + ','.join(functions[label]["arguments"])
                 logger.info(msg)
     for label in stats_vars:
         if label not in series_list:
@@ -2414,7 +2414,7 @@ def InterpolateOverMissing(ds, labels, max_length_hours=0, int_type="linear", su
     """
     # check to see if we need to do anything
     if max_length_hours == 0:
-        msg = " max_length_hours set to 0, interpolation disabled"
+        msg = " Interpolation disabled in control file (max_length_hours=0)"
         logger.info(msg)
         return
     if isinstance(labels, str):

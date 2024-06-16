@@ -34,7 +34,7 @@ def do_batch_fingerprints(cfg):
     cfg_fp["Files"] = {"file_path": file_path, "in_filename": os.path.split(file_name)[1],
                        "plot_path": plot_path}
     cfg_fp["Options"] = {"call_mode": "batch", "show_plots": "No"}
-    msg = "Doing fingerprint plots using " + cfg_fp["Files"]["in_filename"]
+    msg = " Doing fingerprint plots using " + cfg_fp["Files"]["in_filename"]
     logger.info(msg)
     pfp_plot.plot_fingerprint(cfg_fp)
     logger.info("Finished fingerprint plots")
