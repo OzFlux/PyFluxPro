@@ -1776,7 +1776,7 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
         messages["ERROR"].append(msg)
     elif len(sonic_types) == 1:
         cfg["Global"]["sonic_type"] = str(sonic_types[0])
-        msg = "Sonic type set to " + cfg["Global"]["sonic_type"]
+        msg = " Sonic type set to " + cfg["Global"]["sonic_type"]
         logger.info(msg)
     else:
         msg = "More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
@@ -1790,7 +1790,7 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
         messages["ERROR"].append(msg)
     elif len(irga_types) == 1:
         cfg["Global"]["irga_type"] = str(irga_types[0])
-        msg = "IRGA type set to " + cfg["Global"]["irga_type"]
+        msg = " IRGA type set to " + cfg["Global"]["irga_type"]
         logger.info(msg)
     else:
         msg = "More than 1 IRGA type specified (" + ",".join(irga_types) + ")"
