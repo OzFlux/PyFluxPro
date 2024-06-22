@@ -575,8 +575,9 @@ def L6_summary_plotdaily(ds_summary, l6_info):
             plt.plot(ddv["DateTime"]["Data"], ddv[label]["Data"], line, alpha=0.3)
             plt.plot(ddv["DateTime"]["Data"], pfp_ts.smooth(ddv[label]["Data"], window_len=30),
                      line, linewidth=2, label=label+" (30 day filter)")
+            ylabel = ddv[label]["Attr"]["units"]
     plt.xlabel("Date")
-    plt.ylabel(ddv["Fn"]["Attr"]["units"])
+    plt.ylabel(ylabel)
     plt.legend(loc='upper left',prop={'size':8})
     plt.tight_layout()
     sdt = ddv["DateTime"]["Data"][0].strftime("%Y%m%d")
