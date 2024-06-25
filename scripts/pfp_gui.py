@@ -11489,7 +11489,14 @@ class solo_gui(QtWidgets.QDialog):
         self.QuitButton.clicked.connect(self.call_gui_quit)
 
     def call_gui_run(self):
-        pfp_gfSOLO.gfSOLO_run_interactive(self)
+        try:
+            pfp_gfSOLO.gfSOLO_run_interactive(self)
+        except Exception:
+            msg = "Error occurred during SOLO processing "
+            logger.error(msg)
+            error_message = traceback.format_exc()
+            logger.error(error_message)
+            pfp_gfSOLO.gfSOLO_quit(self)
 
     def call_gui_quit(self):
         pfp_gfSOLO.gfSOLO_quit(self)
