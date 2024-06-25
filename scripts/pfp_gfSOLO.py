@@ -914,16 +914,12 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
         driver["Data"] = numpy.ma.filled(driver["Data"], c.missing_value)
         index = numpy.where(abs(driver["Data"]-c.missing_value)<c.eps)[0]
         if len(index) != 0:
-            msg = " GapFillUsingSOLO: missing value found in driver " + label + " at lines " + str(index)
+            msg = " GapFillUsingSOLO: " + str(len(index)) + " missing values found in driver " + label
             logger.error(msg)
             badlines = badlines + index.tolist()
             for n in index:
                 baddates.append(dsb.root["Variables"]["DateTime"]["Data"][n])
                 badvalues.append(dsb.root["Variables"][label]["Data"][n])
-            msg = " GapFillUsingSOLO: driver values: " + str(badvalues)
-            logger.error(msg)
-            msg = " GapFillUsingSOLO: datetimes: " + str(baddates)
-            logger.error(msg)
         sofminputdata[:, i] = driver["Data"][:]
         i = i + 1
     if len(badlines) != 0:
@@ -931,7 +927,7 @@ def gfSOLO_runsofm(dsb, drivers, targetlabel, nRecs, solo, si=0, ei=-1):
         goodlines = [x for x in range(0, nRecs) if x not in badlines]
         sofminputdata = sofminputdata[goodlines, :]
         msg = " GapFillUsingSOLO: removed " + str(nBad) + " lines from sofm input file"
-        logger.info(msg)
+        logger.error(msg)
         nRecs = len(goodlines)
     # now write the drivers to the SOFM input file
     sofm_input = os.path.join(td, "input", "sofm_input.csv")
