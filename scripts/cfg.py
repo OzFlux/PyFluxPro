@@ -1,5 +1,9 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.17"
+version_number = "V3.4.18"
+# V3.4.18 - June 2024
+#         - L4 gap filling
+#           - force final window to equal user specified window length by
+#             adjusting the window start date
 # V3.4.17 - February 2024
 #         - allow use of Fhv values for Fh at L3 if wA missing
 # V3.4.16 - November 2023

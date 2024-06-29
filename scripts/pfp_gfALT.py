@@ -188,8 +188,6 @@ def gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by, mode="verbose
             if mode.lower() != "quiet":
                 msg = " autocomplete: gap fill period is " + gapfillperiod_startdate + " to " + gapfillperiod_enddate
                 logger.info(msg)
-            #l4a["run"]["startdate"] = ldt_tower[gap[0]].strftime("%Y-%m-%d %H:%M")
-            #l4a["run"]["enddate"] = ldt_tower[gap[1]].strftime("%Y-%m-%d %H:%M")
             l4a["run"]["startdate"] = ldt_tower[gap[0]]
             l4a["run"]["enddate"] = ldt_tower[gap[1]]
             gfalternate_main(ds_tower, ds_alt, l4_info, called_by, label_tower_list=[label_tower])
@@ -754,6 +752,36 @@ def gfalternate_initplot(data_dict, l4a, **kwargs):
     return pd
 
 def gfalternate_loadoutputdata(ds_tower, data_dict, l4a):
+    """
+    Purpose:
+     Copy the alternate data to the variable being gap filled.
+     We keep 2 versions of the variable:
+      - a "composite" version which is used in plotting the intermediate stages
+        of gap filling, the "composite version is a blend of observations and
+        fit corrected data and is onloy used for plotting
+      - the "output" version which will be merged with the "observation" version
+        at the end of gap filling, the output version is purely fit corrected
+        alternate data and will be merged with observations at the end of the
+        gap filling process
+     Overwriting of previously filled records is controlled by the "overwrite"
+     flag in the l4a["gui] dictionary:
+      - if "overwrite" is false (default) then don't overwrite good data points
+        in the data structure variable
+      - if "overwrite" is true then overwrite good data points in the data
+        structure
+    Usage:
+    Arguments:
+     ds_tower - data structure containing tower data
+     data_dict - dictionary containing data used during gap filling
+                 process, structure is similar to a data structure,
+                 holds original and modified data and QC flag data
+     l4a - l4_info["GapFillFromAlternate"] dictionary containing various
+           information and settings used to control the gap filling process
+    Side effects:
+     Replaces elements of the variable being gap filled with alternate data.
+    Author: PRI
+    Date: Back in the day
+    """
     ldt_tower = ds_tower.root["Variables"]["DateTime"]["Data"]
     label_output = l4a["run"]["label_output"]
     flag_code = l4a["outputs"][label_output]["flag_code"]
@@ -786,6 +814,7 @@ def gfalternate_loadoutputdata(ds_tower, data_dict, l4a):
         ind4 = numpy.where((numpy.ma.getmaskarray(data_dict[label_composite]["fitcorr"]) == True)&
                            (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False))[0]
     data_dict[label_composite]["fitcorr"][ind4] = data_dict[label_output][label_alternate]["fitcorr"][ind4]
+    # replace the elements of the "composite" version used for plotting
     if l4a["gui"]["overwrite"]:
         ind5 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False)[0]
     else:
@@ -793,6 +822,7 @@ def gfalternate_loadoutputdata(ds_tower, data_dict, l4a):
                            (numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False))[0]
     ds_tower.root["Variables"][label_composite]["Data"][si:ei+1][ind5] = numpy.ma.filled(data_dict[label_output][label_alternate]["fitcorr"][ind5], c.missing_value)
     ds_tower.root["Variables"][label_composite]["Flag"][si:ei+1][ind5] = numpy.int32(flag_code)
+    # replace the elements of the "output" variable in the data structure with fit corrected alternate data
     if l4a["gui"]["overwrite"]:
         ind6 = numpy.where(numpy.ma.getmaskarray(data_dict[label_output][label_alternate]["fitcorr"]) == False)[0]
     else:
@@ -1296,22 +1326,26 @@ def gfalternate_run(ds_tower, ds_alt, l4_info, called_by):
     elif l4a["gui"]["period_option"] == 3:
         # automated run with window length in days
         logger.info(" Starting auto (days) run ...")
-        # get the start datetime entered in the alternate GUI
-        startdate = dateutil.parser.parse(l4a["run"]["startdate"])
-        # get the end datetime from the start datetime
-        enddate = startdate + dateutil.relativedelta.relativedelta(days=l4a["gui"]["number_days"])
-        # clip end datetime to last datetime in tower file
-        enddate = min([dateutil.parser.parse(l4a["info"]["enddate"]), enddate])
-        l4a["run"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
-        while startdate < enddate:
+        days = int(l4a["gui"]["number_days"])
+        window_delta = dateutil.relativedelta.relativedelta(days=days)
+        time_step_delta = dateutil.relativedelta.relativedelta(minutes=ts)
+        run_start_date = file_start_date
+        while run_start_date < file_end_date:
+            run_end_date = run_start_date + window_delta - time_step_delta
+            run_end_date = min([run_end_date, file_end_date])
+            run_window_delta = (run_end_date - run_start_date).days
+            if run_window_delta == window_delta:
+                l4a["run"]["startdate"] = run_start_date
+                l4a["run"]["enddate"] = run_end_date
+            else:
+                tmp_start_date = run_end_date - window_delta + time_step_delta
+                l4a["run"]["startdate"] = max([tmp_start_date, file_start_date])
+                l4a["run"]["enddate"] = run_end_date
             gfalternate_main(ds_tower, ds_alt, l4_info, called_by)
             if l4a["info"]["call_mode"] == "interactive":
                 gfalternate_plotcoveragelines(ds_tower, l4_info, called_by)
-            startdate = enddate
-            l4a["run"]["startdate"] = startdate.strftime("%Y-%m-%d %H:%M")
-            enddate = startdate + dateutil.relativedelta.relativedelta(days=l4a["gui"]["number_days"])
-            enddate = min([dateutil.parser.parse(l4a["info"]["enddate"]), enddate])
-            l4a["run"]["enddate"] = enddate.strftime("%Y-%m-%d %H:%M")
+            run_start_date = run_end_date + time_step_delta
+        # fill long gaps with autocomplete
         gfalternate_autocomplete(ds_tower, ds_alt, l4_info, called_by)
         if l4a["info"]["call_mode"] == "interactive":
             # plot the summary statistics
@@ -1319,6 +1353,7 @@ def gfalternate_run(ds_tower, ds_alt, l4_info, called_by):
         logger.info(" Finished auto (days) run ...")
     else:
         logger.error("GapFillFromAlternate: unrecognised period option")
+    return
 
 def gfalternate_update_alternate_info(l4a):
     """Update the l4_info dictionary."""
