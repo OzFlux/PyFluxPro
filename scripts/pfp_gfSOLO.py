@@ -727,11 +727,13 @@ def gfSOLO_run_interactive(solo_gui):
     l5s["gui"]["iterations"] = str(solo_gui.lineEdit_Iterations.text())
     # get the start and end datetimes entered in the SOLO GUI
     if len(str(solo_gui.lineEdit_StartDate.text())) != 0:
-        l5s["gui"]["startdate"] = str(solo_gui.lineEdit_StartDate.text())
+        startdate = str(solo_gui.lineEdit_StartDate.text())
+        l5s["gui"]["startdate"] = dateutil.parser.parse(startdate)
     else:
         l5s["gui"]["startdate"] = l5s["info"]["startdate"]
     if len(str(solo_gui.lineEdit_EndDate.text())) != 0:
-        l5s["gui"]["enddate"] = str(solo_gui.lineEdit_EndDate.text())
+        enddate = str(solo_gui.lineEdit_EndDate.text())
+        l5s["gui"]["enddate"] = dateutil.parser.parse(enddate)
     else:
         l5s["gui"]["enddate"] = l5s["info"]["enddate"]
     # now do the work
