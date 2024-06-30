@@ -616,9 +616,7 @@ def gfSOLO_plotsummary(ds, solo):
             x = numpy.ma.masked_values(solo["outputs"][label]["results"]["middate"], c.missing_value)
             y = numpy.ma.masked_values(solo["outputs"][label]["results"][rlabel], c.missing_value)
             idx = numpy.ma.argsort(x)
-            y = y[idx]
-            x = x[idx]
-            axs[row, col].plot(x, y, marker='o', color='blue')
+            axs[row, col].plot(x[idx], y[idx], marker='o', color='blue')
             # put in the major ticks
             axs[row, col].xaxis.set_major_locator(MTLoc)
             # if this is the left-most column, add the Y axis labels

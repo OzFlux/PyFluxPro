@@ -1168,8 +1168,10 @@ def gfalternate_plotsummary(l4_info):
                         edt = dateutil.parser.parse(l4io[label]["results"]["enddate"][i])
                         x.append(sdt+(edt-sdt)/2)
                         y.append(l4io[label]["results"][rlabel][i])
+                    x = numpy.ma.masked_values(x, c.missing_value)
                     y = numpy.ma.masked_values(y, c.missing_value)
-                    axs[row, col].plot(x, y, color=colours[numpy.mod(n, 8)],
+                    idx = numpy.ma.argsort(x)
+                    axs[row, col].plot(x[idx], y[idx], color=colours[numpy.mod(n, 8)],
                                        marker=markers[numpy.mod(n, 8)], label=label)
                 axs[row, col].legend(prop={'size':8})
                 axs[row, col].xaxis.set_major_locator(MTLoc)
