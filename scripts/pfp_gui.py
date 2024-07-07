@@ -14,7 +14,6 @@ from scripts import pfp_func_stats
 from scripts import pfp_func_transforms
 from scripts import pfp_gfALT
 from scripts import pfp_gfSOLO
-from scripts import pfp_io
 from scripts import pfp_plot
 from scripts import pfp_utils
 

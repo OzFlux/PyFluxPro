@@ -1,7 +1,6 @@
 # standard modules
 import copy
 import logging
-from multiprocessing import Pool
 import os
 # 3rd party modules
 import pandas
