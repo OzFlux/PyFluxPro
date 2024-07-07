@@ -167,8 +167,11 @@ def l3_post_processing(cf, ds2):
     # *************************
     # *** Radiation section ***
     # *************************
-    # merge the incoming shortwave radiation
+    # merge the radiation components
     pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fsd"])
+    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fsu"])
+    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fld"])
+    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Flu"])
     # calculate the net radiation from the Kipp and Zonen CNR1
     pfp_ts.CalculateNetRadiation(cf, ds3)
     pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fn"])
@@ -202,6 +205,8 @@ def l3_post_processing(cf, ds2):
     pfp_ts.CalculateET(ds3, l3_info)
     # Calculate Monin-Obukhov length
     pfp_ts.CalculateMoninObukhovLength(ds3)
+    # apply linear corrections to the data
+    pfp_ck.do_linear(cf, ds3)
     # re-apply the quality control checks (range, diurnal and rules)
     pfp_ck.do_qcchecks(cf, ds3)
     # check missing data and QC flags are consistent
@@ -282,6 +287,8 @@ def l5_gapfill_fluxes(main_gui, cf, ds4):
     pfp_io.TruncateDataStructure(ds5, l5_info)
     # check for missing data in the drivers
     pfp_gf.CheckDrivers(ds5, l5_info)
+    if ds5.info["returncodes"]["value"] != 0:
+        return ds5
     # now do the flux gap filling methods
     # *** start of the section that does the gap filling of the fluxes ***
     pfp_gf.CheckGapLengths(cf, ds5, l5_info)

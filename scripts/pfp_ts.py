@@ -1724,7 +1724,7 @@ def DoFunctions(ds, info):
                 msg = " Units for " + label + " converted from " + old_units + " to " + new_units
                 logger.info(msg)
             else:
-                msg = label + " calculated from " + ','.join(functions[label]["arguments"])
+                msg = " " + label + " calculated from " + ','.join(functions[label]["arguments"])
                 logger.info(msg)
     for label in stats_vars:
         if label not in series_list:
@@ -2047,8 +2047,17 @@ def FhvtoFh(cf, ds, Tv_in = "Tv_SONIC_Av"):
     flag = numpy.where(numpy.ma.getmaskarray(Fh) == True, ones, zeros)
     pfp_utils.CreateVariable(ds, {"Label": "Fh", "Data": Fh, "Flag": flag, "Attr": attr})
     pfp_utils.CreateVariable(ds, {"Label": "Fh_PFP", "Data": Fh, "Flag": flag, "Attr": attr})
-    if pfp_utils.get_optionskeyaslogical(cf, "RelaxFhvtoFh"):
+    if pfp_utils.get_optionskeyaslogical(cf, "UseFhvforFh"):
+        nok_before = (ds.root["Variables"]["Fh"]["Data"] != c.missing_value).sum()
         ReplaceWhereMissing(ds.root["Variables"]['Fh'], ds.root["Variables"]['Fh'], ds.root["Variables"]['Fhv'], FlagValue=20)
+        nok_after = (ds.root["Variables"]["Fh"]["Data"] != c.missing_value).sum()
+        percent_replaced = numpy.rint(100 * (nok_after - nok_before) / nRecs)
+        msg = "  " + str(percent_replaced) + "% of Fh values replaced with Fhv"
+        if percent_replaced < 10:
+            logger.info(msg)
+        else:
+            logger.warning(msg)
+    return
 
 def get_averages(Data):
     """
@@ -2405,7 +2414,7 @@ def InterpolateOverMissing(ds, labels, max_length_hours=0, int_type="linear", su
     """
     # check to see if we need to do anything
     if max_length_hours == 0:
-        msg = " max_length_hours set to 0, interpolation disabled"
+        msg = " Interpolation disabled in control file (max_length_hours=0)"
         logger.info(msg)
         return
     if isinstance(labels, str):

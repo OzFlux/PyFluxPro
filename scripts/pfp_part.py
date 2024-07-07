@@ -256,20 +256,24 @@ class partition(object):
             sheet_name = "E0 results " + self.l6_info[called_by]["info"]["sheet_suffix"]
             E0_results.to_excel(self.xl_writer, sheet_name)
         if len(Eo_list) == 0:
-            msg = "!!!!! Could not find any valid estimates of E0, exiting..."
-            logger.error("!!!!!")
-            logger.error(msg)
-            logger.error("!!!!!")
-            raise RuntimeError(msg)
-        msg = " Found {} valid estimates of Eo (out of {} windows)".format(str(len(Eo_list)), str(n))
-        logger.info(msg)
-        Eo_array = np.array(Eo_list)
-        Eo = ((Eo_array[:, 0] / (Eo_array[:, 1])).sum() /
-              (1 / Eo_array[:, 1]).sum())
-        if not 50 < Eo < 400: raise RuntimeError('Eo value {} outside '
-                                                 'acceptable parameter range '
-                                                 '(50-400)! Exiting...'
-                                                 .format(str(round(Eo, 2))))
+            msg = "***** Could not find any valid estimates of E0, exiting..."
+            logger.warning(msg)
+            # remove this variable from those output in L6 summary
+            del self.l6_info[called_by]["outputs"][output]
+            Eo = None
+        else:
+            msg = " Found {} valid estimates of Eo (out of {} windows)".format(str(len(Eo_list)), str(n))
+            logger.info(msg)
+            Eo_array = np.array(Eo_list)
+            Eo = ((Eo_array[:, 0] / (Eo_array[:, 1])).sum() /
+                  (1 / Eo_array[:, 1]).sum())
+            if not 50 < Eo < 400:
+                # E0 is outside the plausible range
+                msg = "***** E0 value {} outside range (50-400)".format(str(round(Eo, 2)))
+                logger.warning(msg)
+                # remove this variable from those output in L6 summary
+                del self.l6_info[called_by]["outputs"][output]
+                Eo = None
         return Eo
     #--------------------------------------------------------------------------
 
@@ -322,6 +326,9 @@ class partition(object):
         func = self._get_func()[mode]
         if not Eo:
             Eo = self.estimate_Eo()
+        # return if E0 not found
+        if Eo is None:
+            return None
         result_list, date_list = [], []
         #msg = "Processing the following dates ({} mode): ".format(mode)
         msg = " Processing date ranges using {} mode: ".format(mode)

@@ -75,7 +75,7 @@ xl_filename,xl_moddatetime"""
     L3 = """zms,UseL2Fluxes,CalculateFluxes,2DCoordRotation,MassmanCorrection,
 ApplyFco2Storage,ApplyFcStorage,CorrectIndividualFg,CorrectFgForStorage,
 KeepIntermediateSeries,CcUnits,CO2Units,Fco2Units,FcUnits,DisableFco2WPL,
-DisableFcWPL,DisableFeWPL,DisableWPL,ApplyWPL"""
+DisableFcWPL,DisableFeWPL,DisableWPL,ApplyWPL,UseFhvforFh"""
     concatenate = """NumberOfDimensions,MaxGapInterpolate,FixTimeStepMethod,
 Truncate,DoFingerprints,TruncateThreshold,SeriesToCheck,SeriesToKeep"""
     cpd_barr = Fsd_threshold,Num_bootstraps
