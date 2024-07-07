@@ -310,8 +310,10 @@ def ERUsingSOLO(main_gui, ds, l6_info, called_by):
     l6_info["Options"]["called_by"] = called_by
     # update the start and end dates
     ldt = ds.root["Variables"]["DateTime"]["Data"]
-    l6_info[called_by]["info"]["startdate"] = ldt[0]
-    l6_info[called_by]["info"]["enddate"] = ldt[-1]
+    l6_info[called_by]["info"]["startdate"] = ldt[0].strftime("%Y-%m-%d %H:%M")
+    l6_info[called_by]["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
+    #l6_info[called_by]["info"]["startdate"] = ldt[0]
+    #l6_info[called_by]["info"]["enddate"] = ldt[-1]
     if l6_info[called_by]["info"]["call_mode"].lower() == "interactive":
         # call the ERUsingSOLO GUI
         pfp_gfSOLO.gfSOLO_gui(main_gui, ds, l6_info, called_by)
