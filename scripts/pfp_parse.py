@@ -894,14 +894,16 @@ def parse_gfSOLO_createdict_gui(cf, ds, l5_info, called_by):
     try:
         sd = dateutil.parser.parse(opt)
     except (ValueError, TypeError):
-        sd = ldt["Data"][0].strftime("%Y-%m-%d %H:%M")
+        #sd = ldt["Data"][0].strftime("%Y-%m-%d %H:%M")
+        sd = ldt["Data"][0]
     l5s["gui"]["startdate"] = sd
     # end date of period to be gap filled
     opt = pfp_utils.get_keyvaluefromcf(cf, sl, "end_date", default="YYYY-MM-DD HH:mm")
     try:
         ed = dateutil.parser.parse(opt)
     except (ValueError, TypeError):
-        ed = ldt["Data"][-1].strftime("%Y-%m-%d %H:%M")
+        #ed = ldt["Data"][-1].strftime("%Y-%m-%d %H:%M")
+        ed = ldt["Data"][-1]
     l5s["gui"]["enddate"] = ed
     return
 
