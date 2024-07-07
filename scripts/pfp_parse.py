@@ -1020,11 +1020,11 @@ def parse_gfSOLO_createdict_outputs(cf, l5_info, target, called_by, flag_code):
         opt = pfp_utils.get_keyvaluefromcf(cf, sl, "drivers", default=drivers)
         so[output]["drivers"] = pfp_utils.string_to_list(opt)
         # fit statistics for plotting later on
-        so[output]["results"] = {"startdate":[],"enddate":[],"No. points":[],"r":[],
-                                 "Bias":[],"RMSE":[],"Frac Bias":[],"NMSE":[],
-                                 "Avg (obs)":[],"Avg (SOLO)":[],
-                                 "Var (obs)":[],"Var (SOLO)":[],"Var ratio":[],
-                                 "m_ols":[],"b_ols":[]}
+        so[output]["results"] = {"startdate": [], "middate": [],"enddate": [], "No. points": [],
+                                 "r": [], "Bias": [], "RMSE": [], "Frac Bias": [], "NMSE": [],
+                                 "Avg (obs)": [], "Avg (SOLO)": [],
+                                 "Var (obs)": [], "Var (SOLO)": [], "Var ratio": [],
+                                 "m_ols": [], "b_ols": []}
     return
 
 def ParseL5ControlFile(cfg, ds):
