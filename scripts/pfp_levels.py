@@ -100,6 +100,7 @@ def l3_post_processing(cf, ds2):
     pfp_utils.UpdateGlobalAttributes(cf, ds3, "L3")
     # parse the control file for information on how the user wants to do the gap filling
     l3_info = pfp_parse.ParseL3ControlFile(cf, ds3)
+    combine_series = list(l3_info["CombineSeries"].keys())
     # check to see if we have any imports
     pfp_gf.ImportSeries(ds3, l3_info)
     # ************************
@@ -113,7 +114,8 @@ def l3_post_processing(cf, ds2):
     # get the air temperature from the CSAT virtual temperature
     pfp_ts.TaFromTv(cf, ds3)
     # merge the HMP and corrected CSAT data
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Ta"], convert_units=True)
+    if "Ta" in combine_series:
+        pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Ta"], convert_units=True)
     pfp_utils.CheckUnits(ds3, "Ta", "degC", convert_units=True)
     # ***************************
     # *** Calcuate humidities ***
@@ -124,7 +126,8 @@ def l3_post_processing(cf, ds2):
     # *** Merge CO2 concentrations ***
     # ********************************
     # merge the CO2 concentration
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["CO2"], convert_units=True)
+    if "CO2" in combine_series:
+        pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["CO2"], convert_units=True)
     # ******************************************
     # *** Calculate meteorological variables ***
     # ******************************************
@@ -160,47 +163,52 @@ def l3_post_processing(cf, ds2):
     # convert Fco2 and Sco2 units if required
     pfp_utils.ConvertFco2Units(cf, ds3)
     # merge Fco2 and Sco2 series as required
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fco2"])
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Sco2"])
+    for label in ["Fco2", "Sco2"]:
+        if label in combine_series:
+            pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"][label])
     # correct Fco2 for storage term - only recommended if storage calculated from profile available
     pfp_ts.CorrectFco2ForStorage(cf, ds3)
     # *************************
     # *** Radiation section ***
     # *************************
     # merge the radiation components
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fsd"])
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fsu"])
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fld"])
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Flu"])
+    for label in ["Fsd", "Fsu", "Fld", "Flu"]:
+        if label in combine_series:
+            pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"][label])
     # calculate the net radiation from the Kipp and Zonen CNR1
     pfp_ts.CalculateNetRadiation(cf, ds3)
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fn"])
+    if "Fn" in combine_series:
+        pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fn"])
     # ****************************************
     # *** Wind speed and direction section ***
     # ****************************************
     # combine wind speed from the Wind Sentry and the SONIC
-    pfp_ts.CombineSeries(cf,ds3, l3_info["CombineSeries"]["Ws"])
-    # combine wind direction from the Wind Sentry and the SONIC
-    pfp_ts.CombineSeries(cf,ds3, l3_info["CombineSeries"]["Wd"])
+    for label in ["Ws", "Wd"]:
+        if label in combine_series:
+            pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"][label])
     # ********************
     # *** Soil section ***
     # ********************
     # correct soil heat flux for storage
     #    ... either average the raw ground heat flux, soil temperature and moisture
     #        and then do the correction (OzFlux "standard")
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Ts"])
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Sws"])
+    for label in ["Ts", "Sws"]:
+        if label in combine_series:
+            pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"][label])
     if pfp_utils.get_optionskeyaslogical(cf, "CorrectIndividualFg"):
         #    ... or correct the individual ground heat flux measurements (James' method)
         pfp_ts.CorrectIndividualFgForStorage(cf, ds3)
-        pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fg"])
+        if "Fg" in combine_series:
+            pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fg"])
     else:
-        pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fg"])
+        if "Fg" in combine_series:
+            pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["Fg"])
         pfp_ts.CorrectFgForStorage(cf, ds3, l3_info)
     # calculate the available energy
     pfp_ts.CalculateAvailableEnergy(ds3)
     # create additional variables using MergeSeries or AverageSeries
-    pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["extras"])
+    if "extras" in l3_info["CombineSeries"]:
+        pfp_ts.CombineSeries(cf, ds3, l3_info["CombineSeries"]["extras"])
     # calculate ET from Fe
     pfp_ts.CalculateET(ds3, l3_info)
     # Calculate Monin-Obukhov length
