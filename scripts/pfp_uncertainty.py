@@ -202,7 +202,7 @@ def l7_uncertainty_construct_args(ds7, l7_info, ustar_results):
         args.append(d)
     return args
 def l7_uncertainty_run(args, mode="multiprocessing"):
-    if mode.lower() == "multiprocessing2":
+    if mode.lower() == "multiprocessing":
         # spread the load across available CPUs
         number_cpus = min([os.cpu_count()-1, len(args)])
         msg = " Starting uncertainty estimation with " + str(number_cpus) + " cores"
