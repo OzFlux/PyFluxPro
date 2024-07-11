@@ -1408,27 +1408,45 @@ def netcdf_concatenate_truncate(ds_in, info):
 def nc_2xls(ncfilename, outputlist=None):
     # read the netCDF file
     ds = NetCDFRead(ncfilename,checktimestep=False)
-    if ds.info["returncodes"]["value"] != 0: return
-    nRecs = int(ds.root["Attributes"]["nc_nrecs"])
-    nCols = len(list(ds.root["Variables"].keys()))
-    if outputlist!=None: nCols = len(outputlist)
-    # xlwt seems to only handle 225 columns
-    if nRecs<65535 and nCols<220:
-        # write the variables to the Excel 97/2003 file
-        xlsfilename= ncfilename.replace(".nc", ".xls")
-        if os.path.isfile(xlsfilename):
-            file_path = os.path.split(xlsfilename)
-            xlsfilename = get_output_filename_dialog(file_path=file_path[0], ext="*.xls")
-            if len(xlsfilename) == 0: return
-        xl_write_series(ds, xlsfilename, outputlist=outputlist)
+    if ds.info["returncodes"]["value"] != 0:
+        return
+    groups = [i for i in vars(ds) if i not in ["info", "root"]]
+    if len(groups) == 0:
+        nRecs = int(ds.root["Attributes"]["nc_nrecs"])
+        nCols = len(list(ds.root["Variables"].keys()))
+        if outputlist != None:
+            nCols = len(outputlist)
+        # xlwt seems to only handle 225 columns
+        if nRecs < 65535 and nCols < 220:
+            # write the variables to the Excel 97/2003 file
+            xlsfilename= ncfilename.replace(".nc", ".xls")
+            if os.path.isfile(xlsfilename):
+                file_path = os.path.split(xlsfilename)
+                xlsfilename = get_output_filename_dialog(file_path=file_path[0], ext="*.xls")
+                if len(xlsfilename) == 0:
+                    return
+            xl_write_series(ds, xlsfilename, outputlist=outputlist)
+        else:
+            # write the variables to the Excel 2010 file
+            xlsxfilename= ncfilename.replace(".nc", ".xlsx")
+            if os.path.isfile(xlsxfilename):
+                file_path = os.path.split(xlsxfilename)
+                xlsxfilename = get_output_filename_dialog(file_path=file_path[0], ext="*.xlsx")
+                if len(xlsxfilename) == 0:
+                    return
+            xlsx_write_series(ds, xlsxfilename, outputlist=outputlist)
     else:
-        # write the variables to the Excel 2010 file
-        xlsxfilename= ncfilename.replace(".nc", ".xlsx")
-        if os.path.isfile(xlsxfilename):
-            file_path = os.path.split(xlsxfilename)
-            xlsxfilename = get_output_filename_dialog(file_path=file_path[0], ext="*.xlsx")
-            if len(xlsxfilename) == 0: return
-        xlsx_write_series(ds, xlsxfilename, outputlist=outputlist)
+        xlwriter = pandas.ExcelWriter(ncfilename.replace(".nc", ".xlsx"))
+        for group in groups:
+            dsg = getattr(ds, group)
+            labels = dsg["Variables"].keys()
+            data = {}
+            for label in labels:
+                data[label] = dsg["Variables"][label]["Data"]
+            df = pandas.DataFrame.from_dict(data)
+            df.set_index("DateTime", inplace=True)
+            df.to_excel(xlwriter, sheet_name=group)
+        xlwriter.close()
     return
 
 def nc_read_groups(nc_file):
@@ -2559,11 +2577,15 @@ def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
         timestamp = None
     return timestamp
 
-def SubsetDataStructure(ds_full, subset_labels):
+def SubsetDataStructure(ds_full, subset_labels, subset_attr=None):
     msg = " Getting subset of data structure"
     logger.info(msg)
     ds_subset = DataStructure()
-    ds_subset.root["Attributes"] = copy.deepcopy(ds_full.root["Attributes"])
+    if subset_attr is None:
+        ds_subset.root["Attributes"] = copy.deepcopy(ds_full.root["Attributes"])
+    else:
+        if isinstance(subset_attr, dict):
+            ds_subset.root["Attributes"] = copy.deepcopy(subset_attr)
     if "DateTime" not in subset_labels:
         subset_labels.append("DateTime")
     for label in subset_labels:
@@ -4757,7 +4779,10 @@ def xl_write_data(xl_sheet, dsg, labels=None, xlCol=0):
         labels = list(dsg["Variables"].keys())
     xl_sheet.write(1, xlCol, dsg["Variables"]["DateTime"]["Attr"]["units"])
     nrows = len(dsg["Variables"]["DateTime"]["Data"])
-    d_xf = xlwt.easyxf(num_format_str=dsg["Variables"]["DateTime"]["Attr"]["format"])
+    if "format" in dsg["Variables"]["DateTime"]["Attr"]:
+        d_xf = xlwt.easyxf(num_format_str=dsg["Variables"]["DateTime"]["Attr"]["format"])
+    else:
+        d_xf = xlwt.easyxf(num_format_str="yyyy-mm-dd hh:mm")
     for j in range(nrows):
         xl_sheet.write(j+2, xlCol, dsg["Variables"]["DateTime"]["Data"][j], d_xf)
     if "DateTime" in labels:
@@ -4767,7 +4792,10 @@ def xl_write_data(xl_sheet, dsg, labels=None, xlCol=0):
         xlCol = xlCol + 1
         xl_sheet.write(0, xlCol, dsg["Variables"][item]["Attr"]["units"])
         xl_sheet.write(1, xlCol, item)
-        d_xf = xlwt.easyxf(num_format_str=dsg["Variables"][item]["Attr"]["format"])
+        if "format" in dsg["Variables"][item]["Attr"]:
+            d_xf = xlwt.easyxf(num_format_str=dsg["Variables"][item]["Attr"]["format"])
+        else:
+            d_xf = xlwt.easyxf(num_format_str="general")
         if numpy.ma.isMA(dsg["Variables"][item]["Data"]):
             tmp = numpy.ma.filled(dsg["Variables"][item]["Data"],fill_value=c.missing_value)
         else:
