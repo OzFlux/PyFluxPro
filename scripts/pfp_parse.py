@@ -1182,6 +1182,10 @@ def ParseL7ControlFile(cfg, ds):
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "PlotRawData", default="No")
     if opt.lower() == "yes":
         l7_info["Options"]["plot_raw_data"] = True
+    l7_info["Options"]["multiprocessing"] = False
+    opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "MultiProcessing", default="Yes")
+    if opt.lower() == "yes":
+        l7_info["Options"]["multiprocessing"] = True
     # some useful global attributes
     l7_info["Global"] = {"site_name": ds.root["Attributes"]["site_name"],
                          "time_step": int(float(ds.root["Attributes"]["time_step"]))}

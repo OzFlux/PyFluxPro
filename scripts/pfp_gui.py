@@ -9968,6 +9968,12 @@ class edit_cfg_L7(QtWidgets.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
+    def add_multiprocessing(self):
+        """ Add MultiProcessing to the [Options] section."""
+        dict_to_add = {"MultiProcessing": "Yes"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
     def add_new_variable(self):
         """ Add a new variable."""
         gfSOLO = {"<var>_SOLO": {"drivers": ""}}
@@ -10340,6 +10346,11 @@ class edit_cfg_L7(QtWidgets.QWidget):
                     self.context_menu.actionAddMinPercentDay.setText("MinPercentDay")
                     self.context_menu.addAction(self.context_menu.actionAddMinPercentDay)
                     self.context_menu.actionAddMinPercentDay.triggered.connect(self.add_minpercentday)
+                if "MultiProcessing" not in existing_entries:
+                    self.context_menu.actionAddMultiProcessing = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMultiProcessing.setText("Multiprocessing")
+                    self.context_menu.addAction(self.context_menu.actionAddMultiProcessing)
+                    self.context_menu.actionAddMultiProcessing.triggered.connect(self.add_multiprocessing)
                 if "TurbulenceFilter" not in existing_entries:
                     self.context_menu.actionAddTurbulenceFilter = QtWidgets.QAction(self)
                     self.context_menu.actionAddTurbulenceFilter.setText("TurbulenceFilter")
@@ -10492,6 +10503,17 @@ class edit_cfg_L7(QtWidgets.QWidget):
                         self.context_menu.actionChangeKeepIntermediateSeries.setText("No")
                         self.context_menu.addAction(self.context_menu.actionChangeKeepIntermediateSeries)
                         self.context_menu.actionChangeKeepIntermediateSeries.triggered.connect(lambda:self.change_selected_text("No"))
+                elif (selected_item.column() == 1) and (key == "MultiProcessing"):
+                    if selected_text != "Yes":
+                        self.context_menu.actionChangeMultiProcessing = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeMultiProcessing.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionChangeMultiProcessing)
+                        self.context_menu.actionChangeMultiProcessing.triggered.connect(lambda:self.change_selected_text("Yes"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeMultiProcessing = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeMultiProcessing.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeMultiProcessing)
+                        self.context_menu.actionChangeMultiProcessing.triggered.connect(lambda:self.change_selected_text("No"))
                 elif (selected_item.column() == 1) and (key in ["PlotRawData"]):
                     if selected_text != "Yes":
                         self.context_menu.actionChangeOption = QtWidgets.QAction(self)
