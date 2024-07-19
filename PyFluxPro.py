@@ -745,8 +745,9 @@ class pfp_main_ui(QWidget):
         pass
 
     def edit_search_replace(self):
-        pfp_gui.search_replace(self)
-        return
+        self.seach_replace_gui = pfp_gui.search_replace(self)
+        self.seach_replace_gui.show()
+        self.seach_replace_gui.exec_()
 
     def tabSelected(self, arg=None):
         self.tabs.tab_index_current = arg

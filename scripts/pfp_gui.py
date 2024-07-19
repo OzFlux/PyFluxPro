@@ -11349,7 +11349,35 @@ class pfp_l4_ui(QtWidgets.QDialog):
 class search_replace(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(search_replace, self).__init__(parent)
-        self.resize(400, 265)
+        #self.resize(400, 265)
+        self.init_ui()
+
+    def init_ui(self):
+        findButton = QtWidgets.QPushButton("Find", self)
+        findButton.clicked.connect(self.find)
+        replaceButton = QtWidgets.QPushButton("Replace", self)
+        replaceButton.clicked.connect(self.replace)
+        allButton = QtWidgets.QPushButton("Replace all", self)
+        allButton.clicked.connect(self.replace_all)
+        self.findField = QtWidgets.QTextEdit(self)
+        self.findField.resize(250, 50)
+        self.replaceField = QtWidgets.QTextEdit(self)
+        self.replaceField.resize(250, 50)
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(self.findField,1,0,1,4)
+        layout.addWidget(findButton,2,0,1,2)
+        layout.addWidget(self.replaceField,3,0,1,4)
+        layout.addWidget(replaceButton,4,0,1,2)
+        layout.addWidget(allButton,4,2,1,2)
+        self.setGeometry(300,300,360,250)
+        self.setWindowTitle("Find and Replace")
+        self.setLayout(layout)
+    def find(self):
+        pass
+    def replace(self):
+        pass
+    def replace_all(self):
+        pass
 
 class solo_gui(QtWidgets.QDialog):
     def __init__(self, parent=None):
