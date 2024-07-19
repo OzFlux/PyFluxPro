@@ -244,8 +244,13 @@ class myTxtBox(QtWidgets.QInputDialog):
         self.getText(None, title, prompt, QtWidgets.QLineEdit.Normal,"")
 
 class file_explore(QtWidgets.QWidget):
-    def __init__(self, main_gui):
+    def __init__(self, main_gui, source):
         super(file_explore, self).__init__()
+        self.main_gui = main_gui
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = source
+        self.info["tab"]["type"] = "netcdf"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         self.ds = main_gui.ds
         self.tabs = main_gui.tabs
         self.figure_number = 0
@@ -1021,11 +1026,15 @@ class edit_cfg_L1(QtWidgets.QWidget):
         super(edit_cfg_L1, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.update_info()
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
         # disable editing of essential entries in Files
         self.files_essential = ["file_path", "in_filename", "in_firstdatarow",
                                 "in_headerrow", "out_filename"]
         self.edit_L1_gui()
-
     def add_attribute(self):
         """ Add a variable attribute to a variable in the [Variables] section."""
         # get the index of the selected item
@@ -1039,7 +1048,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
-
     def add_csv_section(self):
         """ Add a csv section to a variable."""
         idx = self.view.selectedIndexes()[0]
@@ -1049,7 +1057,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         self.add_subsubsection(selected_item, dict_to_add)
         # update the tab text with an asterix if required
         self.update_tab_text()
-
     def add_csv_variable(self):
         """ Add a new CSV variable."""
         # get the index of the selected item
@@ -1065,7 +1072,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         parent.appendRow(subsection)
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
-
     def add_csv_variable_above(self):
         """ Add a new CSV variable above the selected variable."""
         # get the index of the selected item
@@ -1084,7 +1090,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         parent.insertRow(idx.row(), subsection)
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
-
     def add_function(self):
         """ Add a function to a variable."""
         idx = self.view.selectedIndexes()[0]
@@ -1094,7 +1099,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         self.add_subsubsection(selected_item, dict_to_add)
         # update the tab text with an asterix if required
         self.update_tab_text()
-
     def add_function_entry(self, source):
         """ Add the selected function to the variables [Function] subsection."""
         # get the index of the selected item
@@ -1117,7 +1121,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         item = idx.model().itemFromIndex(idx)
         # change the text of the selected item
         item.setText(function_string)
-
     def add_global(self):
         """ Add a new entry to the [Global] section."""
         # get the index of the selected item
@@ -1130,7 +1133,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         # update the tab text with an asterix if required
         self.update_tab_text()
-
     def add_linear(self):
         """ Add a linear correction to a variable."""
         new_qc = {"Linear": {"0": "YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 1.0, 0.0"}}
@@ -1140,7 +1142,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         self.add_qc_check(selected_item, new_qc)
         self.update_tab_text()
-
     def add_linearrange(self):
         """ Add another date range to the Linear QC check."""
         # get the index of the selected item
@@ -1154,7 +1155,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # add them
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
-
     def add_plot_path(self):
         """ Add plot_path to the 'Files' section."""
         # get the index of the selected item
@@ -1167,7 +1167,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         parent.appendRow([child0, child1])
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
-
     def add_wdoffset(self):
         """ Add an offset to a wind direction variable."""
         new_qc = {"Wd offset": {"0": "YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 0.0"}}
@@ -1177,7 +1176,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         self.add_qc_check(selected_item, new_qc)
         self.update_tab_text()
-
     def add_wdoffsetrange(self):
         """ Add another date range to the wind direction offset correction."""
         # get the index of the selected item
@@ -1191,7 +1189,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         # add them
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
-
     def add_qc_check(self, selected_item, new_qc):
         for key1 in new_qc:
             parent = QtGui.QStandardItem(key1)
@@ -1204,21 +1201,18 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 parent.appendRow([child0, child1])
             selected_item.appendRow(parent)
         self.update_tab_text()
-
     def add_subsection(self, section, dict_to_add):
         for key in dict_to_add:
             val = str(dict_to_add[key])
             child0 = QtGui.QStandardItem(key)
             child1 = QtGui.QStandardItem(val)
             section.appendRow([child0, child1])
-
     def add_subsubsection(self, subsection, dict_to_add):
         """ Add a subsubsection to the model."""
         for key in dict_to_add:
             subsubsection = QtGui.QStandardItem(key)
             self.add_subsection(subsubsection, dict_to_add[key])
             subsection.appendRow(subsubsection)
-
     def add_xl_variable(self):
         """ Add a new variable."""
         # get the index of the selected item
@@ -1234,7 +1228,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         parent.appendRow(subsection)
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
-
     def add_xl_variable_above(self):
         """ Add a new variable above the selected variable."""
         # get the index of the selected item
@@ -1253,7 +1246,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         parent.insertRow(idx.row(), subsection)
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
-
     def add_xl_section(self):
         """ Add an xl section to a variable."""
         idx = self.view.selectedIndexes()[0]
@@ -1263,7 +1255,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
         self.add_subsubsection(selected_item, dict_to_add)
         # update the tab text with an asterix if required
         self.update_tab_text()
-
     def browse_file_path(self):
         """ Browse for the data file path."""
         # get the index of the selected item
@@ -1284,7 +1275,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
             # update the model
             parent.child(selected_item.row(), 1).setText(new_dir)
             self.update_tab_text()
-
     def browse_input_file(self):
         """ Browse for the input data file path."""
         # get the index of the selected item
@@ -1311,7 +1301,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
                 self.update_header_rows(new_file_names)
                 self.update_tab_text()
         return
-
     def browse_input_file_check_entry(self, new_file_path):
         """
          Check the files selected by the user.  The rukes are:
@@ -1366,7 +1355,6 @@ class edit_cfg_L1(QtWidgets.QWidget):
             logger.error(msg)
             ok = False
         return ok
-
     def browse_output_file(self):
         """ Browse for the output data file path."""
         # get the index of the selected item
@@ -1837,7 +1825,17 @@ class edit_cfg_L1(QtWidgets.QWidget):
             # remove the row
             parent.removeRow(selected_item.row())
         self.update_tab_text()
-
+    def set_irga_sonic(self):
+        """ Set the value of a global attribute."""
+        sender = str(self.context_menu.sender().text())
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        parent = selected_item.parent()
+        parent.child(selected_item.row(), 1).setText(sender)
+        key = parent.child(selected_item.row(), 0).text()
+        self.info["instrument"][key] = sender
+        # update the model with the IRGA and sonic type
+        self.update_instrument_variable_attribute()
     def update_header_rows(self, new_file_names):
         """
          Check to see if we are reading a full_output and a biomet CSV file
@@ -1874,7 +1872,78 @@ class edit_cfg_L1(QtWidgets.QWidget):
             parent.child(ifdr, 1).setText(",".join(in_firstdatarow))
             parent.child(ihr, 1).setText(",".join(in_headerrow))
         return
-
+    def update_info(self):
+        self.info["instrument"] = {"irga_flux": "Li-7500RS", "sonic_flux": "CSAT3B"}
+        self.update_info_sonic_irga_lists()
+    def update_info_sonic_irga_lists(self):
+        cfg_labels = sorted(list(self.cfg["Variables"].keys()))
+        # IRGA signal strengths
+        signal_labels = ["AGC_IRGA", "Signal_CO2", "Signal_H2O"]
+        # PFP covariances
+        h2o_covars = ["UxA", "UyA", "UzA"]
+        co2_covars = ["UxC", "UyC", "UzC"]
+        t_covars = ["UxT", "UyT", "UzT"]
+        m_covars = ["UxUy", "UxUz", "UyUz"]
+        # anything with 'IRGA' in the variable name
+        irga_labels = [l for l in cfg_labels if "_IRGA_" in l]
+        irga_diag_labels = ["Diag_IRGA"]
+        # anything with 'SONIC' in the variable name
+        sonic_labels = [l for l in cfg_labels if "_SONIC_" in l]
+        sonic_diag_labels = ["Diag_SONIC"]
+        # fluxes from EddyPro, EasyFlux and the like
+        fco2_labels = [l for l in cfg_labels if l[0:4] == "Fco2"]
+        sco2_labels = [l for l in cfg_labels if l[0:4] == "Sco2"]
+        fh2o_labels = [l for l in cfg_labels if l[0:4] == "Fh2o"]
+        fe_labels = [l for l in cfg_labels if l[0:2] == "Fe"]
+        fh_labels = [l for l in cfg_labels if l[0:2] == "Fh"]
+        fm_labels = [l for l in cfg_labels if l[0:2] == "Fm"]
+        us_labels = [l for l in cfg_labels if l[0:5] == "ustar"]
+        # lists of variables by instrument
+        # fast IRGAs e.g. Li-7500RS etc used for turbulence measurements
+        sii = self.info["instrument"]
+        sii["fast_irga_only_labels"] = irga_labels + signal_labels + irga_diag_labels
+        # slow IRGAs e.g. Li-840 used for profile measurements
+        sii["slow_irga_only_labels"] = sco2_labels
+        # IRGA only
+        sii["irga_only_labels"] = irga_labels + signal_labels + sco2_labels
+        # sonic anemometer only
+        sii["sonic_only_labels"] = sonic_labels + t_covars + m_covars + fh_labels + fm_labels + us_labels + sonic_diag_labels
+        # sonic and fast IRGA
+        sii["sonic_irga_labels"] = h2o_covars + co2_covars + fco2_labels + fh2o_labels + fe_labels
+        # all sonic or IRGA related variables
+        sii["all_sonic_irga_labels"] = list(sii["fast_irga_only_labels"])
+        sii["all_sonic_irga_labels"] += sii["slow_irga_only_labels"]
+        sii["all_sonic_irga_labels"] += sii["sonic_only_labels"]
+        sii["all_sonic_irga_labels"] += sii["sonic_irga_labels"]
+        return
+    def update_instrument_variable_attribute(self):
+        sii = self.info["instrument"]
+        # find the 'Variables' section
+        for i in range(self.model.rowCount()):
+            variables_section = self.model.item(i)
+            if variables_section.text() == "Variables":
+                break
+        # iterate through the variables
+        for i in range(variables_section.rowCount()):
+            variable_section = variables_section.child(i,0)
+            # check to see if this variable is in the irga_only list
+            if (variable_section.text() in sii["fast_irga_only_labels"]):
+                instrument_type = sii["irga_flux"]
+            elif (variable_section.text() in sii["sonic_only_labels"]):
+                instrument_type = sii["sonic_flux"]
+            elif (variable_section.text() in sii["sonic_irga_labels"]):
+                instrument_type = ",".join([sii["sonic_flux"], sii["irga_flux"]])
+            else:
+                continue
+            # iterate through the variable subsections 'Attr', 'xl' or 'csv'
+            for j in range(variable_section.rowCount()):
+                variable_subsection = variable_section.child(j,0)
+                # check to see if this is the 'Attr' subsection
+                if variable_subsection.text() == "Attr":
+                    # find the 'instrument' attribute
+                    for k in range(variable_subsection.rowCount()):
+                        if variable_subsection.child(k,0).text() == "instrument":
+                            variable_subsection.child(k,1).setText(instrument_type)
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
         # add an asterisk to the tab text to indicate the tab contents have changed
@@ -11347,9 +11416,9 @@ class pfp_l4_ui(QtWidgets.QDialog):
         self.QuitButton.clicked.connect(lambda:pfp_gfALT.gfalternate_quit(self))
 
 class search_replace(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super(search_replace, self).__init__(parent)
-        #self.resize(400, 265)
+    def __init__(self, main_gui):
+        super(search_replace, self).__init__()
+        self.tabs = main_gui.tabs
         self.init_ui()
 
     def init_ui(self):
@@ -11377,8 +11446,19 @@ class search_replace(QtWidgets.QDialog):
     def replace(self):
         pass
     def replace_all(self):
-        pass
-
+        cfg = self.tabs.tab_dict[self.tabs.tab_index_current].get_data_from_model()
+        cfg_new = self.replace_deep(cfg, "MyallValeA", "MyallValeB")
+    def replace_deep(data, a, b):
+        #https://stackoverflow.com/questions/65542170/how-to-replace-all-occurences-of-a-string-in-a-nested-python-dictionary
+        if isinstance(data, str):
+            return data.replace(a, b)
+        elif isinstance(data, dict):
+            return {k: replace_deep(v, a, b) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [replace_deep(v, a, b) for v in data]
+        else:
+            # nothing to do?
+            return data
 class solo_gui(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(solo_gui, self).__init__(parent)

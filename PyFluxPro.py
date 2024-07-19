@@ -49,6 +49,12 @@ class pfp_main_ui(QWidget):
         super(pfp_main_ui, self).__init__()
         # set the mode attribute
         self.mode = "interactive"
+        # create a dictionary for general information
+        self.info = {"THREDDS": {"base_url": "", "catalog_name": "catalog.xml",
+                                 "server_name": "", "dodoC_url": ""},
+                     "Files": {"file_name": ""},
+                     "tab": {"source": "", "type": ""},
+                     "returncodes": {"value": 0, "message": ""}}
         # menu bar
         self.menubar = QMenuBar(self)
         # File menu
@@ -207,7 +213,6 @@ class pfp_main_ui(QWidget):
         # Help menu
         self.menuHelp.addAction(self.actionHelpWiki)
         self.menuHelp.addAction(self.actionHelpAbout)
-
         # create a tab bar
         self.tabs = QTabWidget(self)
         self.tabs.tab_index_all = 0
@@ -217,13 +222,18 @@ class pfp_main_ui(QWidget):
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.closeTab)
         # add the text editor to the first tab
-        self.tabs.addTab(textBox, "Log")
+        self.tabs.tab_dict[self.tabs.tab_index_all] = textBox
+        self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], "Log")
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
         # hide the tab close icon for the console tab
         self.tabs.tabBar().setTabButton(0, QTabBar.RightSide, None)
         # connect the tab-in-focus signal to the appropriate slot
         self.tabs.currentChanged[int].connect(self.tabSelected)
-
+        # set the default menu item status for the log window
+        self.actionRunCurrent.setDisabled(True)
+        self.actionFileSave.setDisabled(True)
+        self.actionFileSaveAs.setDisabled(True)
+        self.actionEditSearchReplace.setDisabled(True)
         # use VBoxLayout to position widgets so they resize with main window
         layout = QVBoxLayout()
         # add widgets to the layout
@@ -232,10 +242,9 @@ class pfp_main_ui(QWidget):
         self.setLayout(layout)
         self.setGeometry(50,50,800, 600)
         self.setWindowTitle(pfp_version)
-
         self.threadpool = QThreadPool()
-
         # Connect signals to slots
+        self.tabs.tabBarClicked.connect(self.handle_tabbar_clicked)
         # File menu actions
         self.actionFileConvertnc2biomet.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2biomet(None, mode="standard"))
         self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
@@ -335,10 +344,10 @@ class pfp_main_ui(QWidget):
         # do the business depending on the file type
         if isinstance(self.file, ConfigObj):
             # we are opening a control file
-            self.open_control_file()
+            self.file_open_control_file()
         elif isinstance(self.file, netCDF4._netCDF4.Dataset):
             # we are opening a netCDF file
-            self.open_netcdf_file()
+            self.file_open_netcdf_file()
         else:
             # unrecognised file type
             msg = "File must be either a control file or a netCDF file"
@@ -346,20 +355,56 @@ class pfp_main_ui(QWidget):
             error_message = traceback.format_exc()
             logger.error(error_message)
         return
-
+    def handle_tabbar_clicked(self, idx):
+        """
+        Purpose:
+         This routine executes whenever the user clicks somewhere on the tab
+         bar in the main PyFluxPro GUI.  The type of content displayed in the
+         currently selected tab is then used to disable or enable the relevant
+         menu items as follows:
+         1) log, THREDDS catalog and THREDDS file windows have Run/Current
+            File/Save and File/Save as disabled
+         2) local netCDF files have the Run/Current disabled
+         3) local control files have Run/Current, File save and File/Save as
+            enabled
+        Usage:
+        Side effects:
+        Author: PRI
+        Date: February 2023
+        """
+        tab_type = self.tabs.tab_dict[idx].tab_type
+        if tab_type in ["log", "thredds_catalog"]:
+            self.actionRunCurrent.setDisabled(True)
+            self.actionFileSave.setDisabled(True)
+            self.actionFileSaveAs.setDisabled(True)
+            self.actionEditSearchReplace.setDisabled(True)
+        elif tab_type in ["thredds_netcdf"]:
+            self.actionRunCurrent.setDisabled(True)
+            self.actionFileSave.setDisabled(True)
+            self.actionFileSaveAs.setDisabled(False)
+            self.actionEditSearchReplace.setDisabled(True)
+        elif tab_type in ["local_controlfile"]:
+            self.actionRunCurrent.setDisabled(False)
+            self.actionFileSave.setDisabled(False)
+            self.actionFileSaveAs.setDisabled(False)
+            self.actionEditSearchReplace.setDisabled(False)
+        elif tab_type in ["local_netcdf"]:
+            self.actionRunCurrent.setDisabled(True)
+            self.actionFileSave.setDisabled(False)
+            self.actionFileSaveAs.setDisabled(False)
+            self.actionEditSearchReplace.setDisabled(True)
+        return
     def help_about(self):
         msg = cfg.version_name + " " + cfg.version_number + "\n"
         msg += "Contributors: Peter Isaac, Jamie Cleverly, Cacilia Ewenz, Ian McHugh"
         pfp_gui.myMessageBox(msg)
         return
-
     def help_wiki(self):
         """ Opens the default browser and goes to the PyFluxPro Wiki."""
         browser = webbrowser.get()
         browser.open_new("https://github.com/OzFlux/PyFluxPro/wiki")
         return
-
-    def open_control_file(self):
+    def file_open_control_file(self):
         logger = logging.getLogger(name="pfp_log")
         # check to see if the processing level is defined in the control file
         if "level" not in self.file:
@@ -426,9 +471,14 @@ class pfp_main_ui(QWidget):
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
+        # set menu item status for tab type
+        self.actionRunCurrent.setDisabled(False)
+        self.actionFileSave.setDisabled(False)
+        self.actionFileSaveAs.setDisabled(False)
+        self.actionEditSearchReplace.setDisabled(False)
         return
 
-    def open_netcdf_file(self):
+    def file_open_netcdf_file(self):
         file_uri = self.file.filepath()
         # close the netCDF file
         self.file.close()
@@ -437,7 +487,7 @@ class pfp_main_ui(QWidget):
         if self.ds.info["returncodes"]["value"] != 0:
             return
         # display the netcdf file in the GUI
-        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self)
+        self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.file_explore(self, "local")
         # return if something went wrong
         if self.tabs.tab_dict[self.tabs.tab_index_all].ds.info["returncodes"]["value"] != 0:
             return
@@ -446,6 +496,11 @@ class pfp_main_ui(QWidget):
         self.tabs.addTab(self.tabs.tab_dict[self.tabs.tab_index_all], tab_title)
         self.tabs.setCurrentIndex(self.tabs.tab_index_all)
         self.tabs.tab_index_all = self.tabs.tab_index_all + 1
+        # set menu item status for tab type
+        self.actionRunCurrent.setDisabled(True)
+        self.actionFileSave.setDisabled(False)
+        self.actionFileSaveAs.setDisabled(False)
+        self.actionEditSearchReplace.setDisabled(True)
         return
 
     def get_cf_level(self):
@@ -631,17 +686,17 @@ class pfp_main_ui(QWidget):
         content = self.tabs.tab_dict[tab_index_current].get_data_from_model()
         if isinstance(content, ConfigObj):
             # we are saving a control file
-            self.save_control_file()
+            self.file_save_control_file()
         elif isinstance(content, pfp_io.DataStructure):
             # we are saving a data structure
-            self.save_netcdf_file()
+            self.file_save_netcdf_file()
         else:
             # unrecognised content type
             msg = "Object must be either a control file or a data structure"
             logger.error(msg)
         return
 
-    def save_control_file(self):
+    def file_save_control_file(self):
         """ Save the current tab as a control file."""
         logger = logging.getLogger(name="pfp_log")
         # get the current tab index
@@ -669,7 +724,7 @@ class pfp_main_ui(QWidget):
         self.tabs.setTabText(self.tabs.tab_index_current, tab_text.replace("*",""))
         return
 
-    def save_netcdf_file(self):
+    def file_save_netcdf_file(self):
         """Save the current tab as a netCDF file."""
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
@@ -702,7 +757,7 @@ class pfp_main_ui(QWidget):
                 return
             content.filename = file_uri
             self.tabs.tab_dict[tab_index_current].cfg.filename = file_uri
-            self.save_as_control_file(content)
+            self.file_save_as_control_file(content)
         elif isinstance(content, pfp_io.DataStructure):
             # we are opening a netCDF file
             file_uri = content.info["filepath"]
@@ -710,14 +765,14 @@ class pfp_main_ui(QWidget):
             if len(str(file_uri)) == 0:
                 return
             content.info["filepath"] = file_uri
-            self.save_as_netcdf_file(content)
+            self.file_save_as_netcdf_file(content)
         else:
             # unrecognised file type
             msg = "File must be either a control file or a netCDF file"
             logger.error(msg)
         return
 
-    def save_as_control_file(self, cfg):
+    def file_save_as_control_file(self, cfg):
         """ Save the current tab with a different name."""
         tab_index_current = self.tabs.tab_index_current
         logger = logging.getLogger(name="pfp_log")
@@ -729,7 +784,7 @@ class pfp_main_ui(QWidget):
         self.tabs.setTabText(tab_index_current, tab_title)
         return
 
-    def save_as_netcdf_file(self, ds):
+    def file_save_as_netcdf_file(self, ds):
         """ Save the current tab with a different name."""
         # get the current tab index
         tab_index_current = self.tabs.tab_index_current
@@ -985,9 +1040,15 @@ if (__name__ == '__main__'):
     # get the application name and version
     pfp_version = cfg.version_name + " " + cfg.version_number
     app = QApplication(["PyFluxPro"])
+    # set the minimum font size for the application to 11 pt
+    font = app.font()
+    point_size = max([font.pointSize(), 10])
+    font.setPointSize(point_size)
+    app.setFont(font)
     # get a text editor for the log window
     textBox = QTextEdit()
     textBox.setReadOnly(True)
+    textBox.tab_type = "log"
     logger.consoleHandler.sigLog.connect(textBox.append)
     # instance the main GUI
     ui = pfp_main_ui(pfp_version, textBox)
