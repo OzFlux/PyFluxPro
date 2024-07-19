@@ -14,7 +14,6 @@ from scripts import pfp_func_stats
 from scripts import pfp_func_transforms
 from scripts import pfp_gfALT
 from scripts import pfp_gfSOLO
-from scripts import pfp_io
 from scripts import pfp_plot
 from scripts import pfp_utils
 
@@ -11346,6 +11345,11 @@ class pfp_l4_ui(QtWidgets.QDialog):
         self.RunButton.clicked.connect(lambda:pfp_gfALT.gfalternate_run_interactive(self))
         self.DoneButton.clicked.connect(lambda:pfp_gfALT.gfalternate_done(self))
         self.QuitButton.clicked.connect(lambda:pfp_gfALT.gfalternate_quit(self))
+
+class search_replace(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(search_replace, self).__init__(parent)
+        self.resize(400, 265)
 
 class solo_gui(QtWidgets.QDialog):
     def __init__(self, parent=None):

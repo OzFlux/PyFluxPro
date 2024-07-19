@@ -102,6 +102,8 @@ class pfp_main_ui(QWidget):
         # the Vinod mod ...
         self.actionFileQuit.setShortcut('Ctrl+Q')
         # Edit menu items
+        self.actionEditSearchReplace = QAction(self)
+        self.actionEditSearchReplace.setText("Replace")
         self.actionEditPreferences = QAction(self)
         self.actionEditPreferences.setText("Preferences...")
         # Run menu items
@@ -168,6 +170,7 @@ class pfp_main_ui(QWidget):
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionFileQuit)
         # Edit menu
+        self.menuEdit.addAction(self.actionEditSearchReplace)
         self.menuEdit.addAction(self.actionEditPreferences)
         # Run menu
         self.menuRun.addAction(self.actionRunCurrent)
@@ -243,6 +246,7 @@ class pfp_main_ui(QWidget):
         self.actionFileSplit.triggered.connect(pfp_top_level.do_file_split)
         self.actionFileQuit.triggered.connect(QApplication.quit)
         # Edit menu actions
+        self.actionEditSearchReplace.triggered.connect(self.edit_search_replace)
         self.actionEditPreferences.triggered.connect(self.edit_preferences)
         # Run menu actions
         self.actionRunCurrent.triggered.connect(self.run_current)
@@ -739,6 +743,10 @@ class pfp_main_ui(QWidget):
     def edit_preferences(self):
         logger.debug("Edit/Preferences goes here")
         pass
+
+    def edit_search_replace(self):
+        pfp_gui.search_replace(self)
+        return
 
     def tabSelected(self, arg=None):
         self.tabs.tab_index_current = arg
