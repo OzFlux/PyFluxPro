@@ -1525,34 +1525,35 @@ class edit_cfg_L1(QtWidgets.QWidget):
     def handleItemChanged(self, item):
         """ Handler for when view items are edited."""
         # here we trap attempts by the user to add duplicate entries
-        # index of selected item
-        idx = self.view.selectedIndexes()[0]
-        # selected item from index
-        selected_item = idx.model().itemFromIndex(idx)
-        # text of selected item, this will be the name of the item the user
-        # is trying to add
-        selected_text = selected_item.text()
-        # parent of the item the user is trying to add
-        parent = selected_item.parent()
-        # user has done something silly
-        if not hasattr(parent, "text"):
-            return
-        # check parent text to see if this item needs to be checked for duplicates
-        if parent.text() in ["Global", "Variables", "Attr", "Plots"]:
-            # get the names of the new item's siblings
-            sibling_names = self.get_sibling_names()
-            # if the user is trying to use the same name as an existing entry there
-            # will be entries with this name in the siblings name list
-            if len(list(set(sibling_names))) != len(sibling_names):
-                # duplicate entries found
-                msg = "'" + selected_text + "' already exists in " + parent.text() + " section"
-                # put up a message box to tell the user
-                MsgBox_Continue(msg)
-                # change the item name back to the original
-                selected_item.setText(self.double_click_selected_text)
+        if not len(self.view.selectedIndexes()) == 0:
+            # index of selected item
+            idx = self.view.selectedIndexes()[0]
+            # selected item from index
+            selected_item = idx.model().itemFromIndex(idx)
+            # text of selected item, this will be the name of the item the user
+            # is trying to add
+            selected_text = selected_item.text()
+            # parent of the item the user is trying to add
+            parent = selected_item.parent()
+            # user has done something silly
+            if not hasattr(parent, "text"):
                 return
-        # update the control file contents
-        self.cfg = self.get_data_from_model()
+            # check parent text to see if this item needs to be checked for duplicates
+            if parent.text() in ["Global", "Variables", "Attr", "Plots"]:
+                # get the names of the new item's siblings
+                sibling_names = self.get_sibling_names()
+                # if the user is trying to use the same name as an existing entry there
+                # will be entries with this name in the siblings name list
+                if len(list(set(sibling_names))) != len(sibling_names):
+                    # duplicate entries found
+                    msg = "'" + selected_text + "' already exists in " + parent.text() + " section"
+                    # put up a message box to tell the user
+                    MsgBox_Continue(msg)
+                    # change the item name back to the original
+                    selected_item.setText(self.double_click_selected_text)
+                    return
+            # update the control file contents
+            self.cfg = self.get_data_from_model()
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
 
@@ -11416,14 +11417,21 @@ class pfp_l4_ui(QtWidgets.QDialog):
         self.QuitButton.clicked.connect(lambda:pfp_gfALT.gfalternate_quit(self))
 
 class search_replace(QtWidgets.QDialog):
+    #See https://www.binpress.com/building-text-editor-pyqt-3/
     def __init__(self, main_gui):
         super(search_replace, self).__init__()
-        self.tabs = main_gui.tabs
+        self.main_gui = main_gui
+        self.tab = self.main_gui.tabs.tab_dict[self.main_gui.tabs.tab_index_current]
+        self.model = self.tab.model
+        self.view = self.tab.view
         self.init_ui()
-
     def init_ui(self):
         findButton = QtWidgets.QPushButton("Find", self)
         findButton.clicked.connect(self.find)
+        nextButton = QtWidgets.QPushButton("Next", self)
+        nextButton.clicked.connect(self.next)
+        previousButton = QtWidgets.QPushButton("Previous", self)
+        previousButton.clicked.connect(self.previous)
         replaceButton = QtWidgets.QPushButton("Replace", self)
         replaceButton.clicked.connect(self.replace)
         allButton = QtWidgets.QPushButton("Replace all", self)
@@ -11432,33 +11440,128 @@ class search_replace(QtWidgets.QDialog):
         self.findField.resize(250, 50)
         self.replaceField = QtWidgets.QTextEdit(self)
         self.replaceField.resize(250, 50)
+        optionsLabel = QtWidgets.QLabel("Options: ",self)
+        self.caseSens = QtWidgets.QCheckBox("Case sensitive",self)
+        self.caseSens.setChecked(True)
+        self.wholeWords = QtWidgets.QCheckBox("Whole words",self)
+        self.wholeWords.setChecked(True)
+
         layout = QtWidgets.QGridLayout()
         layout.addWidget(self.findField,1,0,1,4)
-        layout.addWidget(findButton,2,0,1,2)
+        layout.addWidget(findButton,2,0,1,1)
+        layout.addWidget(nextButton,2,1,1,1)
+        layout.addWidget(previousButton,2,2,1,1)
         layout.addWidget(self.replaceField,3,0,1,4)
         layout.addWidget(replaceButton,4,0,1,2)
         layout.addWidget(allButton,4,2,1,2)
+        spacer = QtWidgets.QWidget(self)
+        spacer.setFixedSize(0,10)
+        layout.addWidget(spacer,5,0)
+        layout.addWidget(optionsLabel,6,0)
+        layout.addWidget(self.caseSens,6,1)
+        layout.addWidget(self.wholeWords,6,2)
+
         self.setGeometry(300,300,360,250)
         self.setWindowTitle("Find and Replace")
         self.setLayout(layout)
     def find(self):
-        pass
+        def iterItems(root):
+            if root is not None:
+                stack = [root]
+                while stack:
+                    parent = stack.pop(0)
+                    for row in range(parent.rowCount()):
+                        for column in range(parent.columnCount()):
+                            child = parent.child(row, column)
+                            yield child
+                            if child.hasChildren():
+                                stack.append(child)
+        nrows = self.model.rowCount()
+        find_text = self.findField.toPlainText()
+        self.match_indices = []
+        for i in range(nrows):
+            root = self.model.item(i)
+            for item in iterItems(root):
+                if find_text in item.text():
+                    self.match_indices.append(item.index())
+        self.match_index = 0
+        self.view.setCurrentIndex(self.match_indices[self.match_index])
+    def next(self):
+        self.match_index += 1
+        if self.match_index == len(self.match_indices):
+            self.match_index = 0
+        self.view.setCurrentIndex(self.match_indices[self.match_index])
+    def previous(self):
+        self.match_index += -1
+        if self.match_index < 0:
+            self.match_index = len(self.match_indices) - 1
+        self.view.setCurrentIndex(self.match_indices[self.match_index])
     def replace(self):
-        pass
-    def replace_all(self):
-        cfg = self.tabs.tab_dict[self.tabs.tab_index_current].get_data_from_model()
-        cfg_new = self.replace_deep(cfg, "MyallValeA", "MyallValeB")
-    def replace_deep(data, a, b):
-        #https://stackoverflow.com/questions/65542170/how-to-replace-all-occurences-of-a-string-in-a-nested-python-dictionary
-        if isinstance(data, str):
-            return data.replace(a, b)
-        elif isinstance(data, dict):
-            return {k: replace_deep(v, a, b) for k, v in data.items()}
-        elif isinstance(data, list):
-            return [replace_deep(v, a, b) for v in data]
+        find_text = self.findField.toPlainText()
+        replace_text = self.replaceField.toPlainText()
+        if len(find_text) == 0 or len(replace_text) == 0:
+            return
+        idx = self.view.selectedIndexes()
+        if len(idx) == 0:
+            return
+        value = self.model.itemFromIndex(idx[0])
+        if self.wholeWords.isChecked():
+            if self.caseSens.isChecked():
+                if value.text() == find_text:
+                    value.setText(replace_text)
+            else:
+                if value.text().lower() == find_text.lower():
+                    value.setText(replace_text)
         else:
-            # nothing to do?
-            return data
+            if self.caseSens.isChecked():
+                if find_text in value.text():
+                    new_text = value.text().replace(find_text, replace_text)
+                    value.setText(new_text)
+            else:
+                if find_text.lower() in value.text().lower():
+                    new_text = value.text().replace(find_text, replace_text)
+                    value.setText(new_text)
+        self.next()
+    def replace_all(self):
+        def iterItems(root):
+            #See https://stackoverflow.com/questions/41949370/collect-all-items-in-qtreeview-recursively
+            if root is not None:
+                stack = [root]
+                while stack:
+                    parent = stack.pop(0)
+                    for row in range(parent.rowCount()):
+                        child = parent.child(row)
+                        if child.hasChildren():
+                            stack.append(child)
+                        else:
+                            key = parent.child(row, 0)
+                            value = parent.child(row, 1)
+                            yield key, value
+        tab = self.main_gui.tabs.tab_dict[self.main_gui.tabs.tab_index_current]
+        model = tab.model
+        nrows = model.rowCount()
+        find_text = self.findField.toPlainText()
+        replace_text = self.replaceField.toPlainText()
+        for i in range(nrows):
+            root = model.item(i)
+            for key, value in iterItems(root):
+                if self.wholeWords.isChecked():
+                    if self.caseSens.isChecked():
+                        if value.text() == find_text:
+                            value.setText(replace_text)
+                    else:
+                        if value.text().lower() == find_text.lower():
+                            value.setText(replace_text)
+                else:
+                    if self.caseSens.isChecked():
+                        if find_text in value.text():
+                            new_text = value.text().replace(find_text, replace_text)
+                            value.setText(new_text)
+                    else:
+                        if find_text.lower() in value.text().lower():
+                            new_text = value.text().replace(find_text, replace_text)
+                            value.setText(new_text)
+
 class solo_gui(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(solo_gui, self).__init__(parent)
