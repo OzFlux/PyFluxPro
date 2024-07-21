@@ -632,6 +632,12 @@ class edit_cfg_batch(QtWidgets.QWidget):
                                    "concatenate", "climatology",
                                    "cpd_barr", "cpd_mchugh", "cpd_mcnew", "mpt",
                                    "L4", "L5", "L6"]
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_batch_gui()
 
     def add_control_file(self):
@@ -1957,6 +1963,12 @@ class edit_cfg_L2(QtWidgets.QWidget):
         super(edit_cfg_L2, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_L2_gui()
 
     def add_dependencycheck(self):
@@ -3096,6 +3108,12 @@ class edit_cfg_L3(QtWidgets.QWidget):
         super(edit_cfg_L3, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_L3_gui()
 
     def add_2dcoordrotation(self):
@@ -4368,6 +4386,12 @@ class edit_cfg_climatology(QtWidgets.QWidget):
         super(edit_cfg_climatology, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_climatology_gui()
 
     def add_general_item(self):
@@ -4684,6 +4708,12 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         super(edit_cfg_concatenate, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_concatenate_gui()
 
     def edit_concatenate_gui(self):
@@ -5199,6 +5229,12 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
         super(edit_cfg_cpd_barr, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_cpd_barr_gui()
 
     def add_new_variable(self):
@@ -5541,6 +5577,12 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
         super(edit_cfg_cpd_mchugh, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_cpd_mchugh_gui()
 
     def add_new_variable(self):
@@ -5883,6 +5925,12 @@ class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
         super(edit_cfg_cpd_mcnew, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_cpd_mcnew_gui()
 
     def add_new_variable(self):
@@ -6225,6 +6273,12 @@ class edit_cfg_mpt(QtWidgets.QWidget):
         super(edit_cfg_mpt, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_mpt_gui()
 
     def add_new_variable(self):
@@ -6567,6 +6621,12 @@ class edit_cfg_L4(QtWidgets.QWidget):
         super(edit_cfg_L4, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_l4_gui()
 
     def add_alternate(self):
@@ -7671,6 +7731,12 @@ class edit_cfg_L5(QtWidgets.QWidget):
         super(edit_cfg_L5, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_l5_gui()
 
     def add_acceptdaytimes(self):
@@ -8916,6 +8982,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
         super(edit_cfg_L6, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_l6_gui()
 
     def add_fileentry(self, item):
@@ -9814,6 +9886,12 @@ class edit_cfg_nc2csv_biomet(QtWidgets.QWidget):
         super(edit_cfg_nc2csv_biomet, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_nc2csv_biomet_gui()
 
     def edit_nc2csv_biomet_gui(self):
@@ -10104,6 +10182,12 @@ class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
         super(edit_cfg_nc2csv_ecostress, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_nc2csv_ecostress_gui()
 
     def edit_nc2csv_ecostress_gui(self):
@@ -10404,6 +10488,12 @@ class edit_cfg_nc2csv_fluxnet(QtWidgets.QWidget):
         super(edit_cfg_nc2csv_fluxnet, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_nc2csv_fluxnet_gui()
 
     def edit_nc2csv_fluxnet_gui(self):
@@ -10704,6 +10794,12 @@ class edit_cfg_nc2csv_reddyproc(QtWidgets.QWidget):
         super(edit_cfg_nc2csv_reddyproc, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_nc2csv_reddyproc_gui()
 
     def edit_nc2csv_reddyproc_gui(self):
@@ -10994,6 +11090,12 @@ class edit_cfg_windrose(QtWidgets.QWidget):
         super(edit_cfg_windrose, self).__init__()
         self.cfg = copy.deepcopy(main_gui.file)
         self.tabs = main_gui.tabs
+        self.info = copy.deepcopy(main_gui.info)
+        self.info["tab"]["source"] = "local"
+        self.info["tab"]["type"] = "controlfile"
+        self.tab_type = self.info["tab"]["source"] + "_" + self.info["tab"]["type"]
+        # disable editing of essential entries in Files
+        self.files_essential = ["file_path", "in_filename", "out_filename", "plot_path"]
         self.edit_windrose_gui()
 
     #def add_new_variable(self):

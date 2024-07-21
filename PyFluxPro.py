@@ -177,6 +177,7 @@ class pfp_main_ui(QWidget):
         self.menuFile.addAction(self.actionFileQuit)
         # Edit menu
         self.menuEdit.addAction(self.actionEditSearchReplace)
+        self.menuEdit.addSeparator()
         self.menuEdit.addAction(self.actionEditPreferences)
         # Run menu
         self.menuRun.addAction(self.actionRunCurrent)
@@ -806,6 +807,7 @@ class pfp_main_ui(QWidget):
 
     def tabSelected(self, arg=None):
         self.tabs.tab_index_current = arg
+        self.handle_tabbar_clicked(arg)
 
     def run_clear_log_window(self):
         """ Clear the Log window"""
