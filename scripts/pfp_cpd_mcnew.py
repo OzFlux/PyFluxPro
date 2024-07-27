@@ -359,7 +359,7 @@ def _b_model(x, y, cp, null_SSE):
 #------------------------------------------------------------------------------
 def _check_continuity(index):
 
-    freq_dict = {'30T': 30, 'H': 60}
+    freq_dict = {'30min': 30, '30T': 30, 'h': 60, 'H': 60}
     interval = pd.infer_freq(index)
     if not interval in freq_dict:
         raise RuntimeError(
