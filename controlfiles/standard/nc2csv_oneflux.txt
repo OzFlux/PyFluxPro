@@ -1,0 +1,65 @@
+level = nc2csv_oneflux
+[Variables]
+    [[CO2]]
+        format = 0.000
+        name = CO2
+    [[FC]]
+        format = 0.0000
+        name = Fco2
+    [[G]]
+        format = 0
+        name = Fg
+    [[H]]
+        format = 0
+        name = Fh
+    [[H2O]]
+        format = 0.00
+        name = H2O
+    [[LE]]
+        format = 0
+        name = Fe
+    [[LW_IN]]
+        format = 0
+        name = Fld
+    [[LW_OUT]]
+        format = 0
+        name = Flu
+    [[NETRAD]]
+        format = 0
+        name = Fn
+    [[P]]
+        format = 0.0
+        name = Precip
+    [[PA]]
+        format = 0.0
+        name = ps
+    [[RH]]
+        format = 0
+        name = RH
+    [[SWC_1]]
+        format = 0.000
+        name = Sws
+    [[SW_IN]]
+        format = 0
+        name = Fsd
+    [[SW_OUT]]
+        format = 0
+        name = Fsu
+    [[TA]]
+        format = 0.00
+        name = Ta
+    [[TS_1]]
+        format = 0.00
+        name = Ts
+    [[USTAR]]
+        format = 0.00
+        name = ustar
+    [[VPD]]
+        format = 0.000
+        name = VPD
+    [[WD]]
+        format = 0
+        name = Wd
+    [[WS]]
+        format = 0.00
+        name = Ws

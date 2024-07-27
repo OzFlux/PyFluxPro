@@ -1225,22 +1225,69 @@ def CalculateComponentsFromWsWd(ds):
     pfp_utils.CreateVariable(ds, u)
     pfp_utils.CreateVariable(ds, v)
 
-def CalculateSco2SinglePoint(cf, ds, info, Sco2_out="Sco2_single"):
+def CalculateSco2ONEFlux(ds, CO2_in="CO2", Sco2_out="Sco2_oneflux"):
+    """
+    Purpose:
+     Calculate the CO2 flux storage term from a single point measurement of CO2.
+     This routine uses the method coded in ONEFlux/oneflux_steps/qc_auto.  This
+     uses a factor of 0.024 to approximate the correction from umol/mol to
+     umol/m^3.  The factor of 0.024 is approximately correct for a pressure of
+     101 kPa and a temperature of 22 degC.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: January 2024
+    """
+    msg = " Calculating Sco2 (single point, ONEFlux method)"
+    logger.info(msg)
+    nrecs = int(ds.root["Attributes"]["nc_nrecs"])
+    ts = int(ds.root["Attributes"]["time_step"])
+    ones = numpy.ones(nrecs, dtype=int)
+    zeros = numpy.zeros(nrecs, dtype=int)
+    CO2 = pfp_utils.GetVariable(ds, CO2_in)
+    if CO2["Attr"]["units"] != "umol/mol":
+        msg = "  CO2 units must be umol/mol (" + CO2["Attr"]["units"] + "), Sco2 not calculated"
+        logger.error(msg)
+        return
+    attr = {"height": pfp_utils.strip_non_numeric(str(CO2["Attr"]["height"])),
+            "instrument": CO2["Attr"]["instrument"],
+            "long_name": "Storage term of CO2 flux using ONEFlux method",
+            "statistic_type": "average",
+            "units": "umol/m^2/s"}
+    Sco2 = pfp_utils.CreateEmptyVariable(Sco2_out, nrecs, attr=attr)
+    Sco2["Data"][1:nrecs] = ((CO2["Data"][1:nrecs] - CO2["Data"][0:nrecs-1])/(ts*60)*
+                             (float(Sco2["Attr"]["height"])/0.024))
+    Sco2["Flag"] = numpy.where(numpy.ma.getmaskarray(Sco2["Data"]), ones, zeros)
+    pfp_utils.CreateVariable(ds, Sco2)
+    return
+
+def CalculateSco2SinglePoint(ds, Sco2_out="Sco2_single"):
     """
     Calculate CO2 flux storage term in the air column beneath the CO2 instrument.  This
     routine assumes the air column between the sensor and the surface is well mixed.
 
-    Usage pfp_ts.CalculateFco2StorageSinglePoint(cf, ds, CO2_in='CO2', Fco2_out='Fco2_single')
-    cf: control file object
+    Usage pfp_ts.CalculateSco2SinglePoint(ds, Sco2_out='Sco2_single')
     ds: data structure
-    Fco2_out: series label of the CO2 flux storage term
-    CO2_in: series label of the CO2 concentration
-
-    Parameters loaded from control file:
-        zms: measurement height from surface, m
+    Sco2_out: label of the single point storage term
     """
-    if Sco2_out not in list(ds.root["Variables"].keys()):
-        logger.info(" Calculating Sco2 (single height)")
+    labels = list(ds.root["Variables"].keys())
+    if Sco2_out not in labels:
+        # sanity checks
+        for label in ["CO2", "Ta", "ps"]:
+            if label not in labels:
+                msg = " " + label + " not in data structure, Sco2 not calculated"
+                logger.warning(msg)
+                return
+        if "height" in ds.root["Variables"]["CO2"]["Attr"]:
+            height = pfp_utils.strip_non_numeric(ds.root["Variables"]["CO2"]["Attr"]["height"])
+            height = float(height)
+        else:
+            msg = " 'height' attribute missing from CO2 variable, Sco2 not calculated"
+            logger.warning(msg)
+            return
+        # seems safe to proceed
+        msg = " Calculating Sco2 (single height)"
+        logger.info(msg)
         nRecs = int(ds.root["Attributes"]["nc_nrecs"])
         zeros = numpy.zeros(nRecs, dtype=numpy.int32)
         ones = numpy.ones(nRecs, dtype=numpy.int32)
@@ -1251,7 +1298,7 @@ def CalculateSco2SinglePoint(cf, ds, info, Sco2_out="Sco2_single"):
         ldt = pfp_utils.GetVariable(ds, "DateTime")
         Sco2_single = pfp_utils.CreateEmptyVariable(Sco2_out, nRecs, datetime=ldt["Data"])
         # get the input data
-        CO2 = pfp_utils.GetVariable(ds, info["variables"]["CO2"]["label"])
+        CO2 = pfp_utils.GetVariable(ds, "CO2")
         Ta = pfp_utils.GetVariable(ds, "Ta")
         ps = pfp_utils.GetVariable(ds, "ps")
         # check the CO2 concentration units
@@ -1267,13 +1314,13 @@ def CalculateSco2SinglePoint(cf, ds, info, Sco2_out="Sco2_single"):
         seconds = numpy.array([(dt-epoch).total_seconds() for dt in ldt["Data"]])
         dt = numpy.ediff1d(seconds, to_begin=float(ts)*60)
         # calculate the CO2 flux based on storage below the measurement height
-        Sco2_single["Data"] = info["variables"]["CO2"]["height"]*dc/dt
+        Sco2_single["Data"] = height*dc/dt
         # do the attributes
         Sco2_single["Attr"] = {}
         for attr in ["instrument", "height"]:
             if attr in CO2["Attr"]:
                 Sco2_single["Attr"][attr] = CO2["Attr"][attr]
-        Sco2_single["Attr"]["height"] = info["variables"]["CO2"]["height"]
+        Sco2_single["Attr"]["height"] = height
         Sco2_single["Attr"]["units"] = "umol/m^2/s"
         Sco2_single["Attr"]["standard_name"] = "surface_upward_mole_flux_of_carbon_dioxide"
         Sco2_single["Attr"]["long_name"] = "Storage term of CO2 flux"
@@ -2414,7 +2461,7 @@ def InterpolateOverMissing(ds, labels, max_length_hours=0, int_type="linear", su
     """
     # check to see if we need to do anything
     if max_length_hours == 0:
-        msg = " Interpolation disabled in control file (max_length_hours=0)"
+        msg = " Interpolation disabled (max_length_hours set to 0)"
         logger.info(msg)
         return
     if isinstance(labels, str):

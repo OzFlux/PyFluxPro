@@ -134,6 +134,86 @@ def do_file_convert_nc2biomet(cfg, mode="standard"):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return
+def do_file_convert_nc2oneflux(cfg, mode="standard"):
+    """
+    Purpose:
+     Convert a PFP-style netCDF file to ONEFlux CSV files, one CSV file per year.
+    Usage:
+    Side effects:
+     Creates a CSV file in the same directory as the netCDF file.
+    Author: PRI
+    Date: Back in the day
+    Mods:
+     March 2020: rewrite for use with new GUI
+     April 2020: routine can be invoked from File/Convert menu or
+                 by loading control file and using Run/Current.
+                 The latter method allows the user to modify the
+                 control file before running it.
+    """
+    logger.info(" Starting conversion to ONEFlux CSV files")
+    try:
+        # check to see if the user chose a standard or a custom run
+        if cfg is None and mode == "standard":
+            # standard run so we use the control file in PyFluxPro/controlfiles/standard
+            # get the base path of script or Pyinstaller application
+            base_path = pfp_utils.get_base_path()
+            stdname = os.path.join(base_path, "controlfiles", "standard", "nc2csv_oneflux.txt")
+            # check to see if the standard control file exists
+            if os.path.exists(stdname):
+                # standard control file exists so read it
+                cfg = pfp_io.get_controlfilecontents(stdname)
+                # then ask the user to choose a netCDF file
+                filename = pfp_io.get_filename_dialog(file_path=".", title='Choose a netCDF file')
+                # check that the netCDF file exists
+                if not os.path.exists(filename):
+                    # return if no file chosen
+                    logger.info( " Write ONEFlux CSV file: no input file chosen")
+                    return
+                # add a [Files] section to the control file ...
+                if "Files" not in cfg:
+                    cfg["Files"] = {}
+                # ... and put the file path, input file name and output file name in [Files]
+                cfg["Files"]["file_path"] = os.path.join(os.path.split(filename)[0], "")
+                in_filename = os.path.split(filename)[1]
+                cfg["Files"]["in_filename"] = in_filename
+                cfg["Files"]["out_filename"] = in_filename.replace(".nc", "_oneflux.csv")
+            else:
+                # issue an error mesage and return if the standard control file does not exist
+                msg = " Write ONEFlux CSV file: standard control file 'nc2csv_oneflux.txt' does not exist"
+                logger.error(msg)
+                return
+        elif cfg is not None and mode == "custom":
+            # custom run so we proceed with the user's control file
+            pass
+        else:
+            # tell the user we got the wrong input options and return
+            msg = " Write ONEFlux CSV file: wrong input options"
+            logger.error(msg)
+            return
+        # add the [Options] section and populate it
+        if "Options" not in cfg:
+            cfg["Options"] = {}
+        cfg["Options"]["call_mode"] = "interactive"
+        cfg["Options"]["show_plots"] = "Yes"
+        # do the business
+        result = pfp_io.write_csv_oneflux(cfg)
+        # check everything went well
+        if result:
+            # looks good
+            logger.info(" Finished converting netCDF file")
+            logger.info("")
+        else:
+            # or not
+            logger.error("")
+            logger.error(" An error occurred, check the log messages")
+            logger.error("")
+    except Exception:
+        # tell the user if something goes wrong and put the exception in the log window
+        error_message = " Error converting to ONEFlux format, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
 def do_file_convert_nc2reddyproc(cfg, mode="standard"):
     """
     Purpose:
@@ -1085,7 +1165,7 @@ def do_utilities_ustar_cpd_mchugh_custom(main_ui):
     Purpose:
      Calculate the u* threshold using the Change Point Detection method described in
      Barr et al. 2013, AFM 171-172, pp31-45.
-     This code is the original implementation by Ian McHugh and is a wee bit slow.
+     This code is the original implementation by Ian McHugh.
     """
     try:
         cfg = main_ui.tabs.tab_dict[main_ui.tabs.tab_index_running].get_data_from_model()
@@ -1105,7 +1185,7 @@ def do_utilities_ustar_cpd_mchugh_standard(main_ui, nc_file_uri):
     Purpose:
      Calculate the u* threshold using the Change Point Detection method described in
      Barr et al. 2013, AFM 171-172, pp31-45.
-     This code is the original implementation by Ian McHugh and is a wee bit slow.
+     This code is the original implementation by Ian McHugh.
     """
     try:
         logger.info("Starting CPD u* threshold detection (McHugh)")

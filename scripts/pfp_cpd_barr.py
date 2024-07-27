@@ -62,12 +62,13 @@ def cpd_barr_main(cf):
     # read the netcdf file
     ds = pfp_io.NetCDFRead(file_in)
     if ds.info["returncodes"]["value"] != 0: return
-    # get the single-point storage, Fc_single, if available
-    if apply_storage and "Fco2_storage" not in list(ds.root["Variables"].keys()):
-        pfp_ts.CalculateSco2SinglePoint(cf, ds)
-        Fco2_single = pfp_utils.GetVariable(ds, "Fco2_single")
-        Fco2_single["Label"] = "Fco2_storage"
-        pfp_utils.CreateVariable(ds, Fco2_single)
+    # get the single-point storage, Sco2_single, if available
+    labels = list(ds.root["Variables"].keys())
+    if apply_storage and "Sco2" not in labels:
+        pfp_ts.CalculateSco2SinglePoint(ds)
+        Sco2_single = pfp_utils.GetVariable(ds, "Sco2_single")
+        Sco2_single["Label"] = "Sco2"
+        pfp_utils.CreateVariable(ds, Sco2_single)
     cSiteYr = ds.root["Attributes"]["site_name"]
     ts = int(float(ds.root["Attributes"]["time_step"]))
     dt = pfp_utils.GetVariable(ds, "DateTime")
@@ -94,7 +95,7 @@ def cpd_barr_main(cf):
         # if requested, apply storage
         if apply_storage:
             label = cf["Variables"]["Fco2"]["name"]
-            msg = " CPD2: Applying Fco2_storage to " + label
+            msg = " CPD2: Applying Sco2 to " + label
             logger.info(msg)
             pfp_ts.CorrectFco2ForStorage(cf, ds, Fco2_out=label, Fco2_in=label)
         # get the day/night indicator, fNight is 1 for night time, 0 for day time

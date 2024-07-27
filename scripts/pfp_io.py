@@ -18,6 +18,7 @@ import netCDF4
 import numpy
 import pandas
 from pandas.errors import ParserError
+import pytz
 import xlwt
 import xlsxwriter
 from PyQt5 import QtWidgets
@@ -25,6 +26,7 @@ from PyQt5 import QtWidgets
 from scripts import cfg
 from scripts import constants as c
 from scripts import meteorologicalfunctions as pfp_mf
+from scripts import pfp_ck
 from scripts import pfp_log
 from scripts import pfp_plot
 from scripts import pfp_ts
@@ -1823,6 +1825,113 @@ def write_csv_fluxnet(cf):
     csvfile.close()
     return 1
 
+def write_csv_oneflux(cfg):
+    """
+    """
+    ok = True
+    # get the file names
+    nc_uri = get_infilenamefromcf(cfg)
+    if not pfp_utils.file_exists(nc_uri, mode="verbose"):
+        ok = False
+        return ok
+    ds = NetCDFRead(nc_uri)
+    ts = int(float(ds.root["Attributes"]["time_step"]))
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    ts_delta = datetime.timedelta(minutes=ts)
+    start_year = (dt["Data"][0] - ts_delta).year
+    end_year = (dt["Data"][-1] - ts_delta).year
+    years = range(start_year, end_year+1)
+    if "General" not in cfg:
+        cfg["General"] = {}
+    for year in years:
+        msg = " Converting year: " + str(year)
+        logger.info(msg)
+        cfg["General"]["year"] = str(year)
+        if not write_csv_oneflux_year(cfg, ds):
+            ok = False
+            return ok
+    return ok
+
+def write_csv_oneflux_year(cfg, ds):
+    """
+    """
+    ok = True
+    time_resolution = {30: "halfhourly", 60: "hourly"}
+    ts = int(ds.root["Attributes"]["time_step"])
+    ts_delta = datetime.timedelta(minutes=ts)
+    # get the start and end dates
+    year = int(cfg["General"]["year"])
+    start = datetime.datetime(year, 1, 1, 0, 0, 0) + ts_delta
+    end = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+    # datetime array from start to end at ts
+    cdt = numpy.array([d for d in pfp_utils.perdelta(start, end, ts_delta)])
+    nrecs = len(cdt)
+    # array for data
+    data = {"DateTime": {"data": numpy.array(cdt), "format": ""}}
+    dt = pfp_utils.GetVariable(ds, "DateTime")
+    ldt = dt["Data"]
+    indainb, indbina = pfp_utils.FindMatchingIndices(cdt, ldt)
+    # ONEFlux variable labels
+    of_labels = list(cfg["Variables"].keys())
+    for of_label in of_labels:
+        data[of_label] = {}
+        data[of_label]["data"] = numpy.full(nrecs, float(-9999))
+        fmt = cfg["Variables"][of_label]["format"]
+        if "." in fmt:
+            numdec = len(fmt) - (fmt.index(".") + 1)
+            strfmt = "{0:."+str(numdec)+"f}"
+        else:
+            strfmt = "{0:d}"
+        data[of_label]["format"] = strfmt
+        var = pfp_utils.GetVariable(ds, cfg["Variables"][of_label]["name"])
+        data[of_label]["data"][indainb] = var["Data"][indbina]
+    fluxnet_id = ds.root["Attributes"]["site_name"]
+    if "fluxnet_id" in ds.root["Attributes"]:
+        if len(ds.root["Attributes"]["fluxnet_id"]) == 6:
+            fluxnet_id = ds.root["Attributes"]["fluxnet_id"]
+    # get the UTC offset from the time zone name
+    time_zone = ds.root["Attributes"]["time_zone"]
+    now = datetime.datetime.now(pytz.timezone(time_zone))
+    utc_offset = now.utcoffset().total_seconds()/60/60
+    # get the tower height
+    tower_height = pfp_utils.strip_non_numeric(str(ds.root["Attributes"]["tower_height"]))
+    # get the data path and CSV name
+    data_path = os.path.split(ds.info["filepath"])[0]
+    csv_name = fluxnet_id + "_qcv_" + str(year) + ".csv"
+    csv_uri = os.path.join(data_path, csv_name)
+    # open the csv file
+    csv_file = open(csv_uri, 'w')
+    writer = csv.writer(csv_file)
+    # write the header lines
+    writer.writerow(["site", fluxnet_id])
+    writer.writerow(["year", str(year)])
+    writer.writerow(["lat", str(ds.root["Attributes"]["latitude"])])
+    writer.writerow(["lon", str(ds.root["Attributes"]["longitude"])])
+    writer.writerow(["timezone", str(utc_offset)])
+    writer.writerow(["htower", "{:%Y%m%d%H%M}".format(start), str(tower_height)])
+    writer.writerow(["timeres", time_resolution[ts]])
+    writer.writerow(["sc_negl", str(1)])
+    writer.writerow(["notes", "Prepared by PyFluxPro"])
+    # write the data
+    header = ["TIMESTAMP_START","TIMESTAMP_END"]
+    for of_label in of_labels:
+        header.append(of_label)
+    writer.writerow(header)
+    for n in range(nrecs):
+        timestamp_start = "{:%Y%m%d%H%M}".format(data["DateTime"]["data"][n]-ts_delta)
+        timestamp_end = "{:%Y%m%d%H%M}".format(data["DateTime"]["data"][n])
+        data_list = [timestamp_start, timestamp_end]
+        for of_label in of_labels:
+            strfmt = data[of_label]["format"]
+            if "d" in strfmt:
+                data_list.append(strfmt.format(int(round(data[of_label]["data"][n]))))
+            else:
+                data_list.append(strfmt.format(data[of_label]["data"][n]))
+        writer.writerow(data_list)
+    # close the CSV file
+    csv_file.close()
+    return ok
+
 def get_controlfilecontents(cfg_file_uri, mode="verbose"):
     """
     Purpose:
@@ -1984,8 +2093,12 @@ def NetCDFConcatenate(info):
     # and make sure we have all of the meteorological variables
     pfp_ts.CalculateMeteorologicalVariables(ds_out, info)
     # check units of Fc and convert if necessary
-    Fc_list = ["Fco2", "Fco2_single", "Fco2_profile", "Fco2_storage"]
+    Fc_list = ["Fco2", "Sco2_single", "Sco2_profile", "Sco2_storage"]
     pfp_utils.CheckUnits(ds_out, Fc_list, "umol/m^2/s", convert_units=True)
+    # appply the Fco2 storage term if requested
+    netcdf_concatenate_apply_sco2_storage(ds_out, info)
+    # use the MAD filer is requested
+    netcdf_concatenate_apply_mad_filter(ds_out, info)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds_out)
     # update the coverage statistics
@@ -2000,6 +2113,121 @@ def NetCDFConcatenate(info):
     logger.info(" Writing data to " + os.path.split(inc["out_file_name"])[1])
     # write the concatenated data structure to file
     NetCDFWrite(inc["out_file_name"], ds_out, ndims=inc["NumberOfDimensions"])
+    return
+
+def netcdf_concatenate_apply_mad_filter(ds, info):
+    inc = info["NetCDFConcatenate"]
+    # return if MAD filter not requested for any variables
+    if "ApplyMADFilter" not in list(inc.keys()):
+        return
+    if inc["ApplyMADFilter"] == "":
+        return
+    filter_labels = inc["ApplyMADFilter"].split(",")
+    # check the requested variables are in the data structure
+    ds_labels = list(ds.root["Variables"].keys())
+    for filter_label in filter_labels:
+        if filter_label not in ds_labels:
+            filter_labels.remove(filter_label)
+    # return if none of the requested variables are in the data structure
+    if len(filter_labels) == 0:
+        return
+    # should be safe to do the business
+    msg = " Applying the MAD (despike) filter to "
+    msg += ",".join(map(str, filter_labels))
+    logger.info(msg)
+    inc["ApplyMADFilter"] = {"Variables": filter_labels, "Options": {}, "General": {}}
+    # add general options
+    inag = info["NetCDFConcatenate"]["ApplyMADFilter"]["General"]
+    inag["nc_nrecs"] = int(ds.root["Attributes"]["nc_nrecs"])
+    inag["time_step"] = int(ds.root["Attributes"]["time_step"])
+    inag["processing_level"] = str(ds.root["Attributes"]["processing_level"])
+    # load the default MAD parameters into the info dictionary
+    inao = info["NetCDFConcatenate"]["ApplyMADFilter"]["Options"]
+    inao["Fsd_threshold"] = float(12)
+    inao["window_size"] = int(13)
+    inao["zfc"] = float(5.5)
+    for filter_label in filter_labels:
+        if filter_label == "Fco2":
+            inao["edge_threshold"] = float(6)
+        elif filter_label in ["Fe", "Fh"]:
+            inao["edge_threshold"] = float(100)
+        else:
+            msg = "  When concatenating, MAD filter only for Fco2, Fe or Fh, not " + filter_label
+            logger.warning(msg)
+            continue
+        # get the data
+        Fsd = pfp_utils.GetVariable(ds, "Fsd")
+        var = pfp_utils.GetVariable(ds, filter_label)
+        if "MAD filter" in var["Attr"]:
+            msg = " MAD filter already applied to " + filter_label
+            logger.warning(msg)
+            continue
+        # save a copy of the unfiltered variable
+        var_notMAD = pfp_utils.CopyVariable(var)
+        var_notMAD["Label"] = var["Label"] + "_notMAD"
+        pfp_utils.CreateVariable(ds, var_notMAD)
+        result = pfp_ck.do_madfilter_1(var, Fsd, inc, code=24)
+        pfp_ck.do_madfilter_2(result, inc, code=24)
+        # get the processing level and description attribute name
+        level = str(ds.root["Attributes"]["processing_level"])
+        description = "description_" + level
+        pfp_utils.append_to_attribute(var["Attr"],{description: "MAD filter applied"})
+        mad_attr = [inao["Fsd_threshold"], inao["window_size"], inao["zfc"], inao["edge_threshold"]]
+        var["Attr"]["MAD filter"] = ",".join(map(str, mad_attr))
+        pfp_utils.CreateVariable(ds, var)
+    return
+
+def netcdf_concatenate_apply_sco2_storage(ds, info):
+    """
+    Purpose:
+     Add the storage term to the EC CO2 flux.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: January 2024
+    """
+    if info["NetCDFConcatenate"]["ApplyFco2Storage"].lower() != "yes":
+        return
+    # sanity checks
+    labels = sorted(list(ds.root["Variables"].keys()))
+    if "Fco2" not in labels:
+        msg = " Fco2 not in data structure, can't apply storage term"
+        logger.warning(msg)
+        return
+    Fco2 = pfp_utils.GetVariable(ds, "Fco2")
+    # has Fco2 already been corrected for storage?
+    descr_attrs = [a for a in Fco2["Attr"] if a[0:11] == "description"]
+    for descr_attr in descr_attrs:
+        if "corrected for storage" in descr_attr.lower():
+            msg = " Fco2 already corrected for storage"
+            logger.warning(msg)
+            return
+    if "Sco2_single" not in labels:
+        pfp_ts.CalculateSco2SinglePoint(ds)
+    labels = sorted(list(ds.root["Variables"].keys()))
+    for sco2_label in ["Sco2", "Sco2_storage", "Sco2_profile", "Sco2_single"]:
+        if sco2_label in labels:
+            msg = " Using " + sco2_label + " as CO2 flux storage term"
+            Sco2 = pfp_utils.GetVariable(ds, sco2_label)
+            break
+    # check the units
+    if Fco2["Attr"]["units"] != Sco2["Attr"]["units"]:
+        msg = " Units of Fco2 (" + Fco2["Attr"]["units"] + ") and Sco2 ("
+        msg += Sco2["Attr"]["units"] + " are different"
+        logger.warning(msg)
+        return
+    # do the business
+    descr_level = "description_" + str(ds.root["Attributes"]["processing_level"])
+    msg = " Adding storage term " + Sco2["Label"] + " to " + Fco2["Label"]
+    logger.info(msg)
+    fco2_mask = numpy.ma.getmaskarray(Fco2["Data"])
+    sco2_mask = numpy.ma.getmaskarray(Sco2["Data"])
+    Fco2["Data"] = Fco2["Data"] + Sco2["Data"]
+    idx = numpy.where((fco2_mask==False) & (sco2_mask==True))[0]
+    Fco2["Flag"][idx] = int(25)
+    tmp = "corrected for storage using " + Sco2["Label"]
+    pfp_utils.append_to_attribute(Fco2["Attr"], {descr_level: tmp})
+    pfp_utils.CreateVariable(ds, Fco2)
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):
@@ -2741,7 +2969,7 @@ def nc_read_series(nc_file, checktimestep=True, fixtimestepmethod="round"):
             pfp_utils.FixTimeStep(ds, fixtimestepmethod=fixtimestepmethod)
     # tell the user when the data starts and ends
     ldt = ds.root["Variables"]["DateTime"]["Data"]
-    msg = " Got data from " + ldt[0].strftime("%Y-%m-%d %H:%M:%S")
+    msg = "  Got data from " + ldt[0].strftime("%Y-%m-%d %H:%M:%S")
     msg += " to " + ldt[-1].strftime("%Y-%m-%d %H:%M:%S")
     logger.info(msg)
     ds.info["returncodes"]["value"] = 0
