@@ -468,8 +468,8 @@ def ParseConcatenateControlFile(cf):
             inc["OK"] = False
             return info
     # check the [In] section contains at least 1 entry
-    if len(list(cf["Files"]["In"].keys())) < 2:
-        msg = " Less than 2 input files specified"
+    if len(list(cf["Files"]["In"].keys())) < 1:
+        msg = " No input files specified"
         logger.error(msg)
         inc["OK"] = False
         return info
@@ -596,7 +596,8 @@ def parse_l3_combine(info):
     cfv = cfg["Variables"]
     labels = list(cfv.keys())
     # list of labels that are explicitly referenced in pfp_levels.l3qc()
-    l3_labels = ["CO2", "Fco2", "Fg", "Fsd", "Fn", "Sco2", "Sws", "Ta", "Ts", "Wd", "Ws"]
+    l3_labels = ["CO2", "Fco2", "Fg", "Fsd", "Fsu", "Fld", "Flu", "Fn",
+                 "Sco2", "Sws", "Ta", "Ts", "Wd", "Ws"]
     # cs_labels is a list of all variables using MergeSeries or AverageSeries
     cs_labels = []
     # loop over L3 labels
@@ -1758,6 +1759,14 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
                     msg = "'instrument' attribute must have 2 entries separated by a comma, got "
                     msg += instrument_type + " for " + sonic_irga_label
                     messages["ERROR"].append(msg)
+            elif ((instrument_type.strip() in known_sonics) and
+                  (instrument_type.strip() in known_irgas)):
+                if instrument_type.strip() not in sonic_check:
+                    sonic_check[instrument_type.strip()] = []
+                sonic_check[instrument_type.strip()].append(sonic_irga_label)
+                if instrument_type.strip() not in irga_check:
+                    irga_check[instrument_type.strip()] = []
+                irga_check[instrument_type.strip()].append(sonic_irga_label)
             else:
                 # instrument attribute is something we can't handle
                 msg = "'instrument' attribute must have 2 entries separated by a comma, got "
@@ -1772,7 +1781,7 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
         messages["ERROR"].append(msg)
     elif len(sonic_types) == 1:
         cfg["Global"]["sonic_type"] = str(sonic_types[0])
-        msg = "Sonic type set to " + cfg["Global"]["sonic_type"]
+        msg = " Sonic type set to " + cfg["Global"]["sonic_type"]
         logger.info(msg)
     else:
         msg = "More than 1 sonic type specified (" + ",".join(sonic_types) + ")"
@@ -1786,7 +1795,7 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
         messages["ERROR"].append(msg)
     elif len(irga_types) == 1:
         cfg["Global"]["irga_type"] = str(irga_types[0])
-        msg = "IRGA type set to " + cfg["Global"]["irga_type"]
+        msg = " IRGA type set to " + cfg["Global"]["irga_type"]
         logger.info(msg)
     else:
         msg = "More than 1 IRGA type specified (" + ",".join(irga_types) + ")"

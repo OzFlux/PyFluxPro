@@ -3601,7 +3601,7 @@ def xl_write_SOLOStats(ds, l5_info):
     # open the Excel file
     xlfile = xlwt.Workbook()
     # list of outputs to write to the Excel file
-    date_list = ["startdate", "enddate"]
+    date_list = ["startdate", "middate", "enddate"]
     # loop over the series that have been gap filled using ACCESS data
     d_xf = xlwt.easyxf(num_format_str='dd/mm/yyyy hh:mm')
     outputs = list(l5io.keys())
