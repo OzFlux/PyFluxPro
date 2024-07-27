@@ -2052,6 +2052,25 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_madcheck(self):
+        """ Add the MAD check to a variable."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        if selected_item.text().split("_")[0] == "Fco2":
+            edge_threshold = 6
+        elif selected_item.text().split("_")[0] in ["Fe", "Fh"]:
+            edge_threshold = 100
+        else:
+            edge_threshold = "20,80"
+        new_qc = {"MADCheck":{"Fsd_threshold": 12, "edge_threshold": edge_threshold,
+                              "window_size": 13, "zfc": 5.5,}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
     def add_options_section(self):
         """ Add an Options section."""
         self.sections["Options"] = QtGui.QStandardItem("Options")
@@ -2566,6 +2585,11 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     self.context_menu.actionAddLowerCheck.setText("Add LowerCheck")
                     self.context_menu.addAction(self.context_menu.actionAddLowerCheck)
                     self.context_menu.actionAddLowerCheck.triggered.connect(self.add_lowercheck)
+                if "MADCheck" not in existing_entries:
+                    self.context_menu.actionAddMADCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMADCheck.setText("Add MADCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddMADCheck)
+                    self.context_menu.actionAddMADCheck.triggered.connect(self.add_madcheck)
                 if "UpperCheck" not in existing_entries:
                     self.context_menu.actionAddUpperCheck = QtWidgets.QAction(self)
                     self.context_menu.actionAddUpperCheck.setText("Add UpperCheck")
@@ -2645,7 +2669,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 self.context_menu.addSeparator()
                 add_separator = False
             if str(idx.data()) in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
-                                   "ExcludeHours", "LowerCheck", "UpperCheck"]:
+                                   "ExcludeHours", "LowerCheck", "MADCheck", "UpperCheck"]:
                 self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)

@@ -849,8 +849,15 @@ def do_madfilter(cf, ds, section, label, code=24):
     inao["window_size"] = int(float(opt))
     opt = pfp_utils.get_keyvaluefromcf(cf, [section, label, "MADCheck"], "zfc", default=5.5)
     inao["zfc"] = float(opt)
-    opt = pfp_utils.get_keyvaluefromcf(cf, [section, label, "MADCheck"], "edge_threshold", default=6)
-    inao["edge_threshold"] = float(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, [section, label, "MADCheck"], "edge_threshold", default="20,80")
+    if "," in opt:
+        pctl1 = float(opt.split(",")[0])
+        pctl2 = float(opt.split(",")[1])
+        a = numpy.ma.compressed(var["Data"])
+        edge_threshold = abs(numpy.percentile(a, pctl2) - numpy.percentile(a, pctl1))
+    else:
+        edge_threshold = float(opt)
+    inao["edge_threshold"] = float(edge_threshold)
     # add general options
     inag = info["ApplyMADFilter"]["General"]
     inag["nc_nrecs"] = int(ds.root["Attributes"]["nc_nrecs"])
