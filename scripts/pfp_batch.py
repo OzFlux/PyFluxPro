@@ -176,6 +176,10 @@ def do_L3_batch(main_ui, cf_level):
                     else:
                         pfp_plot.plottimeseries(cf_l3, nFig, ds2, ds3)
                 logger.info("Finished plotting L3 data")
+            # plot the L3 fingerprints
+            logger.info("Plotting L3 fingerprints")
+            do_batch_fingerprints(cf_l3)
+            logger.info("Finished L3 fingerprints")
             logger.info("")
         except Exception:
             msg = "Error occurred during L3 processing " + cf_file_name[1]
