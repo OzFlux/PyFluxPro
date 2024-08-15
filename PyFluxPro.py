@@ -834,6 +834,9 @@ class pfp_main_ui(QWidget):
         elif cfg["level"] == "nc2csv_fluxnet":
             pfp_top_level.do_file_convert_nc2fluxnet(self)
             self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "nc2csv_oneflux":
+            pfp_top_level.do_file_convert_nc2oneflux(self)
+            self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_reddyproc":
             pfp_top_level.do_file_convert_nc2reddyproc(self, mode="custom")
             self.actionRunCurrent.setDisabled(False)
