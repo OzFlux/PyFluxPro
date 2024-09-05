@@ -40,6 +40,7 @@ def estimate_random_uncertainty_method1(ds, info):
     """
     Purpose:
      Estimate the random uncertainty using the ONEFlux Method 1.
+     This function is based on random_method_1 in nee_proc/src/randunc.c.
     Usage:
     Side effects:
      We switch from masked arrays to ndarrays with missing data set to
@@ -127,6 +128,7 @@ def estimate_random_uncertainty_method2(ds, info):
     """
     Purpose:
      Estimate the random uncertainty using the ONEFlux Method 2.
+     This function is based on random_method_2 in nee_proc/src/randunc.c.
     Usage:
     Side effects:
     Author: PRI
