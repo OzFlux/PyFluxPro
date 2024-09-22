@@ -1668,7 +1668,8 @@ def plot_quickcheck(cf):
 
 def plot_stacked_timeseries(cfg, ds, start=0, end=-1):
     show_plots = pfp_utils.get_optionskeyaslogical(cfg, "show_plots", default=True)
-    plot_labels = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "plot_labels", default="")
+    plot_labels = pfp_utils.get_keyvaluefromcf(cfg, ["Options", "plot_stacked_timeseries"],
+                                               "plot_labels", default="")
     site_name = ds.root["Attributes"]["site_name"]
     level = ds.root["Attributes"]["processing_level"]
     ds_labels = sorted(list(ds.root["Variables"].keys()))
@@ -1678,6 +1679,7 @@ def plot_stacked_timeseries(cfg, ds, start=0, end=-1):
     if len(plot_labels) < 1:
         msg = "No plot variables in data set"
         logger.error(msg)
+        return
     nrows = len(plot_labels)
     if show_plots:
         plt.ion()
@@ -1707,7 +1709,7 @@ def plot_stacked_timeseries(cfg, ds, start=0, end=-1):
     plot_path = os.path.join(plot_path, "timeseries", "")
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
-    pngname = plot_path + site_name.replace(" ","") + "_" + level + "_"
+    pngname = plot_path + site_name.replace(" ","") + "_" + level
     pngname = pngname + "_stacked_timeseries.png"
     fig.savefig(pngname, format="png")
     if show_plots:

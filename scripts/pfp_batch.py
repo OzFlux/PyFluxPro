@@ -47,10 +47,11 @@ def do_batch_stacked_timeseries(cfg, ds, start=0, end=-1):
     Author: PRI
     Date: August 2024
     """
-    msg = " Doing stacked timeseries plots using " + ds.filename
+    msg = "Doing stacked timeseries plots"
     logger.info(msg)
     pfp_plot.plot_stacked_timeseries(cfg, ds, start=start, end=end)
     msg = "Finished stacked timeseries plots"
+    logger.info(msg)
     return
 def do_L1_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
