@@ -2895,24 +2895,39 @@ def PadVariable(var_in, start, end, out_type="ma"):
     Side effects:
     Author: PRI
     Date: November 2019
+    Mods:
+     September 2024 - added code to handle a DateTime variable.
     """
+    # get the time step
     ts = int(var_in["time_step"])
     ts_dt = datetime.timedelta(minutes=ts)
+    # get an aray of datetimes from the start to the end at the time step
     dt_padded = numpy.array([d for d in perdelta(start, end, ts_dt)])
+    # number of records in the padded variable
     n_padded = len(dt_padded)
-    if out_type == "nan":
-        data_padded = numpy.full(n_padded, numpy.nan, dtype=numpy.float64)
-    elif out_type == "ma":
-        data_padded = numpy.ma.masked_all(n_padded, dtype=numpy.float64)
+    # create the padded data based on the variable type
+    if var_in["Label"] == "DateTime":
+        # if it is DateTime then just use the padded DateTime
+        data_padded = dt_padded
     else:
-        data_padded = numpy.full(n_padded, c.missing_value, dtype=numpy.float64)
+        # if it is a general variable then use the specified output type
+        if out_type == "nan":
+            data_padded = numpy.full(n_padded, numpy.nan, dtype=numpy.float64)
+        elif out_type == "ma":
+            data_padded = numpy.ma.masked_all(n_padded, dtype=numpy.float64)
+        else:
+            data_padded = numpy.full(n_padded, c.missing_value, dtype=numpy.float64)
+    # create the flag
     flag_padded = numpy.full(n_padded, 1, dtype=numpy.int32)
+    # find indices of matching elements in the padded and original time
     idxa, idxb = FindMatchingIndices(dt_padded, var_in["DateTime"])
-    data_padded[idxa] = var_in["Data"]
-    flag_padded[idxa] = var_in["Flag"]
-    var_out = {"Label":var_in["Label"], "Attr":var_in["Attr"],
-               "Data":data_padded, "Flag":flag_padded,
-               "DateTime":dt_padded, "time_step":ts}
+    # put the data and the flag in the padded variable
+    data_padded[idxa] = var_in["Data"][idxb]
+    flag_padded[idxa] = var_in["Flag"][idxb]
+    # create the output variable and return with it
+    var_out = {"Label": var_in["Label"], "Attr": var_in["Attr"],
+               "Data": data_padded, "Flag": flag_padded,
+               "DateTime": dt_padded}
     return var_out
 
 def parse_rangecheck_limits(s):
