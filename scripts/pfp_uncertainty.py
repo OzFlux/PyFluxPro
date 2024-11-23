@@ -4,6 +4,7 @@ import logging
 from multiprocessing import Pool
 import os
 #3rd party modules
+import dateutil
 import numpy
 #PFP modules
 from scripts import pfp_ck
@@ -48,6 +49,7 @@ def estimate_random_uncertainty_method1(ds, info):
     Author: PRI
     Date: December 2023
     """
+    startdate = dateutil.parser.parse("2011-01-01 00:30")
     # get number of records, time step etc
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     ts = int(ds.root["Attributes"]["time_step"])
@@ -92,11 +94,12 @@ def estimate_random_uncertainty_method1(ds, info):
                                                     datetime=ldt["Data"], out_type="ndarray")
         runc_number = pfp_utils.CreateEmptyVariable(runc_label+"_number", nrecs,
                                                     datetime=ldt["Data"], out_type="ndarray")
-        idx_not_nan = numpy.where(~numpy.isnan(data) &
-                                  ~numpy.isnan(fsd) &
-                                  ~numpy.isnan(ta) &
-                                  ~numpy.isnan(vpd))[0]
-        for j in idx_not_nan:
+        #idx_not_nan = numpy.where(~numpy.isnan(data) &
+                                  #~numpy.isnan(fsd) &
+                                  #~numpy.isnan(ta) &
+                                  #~numpy.isnan(vpd))[0]
+        #for j in idx_not_nan:
+        for j in list(range(nrecs)):
             window_first_index = max([0, j - half_window_indices])
             window_last_index = min([j + half_window_indices, nrecs-1])
             idx1 = numpy.array([i+j for i in idx0 if
@@ -109,6 +112,8 @@ def estimate_random_uncertainty_method1(ds, info):
                                (~numpy.isnan(fsd[idx1])) &
                                (~numpy.isnan(ta[idx1])) &
                                (~numpy.isnan(vpd[idx1])))[0]
+            #if var["DateTime"][j] == startdate:
+                #print("oi va vey")
             if len(idx2) >= 5:
                 runc_value["Data"][j] = numpy.std(data[idx1[idx2]])
                 runc_value["Flag"][j] = int(710)
