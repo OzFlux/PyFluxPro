@@ -49,20 +49,20 @@ def estimate_random_uncertainty_method1(ds, info):
     Author: PRI
     Date: December 2023
     """
-    startdate = dateutil.parser.parse("2011-01-01 00:30")
+    #startdate = dateutil.parser.parse("2011-01-01 00:30")
     # get number of records, time step etc
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
-    ts = int(ds.root["Attributes"]["time_step"])
-    nperhour = int(60/ts)
-    nperday = int(24*60/ts)
+    #ts = int(ds.root["Attributes"]["time_step"])
+    #nperhour = int(60/ts)
+    #nperday = int(24*60/ts)
     # get required information
     ierc = info["EstimateRandomUncertainty"]
     labels = ierc["labels"]
     ierc1 = ierc["Method1"]
-    window_size = ierc1["window_size"]
-    half_window_days = max([1, int((window_size/2)+0.5)])
-    half_window_indices = int(nperday*half_window_days)
-    hour_range = int(ierc1["hour_range"])
+    #window_size = ierc1["window_size"]
+    #half_window_days = max([1, int((window_size/2)+0.5)])
+    #half_window_indices = int(nperday*half_window_days)
+    #hour_range = int(ierc1["hour_range"])
     Fsd_tolerance = float(ierc1["Fsd"]["tolerance"])
     Ta_tolerance = float(ierc1["Ta"]["tolerance"])
     VPD_tolerance = float(ierc1["VPD"]["tolerance"])
@@ -76,12 +76,15 @@ def estimate_random_uncertainty_method1(ds, info):
     ta = numpy.ma.filled(Ta["Data"], fill_value=numpy.nan)
     vpd = numpy.ma.filled(VPD["Data"], fill_value=numpy.nan)
     # construct a list of indices to covber the window and hour ranges
-    idx0 = []
-    hri = max([1, hour_range*nperhour])
-    idx_hr = list(range(-1*hri, hri+1))
-    idx_dr = list(range(-1*half_window_days, half_window_days+1))
-    for n in idx_dr:
-        idx0 += [n*nperday+m for m in idx_hr]
+    #idx0 = []
+    #hri = max([1, hour_range*nperhour])
+    #idx_hr = list(range(-1*hri, hri+1))
+    #idx_dr = list(range(-1*half_window_days, half_window_days+1))
+    #for n in idx_dr:
+        #idx0 += [n*nperday+m for m in idx_hr]
+    i5t = numpy.tile(numpy.array([0, 1, 2, 3, 4]), 15)
+    oo = numpy.repeat(numpy.arange(-337, 337, 48), 5)
+    idx0 = oo + i5t
     # do the work
     for label in labels:
         # get the variable
@@ -98,22 +101,29 @@ def estimate_random_uncertainty_method1(ds, info):
                                   #~numpy.isnan(fsd) &
                                   #~numpy.isnan(ta) &
                                   #~numpy.isnan(vpd))[0]
+
         #for j in idx_not_nan:
         for j in list(range(nrecs)):
-            window_first_index = max([0, j - half_window_indices])
-            window_last_index = min([j + half_window_indices, nrecs-1])
-            idx1 = numpy.array([i+j for i in idx0 if
-                                i+j >= window_first_index and
-                                i+j <= window_last_index])
+            #window_first_index = max([0, j - half_window_indices])
+            #window_last_index = min([j + half_window_indices, nrecs-1])
+            #idx1 = numpy.array([i+j for i in idx0 if
+                                #i+j >= window_first_index and
+                                #i+j <= window_last_index])
+            idx1 = idx0 + j
+            idx1 = idx1[(idx1 >= 0) & (idx0 < nrecs)]
+            #idx2 = numpy.where((abs(fsd[idx1] - fsd[j]) < Fsd_tolerance) &
+                               #(abs(ta[idx1] - ta[j]) < Ta_tolerance) &
+                               #(abs(vpd[idx1] - vpd[j]) < VPD_tolerance) &
+                               #(~numpy.isnan(data[idx1])) &
+                               #(~numpy.isnan(fsd[idx1])) &
+                               #(~numpy.isnan(ta[idx1])) &
+                               #(~numpy.isnan(vpd[idx1])))[0]
             idx2 = numpy.where((abs(fsd[idx1] - fsd[j]) < Fsd_tolerance) &
                                (abs(ta[idx1] - ta[j]) < Ta_tolerance) &
                                (abs(vpd[idx1] - vpd[j]) < VPD_tolerance) &
-                               (~numpy.isnan(data[idx1])) &
-                               (~numpy.isnan(fsd[idx1])) &
-                               (~numpy.isnan(ta[idx1])) &
-                               (~numpy.isnan(vpd[idx1])))[0]
-            #if var["DateTime"][j] == startdate:
-                #print("oi va vey")
+                               (~numpy.isnan(data[j])))[0]
+            if j == 0:
+                print("oi va vey")
             if len(idx2) >= 5:
                 runc_value["Data"][j] = numpy.std(data[idx1[idx2]])
                 runc_value["Flag"][j] = int(710)
