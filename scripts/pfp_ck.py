@@ -219,7 +219,6 @@ def apply_turbulence_filter_do_filter(ds, var, indicators, ustar_dict):
     # will still exist once the gap filling has been done
     var_filtered["Label"] = str(var["Label"]) + "_filtered"
     return var_filtered
->>>>>>> a7db19e (Got basic L7 running plus refactoring and renaming.)
 
 def cliptorange(data, lower, upper):
     data = rangecheckserieslower(data,lower)

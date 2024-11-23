@@ -2347,7 +2347,7 @@ def netcdf_concatenate_create_ds_out(data, info):
      ds_out = netcdf_concatenate_create_ds_out(data, info)
      where;
       data is a dictionary of data structures with the netCDF file names as the keys.
-      info is the settings dictionary from pfp_compliance.ParseConcatenateControlFile()
+      info is the settings dictionary from pfp_parse.ParseConcatenateControlFile()
     Side effects:
     Author: PRI
     Date: November 2019
@@ -2460,7 +2460,7 @@ def netcdf_concatenate_variable_attributes(ds_out, attr_out, info):
       ds_out is the output data structure
       attr_out is a dictionary of attribute values from each variable from each file
       info is the settings dictionary returned by
-              pfp_compliance.ParseConcatenateControlFile(cf)
+              pfp_parse.ParseConcatenateControlFile(cf)
     Side effects:
     Author: PRI
     Date: November 2019
@@ -2479,7 +2479,7 @@ def netcdf_concatenate_variable_attributes(ds_out, attr_out, info):
         # add "valid_min" and "valid_max"
         attr_final[label]["valid_min"] = []
         attr_final[label]["valid_max"] = []
-        # add the other attributes defined in pfp_compliance.ParseConcatenateControlFile()
+        # add the other attributes defined in pfp_parse.ParseConcatenateControlFile()
         for attr in inc["attributes"]:
             attr_final[label][attr] = []
     # loop over variables and append the attribute values for each variable across all
@@ -2499,7 +2499,7 @@ def netcdf_concatenate_variable_attributes(ds_out, attr_out, info):
                         attr_final[label][attr].append(attrs[attr])
     # loop over variables and concatenate the variable attributes
     for label in labels:
-        # loop over the attributes defined in pfp_compliance.ParseConcatenateControlFile()
+        # loop over the attributes defined in pfp_parse.ParseConcatenateControlFile()
         for attr in inc["attributes"]:
             if attr == "valid_range":
                 # deal with "valid_range"
@@ -2541,7 +2541,7 @@ def netcdf_concatenate_read_input_files(info):
      data = netcdf_concatenate_read_input_files(info)
      where;
       info is the settings dictionary returned by
-              pfp_compliance.ParseConcatenateControlFile(cf)
+              pfp_parse.ParseConcatenateControlFile(cf)
       data is a dictionary of data structures with the netCDF file
               names as the keys.
     Side effects:
@@ -2584,7 +2584,7 @@ def netcdf_concatenate_truncate(ds_in, info):
     Usage:
      ds_out = pfp_io.netcdf_concatenate_truncate(ds, info)
      where ds is the input data structure
-           info is the settings dictionary from pfp_compliance.ParseConcatenateControlFile()
+           info is the settings dictionary from pfp_parse.ParseConcatenateControlFile()
            ds_out is the truncated data structure
     Author: PRI
     Date: November 2019

@@ -440,10 +440,8 @@ def l7_uncertainty(main_gui, cf, ds4, mode="multiprocessing"):
     # construct the output data structure
     dso = pfp_io.DataStructure()
     dso.root["Attributes"] = copy.deepcopy(ds7.root["Attributes"])
-    pctls = []
     for ds in dsp:
         pctl = ds.root["Attributes"]["percentile"]
-        pctls.append(pctl)
         setattr(dso, str(pctl), {"Attributes": ds.root["Attributes"],
                                  "Variables": ds.root["Variables"]})
     return dso
