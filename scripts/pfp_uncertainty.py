@@ -97,27 +97,9 @@ def estimate_random_uncertainty_method1(ds, info):
                                                     datetime=ldt["Data"], out_type="ndarray")
         runc_number = pfp_utils.CreateEmptyVariable(runc_label+"_number", nrecs,
                                                     datetime=ldt["Data"], out_type="ndarray")
-        #idx_not_nan = numpy.where(~numpy.isnan(data) &
-                                  #~numpy.isnan(fsd) &
-                                  #~numpy.isnan(ta) &
-                                  #~numpy.isnan(vpd))[0]
-
-        #for j in idx_not_nan:
         for j in list(range(nrecs)):
-            #window_first_index = max([0, j - half_window_indices])
-            #window_last_index = min([j + half_window_indices, nrecs-1])
-            #idx1 = numpy.array([i+j for i in idx0 if
-                                #i+j >= window_first_index and
-                                #i+j <= window_last_index])
             idx1 = idx0 + j
             idx1 = idx1[(idx1 >= 0) & (idx0 < nrecs)]
-            #idx2 = numpy.where((abs(fsd[idx1] - fsd[j]) < Fsd_tolerance) &
-                               #(abs(ta[idx1] - ta[j]) < Ta_tolerance) &
-                               #(abs(vpd[idx1] - vpd[j]) < VPD_tolerance) &
-                               #(~numpy.isnan(data[idx1])) &
-                               #(~numpy.isnan(fsd[idx1])) &
-                               #(~numpy.isnan(ta[idx1])) &
-                               #(~numpy.isnan(vpd[idx1])))[0]
             idx2 = numpy.where((abs(fsd[idx1] - fsd[j]) < Fsd_tolerance) &
                                (abs(ta[idx1] - ta[j]) < Ta_tolerance) &
                                (abs(vpd[idx1] - vpd[j]) < VPD_tolerance) &
