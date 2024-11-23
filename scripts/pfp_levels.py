@@ -11,6 +11,7 @@ from scripts import pfp_gfALT
 from scripts import pfp_gfMDS
 from scripts import pfp_gfSOLO
 from scripts import pfp_io
+from scripts import pfp_parse
 from scripts import pfp_rp
 from scripts import pfp_ts
 from scripts import pfp_utils
@@ -30,7 +31,7 @@ def l1qc(cfg):
     Date: February 2020
     """
     # parse the L1 control file
-    l1_info = pfp_compliance.ParseL1ControlFile(cfg)
+    l1_info = pfp_parse.ParseL1ControlFile(cfg)
     # read the input file into a pandas data frame
     dfs = pfp_io.ReadInputFile(l1_info)
     # check the timestamps
@@ -96,7 +97,7 @@ def l3qc(cf, ds2):
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds3, "L3")
     # parse the control file for information on how the user wants to do the gap filling
-    l3_info = pfp_compliance.ParseL3ControlFile(cf, ds3)
+    l3_info = pfp_parse.ParseL3ControlFile(cf, ds3)
     # check to see if we have any imports
     pfp_gf.ImportSeries(ds3, l3_info)
     # ************************
@@ -227,7 +228,7 @@ def l4qc(main_gui, cf, ds3):
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds4, "L4")
     # parse the control file for information on how the user wants to do the gap filling
-    l4_info = pfp_gf.ParseL4ControlFile(cf, ds4)
+    l4_info = pfp_parse.ParseL4ControlFile(cf, ds4)
     # check to see if we have any imports
     pfp_gf.ImportSeries(ds4, l4_info)
     # now do the meteorological driver gap filling
@@ -277,7 +278,7 @@ def l5qc(main_gui, cf, ds4):
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds5, "L5")
     # parse the control file for information on how the user wants to do the gap filling
-    l5_info = pfp_gf.ParseL5ControlFile(cf, ds5)
+    l5_info = pfp_parse.ParseL5ControlFile(cf, ds5)
     # check to see if we have any imports
     pfp_gf.ImportSeries(ds5, l5_info)
     # truncate data structure if requested
@@ -338,7 +339,7 @@ def l6qc(main_gui, cf, ds5):
     # set some attributes for this level
     pfp_utils.UpdateGlobalAttributes(cf, ds6, "L6")
     # parse the control file
-    l6_info = pfp_rp.ParseL6ControlFile(cf, ds6)
+    l6_info = pfp_parse.ParseL6ControlFile(cf, ds6)
     # check to see if we have any imports
     pfp_gf.ImportSeries(ds6, l6_info)
     # truncate data structure if requested
@@ -398,3 +399,15 @@ def l6qc(main_gui, cf, ds5):
     # do the L6 summary
     pfp_rp.L6_summary(ds6, l6_info)
     return ds6
+
+def l7_uncertainty(main_gui, cf, ds4):
+    ds7 = pfp_io.copy_datastructure(cf, ds4)
+    if not ds7:
+        return ds7
+    # parse the control file
+    l7_info = pfp_parse.ParseL7ControlFile(cf, ds7)
+    # check to see if we have any imports
+    pfp_gf.ImportSeries(ds7, l7_info)
+    # truncate data structure if requested
+    pfp_io.TruncateDataStructure(ds7, l7_info)
+    return ds7

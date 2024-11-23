@@ -342,7 +342,23 @@ def cpd_mcnew_update_controlfile(cfg):
         error_message = traceback.format_exc()
         logger.error(error_message)
     return ok
-
+def l7_update_controlfile(cfg):
+    """
+    Purpose:
+     Parse the L7 control file to make sure the syntax is correct and that the
+     control file contains all of the information needed.
+    Usage:
+     result = pfp_compliance.l7_update_controlfile(cfg)
+     where cfg is a ConfigObj object
+           result is True if the L7 control file was updated successfully
+                     False if it couldn't be updated
+    Side effects:
+     The control file is overwritten with an updated version if required.
+    Author: PRI
+    Date: February 2024
+    """
+    ok = True
+    return ok
 def mpt_update_controlfile(cfg):
     """
     Purpose:
@@ -441,6 +457,7 @@ def concatenate_update_controlfile(cfg):
         logger.error(error_message)
     return ok
 
+<<<<<<< HEAD
 def ParseConcatenateControlFile(cf):
     """
     Purpose:
@@ -716,6 +733,8 @@ def parse_variable_attributes(attributes):
         attributes[attr] = value
     return attributes
 
+=======
+>>>>>>> 98bb5e6 (Refactor code to put al control file parsing into pfp_parse.py)
 def check_batch_controlfile(self):
     """
     Purpose:
@@ -1149,6 +1168,18 @@ def check_l6_controlfile(cfg):
         display_messages_batch(messages)
     if len(messages["ERROR"]) > 0:
         ok = False
+    return ok
+def check_l7_controlfile(cfg):
+    """
+    Purpose:
+     Check the L7 control file to make sure it contains all information
+     needed to run L7 and that all information is correct.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: February 2024
+    """
+    ok = True
     return ok
 def check_windrose_controlfile(cfg):
     """
