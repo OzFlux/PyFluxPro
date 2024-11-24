@@ -1207,7 +1207,7 @@ def ParseL7ControlFile(cfg, ds):
     l7_info["EstimateRandomUncertainty"] = {}
     l7_info["EstimateRandomUncertainty"]["labels"] = ["Fco2", "Fe", "Fh"]
     l7_info["EstimateRandomUncertainty"]["Method1"] = {"window_size": 14, "hour_range": 1,
-                                                       "Fsd": {"tolerance": 50},
+                                                       "Fsd": {"tolerance": [20, 50]},
                                                        "Ta": {"tolerance": 2.5},
                                                        "VPD": {"tolerance": 0.5}}
     l7_info["EstimateRandomUncertainty"]["Method2"] = {"window_size": 28,
