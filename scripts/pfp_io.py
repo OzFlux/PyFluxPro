@@ -3285,6 +3285,8 @@ def write_csv_oneflux_year(cfg, ds):
             strfmt = "{0:d}"
         data[of_label]["format"] = strfmt
         var = pfp_utils.GetVariable(ds, cfg["Variables"][of_label]["name"])
+        if var["Attr"]["units"] != cfg["Variables"][of_label]["units"]:
+            var = pfp_utils.convert_units_func(ds, var, cfg["Variables"][of_label]["units"])
         data[of_label]["data"][indainb] = var["Data"][indbina]
     fluxnet_id = ds.root["Attributes"]["site_name"]
     if "fluxnet_id" in ds.root["Attributes"]:
