@@ -99,13 +99,13 @@ def estimate_random_uncertainty_method1(ds, info):
                                                     datetime=ldt["Data"], out_type="ndarray")
         for j in list(range(nrecs)):
             idx1 = idx0 + j
-            idx1 = idx1[(idx1 >= 0) & (idx0 < nrecs)]
+            idx1 = idx1[(idx1 >= 0) & (idx1 < nrecs)]
             idx2 = numpy.where((abs(fsd[idx1] - fsd[j]) < Fsd_tolerance) &
                                (abs(ta[idx1] - ta[j]) < Ta_tolerance) &
                                (abs(vpd[idx1] - vpd[j]) < VPD_tolerance) &
-                               (~numpy.isnan(data[j])))[0]
-            if j == 0:
-                print("oi va vey")
+                               (~numpy.isnan(data[idx1])))[0]
+            #if j == 0:
+                #print("oi va vey")
             if len(idx2) >= 5:
                 runc_value["Data"][j] = numpy.std(data[idx1[idx2]])
                 runc_value["Flag"][j] = int(710)
