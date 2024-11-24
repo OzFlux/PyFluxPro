@@ -2,64 +2,85 @@ level = nc2csv_oneflux
 [Variables]
     [[CO2]]
         format = 0.000
+        units = umol/mol
         name = CO2
     [[FC]]
         format = 0.0000
+        units = umol/m^2/s
         name = Fco2
     [[G]]
         format = 0
+        units = W/m^2
         name = Fg
     [[H]]
         format = 0
+        units = W/m^2
         name = Fh
     [[H2O]]
         format = 0.00
+        units = mmol/mol
         name = H2O
     [[LE]]
         format = 0
+        units = W/m^2
         name = Fe
     [[LW_IN]]
         format = 0
+        units = W/m^2
         name = Fld
     [[LW_OUT]]
         format = 0
+        units = W/m^2
         name = Flu
     [[NETRAD]]
         format = 0
+        units = W/m^2
         name = Fn
     [[P]]
         format = 0.0
+        units = mm
         name = Precip
     [[PA]]
         format = 0.0
+        units = kPa
         name = ps
     [[RH]]
         format = 0
+        units = percent
         name = RH
     [[SWC_1]]
         format = 0.000
+        units = m^3/m^3
         name = Sws
     [[SW_IN]]
         format = 0
+        units = W/m^2
         name = Fsd
     [[SW_OUT]]
         format = 0
+        units = W/m^2
         name = Fsu
     [[TA]]
         format = 0.00
+        units = degC
         name = Ta
     [[TS_1]]
         format = 0.00
+        units = degC
         name = Ts
     [[USTAR]]
         format = 0.00
+        units = m/s
         name = ustar
     [[VPD]]
         format = 0.000
+        units = hPa
         name = VPD
     [[WD]]
         format = 0
+        units = degrees
         name = Wd
     [[WS]]
         format = 0.00
+        units = m/s
         name = Ws
