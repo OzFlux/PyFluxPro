@@ -1634,8 +1634,8 @@ def l1_check_irga_sonic_type(cfg, messages):
     return
 def l1_check_irga_only(cfg, irga_only_labels, messages):
     """ Check instrument attribute of variables that depend only on the IRGA"""
-    if len(irga_only_labels) == 0:
-        return
+    #if len(irga_only_labels) == 0:
+        #return
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     known_irgas = open_path_irgas + closed_path_irgas
@@ -1643,6 +1643,8 @@ def l1_check_irga_only(cfg, irga_only_labels, messages):
     for label in list(irga_only_labels):
         if label not in cfg_labels:
             irga_only_labels.remove(label)
+    if len(irga_only_labels) == 0:
+        return
     irga_check = {}
     for label in irga_only_labels:
         if "instrument" in cfg["Variables"][label]["Attr"]:
@@ -1673,13 +1675,15 @@ def l1_check_irga_only(cfg, irga_only_labels, messages):
     return
 def l1_check_sonic_only(cfg, sonic_only_labels, messages):
     """ Check instrument attribute of variables that depend only on the sonic."""
-    if len(sonic_only_labels) == 0:
-        return
+    #if len(sonic_only_labels) == 0:
+        #return
     known_sonics = list(c.instruments["sonics"].keys())
     cfg_labels = sorted(list(cfg["Variables"].keys()))
     for label in list(sonic_only_labels):
         if label not in cfg_labels:
             sonic_only_labels.remove(label)
+    if len(sonic_only_labels) == 0:
+        return
     sonic_check = {}
     for label in sonic_only_labels:
         if "instrument" in cfg["Variables"][label]["Attr"]:
@@ -1723,8 +1727,8 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
     Author: PRI
     Date: November 2022
     """
-    if len(sonic_irga_labels) == 0:
-        return
+    #if len(sonic_irga_labels) == 0:
+        #return
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     known_irgas = open_path_irgas + closed_path_irgas
@@ -1733,6 +1737,8 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
     for sonic_irga_label in list(sonic_irga_labels):
         if sonic_irga_label not in cfg_labels:
             sonic_irga_labels.remove(sonic_irga_label)
+    if len(sonic_irga_labels) == 0:
+        return
     sonic_check = {}
     irga_check = {}
     for sonic_irga_label in sonic_irga_labels:
