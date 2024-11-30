@@ -90,6 +90,8 @@ class pfp_main_ui(QWidget):
         self.actionFileConvertnc2biomet.setText("nc to Biomet")
         self.actionFileConvertnc2xls = QAction(self)
         self.actionFileConvertnc2xls.setText("nc to Excel")
+        self.actionFileConvertnc2oneflux = QAction(self)
+        self.actionFileConvertnc2oneflux.setText("nc to ONEFlux")
         self.actionFileConvertnc2reddyproc = QAction(self)
         self.actionFileConvertnc2reddyproc.setText("nc to REddyProc")
         # File menu item: split netCDF
@@ -157,6 +159,7 @@ class pfp_main_ui(QWidget):
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
         self.menuFileConvert.addAction(self.actionFileConvertnc2biomet)
+        self.menuFileConvert.addAction(self.actionFileConvertnc2oneflux)
         self.menuFileConvert.addAction(self.actionFileConvertnc2reddyproc)
         # File menu
         self.menuFile.addAction(self.actionFileOpen)
@@ -234,9 +237,14 @@ class pfp_main_ui(QWidget):
 
         # Connect signals to slots
         # File menu actions
-        self.actionFileConvertnc2biomet.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2biomet(None, mode="standard"))
-        self.actionFileConvertnc2xls.triggered.connect(pfp_top_level.do_file_convert_nc2xls)
-        self.actionFileConvertnc2reddyproc.triggered.connect(lambda:pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard"))
+        arg = lambda: pfp_top_level.do_file_convert_nc2biomet(None, mode="standard")
+        self.actionFileConvertnc2biomet.triggered.connect(arg)
+        arg = lambda: pfp_top_level.do_file_convert_nc2oneflux(None, mode="standard")
+        self.actionFileConvertnc2oneflux.triggered.connect(arg)
+        arg = lambda: pfp_top_level.do_file_convert_nc2xls()
+        self.actionFileConvertnc2xls.triggered.connect(arg)
+        arg = lambda: pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard")
+        self.actionFileConvertnc2reddyproc.triggered.connect(arg)
         self.actionFileOpen.triggered.connect(self.file_open)
         self.actionFileSave.triggered.connect(self.file_save)
         self.actionFileSaveAs.triggered.connect(self.file_save_as)

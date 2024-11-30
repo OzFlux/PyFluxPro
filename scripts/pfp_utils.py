@@ -1075,6 +1075,19 @@ def convert_units_ps(ds, variable, new_units, ps_info):
             limits = parse_rangecheck_limits(attr_in)
             limits = [(l/float(10)) for l in limits]
             variable["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
+    elif variable["Attr"]["units"] == "kPa" and new_units == "hPa":
+        variable["Data"] = variable["Data"] * float(10)
+        variable["Attr"]["units"] = new_units
+        if "rangecheck_lower" in variable["Attr"]:
+            attr_in = variable["Attr"]["rangecheck_lower"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l * float(10)) for l in limits]
+            variable["Attr"]["rangecheck_lower"] = ','.join(str(l) for l in limits)
+        if "rangecheck_upper" in variable["Attr"]:
+            attr_in = variable["Attr"]["rangecheck_upper"]
+            limits = parse_rangecheck_limits(attr_in)
+            limits = [(l * float(10)) for l in limits]
+            variable["Attr"]["rangecheck_upper"] = ','.join(str(l) for l in limits)
     else:
         msg = " Unrecognised conversion from " + variable["Attr"]["units"] + " to " + new_units
         logger.error(msg)

@@ -158,7 +158,7 @@ def l3_post_processing(cf, ds2):
     # convert CO2 units if required
     pfp_utils.ConvertCO2Units(cf, ds3)
     # calculate Fco2 storage term - single height only at present
-    pfp_ts.CalculateSco2SinglePoint(cf, ds3, l3_info)
+    pfp_ts.CalculateSco2SinglePoint(ds3)
     # convert Fco2 and Sco2 units if required
     pfp_utils.ConvertFco2Units(cf, ds3)
     # merge Fco2 and Sco2 series as required

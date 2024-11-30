@@ -1663,6 +1663,62 @@ def plot_quickcheck(cf):
     plt.ioff()
     return
 
+def plot_stacked_timeseries(cfg, ds, start=0, end=-1):
+    show_plots = pfp_utils.get_optionskeyaslogical(cfg, "show_plots", default=True)
+    plot_labels = pfp_utils.get_keyvaluefromcf(cfg, ["Options", "plot_stacked_timeseries"],
+                                               "plot_labels", default="")
+    site_name = ds.root["Attributes"]["site_name"]
+    level = ds.root["Attributes"]["processing_level"]
+    ds_labels = sorted(list(ds.root["Variables"].keys()))
+    for label in list(plot_labels):
+        if label not in ds_labels:
+            plot_labels.remove(label)
+    if len(plot_labels) < 1:
+        msg = "No plot variables in data set"
+        logger.error(msg)
+        return
+    nrows = len(plot_labels)
+    if show_plots:
+        plt.ion()
+    else:
+        current_backend = plt.get_backend()
+        plt.switch_backend("agg")
+        plt.ioff()
+    fig, axs = plt.subplots(nrows=nrows, sharex=True, figsize=(7.5, 10.9))
+    fig.subplots_adjust(wspace=0.0, hspace=0.05, left=0.11, right=0.95, top=0.95, bottom=0.05)
+    for n, label in enumerate(plot_labels):
+        var = pfp_utils.GetVariable(ds, label, start=start, end=end)
+        percent = str(int(0.5+100*numpy.ma.count(var["Data"])/len(var["Data"]))) + "%"
+        sdt = var["DateTime"][0]
+        edt = var["DateTime"][-1]
+        axs[n].plot(var["DateTime"], var["Data"], "b.")
+        axs[n].set_xlim([sdt, edt])
+        if n == 0:
+            title_str = site_name + ": " + sdt.strftime("%Y-%m-%d") + " to "
+            title_str += edt.strftime("%Y-%m-%d")
+            axs[n].set_title(title_str)
+        if n == nrows-1:
+            axs[n].xaxis.set_major_formatter(mdt.DateFormatter('%m-%d'))
+            axs[n].set_xlabel("Date")
+        axs[n].text(-0.11, 0.6, label, transform=axs[n].transAxes)
+        axs[n].text(-0.11, 0.3, percent, transform=axs[n].transAxes)
+    plot_path = pfp_utils.get_keyvaluefromcf(cfg, ["Files"], "plot_path", default="./plots/")
+    plot_path = os.path.join(plot_path, "timeseries", "")
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    pngname = plot_path + site_name.replace(" ","") + "_" + level
+    pngname = pngname + "_stacked_timeseries.png"
+    fig.savefig(pngname, format="png")
+    if show_plots:
+        plt.draw()
+        pfp_utils.mypause(0.5)
+        plt.ioff()
+    else:
+        plt.close(fig)
+        plt.switch_backend(current_backend)
+        plt.ion()
+    return
+
 def plot_setup(cf, title):
     p = {}
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots")

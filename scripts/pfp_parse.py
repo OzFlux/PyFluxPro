@@ -21,6 +21,7 @@ def ParseConcatenateControlFile(cf):
     Date: August 2019
     """
     info = {}
+    info["cfg"] = copy.deepcopy(cf)
     info["NetCDFConcatenate"] = {"OK": True}
     inc = info["NetCDFConcatenate"]
     # check the control file has a Files section
@@ -37,8 +38,8 @@ def ParseConcatenateControlFile(cf):
             inc["OK"] = False
             return info
     # check the [In] section contains at least 1 entry
-    if len(list(cf["Files"]["In"].keys())) < 2:
-        msg = " Less than 2 input files specified"
+    if len(list(cf["Files"]["In"].keys())) < 1:
+        msg = " No input files specified"
         logger.error(msg)
         inc["OK"] = False
         return info
@@ -69,6 +70,10 @@ def ParseConcatenateControlFile(cf):
     if not os.path.isdir(file_path):
         os.makedirs(file_path)
     # work through the choices in the [Options] section
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyMADFilter", default = "")
+    inc["ApplyMADFilter"] = str(opt)
+    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyFco2Storage", default = "No")
+    inc["ApplyFco2Storage"] = str(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "NumberOfDimensions", default=3)
     inc["NumberOfDimensions"] = int(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxGapInterpolate", default=0)
@@ -1202,7 +1207,7 @@ def ParseL7ControlFile(cfg, ds):
     l7_info["EstimateRandomUncertainty"] = {}
     l7_info["EstimateRandomUncertainty"]["labels"] = ["Fco2", "Fe", "Fh"]
     l7_info["EstimateRandomUncertainty"]["Method1"] = {"window_size": 14, "hour_range": 1,
-                                                       "Fsd": {"tolerance": 50},
+                                                       "Fsd": {"tolerance": [20, 50]},
                                                        "Ta": {"tolerance": 2.5},
                                                        "VPD": {"tolerance": 0.5}}
     l7_info["EstimateRandomUncertainty"]["Method2"] = {"window_size": 28,

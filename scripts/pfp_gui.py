@@ -2051,6 +2051,25 @@ class edit_cfg_L2(QtWidgets.QWidget):
         selected_item.appendRow([child0, child1])
         self.update_tab_text()
 
+    def add_madcheck(self):
+        """ Add the MAD check to a variable."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        if selected_item.text().split("_")[0] == "Fco2":
+            edge_threshold = 6
+        elif selected_item.text().split("_")[0] in ["Fe", "Fh"]:
+            edge_threshold = 100
+        else:
+            edge_threshold = "20,80"
+        new_qc = {"MADCheck":{"Fsd_threshold": 12, "edge_threshold": edge_threshold,
+                              "window_size": 13, "zfc": 5.5,}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
     def add_options_section(self):
         """ Add an Options section."""
         self.sections["Options"] = QtGui.QStandardItem("Options")
@@ -2565,6 +2584,11 @@ class edit_cfg_L2(QtWidgets.QWidget):
                     self.context_menu.actionAddLowerCheck.setText("Add LowerCheck")
                     self.context_menu.addAction(self.context_menu.actionAddLowerCheck)
                     self.context_menu.actionAddLowerCheck.triggered.connect(self.add_lowercheck)
+                if "MADCheck" not in existing_entries:
+                    self.context_menu.actionAddMADCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMADCheck.setText("Add MADCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddMADCheck)
+                    self.context_menu.actionAddMADCheck.triggered.connect(self.add_madcheck)
                 if "UpperCheck" not in existing_entries:
                     self.context_menu.actionAddUpperCheck = QtWidgets.QAction(self)
                     self.context_menu.actionAddUpperCheck.setText("Add UpperCheck")
@@ -2644,8 +2668,7 @@ class edit_cfg_L2(QtWidgets.QWidget):
                 self.context_menu.addSeparator()
                 add_separator = False
             if str(idx.data()) in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
-                                   "ExcludeHours", "LowerCheck", "UpperCheck", "CorrectWindDirection",
-                                   "Linear"]:
+                                   "ExcludeHours", "LowerCheck", "MADCheck", "UpperCheck"]:
                 self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
@@ -3247,6 +3270,25 @@ class edit_cfg_L3(QtWidgets.QWidget):
         child0.setEditable(False)
         child1 = QtGui.QStandardItem("No")
         self.sections["Options"].appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_madcheck(self):
+        """ Add the MAD check to a variable."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        if selected_item.text().split("_")[0] == "Fco2":
+            edge_threshold = 6
+        elif selected_item.text().split("_")[0] in ["Fe", "Fh"]:
+            edge_threshold = 100
+        else:
+            edge_threshold = ""
+        new_qc = {"MADCheck":{"Fsd_threshold": 12, "edge_threshold": edge_threshold,
+                              "window_size": 13, "zfc": 5.5,}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
         self.update_tab_text()
 
     def add_massmancorrection(self):
@@ -3858,6 +3900,11 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
                     self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
                     self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+                if "MADCheck" not in existing_entries:
+                    self.context_menu.actionAddMADCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMADCheck.setText("Add MADCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddMADCheck)
+                    self.context_menu.actionAddMADCheck.triggered.connect(self.add_madcheck)
                 if "ExcludeDates" not in existing_entries:
                     self.context_menu.actionAddExcludeDates = QtWidgets.QAction(self)
                     self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
@@ -3987,13 +4034,12 @@ class edit_cfg_L3(QtWidgets.QWidget):
                 self.context_menu.addSeparator()
                 add_separator = False
             if str(idx.data()) in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
-                                   "ExcludeHours", "LowerCheck", "UpperCheck", "CorrectWindDirection",
-                                   "Linear"]:
+                                   "MADCheck", "LowerCheck", "UpperCheck"]:
                 self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
                 self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
-            if (str(idx.data()) in ["AverageSeries", "MergeSeries"]):
+            if (str(idx.data()) in ["AverageSeries", "ApplyFco2Storage", "MergeSeries"]):
                 self.context_menu.actionRemoveMergeSeriesItem = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveMergeSeriesItem.setText("Remove item")
                 self.context_menu.addAction(self.context_menu.actionRemoveMergeSeriesItem)
@@ -4191,6 +4237,7 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     parent2 = QtGui.QStandardItem(key2)
                     for key3 in sorted(list(self.cfg[key1][key2].keys())):
                         if key3 in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
+                                    "LowerCheck", "UpperCheck", "MADCheck",
                                     "ApplyFco2Storage", "MergeSeries", "AverageSeries"]:
                             parent3 = QtGui.QStandardItem(key3)
                             parent3.setEditable(False)
@@ -4653,7 +4700,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                 # sections with only 1 level
                 self.sections[key1] = QtGui.QStandardItem(key1)
                 self.sections[key1].setEditable(False)
-                for key2 in self.cfg[key1]:
+                for key2 in sorted(list(self.cfg[key1].keys())):
                     val = self.cfg[key1][key2]
                     child0 = QtGui.QStandardItem(key2)
                     child0.setEditable(False)
@@ -4747,6 +4794,16 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
             # sections with only 1 level
             if selected_text == "Options":
                 existing_entries = self.get_existing_entries()
+                if "ApplyFco2Storage" not in existing_entries:
+                    self.context_menu.actionAddApplyFco2Storage = QtWidgets.QAction(self)
+                    self.context_menu.actionAddApplyFco2Storage.setText("ApplyFco2Storage")
+                    self.context_menu.addAction(self.context_menu.actionAddApplyFco2Storage)
+                    self.context_menu.actionAddApplyFco2Storage.triggered.connect(self.add_applyfco2storage)
+                if "ApplyMADFilter" not in existing_entries:
+                    self.context_menu.actionAddApplyMADFilter = QtWidgets.QAction(self)
+                    self.context_menu.actionAddApplyMADFilter.setText("ApplyMADFilter")
+                    self.context_menu.addAction(self.context_menu.actionAddApplyMADFilter)
+                    self.context_menu.actionAddApplyMADFilter.triggered.connect(self.add_applymadfilter)
                 if "NumberOfDimensions" not in existing_entries:
                     self.context_menu.actionAddNumberOfDimensions = QtWidgets.QAction(self)
                     self.context_menu.actionAddNumberOfDimensions.setText("NumberOfDimensions")
@@ -4790,22 +4847,25 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         elif level == 1:
             parent = selected_item.parent()
             key = str(parent.child(selected_item.row(),0).text())
-            if (str(parent.text()) == "Options") and (selected_item.column() == 0):
-                self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
-                self.context_menu.actionRemoveOption.setText("Remove option")
-                self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
-            elif (selected_item.column() == 1) and (key in ["Truncate", "DoFingerprints"]):
-                if selected_text != "Yes":
-                    self.context_menu.actionChangeOption = QtWidgets.QAction(self)
-                    self.context_menu.actionChangeOption.setText("Yes")
-                    self.context_menu.addAction(self.context_menu.actionChangeOption)
-                    self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("Yes"))
-                if selected_text != "No":
-                    self.context_menu.actionChangeOption = QtWidgets.QAction(self)
-                    self.context_menu.actionChangeOption.setText("No")
-                    self.context_menu.addAction(self.context_menu.actionChangeOption)
-                    self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("No"))
+            if (str(parent.text()) == "Options"):
+                if (selected_item.column() == 0):
+                    self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
+                    self.context_menu.actionRemoveOption.setText("Remove option")
+                    self.context_menu.addAction(self.context_menu.actionRemoveOption)
+                    self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
+                elif (selected_item.column() == 1) and (key in ["ApplyFco2Storage",
+                                                                "DoFingerprints",
+                                                                "Truncate"]):
+                    if selected_text != "Yes":
+                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeOption.setText("Yes")
+                        self.context_menu.addAction(self.context_menu.actionChangeOption)
+                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("Yes"))
+                    if selected_text != "No":
+                        self.context_menu.actionChangeOption = QtWidgets.QAction(self)
+                        self.context_menu.actionChangeOption.setText("No")
+                        self.context_menu.addAction(self.context_menu.actionChangeOption)
+                        self.context_menu.actionChangeOption.triggered.connect(lambda:self.change_selected_text("No"))
             elif str(parent.text()) == "Files":
                 if ((selected_item.column() == 0) and (selected_text == "In")):
                     self.context_menu.actionAddInputFile = QtWidgets.QAction(self)
@@ -4919,6 +4979,18 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
         if "*" not in tab_text:
             self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+
+    def add_applyfco2storage(self):
+        """ Add the ApplyFco2Storage option to the context menu."""
+        dict_to_add = {"ApplyFco2Storage": "Yes"}
+        # add the subsubsection
+        self.add_subsection(dict_to_add)
+
+    def add_applymadfilter(self):
+        """ Add the ApplyMADFilter option to the context menu."""
+        dict_to_add = {"ApplyMADFilter": "Fco2,Fe,Fh"}
+        # add the subsubsection
+        self.add_subsection(dict_to_add)
 
     def add_dofingerprints(self):
         """ Add the DoFingerprints option to the context menu."""
