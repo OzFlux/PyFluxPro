@@ -92,11 +92,6 @@ def estimate_random_uncertainty_method1(ds, info):
                                                     datetime=ldt["Data"], out_type="ndarray")
         runc_number = pfp_utils.CreateEmptyVariable(runc_label+"_number", nrecs,
                                                     datetime=ldt["Data"], out_type="ndarray")
-        #idx_not_nan = numpy.where(~numpy.isnan(data) &
-                                  #~numpy.isnan(fsd) &
-                                  #~numpy.isnan(ta) &
-                                  #~numpy.isnan(vpd))[0]
-        #for j in idx_not_nan:
         for j in list(range(nrecs)):
             window_first_index = max([0, j - half_window_indices])
             window_last_index = min([j + half_window_indices, nrecs-1])
@@ -110,8 +105,6 @@ def estimate_random_uncertainty_method1(ds, info):
                                (~numpy.isnan(fsd[idx1])) &
                                (~numpy.isnan(ta[idx1])) &
                                (~numpy.isnan(vpd[idx1])))[0]
-            #if var["DateTime"][j] == startdate:
-                #print("oi va vey")
             if len(idx2) >= 5:
                 runc_value["Data"][j] = numpy.std(data[idx1[idx2]])
                 runc_value["Flag"][j] = int(710)
@@ -186,14 +179,14 @@ def estimate_random_uncertainty_method2(ds, info):
         pfp_utils.CreateVariable(ds, runc_method)
         pfp_utils.CreateVariable(ds, runc_number)
     return
+
 def l7_uncertainty_construct_args(ds7, l7_info, ustar_results):
     cfg = l7_info["cfg"]
     er_labels = ["ER_SOLO", "ER_LT", "ER_LL"]
-    fco2_labels = ["Fco2_runc", "Fco2_runc_method", "Fco2_runc_number"]
     nee_labels = ["NEE_SOLO", "NEE_LT", "NEE_LL"]
     nep_labels = ["NEP_SOLO", "NEP_LT", "NEP_LL"]
     gpp_labels = ["GPP_SOLO", "GPP_LT", "GPP_LL"]
-    subset_labels = er_labels + nee_labels + nep_labels + gpp_labels + fco2_labels
+    subset_labels = er_labels + nee_labels + nep_labels + gpp_labels
     percentiles = [0.02275, 0.15865, 0.25, 0.5, 0.75, 0.84135, 0.97725]
     args = []
     for n, percentile in enumerate(percentiles):
@@ -206,22 +199,16 @@ def l7_uncertainty_construct_args(ds7, l7_info, ustar_results):
         d["subset_labels"] = copy.deepcopy(subset_labels)
         args.append(d)
     return args
-def l7_uncertainty_run(args):
-    if args[0]["l7_info"]["Options"]["multiprocessing"]:
+def l7_uncertainty_run(args, mode="multiprocessing"):
+    if mode.lower() == "multiprocessing2":
         # spread the load across available CPUs
         number_cpus = min([os.cpu_count()-1, len(args)])
         msg = " Starting uncertainty estimation with " + str(number_cpus) + " cores"
         logger.info(msg)
         msg = "  This may take several minutes, read another paper ...."
         logger.info(msg)
-        logger.setLevel(logging.WARNING)
-        #with Pool(number_cpus) as pool:
-            #dsp = pool.map(l7_uncertainty_worker, args)
-        pool = Pool(number_cpus)
-        dsp = pool.map(l7_uncertainty_worker, args)
-        pool.close()
-        pool.join()
-        logger.setLevel(logging.INFO)
+        with Pool(number_cpus) as pool:
+            dsp = pool.map(l7_uncertainty_worker, args)
         msg = " Finished uncertainty estimation"
         logger.info(msg)
     else:
@@ -230,17 +217,14 @@ def l7_uncertainty_run(args):
         logger.info(msg)
         msg = "  This may take several minutes, read another paper ...."
         logger.info(msg)
-        logger.setLevel(logging.WARNING)
         for n, arg in enumerate(args):
             dsw = l7_uncertainty_worker(arg)
             dsp.append(dsw)
-        logger.setLevel(logging.INFO)
         msg = " Finished uncertainty estimation"
         logger.info(msg)
     return dsp
 def l7_uncertainty_worker(item):
     percentile = item["percentile"]
-    #print("Starting "+str(percentile))
     l7_info = item["l7_info"]
     ustar_results = item["ustar_results"]
     ds7 = item["ds7"]
@@ -248,45 +232,28 @@ def l7_uncertainty_worker(item):
     subset_labels = item["subset_labels"]
     #msg = " Processing percentile " + str(percentile)
     #logger.info(msg)
+    logger.setLevel(logging.WARNING)
     l7_info["ERUsingLloydTaylor"]["info"]["sheet_suffix"] = str(percentile)
     l7_info["ERUsingLasslop"]["info"]["sheet_suffix"] = str(percentile)
-    ustar_thresholds = pfp_rp.GetUstarThresholdPercentiles(ustar_results, percentile)
-    #print(str(percentile)+" finished pfp_rp.GetUstarThresholdPercentiles")
-    pfp_ck.ApplyTurbulenceFilter(ds7, l7_info, ustar_threshold=ustar_thresholds)
-    #print(str(percentile)+" finished pfp_ck.ApplyTurbulenceFilter")
+    ustar_percentiles = pfp_rp.GetUstarThresholdPercentiles(ustar_results, percentile)
+    #pfp_utils.CreateVariable(ds7, pfp_utils.GetVariable(ds4, "Fco2"))
+    pfp_ck.ApplyTurbulenceFilter(ds7, l7_info, ustar_threshold=ustar_percentiles)
     EstimateRandomUncertainty(ds7, l7_info)
-    #print(str(percentile)+" finished EstimateRandomUncertainty")
     #pfp_gf.GapFillUsingInterpolation(ds7, l7_info)
-    l7_info["GapFillUsingSOLO"]["info"]["percentile"] = str(percentile)
     pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds7, l7_info, "GapFillUsingSOLO")
-    #print(str(percentile)+" finished pfp_gfSOLO.GapFillUsingSOLO")
     pfp_ts.MergeSeriesUsingDict(ds7, l7_info, merge_order="standard")
-    #print(str(percentile)+" finished pfp_ts.MergeSeriesUsingDict")
     pfp_rp.GetERFromFco2(ds7, l7_info)
-    #print(str(percentile)+" finished pfp_rp.GetERFromFco2")
     pfp_rp.ERUsingSOLO(main_gui, ds7, l7_info, "ERUsingSOLO")
-    #print(str(percentile)+" finished pfp_rp.ERUsingSOLO")
     pfp_rp.ERUsingLloydTaylor(ds7, l7_info)
-    #print(str(percentile)+" finished pfp_rp.ERUsingLloydTaylor")
     pfp_rp.ERUsingLasslop(ds7, l7_info)
-    #print(str(percentile)+" finished pfp_rp.ERUsingLasslop")
     pfp_ts.MergeSeriesUsingDict(ds7, l7_info, merge_order="standard")
-    #print(str(percentile)+" finished pfp_ts.MergeSeriesUsingDict")
     pfp_rp.CalculateNEE(ds7, l7_info)
-    #print(str(percentile)+" finished pfp_rp.CalculateNEE")
     pfp_rp.CalculateNEP(ds7, l7_info)
-    #print(str(percentile)+" finished pfp_rp.CalculateNEP")
     pfp_rp.PartitionNEE(ds7, l7_info)
-    #print(str(percentile)+" finished pfp_rp.Partition")
-    subset_attr = {"nc_nrecs": ds7.root["Attributes"]["nc_nrecs"],
-                   "time_step": ds7.root["Attributes"]["time_step"],
-                   "percentile": str(percentile)}
-    for year in list(ustar_thresholds.keys()):
-        key = "ustar_threshold_" + str(year)
-        value = ustar_thresholds[year]["ustar_mean"]
-        subset_attr[key] = str(value)
-    dss = pfp_io.SubsetDataStructure(ds7, subset_labels, subset_attr=subset_attr)
-    #print("Finished "+str(percentile))
+    dss = pfp_io.SubsetDataStructure(ds7, subset_labels)
+    dss.root["Attributes"]["percentile"] = str(percentile)
+    #logger.setLevel(logging.INFO)
     #msg = " Finished percentile " + str(percentile)
     #logger.info(msg)
+    #print(msg)
     return dss
