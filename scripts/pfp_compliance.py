@@ -1380,15 +1380,17 @@ def l1_check_irga_sonic_type(cfg, messages):
         # no sonic or IRGA variables in control file so skip checks
         return
     # call the check routines
+    logger.info("calling l1_check_irga_only with fast_irga_only_labels")
+    print(fast_irga_only_labels)
+    print(len(fast_irga_only_labels))
     l1_check_irga_only(cfg, fast_irga_only_labels, messages)
+    logger.info("calling l1_check_irga_only with slow_irga_only_labels")
     l1_check_irga_only(cfg, slow_irga_only_labels, messages)
     l1_check_sonic_only(cfg, sonic_only_labels, messages)
     l1_check_sonic_irga(cfg, sonic_irga_labels, messages)
     return
 def l1_check_irga_only(cfg, irga_only_labels, messages):
     """ Check instrument attribute of variables that depend only on the IRGA"""
-    #if len(irga_only_labels) == 0:
-        #return
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     known_irgas = open_path_irgas + closed_path_irgas
