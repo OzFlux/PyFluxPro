@@ -264,7 +264,6 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
     ts = int(float(ds.root["Attributes"]["time_step"]))
     startdate = l5s["run"]["startdate"].strftime("%Y-%m-%d %H:%M")
     enddate = l5s["run"]["enddate"].strftime("%Y-%m-%d %H:%M")
-    #print(pct + " in pfp_gfSOLO.gfSOLO_main " + startdate + " " + enddate)
     middate = l5s["run"]["startdate"] + (l5s["run"]["enddate"] - l5s["run"]["startdate"]) / 2
     middate = middate.strftime("%Y-%m-%d %H:%M")
     logger.info(" Gap filling using SOLO: " + startdate + " to " + enddate)
@@ -324,20 +323,17 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
         gfSOLO_write_sofm_inf(l5s)
         result = gfSOLO_runsofm(ds, drivers, target, nRecs, l5s, si=si, ei=ei)
         if result != 1:
-            #print(pct + " gfSOLO_runsofm returned with error")
             return
         # run SOLO
         gfSOLO_write_solo_inf(l5s)
         result = gfSOLO_runsolo(ds, drivers, target, nRecs, l5s, si=si, ei=ei)
         if result != 1:
-            #print(pct + " gfSOLO_runsolo returned with error")
             return
         # run seqsolo and put the solo_modelled data into the ds series
         gfSOLO_write_seqsolo_inf(l5s)
         result = gfSOLO_runseqsolo(ds, drivers, target, output, nRecs,
                                    l5s, flag_code, si=si, ei=ei)
         if result != 1:
-            #print(pct + " gfSOLO_runseqsolo returned with error")
             return
         # plot the results
         pd = gfSOLO_initplot(len(drivers))
@@ -754,7 +750,6 @@ def gfSOLO_run(ds, l5_info, called_by):
     Author: PRI
     Date: Re-written in August 2019
     """
-    #print(l5_info[called_by]["info"]["percentile"] + " in pfp_gfSOLO.gfSOLO_run")
     ts = int(ds.root["Attributes"]["time_step"])
     file_start_date = ds.root["Variables"]["DateTime"]["Data"][0]
     file_end_date = ds.root["Variables"]["DateTime"]["Data"][-1]
