@@ -50,20 +50,32 @@ def estimate_random_uncertainty_method1(ds, info):
     """
     # get number of records, time step etc
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
-    #ts = int(ds.root["Attributes"]["time_step"])
-    #nperhour = int(60/ts)
-    #nperday = int(24*60/ts)
+    ts = int(ds.root["Attributes"]["time_step"])
+    if ts == 30:
+        hour_range = 5
+    elif ts == 60:
+        hour_range = 3
+    else:
+        msg = " Time step must be 30 or 60 minnutes (" + str(ts) + ")"
+        logger.error(msg)
+        raise RuntimeError(msg)
+    nperday = int(24*60/ts)
     # get required information
     ierc = info["EstimateRandomUncertainty"]
     labels = ierc["labels"]
     ierc1 = ierc["Method1"]
-    #window_size = ierc1["window_size"]
-    #half_window_days = max([1, int((window_size/2)+0.5)])
-    #half_window_indices = int(nperday*half_window_days)
-    #hour_range = int(ierc1["hour_range"])
-    Fsd_tolerance = float(ierc1["Fsd"]["tolerance"])
+    # get the Fsd, Ta and VPD tolerances
+    Fsd_tol0 = float(ierc1["Fsd"]["tolerance"][0])
+    Fsd_tol1 = float(ierc1["Fsd"]["tolerance"][1])
+    Fsd_tolerance_min = min([Fsd_tol0, Fsd_tol1])
+    Fsd_tolerance_max = max([Fsd_tol0, Fsd_tol1])
     Ta_tolerance = float(ierc1["Ta"]["tolerance"])
     VPD_tolerance = float(ierc1["VPD"]["tolerance"])
+    # get the window size
+    #window_size = int(ierc1["window_size"])
+    window_size = 7
+    widx = window_size * nperday + 1
+    hour_range = int(ierc1["hour_range"])
     # get the data
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     Fsd = pfp_utils.GetVariable(ds, "Fsd")
@@ -73,15 +85,9 @@ def estimate_random_uncertainty_method1(ds, info):
     fsd = numpy.ma.filled(Fsd["Data"], fill_value=numpy.nan)
     ta = numpy.ma.filled(Ta["Data"], fill_value=numpy.nan)
     vpd = numpy.ma.filled(VPD["Data"], fill_value=numpy.nan)
-    # construct a list of indices to covber the window and hour ranges
-    #idx0 = []
-    #hri = max([1, hour_range*nperhour])
-    #idx_hr = list(range(-1*hri, hri+1))
-    #idx_dr = list(range(-1*half_window_days, half_window_days+1))
-    #for n in idx_dr:
-        #idx0 += [n*nperday+m for m in idx_hr]
-    i5t = numpy.tile(numpy.array([0, 1, 2, 3, 4]), 15)
-    oo = numpy.repeat(numpy.arange(-337, 337, 48), 5)
+    # construct a list of indices to cover the hour range and window size
+    i5t = numpy.tile(numpy.arange(hour_range), window_size*2+1)
+    oo = numpy.repeat(numpy.arange(-1*widx, widx, nperday), hour_range)
     idx0 = oo + i5t
     # do the work
     for label in labels:
@@ -96,11 +102,10 @@ def estimate_random_uncertainty_method1(ds, info):
         runc_number = pfp_utils.CreateEmptyVariable(runc_label+"_number", nrecs,
                                                     datetime=ldt["Data"], out_type="ndarray")
         for j in list(range(nrecs)):
-            #window_first_index = max([0, j - half_window_indices])
-            #window_last_index = min([j + half_window_indices, nrecs-1])
-            #idx1 = numpy.array([i+j for i in idx0 if
-                                #i+j >= window_first_index and
-                                #i+j <= window_last_index])
+            # if Fsd < Fsd_tolerance_min then Fsd_tolerance = Fsd_tolerance_min
+            # if Fsd_tolerance_min <= Fsd <= Fsd_tolerance_max then Fsd_tolerance = Fsd
+            # if Fsd > Fsd_tolerance_max then Fsd_tolerance = Fsd_tolerance_max
+            Fsd_tolerance = min([Fsd_tolerance_max, max([Fsd_tolerance_min, fsd[j]])])
             idx1 = idx0 + j
             idx1 = idx1[(idx1 >= 0) & (idx1 < nrecs)]
             idx2 = numpy.where((abs(fsd[idx1] - fsd[j]) < Fsd_tolerance) &
