@@ -15,6 +15,7 @@ from scripts import pfp_cpd_mcnew
 from scripts import pfp_io
 from scripts import pfp_levels
 from scripts import pfp_mpt
+from scripts import pfp_parse
 from scripts import pfp_plot
 from scripts import pfp_utils
 
@@ -288,7 +289,7 @@ def do_concatenate_batch(main_ui, cf_level):
             cf_cc = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.concatenate_update_controlfile(cf_cc):
                 continue
-            info = pfp_compliance.ParseConcatenateControlFile(cf_cc)
+            info = pfp_parse.ParseConcatenateControlFile(cf_cc)
             if not info["NetCDFConcatenate"]["OK"]:
                 msg = " Error occurred parsing the control file " + cf_file_name[1]
                 logger.error(msg)
