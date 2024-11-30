@@ -276,7 +276,6 @@ def gfalternate_matchstartendtimes(ds, ds_alternate):
             pfp_utils.CreateVariable(ds_matched, var_overlap)
     ds.info["returncodes"]["GapFillFromAlternate"] = "normal"
     return ds_matched
-
 # functions for GapFillFromClimatology
 def GapFillFromClimatology(ds, l4_info, called_by):
     '''

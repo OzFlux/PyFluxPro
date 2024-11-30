@@ -43,7 +43,7 @@ def GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info, called_by):
         # call the GapFillFromAlternate GUI
         gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by)
     else:
-        # ["gui"] settings dictionary done in pfp_gf.ParseL4ControlFile()
+        # ["gui"] settings dictionary done in pfp_parse.ParseL4ControlFile()
         gfalternate_run(ds4, ds_alt, l4_info, called_by)
 
 def gfalternate_gui(main_gui, ds4, ds_alt, l4_info, called_by):
