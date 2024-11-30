@@ -202,7 +202,6 @@ def plot_fcvsustar_annual(ds):
      each year.
     """
     site_name = ds.root["Attributes"]["site_name"]
-    ts = int(float(ds.root["Attributes"]["time_step"]))
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     nbins = 20
     # plot each year
