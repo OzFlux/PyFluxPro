@@ -19,6 +19,14 @@ from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
+class Bunch:
+    """
+    Constructor class for dummy object with attributes defined by keywords
+    when instantiated.
+    """
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
 def l1_read_input(cfg):
     """
     Purpose:
@@ -414,10 +422,14 @@ def l6_partition(main_gui, cf, ds5):
 
 def l7_uncertainty(main_gui, cf, ds4):
     ds7 = pfp_io.copy_datastructure(cf, ds4)
-    if not ds7:
-        return ds7
     # parse the control file
     l7_info = pfp_parse.ParseL7ControlFile(cf, ds7)
+    l7_info["GapFillUsingSOLO"]["info"]["call_mode"] = "batch"
+    l7_info["GapFillUsingSOLO"]["gui"]["show_plots"] = False
+    l7_info["ERUsingSOLO"]["info"]["call_mode"] = "batch"
+    l7_info["ERUsingSOLO"]["gui"]["show_plots"] = False
+    l7_info["ERUsingLloydTaylor"]["gui"]["show_plots"] = False
+    l7_info["ERUsingLasslop"]["gui"]["show_plots"] = False
     # check to see if we have any imports
     pfp_gf.ImportSeries(ds7, l7_info)
     # truncate data structure if requested

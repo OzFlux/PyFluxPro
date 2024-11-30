@@ -4,7 +4,6 @@ import logging
 from multiprocessing import Pool
 import os
 #3rd party modules
-import dateutil
 import numpy
 #PFP modules
 from scripts import pfp_ck
@@ -49,7 +48,6 @@ def estimate_random_uncertainty_method1(ds, info):
     Author: PRI
     Date: December 2023
     """
-    startdate = dateutil.parser.parse("2011-01-01 00:30")
     # get number of records, time step etc
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     ts = int(ds.root["Attributes"]["time_step"])
