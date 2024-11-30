@@ -235,9 +235,9 @@ def l7_uncertainty_worker(item):
     logger.setLevel(logging.WARNING)
     l7_info["ERUsingLloydTaylor"]["info"]["sheet_suffix"] = str(percentile)
     l7_info["ERUsingLasslop"]["info"]["sheet_suffix"] = str(percentile)
-    ustar_percentiles = pfp_rp.GetUstarThresholdPercentiles(ustar_results, percentile)
+    ustar_thresholds = pfp_rp.GetUstarThresholdPercentiles(ustar_results, percentile)
     #pfp_utils.CreateVariable(ds7, pfp_utils.GetVariable(ds4, "Fco2"))
-    pfp_ck.ApplyTurbulenceFilter(ds7, l7_info, ustar_threshold=ustar_percentiles)
+    pfp_ck.ApplyTurbulenceFilter(ds7, l7_info, ustar_threshold=ustar_thresholds)
     EstimateRandomUncertainty(ds7, l7_info)
     #pfp_gf.GapFillUsingInterpolation(ds7, l7_info)
     pfp_gfSOLO.GapFillUsingSOLO(main_gui, ds7, l7_info, "GapFillUsingSOLO")
@@ -250,8 +250,14 @@ def l7_uncertainty_worker(item):
     pfp_rp.CalculateNEE(ds7, l7_info)
     pfp_rp.CalculateNEP(ds7, l7_info)
     pfp_rp.PartitionNEE(ds7, l7_info)
-    dss = pfp_io.SubsetDataStructure(ds7, subset_labels)
-    dss.root["Attributes"]["percentile"] = str(percentile)
+    subset_attr = {"nc_nrecs": ds7.root["Attributes"]["nc_nrecs"],
+                   "time_step": ds7.root["Attributes"]["time_step"],
+                   "percentile": str(percentile)}
+    for year in list(ustar_thresholds.keys()):
+        key = "ustar_threshold_" + str(year)
+        value = ustar_thresholds[year]["ustar_mean"]
+        subset_attr[key] = str(value)
+    dss = pfp_io.SubsetDataStructure(ds7, subset_labels, subset_attr=subset_attr)
     #logger.setLevel(logging.INFO)
     #msg = " Finished percentile " + str(percentile)
     #logger.info(msg)
