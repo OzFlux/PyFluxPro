@@ -160,7 +160,7 @@ def parse_l3_combine(info):
     cfg = info["cfg"]
     cfv = cfg["Variables"]
     labels = list(cfv.keys())
-    # list of labels that are explicitly referenced in pfp_levels.l3qc()
+    # list of labels that are explicitly referenced in pfp_levels.l3_post_processing()
     l3_labels = ["CO2", "Fco2", "Fg", "Fsd", "Fn", "Sco2", "Sws", "Ta", "Ts", "Wd", "Ws"]
     # cs_labels is a list of all variables using MergeSeries or AverageSeries
     cs_labels = []
@@ -1040,6 +1040,14 @@ def ParseL5ControlFile(cfg, ds):
     ds.info["returncodes"]["value"] = 0
     l5_info = {}
     l5_info["cfg"] = copy.deepcopy(cfg)
+    # add keys for turbulence filter
+    l5_info["ApplyTurbulenceFilter"] = {}
+    turbulence_filter = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "TurbulenceFilter", default="ustar (basic)")
+    l5_info["ApplyTurbulenceFilter"]["turbulence_filter"] = turbulence_filter
+    accept_day_times = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "AcceptDayTimes", default="Yes")
+    l5_info["ApplyTurbulenceFilter"]["accept_day_times"] = accept_day_times
+    filter_string = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "FilterList", default="Fco2")
+    l5_info["ApplyTurbulenceFilter"]["filter_list"] = filter_string.split(",")
     # add key for suppressing output of intermediate variables e.g. Ta_aws
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
     l5_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
@@ -1346,6 +1354,7 @@ def parse_rp_createdict_info(cf, ds, l6_info, called_by):
                 plot_path = "./plots/"
                 cf["Files"]["plot_path"] = "./plots/"
     erl["info"]["plot_path"] = plot_path
+    erl["info"]["sheet_suffix"] = ""
     return
 
 def parse_rp_createdict_outputs(cf, l6_info, target, called_by, flag_code):
