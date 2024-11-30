@@ -438,7 +438,7 @@ def l7_uncertainty(main_gui, cf, ds4, mode="multiprocessing"):
     # construct the arguments list for the multiprocessing call
     args = pfp_uncertainty.l7_uncertainty_construct_args(ds7, l7_info, ustar_results)
     # run the uncertainty estimation code, multiprocessing or single core
-    dsp = pfp_uncertainty.l7_uncertainty_run(args, mode=mode)
+    dsp = pfp_uncertainty.l7_uncertainty_run(args)
     # construct the output data structure
     dso = pfp_io.DataStructure()
     dso.root["Attributes"] = copy.deepcopy(ds7.root["Attributes"])
