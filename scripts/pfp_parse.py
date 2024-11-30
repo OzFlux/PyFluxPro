@@ -160,7 +160,7 @@ def parse_l3_combine(info):
     cfg = info["cfg"]
     cfv = cfg["Variables"]
     labels = list(cfv.keys())
-    # list of labels that are explicitly referenced in pfp_levels.l3_post_processing()
+    # list of labels that are explicitly referenced in pfp_levels.l3qc()
     l3_labels = ["CO2", "Fco2", "Fg", "Fsd", "Fn", "Sco2", "Sws", "Ta", "Ts", "Wd", "Ws"]
     # cs_labels is a list of all variables using MergeSeries or AverageSeries
     cs_labels = []
