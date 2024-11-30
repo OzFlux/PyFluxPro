@@ -420,16 +420,10 @@ def l6_partition(main_gui, cf, ds5):
     pfp_rp.L6_summary(ds6, l6_info)
     return ds6
 
-def l7_uncertainty(main_gui, cf, ds4):
+def l7_uncertainty(main_gui, cf, ds4, mode="multiprocessing"):
     ds7 = pfp_io.copy_datastructure(cf, ds4)
     # parse the control file
     l7_info = pfp_parse.ParseL7ControlFile(cf, ds7)
-    l7_info["GapFillUsingSOLO"]["info"]["call_mode"] = "batch"
-    l7_info["GapFillUsingSOLO"]["gui"]["show_plots"] = False
-    l7_info["ERUsingSOLO"]["info"]["call_mode"] = "batch"
-    l7_info["ERUsingSOLO"]["gui"]["show_plots"] = False
-    l7_info["ERUsingLloydTaylor"]["gui"]["show_plots"] = False
-    l7_info["ERUsingLasslop"]["gui"]["show_plots"] = False
     # check to see if we have any imports
     pfp_gf.ImportSeries(ds7, l7_info)
     # truncate data structure if requested
