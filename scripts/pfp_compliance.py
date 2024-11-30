@@ -1381,8 +1381,6 @@ def l1_check_irga_sonic_type(cfg, messages):
         return
     # call the check routines
     logger.info("calling l1_check_irga_only with fast_irga_only_labels")
-    print(fast_irga_only_labels)
-    print(len(fast_irga_only_labels))
     l1_check_irga_only(cfg, fast_irga_only_labels, messages)
     logger.info("calling l1_check_irga_only with slow_irga_only_labels")
     l1_check_irga_only(cfg, slow_irga_only_labels, messages)
