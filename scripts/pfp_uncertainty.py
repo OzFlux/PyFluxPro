@@ -4,6 +4,7 @@ import logging
 from multiprocessing import Pool
 import os
 #3rd party modules
+import dateutil
 import numpy
 #PFP modules
 from scripts import pfp_ck
@@ -105,6 +106,8 @@ def estimate_random_uncertainty_method1(ds, info):
                                (~numpy.isnan(fsd[idx1])) &
                                (~numpy.isnan(ta[idx1])) &
                                (~numpy.isnan(vpd[idx1])))[0]
+            #if var["DateTime"][j] == startdate:
+                #print("oi va vey")
             if len(idx2) >= 5:
                 runc_value["Data"][j] = numpy.std(data[idx1[idx2]])
                 runc_value["Flag"][j] = int(710)
