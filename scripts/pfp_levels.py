@@ -19,14 +19,6 @@ from scripts import pfp_utils
 
 logger = logging.getLogger("pfp_log")
 
-class Bunch:
-    """
-    Constructor class for dummy object with attributes defined by keywords
-    when instantiated.
-    """
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
 def l1_read_input(cfg):
     """
     Purpose:
@@ -421,6 +413,16 @@ def l6_partition(main_gui, cf, ds5):
     return ds6
 
 def l7_uncertainty(main_gui, cf, ds4, mode="multiprocessing"):
+    """
+    Purpose:
+     Runs L7 to estimate the random, systematic (u* threshold percentiles) and joint
+     uncertainties in Fco2, Fe and Fh.
+     Follows the methodology used in ONEFlux.
+    Useage:
+    Side effects:
+    Author: PRI
+    Date: March 2024
+    """
     ds7 = pfp_io.copy_datastructure(cf, ds4)
     # parse the control file
     l7_info = pfp_parse.ParseL7ControlFile(cf, ds7)
@@ -436,7 +438,7 @@ def l7_uncertainty(main_gui, cf, ds4, mode="multiprocessing"):
     # construct the arguments list for the multiprocessing call
     args = pfp_uncertainty.l7_uncertainty_construct_args(ds7, l7_info, ustar_results)
     # run the uncertainty estimation code, multiprocessing or single core
-    dsp = pfp_uncertainty.l7_uncertainty_run(args)
+    dsp = pfp_uncertainty.l7_uncertainty_run(args, mode=mode)
     # construct the output data structure
     dso = pfp_io.DataStructure()
     dso.root["Attributes"] = copy.deepcopy(ds7.root["Attributes"])
