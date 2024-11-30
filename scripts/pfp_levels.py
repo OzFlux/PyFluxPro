@@ -412,18 +412,10 @@ def l6_partition(main_gui, cf, ds5):
     pfp_rp.L6_summary(ds6, l6_info)
     return ds6
 
-def l7_uncertainty(main_gui, cf, ds4, mode="multiprocessing"):
-    """
-    Purpose:
-     Runs L7 to estimate the random, systematic (u* threshold percentiles) and joint
-     uncertainties in Fco2, Fe and Fh.
-     Follows the methodology used in ONEFlux.
-    Useage:
-    Side effects:
-    Author: PRI
-    Date: March 2024
-    """
+def l7_uncertainty(main_gui, cf, ds4):
     ds7 = pfp_io.copy_datastructure(cf, ds4)
+    if not ds7:
+        return ds7
     # parse the control file
     l7_info = pfp_parse.ParseL7ControlFile(cf, ds7)
     # check to see if we have any imports
