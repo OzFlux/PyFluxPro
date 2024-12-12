@@ -1785,6 +1785,8 @@ def DoFunctions(ds, info):
         if label not in series_list:
             var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=info["Variables"][label]["Attr"])
             pfp_utils.CreateVariable(ds, var)
+        if label in functions[label]["arguments"]:
+            functions[label]["arguments"].remove(label)
         result = getattr(pfp_func_transforms, functions[label]["name"])(ds, label, *functions[label]["arguments"])
         if result:
             msg = " Completed function for " + label

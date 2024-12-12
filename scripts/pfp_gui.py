@@ -1711,11 +1711,11 @@ class edit_cfg_L1(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddFunction)
                     self.context_menu.actionAddFunction.triggered.connect(self.add_function)
                     add_separator = True
-                if "Linear" not in existing_entries:
-                    self.context_menu.actionAddLinear = QtWidgets.QAction(self)
-                    self.context_menu.actionAddLinear.setText("Add Linear")
-                    self.context_menu.addAction(self.context_menu.actionAddLinear)
-                    self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
+                #if "Linear" not in existing_entries:
+                    #self.context_menu.actionAddLinear = QtWidgets.QAction(self)
+                    #self.context_menu.actionAddLinear.setText("Add Linear")
+                    #self.context_menu.addAction(self.context_menu.actionAddLinear)
+                    #self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
                 # 'Wd offset' option only for wind direction variables
                 if (("Wd offset" not in existing_entries) and (selected_text[0:2] == "Wd")):
                     self.context_menu.actionAddWdOffset = QtWidgets.QAction(self)
