@@ -430,13 +430,18 @@ def l7_uncertainty(main_gui, cf, ds4, mode="multiprocessing"):
     pfp_gf.ImportSeries(ds7, l7_info)
     # truncate data structure if requested
     pfp_io.TruncateDataStructure(ds7, l7_info)
+
     # get the ustar threshold results
     file_path = l7_info["Files"]["file_path"]
     cpd_filename = l7_info["Files"]["cpd_filename"]
     ustar_results_name = os.path.join(file_path, cpd_filename)
-    ustar_results = pfp_rp.get_ustarthreshold_from_results(ustar_results_name)
+
+    ustar_percentiles = pfp_uncertainty.l7_get_ustar_percentiles(ustar_results_name)
+
+    #ustar_results = pfp_rp.get_ustarthreshold_from_results(ustar_results_name)
+
     # construct the arguments list for the multiprocessing call
-    args = pfp_uncertainty.l7_uncertainty_construct_args(ds7, l7_info, ustar_results)
+    args = pfp_uncertainty.l7_uncertainty_construct_args(ds7, l7_info, ustar_percentiles)
     # run the uncertainty estimation code, multiprocessing or single core
     dsp = pfp_uncertainty.l7_uncertainty_run(args)
     # construct the output data structure

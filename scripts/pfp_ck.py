@@ -70,7 +70,7 @@ def ApplyRangeCheckToVariable(variable):
         variable["Attr"]["valid_range"] = valid_range
     return
 
-def ApplyTurbulenceFilter(ds, info, ustar_threshold=None):
+def ApplyTurbulenceFilter(ds, info):
     """
     Purpose:
     Usage:
@@ -82,9 +82,8 @@ def ApplyTurbulenceFilter(ds, info, ustar_threshold=None):
     iris = info["RemoveIntermediateSeries"]
     # local point to datetime series
     ldt = pfp_utils.GetVariable(ds, "DateTime")
-    # get data for the indicator series
-    ustar = pfp_utils.GetVariable(ds, "ustar")
     # dictionary of utar thresold values
+    ustar_threshold = iatf["ustar_thresholds"]
     if ustar_threshold is None:
         ustar_dict = pfp_rp.get_ustar_thresholds(cfg, ds)
     elif isinstance(ustar_threshold, dict):

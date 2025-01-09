@@ -410,6 +410,20 @@ def GetUstarThresholdPercentiles(ustar_results, percentile):
         scale = ustar_results[year]["ustar_sig"]
         ustar_percentile = scipy.stats.norm.ppf(percentile, loc=loc, scale=scale)
         ustar_percentiles[year]["ustar_mean"] = ustar_percentile
+    #ustar_percentiles = {}
+    #ustar_percentiles["1.25"] = {2011: 0.146067, 2012: 0.147221, 2013: 0.161952,
+                                 #2014: 0.189048, 2015: 0.172668, 2016: 0.159552,
+                                 #2017: 0.159552, 2018: 0.159307, 2019: 0.146364,
+                                 #2020: 0.138333}
+    #ustar_percentiles["16.25"] = {2011: 0.163701, 2012: 0.168616, 2013: 0.195155,
+                                 #2014: 0.214137, 2015: 0.207187, 2016: 0.188248,
+                                 #2017: 0.188, 2018: 0.184545, 2019: 0.183038,
+                                 #2020: 0.176374}
+    #ustar_percentiles["26.25"] =
+    #ustar_percentiles["50.00"] = {""}
+    #ustar_percentiles["73.75"] = {""}
+    #ustar_percentiles["83.75"] = {""}
+    #ustar_percentiles["98.75"] = {""}
     return ustar_percentiles
 
 def L6_summary(ds, l6_info):

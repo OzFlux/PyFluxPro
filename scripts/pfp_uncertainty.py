@@ -5,6 +5,7 @@ from multiprocessing import Pool
 import os
 #3rd party modules
 import numpy
+import pandas
 #PFP modules
 from scripts import pfp_ck
 from scripts import pfp_gfSOLO
@@ -75,7 +76,7 @@ def estimate_random_uncertainty_method1(ds, info):
     #window_size = int(ierc1["window_size"])
     window_size = 7
     widx = window_size * nperday + 1
-    hour_range = int(ierc1["hour_range"])
+    #hour_range = int(ierc1["hour_range"])
     # get the data
     ldt = pfp_utils.GetVariable(ds, "DateTime")
     Fsd = pfp_utils.GetVariable(ds, "Fsd")
@@ -188,7 +189,16 @@ def estimate_random_uncertainty_method2(ds, info):
         pfp_utils.CreateVariable(ds, runc_method)
         pfp_utils.CreateVariable(ds, runc_number)
     return
-def l7_uncertainty_construct_args(ds7, l7_info, ustar_results):
+def l7_get_ustar_percentiles(ustar_results_name):
+    """
+    Get the ustar percentiles from a ONEFlux file.
+    """
+    ustar_percentiles = pandas.read_excel(ustar_results_name,
+                                          sheet_name="data",
+                                          header=0)
+    ustar_percentiles.set_index("TIMESTAMP", inplace=True)
+    return ustar_percentiles
+def l7_uncertainty_construct_args(ds7, l7_info, ustar_percentiles):
     cfg = l7_info["cfg"]
     er_labels = ["ER_SOLO", "ER_LT", "ER_LL"]
     fco2_labels = ["Fco2_runc", "Fco2_runc_method", "Fco2_runc_number"]
@@ -196,13 +206,17 @@ def l7_uncertainty_construct_args(ds7, l7_info, ustar_results):
     nep_labels = ["NEP_SOLO", "NEP_LT", "NEP_LL"]
     gpp_labels = ["GPP_SOLO", "GPP_LT", "GPP_LL"]
     subset_labels = er_labels + nee_labels + nep_labels + gpp_labels + fco2_labels
-    percentiles = [0.02275, 0.15865, 0.25, 0.5, 0.75, 0.84135, 0.97725]
+    percentiles = [1.25, 16.25, 26.25, 50.00, 73.75, 83.75, 98.75]
     args = []
     for n, percentile in enumerate(percentiles):
         d = {}
-        d["percentile"] = percentile
         d["l7_info"] = copy.deepcopy(l7_info)
-        d["ustar_results"] = copy.deepcopy(ustar_results)
+        usp = ustar_percentiles[percentile].to_dict()
+        ust = {}
+        for year in list(usp.keys()):
+            ust[year] = {"ustar_mean": usp[year]}
+        d["l7_info"]["ApplyTurbulenceFilter"]["ustar_thresholds"] = ust
+        d["l7_info"]["ApplyTurbulenceFilter"]["percentile"] = percentile
         d["ds7"] = copy.deepcopy(ds7)
         d["main_gui"] = Bunch(stop_flag=False, cfg=cfg, mode="batch")
         d["subset_labels"] = copy.deepcopy(subset_labels)
@@ -241,10 +255,8 @@ def l7_uncertainty_run(args):
         logger.info(msg)
     return dsp
 def l7_uncertainty_worker(item):
-    percentile = item["percentile"]
-    #print("Starting "+str(percentile))
     l7_info = item["l7_info"]
-    ustar_results = item["ustar_results"]
+    percentile = l7_info["ApplyTurbulenceFilter"]["percentile"]
     ds7 = item["ds7"]
     main_gui = item["main_gui"]
     subset_labels = item["subset_labels"]
@@ -253,9 +265,9 @@ def l7_uncertainty_worker(item):
     logger.setLevel(logging.WARNING)
     l7_info["ERUsingLloydTaylor"]["info"]["sheet_suffix"] = str(percentile)
     l7_info["ERUsingLasslop"]["info"]["sheet_suffix"] = str(percentile)
-    ustar_thresholds = pfp_rp.GetUstarThresholdPercentiles(ustar_results, percentile)
+    #ustar_thresholds = pfp_rp.GetUstarThresholdPercentiles(ustar_results, percentile)
     #print(str(percentile)+" finished pfp_rp.GetUstarThresholdPercentiles")
-    pfp_ck.ApplyTurbulenceFilter(ds7, l7_info, ustar_threshold=ustar_thresholds)
+    pfp_ck.ApplyTurbulenceFilter(ds7, l7_info)
     #print(str(percentile)+" finished pfp_ck.ApplyTurbulenceFilter")
     EstimateRandomUncertainty(ds7, l7_info)
     #print(str(percentile)+" finished EstimateRandomUncertainty")
