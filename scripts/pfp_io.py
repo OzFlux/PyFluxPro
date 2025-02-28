@@ -2580,6 +2580,7 @@ def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
 def SubsetDataStructure(ds_full, subset_labels, subset_attr=None):
     msg = " Getting subset of data structure"
     logger.info(msg)
+    full_labels = list(ds_full.root["Variables"].keys())
     ds_subset = DataStructure()
     if subset_attr is None:
         ds_subset.root["Attributes"] = copy.deepcopy(ds_full.root["Attributes"])
@@ -2589,6 +2590,8 @@ def SubsetDataStructure(ds_full, subset_labels, subset_attr=None):
     if "DateTime" not in subset_labels:
         subset_labels.append("DateTime")
     for label in subset_labels:
+        if label not in full_labels:
+            continue
         var = pfp_utils.GetVariable(ds_full, label)
         pfp_utils.CreateVariable(ds_subset, var)
     return ds_subset

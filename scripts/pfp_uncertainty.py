@@ -33,6 +33,10 @@ def EstimateRandomUncertainty(ds, info):
     Author: PRI
     Date: December 2023
     """
+    # we only do the random uncertainty for the 50th percentile
+    iatf = info["ApplyTurbulenceFilter"]
+    if int(iatf["percentile"]) != 50:
+        return
     estimate_random_uncertainty_method1(ds, info)
     estimate_random_uncertainty_method2(ds, info)
     return
@@ -62,6 +66,7 @@ def estimate_random_uncertainty_method1(ds, info):
         raise RuntimeError(msg)
     nperday = int(24*60/ts)
     # get required information
+    iatf = info["ApplyTurbulenceFilter"]
     ierc = info["EstimateRandomUncertainty"]
     labels = ierc["labels"]
     ierc1 = ierc["Method1"]
@@ -113,10 +118,8 @@ def estimate_random_uncertainty_method1(ds, info):
                                (abs(ta[idx1] - ta[j]) < Ta_tolerance) &
                                (abs(vpd[idx1] - vpd[j]) < VPD_tolerance) &
                                (~numpy.isnan(data[idx1])))[0]
-            #if j == 0:
-                #print("oi va vey")
             if len(idx2) >= 5:
-                runc_value["Data"][j] = numpy.std(data[idx1[idx2]])
+                runc_value["Data"][j] = numpy.std(data[idx1[idx2]], ddof=1)
                 runc_value["Flag"][j] = int(710)
                 runc_method["Data"][j] = int(1)
                 runc_method["Flag"][j] = int(0)
@@ -125,6 +128,9 @@ def estimate_random_uncertainty_method1(ds, info):
             else:
                 runc_value["Data"][j] = numpy.nan
                 runc_value["Flag"][j] = int(701)
+            if j < 48:
+                print(iatf["percentile"], j, len(idx2), idx1[idx2],
+                      runc_value["Data"][j])
         pfp_utils.CreateVariable(ds, runc_value)
         pfp_utils.CreateVariable(ds, runc_method)
         pfp_utils.CreateVariable(ds, runc_number)
@@ -206,7 +212,7 @@ def l7_uncertainty_construct_args(ds7, l7_info, ustar_percentiles):
     nep_labels = ["NEP_SOLO", "NEP_LT", "NEP_LL"]
     gpp_labels = ["GPP_SOLO", "GPP_LT", "GPP_LL"]
     subset_labels = er_labels + nee_labels + nep_labels + gpp_labels + fco2_labels
-    percentiles = [1.25, 16.25, 26.25, 50.00, 73.75, 83.75, 98.75]
+    percentiles = l7_info["ApplyTurbulenceFilter"]["percentiles"]
     args = []
     for n, percentile in enumerate(percentiles):
         d = {}
@@ -246,11 +252,11 @@ def l7_uncertainty_run(args):
         logger.info(msg)
         msg = "  This may take several minutes, read another paper ...."
         logger.info(msg)
-        logger.setLevel(logging.WARNING)
+        #logger.setLevel(logging.WARNING)
         for n, arg in enumerate(args):
             dsw = l7_uncertainty_worker(arg)
             dsp.append(dsw)
-        logger.setLevel(logging.INFO)
+        #logger.setLevel(logging.INFO)
         msg = " Finished uncertainty estimation"
         logger.info(msg)
     return dsp
@@ -260,9 +266,9 @@ def l7_uncertainty_worker(item):
     ds7 = item["ds7"]
     main_gui = item["main_gui"]
     subset_labels = item["subset_labels"]
-    #msg = " Processing percentile " + str(percentile)
-    #logger.info(msg)
-    logger.setLevel(logging.WARNING)
+    msg = " Processing percentile " + str(percentile)
+    logger.info(msg)
+    #logger.setLevel(logging.WARNING)
     l7_info["ERUsingLloydTaylor"]["info"]["sheet_suffix"] = str(percentile)
     l7_info["ERUsingLasslop"]["info"]["sheet_suffix"] = str(percentile)
     #ustar_thresholds = pfp_rp.GetUstarThresholdPercentiles(ustar_results, percentile)
@@ -296,12 +302,13 @@ def l7_uncertainty_worker(item):
     subset_attr = {"nc_nrecs": ds7.root["Attributes"]["nc_nrecs"],
                    "time_step": ds7.root["Attributes"]["time_step"],
                    "percentile": str(percentile)}
+    ustar_thresholds = l7_info["ApplyTurbulenceFilter"]["ustar_thresholds"]
     for year in list(ustar_thresholds.keys()):
         key = "ustar_threshold_" + str(year)
         value = ustar_thresholds[year]["ustar_mean"]
         subset_attr[key] = str(value)
     dss = pfp_io.SubsetDataStructure(ds7, subset_labels, subset_attr=subset_attr)
     #print("Finished "+str(percentile))
-    #msg = " Finished percentile " + str(percentile)
-    #logger.info(msg)
+    msg = " Finished percentile " + str(percentile)
+    logger.info(msg)
     return dss
