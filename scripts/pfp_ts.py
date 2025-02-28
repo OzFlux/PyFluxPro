@@ -1279,7 +1279,7 @@ def CalculateSco2SinglePoint(ds, Sco2_out="Sco2_single"):
                 logger.warning(msg)
                 return
         if "height" in ds.root["Variables"]["CO2"]["Attr"]:
-            height = pfp_utils.strip_non_numeric(ds.root["Variables"]["CO2"]["Attr"]["height"])
+            height = pfp_utils.strip_non_numeric(str(ds.root["Variables"]["CO2"]["Attr"]["height"]))
             height = float(height)
         else:
             msg = " 'height' attribute missing from CO2 variable, Sco2 not calculated"
