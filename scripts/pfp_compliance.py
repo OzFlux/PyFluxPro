@@ -525,7 +525,7 @@ def ParseConcatenateControlFile(cf):
     inc["chrono_files"] = []
     inc["labels"] = []
     inc["attributes"] = ["height", "instrument", "long_name", "standard_name",
-                         "statistic_type", "units", "valid_range"]
+                         "statistic_type", "units", "valid_range", "MAD filter"]
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}

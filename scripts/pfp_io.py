@@ -1854,9 +1854,14 @@ def write_csv_oneflux(cfg):
 
 def write_csv_oneflux_year(cfg, ds):
     """
+    Purpose:
+     Write ONEFlux CSV files, one calendar year per file.
+    Author: PRI
+    Date: Back in the day
     """
     ok = True
     time_resolution = {30: "halfhourly", 60: "hourly"}
+    ds_labels = sorted(list(ds.root["Variables"].keys()))
     ts = int(ds.root["Attributes"]["time_step"])
     ts_delta = datetime.timedelta(minutes=ts)
     # get the start and end dates
@@ -1866,16 +1871,22 @@ def write_csv_oneflux_year(cfg, ds):
     # datetime array from start to end at ts
     cdt = numpy.array([d for d in pfp_utils.perdelta(start, end, ts_delta)])
     nrecs = len(cdt)
-    # array for data
+    # dictionary for data
     data = {"DateTime": {"data": numpy.array(cdt), "format": ""}}
     dt = pfp_utils.GetVariable(ds, "DateTime")
     ldt = dt["Data"]
     indainb, indbina = pfp_utils.FindMatchingIndices(cdt, ldt)
     # ONEFlux variable labels
-    of_labels = list(cfg["Variables"].keys())
+    of_labels = sorted(list(cfg["Variables"].keys()))
+    # loop over the ONEFlux variables and put data in the data dictionary
     for of_label in of_labels:
+        # label of the variable in the PFP data structure
+        ds_label = cfg["Variables"][of_label]["name"]
+        # dictionary to hold data for this variable
         data[of_label] = {}
+        # initialise with missing data values
         data[of_label]["data"] = numpy.full(nrecs, float(-9999))
+        # format of the CSV output specified in control file
         fmt = cfg["Variables"][of_label]["format"]
         if "." in fmt:
             numdec = len(fmt) - (fmt.index(".") + 1)
@@ -1883,7 +1894,24 @@ def write_csv_oneflux_year(cfg, ds):
         else:
             strfmt = "{0:d}"
         data[of_label]["format"] = strfmt
-        var = pfp_utils.GetVariable(ds, cfg["Variables"][of_label]["name"])
+        # get the variable from the PFP data structure
+        var = pfp_utils.GetVariable(ds, ds_label)
+        # check to see if the MAD filter was used for this variable
+        if "MAD filter" in var["Attr"]:
+            msg = "  MAD filter applied to " + ds_label + ", checking for unfiltered variable"
+            logger.info(msg)
+            # check to see if the unfiltered variable is in the PFP data structure
+            if ds_label + "_notMAD" in ds_labels:
+                # if it is, then use it
+                msg = "   Using unfiltered variable " + ds_label + "_notMAD"
+                logger.info(msg)
+                var = pfp_utils.GetVariable(ds, ds_label + "_notMAD")
+            else:
+                # if it isn't, then warn the user
+                msg = "   Unfiltered variable (" +  ds_label + "_notMAD" + ") not found, skipping ..."
+                logger.error(msg)
+                continue
+        # check the units
         if var["Attr"]["units"] != cfg["Variables"][of_label]["units"]:
             var = pfp_utils.convert_units_func(ds, var, cfg["Variables"][of_label]["units"])
         data[of_label]["data"][indainb] = var["Data"][indbina]
@@ -2099,8 +2127,10 @@ def NetCDFConcatenate(info):
     pfp_utils.CheckUnits(ds_out, Fc_list, "umol/m^2/s", convert_units=True)
     # appply the Fco2 storage term if requested
     netcdf_concatenate_apply_sco2_storage(ds_out, info)
-    # use the MAD filer is requested
+    # use the MAD filer if requested
     netcdf_concatenate_apply_mad_filter(ds_out, info)
+    # check for MAD filtered variables, revert to no MAD if requested
+    netcdf_concatenate_check_mad_filter(ds_out, info)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds_out)
     # update the coverage statistics
@@ -2230,6 +2260,10 @@ def netcdf_concatenate_apply_sco2_storage(ds, info):
     tmp = "corrected for storage using " + Sco2["Label"]
     pfp_utils.append_to_attribute(Fco2["Attr"], {descr_level: tmp})
     pfp_utils.CreateVariable(ds, Fco2)
+    return
+
+def netcdf_concatenate_check_mad_filter(ds, info):
+    pass
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):
@@ -2437,7 +2471,11 @@ def netcdf_concatenate_keep_subset(ds_out, info):
     inc_labels = inc["SeriesToKeep"]
     inc_labels.append("DateTime")
     labels = list(ds_out.root["Variables"].keys())
+    # any variable that is not included is excel
     exc_labels = [l for l in labels if l not in inc_labels]
+    # except for variables ending in "_notMAD" because these must be preserved
+    # for use in the input files for ONEFlux
+    exc_labels = [l for l in exc_labels if l[-7:] != "_notMAD"]
     for label in exc_labels:
         pfp_utils.DeleteVariable(ds_out, label)
     return
