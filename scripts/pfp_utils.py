@@ -3206,8 +3206,6 @@ def variables_in_datastructure(ds, labels_to_check):
     missing = []
     for label_to_check in labels_to_check:
         if label_to_check not in labels_in_ds:
-            #msg = "  " + label_to_check + " not found in data structure"
-            #logger.warning(msg)
             missing.append(label_to_check)
             ok = False
     return ok, missing
