@@ -1687,7 +1687,7 @@ def plot_stacked_timeseries(cfg, ds, start=0, end=-1):
         current_backend = plt.get_backend()
         plt.switch_backend("agg")
         plt.ioff()
-    fig, axs = plt.subplots(nrows=nrows, sharex=True, figsize=(7.5, 10.9))
+    fig, axs = plt.subplots(nrows=nrows, sharex=True, figsize=(16.5, 11.75))
     fig.subplots_adjust(wspace=0.0, hspace=0.05, left=0.11, right=0.95, top=0.95, bottom=0.05)
     for n, label in enumerate(plot_labels):
         var = pfp_utils.GetVariable(ds, label, start=start, end=end)

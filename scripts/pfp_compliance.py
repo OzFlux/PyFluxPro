@@ -572,7 +572,7 @@ def ParseL3ControlFile(cfg, ds):
     """
     # PRI 7/10/2021 the code to get zms will give unpredictable results if CO2
     #   profile data present
-    l3_info = {"status": {"value": 0, "message": "OK"},
+    l3_info = {"status": {"value": 0, "message": "OK", "ok": True},
                "cfg": {},
                "variables": {"CO2": {}, "Fco2": {}, "Sco2": {}},
                "CombineSeries": {}}

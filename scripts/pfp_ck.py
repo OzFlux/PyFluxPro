@@ -702,7 +702,9 @@ def do_li7500check(cf, ds, code=4):
         logger.warning(msg)
     # check if we have the H2O and CO2 signal strengths
     got_signal = False
-    for signal in ["Signal_Av", "Signal_H2O", "Signal_CO2", "AGC_7500", "AGC_IRGA"]:
+    for signal in ["Signal_Av", "Signal_H2O", "Signal_CO2",
+                   "Sig_IRGA", "Sig_IRGA_Av",
+                   "AGC_7500", "AGC_IRGA"]:
         if signal in labels:
             got_signal = True
             conditionals.append(signal)
