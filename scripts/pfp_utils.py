@@ -2144,11 +2144,11 @@ def get_datetime_from_nctime(ds):
     # https://stackoverflow.com/questions/39986041/converting-days-since-epoch-to-date
     epoch_start_date = dateutil.parser.parse(nc_time_units, fuzzy=True)
     if units_period == "days":
-        dt = [epoch_start_date + datetime.timedelta(days=t) for t in nc_time_data]
+        dt = [epoch_start_date + datetime.timedelta(days=float(t)) for t in nc_time_data]
     elif units_period == "hours":
-        dt = [epoch_start_date + datetime.timedelta(hours=t) for t in nc_time_data]
+        dt = [epoch_start_date + datetime.timedelta(hours=float(t)) for t in nc_time_data]
     elif units_period == "seconds":
-        dt = [epoch_start_date + datetime.timedelta(seconds=t) for t in nc_time_data]
+        dt = [epoch_start_date + datetime.timedelta(seconds=float(t)) for t in nc_time_data]
     else:
         msg = " Unhandled option (" + str(units_period) + ") for time units period"
         logger.error(msg)
