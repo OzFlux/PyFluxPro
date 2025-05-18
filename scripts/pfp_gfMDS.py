@@ -420,9 +420,10 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     figure_path = os.path.join(l5_info[called_by]["info"]["plot_path"], figure_name)
     fig.savefig(figure_path, format='png')
     if pd["show_plots"]:
-        plt.draw()
-        pfp_utils.mypause(0.5)
-        plt.ioff()
+        #plt.draw()
+        #pfp_utils.mypause(1)
+        #plt.ioff()
+        fig.canvas.flush_events()
     else:
         plt.close(fig)
         plt.ion()

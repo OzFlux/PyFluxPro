@@ -84,9 +84,10 @@ def checktimestamps_plots(df, sheet, l1_info):
     # interactive or batch?
     if show_plots.lower() == "yes":
         # interactive so render the plot, pause 0.5 seconds, turn interactive plotting off
-        plt.draw()
-        pfp_utils.mypause(0.5)
-        plt.ioff()
+        #plt.draw()
+        #pfp_utils.mypause(1)
+        #plt.ioff()
+        fig.canvas.flush_events()
     else:
         # batch so close the figure, switch to previous backend
         plt.close(fig)
@@ -265,7 +266,7 @@ def plot_fcvsustar_annual(ds):
             axs.set_ylim([min(means-stdevs), max(means+stdevs)])
         axs.set_title(site_name+": "+str(year))
         plt.draw()
-        pfp_utils.mypause(0.5)
+        pfp_utils.mypause(1)
     return
 
 def plot_fcvsustar_seasonal(ds):
@@ -352,7 +353,7 @@ def plot_fcvsustar_seasonal(ds):
                 axs[row, col].set_ylim([min(means-stdevs), max(means+stdevs)])
         fig.tight_layout()
         plt.draw()
-        pfp_utils.mypause(0.5)
+        pfp_utils.mypause(1)
     plt.ioff()
     return
 
@@ -438,7 +439,7 @@ def plot_fcvsustar_monthly(ds):
                 axs[nrow, ncol].set_ylim([min(means-stdevs), max(means+stdevs)])
         fig.tight_layout()
         plt.draw()
-        pfp_utils.mypause(0.5)
+        pfp_utils.mypause(1)
     plt.ioff()
     return
 
@@ -616,9 +617,10 @@ def plot_fingerprint(cf):
         pngname = pngname + title.replace(" ", "_") + ".png"
         fig.savefig(pngname, format="png")
         if show_plots:
-            plt.draw()
-            pfp_utils.mypause(0.5)
-            plt.ioff()
+            #plt.draw()
+            #pfp_utils.mypause(1)
+            #plt.ioff()
+            fig.canvas.flush_events()
         else:
             plt.close(fig)
             plt.switch_backend(current_backend)
@@ -662,7 +664,7 @@ def plot_fluxnet(cf):
         figname += '_' + ds.root["Attributes"]['processing_level'] + '_FC_' + label + '.png'
         fig.savefig(figname, format='png')
         plt.draw()
-        pfp_utils.mypause(0.5)
+        pfp_utils.mypause(1)
     plt.ioff()
     return
 
@@ -756,7 +758,7 @@ def plot_explore_fingerprints(ds, selections):
     # render the fingerprint
     plt.draw()
     # pause to let the image appear on the creen
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     # turn off interactive plotting mode
     plt.ioff()
     return
@@ -798,7 +800,7 @@ def plot_explore_histograms(ds, labels):
             ax_hist.set_xticks([x[1], x[-2]])
             ax_hist.set_xticklabels([lwrs, uprs])
         plt.draw()
-        pfp_utils.mypause(0.5)
+        pfp_utils.mypause(1)
     return
 
 def plot_explore_do_histogram(var, plwr, pupr):
@@ -856,7 +858,7 @@ def plot_explore_percentiles(ds, selections):
                 ax_hist.set_xticks([x[1], x[-2]])
                 ax_hist.set_xticklabels([lwrs, uprs])
             plt.draw()
-            pfp_utils.mypause(0.5)
+            pfp_utils.mypause(1)
     return
 
 def plot_explore_timeseries(ds, selections):
@@ -894,7 +896,7 @@ def plot_explore_timeseries(ds, selections):
             axs[n].set_ylabel("(" + var["Attr"]["units"] + ")")
             n += 1
     plt.draw()
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     plt.ioff()
     return
 
@@ -1212,7 +1214,7 @@ def plottimeseries(cf, nFig, dsa, dsb):
     # draw the plot on the screen
     if show_plots.lower() == "yes":
         plt.draw()
-        pfp_utils.mypause(0.5)
+        pfp_utils.mypause(1)
         plt.ioff()
     else:
         plt.close(fig)
@@ -1501,7 +1503,7 @@ def plot_quickcheck(cf):
     file_name = site_name.replace(" ", "") + "_" + level + "_QC_SEB_30minutes.png"
     figure_name = os.path.join("plots", file_name)
     plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily)
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     # plot the daily ratios
     cmap = plt.cm.get_cmap("RdYlBu")
     logger.info(" Doing the daily ratios plot")
@@ -1521,7 +1523,7 @@ def plot_quickcheck(cf):
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
     plt.draw()
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     # plot the daily average radiation
     nFig = nFig + 1
     fig = plt.figure(nFig, figsize=(9, 6))
@@ -1538,7 +1540,7 @@ def plot_quickcheck(cf):
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
     plt.draw()
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     # plot the daily average fluxes
     nFig = nFig + 1
     fig = plt.figure(nFig, figsize=(9, 6))
@@ -1556,7 +1558,7 @@ def plot_quickcheck(cf):
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
     plt.draw()
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     # plot the daily average meteorology
     nFig = nFig + 1
     fig = plt.figure(nFig, figsize=(9, 6))
@@ -1573,7 +1575,7 @@ def plot_quickcheck(cf):
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
     plt.draw()
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     # plot the daily average soil data
     nFig = nFig + 1
     fig = plt.figure(nFig, figsize=(9, 6))
@@ -1590,7 +1592,7 @@ def plot_quickcheck(cf):
     figure_name = os.path.join("plots", file_name)
     fig.savefig(figure_name, format="png")
     plt.draw()
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     # *** end of section for time series of daily averages
     # *** start of section for diurnal plots by month ***
     # month labels
@@ -1662,7 +1664,7 @@ def plot_quickcheck(cf):
         fig.savefig(figure_name, format="png")
         # draw the plot on the screen
         plt.draw()
-        pfp_utils.mypause(0.5)
+        pfp_utils.mypause(1)
     plt.ioff()
     return
 
@@ -1714,7 +1716,7 @@ def plot_stacked_timeseries(cfg, ds, start=0, end=-1):
     fig.savefig(pngname, format="png")
     if show_plots:
         plt.draw()
-        pfp_utils.mypause(0.5)
+        pfp_utils.mypause(1)
         plt.ioff()
     else:
         plt.close(fig)
@@ -1961,7 +1963,7 @@ def plot_windrose_all(ds, wrinfo):
     file_name = site_name.replace(" ","") + "_" + level + "_" + "windrose_all" + ".png"
     file_name = os.path.join(wrinfo["plot_path"], file_name)
     fig.savefig(file_name, format="png")
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     plt.ioff()
     return
 
@@ -2017,7 +2019,7 @@ def plot_windrose_seasonal(ds, wrinfo):
     file_name = site_name.replace(" ","") + "_" + level + "_" + "windrose_seasonal" + ".png"
     file_name = os.path.join(wrinfo["plot_path"], file_name)
     fig.savefig(file_name, format="png")
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     plt.ioff()
     return
 
@@ -2060,7 +2062,7 @@ def plotxy(cf, title, plt_cf, dsa, dsb):
             xyplot(xa["Data"], ya["Data"], sub=[1,2,1], xlabel=xname, ylabel=yname)
             xyplot(xb["Data"], yb["Data"], sub=[1,2,2], regr=1, xlabel=xname, ylabel=yname)
     plt.draw()
-    pfp_utils.mypause(0.5)
+    pfp_utils.mypause(1)
     plot_path = pfp_utils.get_keyvaluefromcf(cf, ["Files"], "plot_path", default="plots/")
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
@@ -2069,7 +2071,7 @@ def plotxy(cf, title, plt_cf, dsa, dsb):
     # draw the plot on the screen
     if show_plots.lower() == "yes":
         plt.draw()
-        pfp_utils.mypause(0.5)
+        pfp_utils.mypause(1)
         plt.ioff()
     else:
         plt.close(fig)

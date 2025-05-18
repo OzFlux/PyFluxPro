@@ -1028,9 +1028,10 @@ def gfalternate_plotcomposite(data_dict, stat_dict, diel_avg, l4a, pd):
     fig.savefig(figname, format='png')
     # draw the plot on the screen
     if l4a["gui"]["show_plots"]:
-        plt.draw()
-        pfp_utils.mypause(1)
-        plt.ioff()
+        #plt.draw()
+        #pfp_utils.mypause(0.5)
+        #plt.ioff()
+        fig.canvas.flush_events()
     else:
         plt.close()
         plt.switch_backend(current_backend)
@@ -1097,9 +1098,10 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     pylab.yticks(ylabel_posn, ylabel_right_list)
     fig.tight_layout()
     if l4a["gui"]["show_plots"]:
-        plt.draw()
-        pfp_utils.mypause(1)
-        plt.ioff()
+        #plt.draw()
+        #pfp_utils.mypause(1)
+        #plt.ioff()
+        fig.canvas.flush_events()
     else:
         plt.switch_backend(current_backend)
         plt.ion()
@@ -1191,9 +1193,10 @@ def gfalternate_plotsummary(l4_info):
         figname += "_" + startdate.strftime("%Y%m%d") + "_" + enddate.strftime("%Y%m%d") + ".png"
         fig.savefig(figname, format="png")
         if l4ig["show_plots"]:
-            plt.draw()
-            pfp_utils.mypause(0.5)
-            plt.ioff()
+            #plt.draw()
+            #pfp_utils.mypause(1)
+            #plt.ioff()
+            fig.canvas.flush_events()
         else:
             plt.close()
             plt.switch_backend(current_backend)
