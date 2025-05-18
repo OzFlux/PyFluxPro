@@ -10,6 +10,7 @@ import platform
 import sys
 import time
 # third party modules
+import cftime
 import dateutil
 import numpy
 import pytz
@@ -2122,38 +2123,13 @@ def get_datetime_from_nctime(ds):
     Author: PRI
     Date: September 2014
     """
-    if "nc_nrecs" in list(ds.root["Attributes"].keys()):
-        nRecs = int(ds.root["Attributes"]["nc_nrecs"])
-    else:
-        nRecs = len(ds.root["Variables"]["time"]["Data"])
-        ds.root["Attributes"]["nc_nrecs"] = nRecs
+    time_step = ds.root["Attributes"]["time_step"]
     nc_time_data = ds.root["Variables"]["time"]["Data"]
     nc_time_units = ds.root["Variables"]["time"]["Attr"]["units"]
-    # we only handle time units in days, hours or seconds
-    got_units_period = False
-    for units_period in ["days", "hours", "seconds"]:
-        if units_period in nc_time_units:
-            got_units_period = True
-            break
-    if not got_units_period:
-        msg = " 'days', 'hours' or 'seconds' not found in time units"
-        logger.error(msg)
-        raise RuntimeError
     # 20210912 PRI - deprecate num2pydate as part of SegFault testing
-    #dt = cftime.num2date(nc_time_data, nc_time_units)
-    # https://stackoverflow.com/questions/39986041/converting-days-since-epoch-to-date
-    epoch_start_date = dateutil.parser.parse(nc_time_units, fuzzy=True)
-    if units_period == "days":
-        dt = [epoch_start_date + datetime.timedelta(days=t) for t in nc_time_data]
-    elif units_period == "hours":
-        dt = [epoch_start_date + datetime.timedelta(hours=t) for t in nc_time_data]
-    elif units_period == "seconds":
-        dt = [epoch_start_date + datetime.timedelta(seconds=t) for t in nc_time_data]
-    else:
-        msg = " Unhandled option (" + str(units_period) + ") for time units period"
-        logger.error(msg)
-        raise RuntimeError
-    time_step = ds.root["Attributes"]["time_step"]
+    # 20250516 PRI - revet to using cftime
+    # 20250516 PRI - note that cftime.num2pydate() now returns real_datetime object
+    dt = cftime.num2pydate(nc_time_data, nc_time_units)
     if time_step in ["daily", "monthly", "annual"]:
         dt = numpy.array(dt)
     else:
@@ -2162,7 +2138,7 @@ def get_datetime_from_nctime(ds):
     calendar = "gregorian"
     if "calendar" in ds.root["Variables"]["time"]["Attr"]:
         calendar = ds.root["Variables"]["time"]["Attr"]["calendar"]
-    pydt = {"Label": "DateTime", "Data": dt, "Flag": numpy.zeros(nRecs),
+    pydt = {"Label": "DateTime", "Data": dt, "Flag": numpy.zeros(len(dt)),
             "Attr": {"long_name": "Datetime in local timezone", "units": "",
                      "calendar": calendar}}
     CreateVariable(ds, pydt)
