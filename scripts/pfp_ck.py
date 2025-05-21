@@ -880,7 +880,7 @@ def do_madfilter(cf, ds, section, label, code=24):
     mad_attr = [inao["Fsd_threshold"], inao["window_size"], inao["zfc"], inao["edge_threshold"]]
     var["Attr"]["MAD filter"] = ",".join(map(str, mad_attr))
     pfp_utils.CreateVariable(ds, var)
-    return var
+    return
 
 def do_madfilter_1(var, Fsd, info, code=24):
     # get required constants
