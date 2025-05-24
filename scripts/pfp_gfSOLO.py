@@ -338,6 +338,42 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
         pd = gfSOLO_initplot(len(drivers))
         gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=si, ei=ei)
 
+def gfSOLO_mask_long_gaps(ds, solo_label, l5_info, called_by):
+    """
+    Purpose:
+     Mask gaps that are longer than a specified maximum length.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: May 2025
+    """
+    if not l5_info[called_by]["outputs"][solo_label]["mask long gaps"]:
+        # mask long gaps disabled in control file
+        return
+    if (("MaxShortGapRecords" not in l5_info[called_by]["info"]) or
+        ("MaxShortGapDays" not in l5_info[called_by]["info"])):
+        # required info missing
+        return
+    max_short_gap_days = int(l5_info[called_by]["info"]["MaxShortGapDays"])
+    msg = "  Masking gaps longer than " + str(max_short_gap_days) + " days "
+    msg += "in variable " + solo_label
+    logger.info(msg)
+    target_label = l5_info[called_by]["outputs"][solo_label]["target"]
+    target = pfp_utils.GetVariable(ds, target_label)
+    variable = pfp_utils.GetVariable(ds, solo_label)
+    mask = numpy.ma.getmaskarray(target["Data"])
+    # start and stop indices of contiguous blocks
+    max_short_gap_records = int(l5_info[called_by]["info"]["MaxShortGapRecords"])
+    gap_start_end = pfp_utils.contiguous_regions(mask)
+    for start, stop in gap_start_end:
+        gap_length = stop - start
+        if gap_length > max_short_gap_records:
+            variable["Data"][start: stop] = target["Data"][start: stop]
+            variable["Flag"][start: stop] = target["Flag"][start: stop]
+    # put data_int back into the data structure
+    pfp_utils.CreateVariable(ds, variable)
+    return
+
 def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     """ Plot the results of the SOLO run. """
     # get the time step
@@ -839,9 +875,21 @@ def gfSOLO_run(ds, l5_info, called_by):
             if l5s["info"]["call_mode"] == "interactive":
                 # plot the summary statistics
                 gfSOLO_plotsummary(ds, l5s)
-        logger.info(" Finished auto (months) run ...")
+        msg = " Finished auto (months) run ..."
+        logger.info(msg)
     else:
-        logger.error("GapFillUsingSOLO: unrecognised period option")
+        msg = " " + called_by + ": unrecognised period option"
+        logger.error(msg)
+        return
+    # check to see if we should mask long gaps
+    # this is only done for GapFillUsingSOLO, not done for GapFillLongSOLO
+    if called_by in ["GapFillUsingSOLO"]:
+        # we are doing GapFillUsingSOLO, get a list of output labels
+        outputs = list(l5s["outputs"].keys())
+        # loop over the outputs ...
+        for output in outputs:
+            # ... and mask long gaps
+            gfSOLO_mask_long_gaps(ds, output, l5_info, called_by)
     return
 
 def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,

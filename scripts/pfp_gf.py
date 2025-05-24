@@ -800,6 +800,12 @@ def gfMDS_createdict(cf, ds, l5_info, label, called_by, flag_code):
             msg = " MDS: incorrect format for tolerances for " + label + ", skipping ..."
             logger.error(msg)
             continue
+        # mask long gaps option
+        sections = ["Fluxes", label, "GapFillUsingMDS", output]
+        opt = pfp_utils.get_keyvaluefromcf(cf, sections, "mask long gaps", default="Yes")
+        l5mo[output]["mask long gaps"] = True
+        if opt.lower() == "no":
+            l5mo[output]["mask long gaps"] = False
     # check that all requested targets and drivers have a mapping to
     # a FluxNet label, remove if they don't
     fluxnet_label_map = {"Fco2":"NEE", "Fe":"LE", "Fh":"H",
@@ -1030,6 +1036,15 @@ def gfSOLO_createdict_info(cf, ds, l5_info, called_by):
     # truncate to last date in Imports?
     truncate = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "TruncateToImports", default="Yes")
     l5s["info"]["truncate_to_imports"] = truncate
+    # maximum length of "short" gaps in days
+    # anythng longer will be masked unless a long gap filling method is used
+    if "MaxShortGapDays" in cf["Options"]:
+        opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "MaxShortGapDays", default=30)
+        l5s["info"]["MaxShortGapDays"] = int(float(opt))
+        # maximum length in records
+        ts = int(float(ds.root["Attributes"]["time_step"]))
+        nperday = 24 * 60//ts
+        l5s["info"]["MaxShortGapRecords"] = l5s["info"]["MaxShortGapDays"] * nperday
     # number of records per day and maximum lags
     nperhr = int(float(60)/time_step + 0.5)
     l5s["info"]["nperday"] = int(float(24)*nperhr + 0.5)
@@ -1116,6 +1131,12 @@ def gfSOLO_createdict_outputs(cf, l5_info, target, called_by, flag_code):
                                  "Avg (obs)": [], "Avg (SOLO)": [],
                                  "Var (obs)": [], "Var (SOLO)": [], "Var ratio": [],
                                  "m_ols": [], "b_ols": []}
+        # mask long gaps option
+        sections = ["Fluxes", target, "GapFillUsingMDS", output]
+        opt = pfp_utils.get_keyvaluefromcf(cf, sections, "mask long gaps", default="Yes")
+        so[output]["mask long gaps"] = True
+        if opt.lower() == "no":
+            so[output]["mask long gaps"] = False
     return
 
 # functions for GapFillFromClimatology

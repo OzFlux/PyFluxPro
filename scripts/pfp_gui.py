@@ -7800,6 +7800,31 @@ class edit_cfg_L5(QtWidgets.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
+    def add_madcheck(self):
+        """ Add the MAD check to a variable."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        if selected_item.text().split("_")[0] == "Fco2":
+            edge_threshold = 6
+        elif selected_item.text().split("_")[0] in ["Fe", "Fh"]:
+            edge_threshold = 100
+        else:
+            edge_threshold = "20,80"
+        new_qc = {"MADCheck":{"Fsd_threshold": 12, "edge_threshold": edge_threshold,
+                              "window_size": 13, "zfc": 5.5,}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_mask_long_gaps(self):
+        """ Add the mask long gaps option."""
+        dict_to_add = {"mask long gaps": "Yes"}
+        # add the subsubsection
+        self.add_subsection(dict_to_add)
+
     def add_maxgapinterpolate(self):
         """ Add MaxGapInterpolate to the [Options] section."""
         dict_to_add = {"MaxGapInterpolate": "3"}
@@ -7848,6 +7873,19 @@ class edit_cfg_L5(QtWidgets.QWidget):
         d2a = {"New variable": var_dict}
         self.add_variable(d2a)
         # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_qc_check(self, selected_item, new_qc):
+        for key1 in new_qc:
+            parent = QtGui.QStandardItem(key1)
+            parent.setEditable(False)
+            for key in new_qc[key1]:
+                val = str(new_qc[key1][key])
+                child0 = QtGui.QStandardItem(key)
+                child0.setEditable(False)
+                child1 = QtGui.QStandardItem(val)
+                parent.appendRow([child0, child1])
+            selected_item.appendRow(parent)
         self.update_tab_text()
 
     def add_rangecheck(self):
@@ -8484,6 +8522,11 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
                     self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
                     add_separator = True
+                if "MADCheck" not in existing_entries:
+                    self.context_menu.actionAddMADCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMADCheck.setText("Add MADCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddMADCheck)
+                    self.context_menu.actionAddMADCheck.triggered.connect(self.add_madcheck)
                 if add_separator:
                     add_separator = False
                     self.context_menu.addSeparator()
@@ -8511,7 +8554,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
             parent = selected_item.parent()
             grand_parent = selected_item.parent().parent()
             subsubsection_name = str(idx.data())
-            if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck"]:
+            if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "MADCheck"]:
                 self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
@@ -8556,6 +8599,11 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddSOLOSettings)
                     self.context_menu.actionAddSOLOSettings.triggered.connect(self.add_solo_settings)
                     add_separator = True
+                if "mask long gaps" not in existing_entries:
+                    self.context_menu.actionAddMaskLongGaps = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMaskLongGaps.setText("Add mask long gaps")
+                    self.context_menu.addAction(self.context_menu.actionAddMaskLongGaps)
+                    self.context_menu.actionAddMaskLongGaps.triggered.connect(self.add_mask_long_gaps)
                 if add_separator:
                     add_separator = False
                     self.context_menu.addSeparator()
@@ -8570,14 +8618,31 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddMDStarget.setText("Add target")
                     self.context_menu.addAction(self.context_menu.actionAddMDStarget)
                     self.context_menu.actionAddMDStarget.triggered.connect(self.add_mds_target)
+                if "mask long gaps" not in existing_entries:
+                    self.context_menu.actionAddMaskLongGaps = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMaskLongGaps.setText("Add mask long gaps")
+                    self.context_menu.addAction(self.context_menu.actionAddMaskLongGaps)
+                    self.context_menu.actionAddMaskLongGaps.triggered.connect(self.add_mask_long_gaps)
         elif level == 4:
             selected_text = str(idx.data())
-            if selected_text in ["solo_settings"]:
+            parent = selected_item.parent()
+            key = str(parent.child(selected_item.row(),0).text())
+            if (selected_item.column() == 0) and selected_text in ["solo_settings", "mask long gaps"]:
                 self.context_menu.actionRemoveSOLOSettings = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveSOLOSettings.setText("Remove item")
                 self.context_menu.addAction(self.context_menu.actionRemoveSOLOSettings)
                 self.context_menu.actionRemoveSOLOSettings.triggered.connect(self.remove_item)
-
+            if (selected_item.column() == 1) and (key == "mask long gaps"):
+                if selected_text != "Yes":
+                    self.context_menu.actionChangeMaskLongGaps = QtWidgets.QAction(self)
+                    self.context_menu.actionChangeMaskLongGaps.setText("Yes")
+                    self.context_menu.addAction(self.context_menu.actionChangeMaskLongGaps)
+                    self.context_menu.actionChangeMaskLongGaps.triggered.connect(lambda:self.change_selected_text("Yes"))
+                if selected_text != "No":
+                    self.context_menu.actionChangeMaskLongGaps = QtWidgets.QAction(self)
+                    self.context_menu.actionChangeMaskLongGaps.setText("No")
+                    self.context_menu.addAction(self.context_menu.actionChangeMaskLongGaps)
+                    self.context_menu.actionChangeMaskLongGaps.triggered.connect(lambda:self.change_selected_text("No"))
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
     def double_click(self):
@@ -8664,7 +8729,8 @@ class edit_cfg_L5(QtWidgets.QWidget):
                                     key5 = str(subsubsubsection.child(m, 0).text())
                                     val5 = str(subsubsubsection.child(m, 1).text())
                                     cfg[key1][key2][key3][key4][key5] = val5
-                        elif key3 in ["MergeSeries", "RangeCheck", "DiurnalCheck", "DependencyCheck", "ExcludeDates"]:
+                        elif key3 in ["MergeSeries", "RangeCheck", "DiurnalCheck",
+                                      "DependencyCheck", "ExcludeDates", "MADCheck"]:
                             for l in range(subsubsection.rowCount()):
                                 key4 = str(subsubsection.child(l, 0).text())
                                 val4 = str(subsubsection.child(l, 1).text())
@@ -8766,7 +8832,8 @@ class edit_cfg_L5(QtWidgets.QWidget):
                                     child1 = QtGui.QStandardItem(val)
                                     parent4.appendRow([child0, child1])
                                 parent3.appendRow(parent4)
-                        elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates", "DiurnalCheck", "DependencyCheck"]:
+                        elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates",
+                                      "DiurnalCheck", "DependencyCheck", "MADCheck"]:
                             for key4 in self.cfg[key1][key2][key3]:
                                 val = self.cfg[key1][key2][key3][key4]
                                 child0 = QtGui.QStandardItem(key4)

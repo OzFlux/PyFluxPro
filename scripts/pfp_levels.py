@@ -286,6 +286,8 @@ def l5qc(main_gui, cf, ds4):
     pfp_gf.CheckL5Drivers(ds5, l5_info)
     if ds5.info["returncodes"]["value"] != 0:
         return ds5
+    # apply any QC checks
+    pfp_ck.do_qcchecks(cf, ds5)
     # now do the flux gap filling methods
     # *** start of the section that does the gap filling of the fluxes ***
     pfp_gf.CheckGapLengths(cf, ds5, l5_info)

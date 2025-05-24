@@ -2786,10 +2786,6 @@ def MergeSeriesUsingDict(ds, info, merge_order="standard"):
                 index = numpy.where(numpy.mod(flag1, 10) == 0)[0]
                 # set them all to 0
                 flag2[index] = 0
-                if label=="Fg":
-                    index = numpy.where(flag2 == 22)[0]
-                    if len(index) != 0:
-                        flag2[index] = 0
                 # index of flag values other than 0,10,20,30 ...
                 index = numpy.where(flag2 != 0)[0]
                 # replace bad primary with good secondary
