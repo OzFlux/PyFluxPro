@@ -1132,7 +1132,7 @@ def gfSOLO_createdict_outputs(cf, l5_info, target, called_by, flag_code):
                                  "Var (obs)": [], "Var (SOLO)": [], "Var ratio": [],
                                  "m_ols": [], "b_ols": []}
         # mask long gaps option
-        sections = ["Fluxes", target, "GapFillUsingMDS", output]
+        sections = ["Fluxes", target, "GapFillUsingSOLO", output]
         opt = pfp_utils.get_keyvaluefromcf(cf, sections, "mask long gaps", default="Yes")
         so[output]["mask long gaps"] = True
         if opt.lower() == "no":
