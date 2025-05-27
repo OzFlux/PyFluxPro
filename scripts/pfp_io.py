@@ -3742,7 +3742,7 @@ def xl_write_series(ds, xlfullname, outputlist=None):
         variablelist = list(ds.root["Variables"].keys())
         nRecs = len(ds.root["Variables"][variablelist[0]]["Data"])
     # open the Excel file
-    msg = " Opening and writing Excel file " + os.path.basename(xlfullname)
+    msg = " Opening and writing Excel file " + os.path.basename(xlfullname) + " (xlwt)"
     logger.info(msg)
     xlfile = xlwt.Workbook(encoding="latin-1")
     # set the datemode
@@ -3862,7 +3862,7 @@ def xlsx_write_series(ds, xlsxfullname, outputlist=None):
         variablelist = list(ds.root["Variables"].keys())
         nRecs = len(ds.root["Variables"][variablelist[0]]["Data"])
     # open the Excel file
-    msg = " Opening and writing Excel file " + os.path.basename(xlsxfullname)
+    msg = " Opening and writing Excel file " + os.path.basename(xlsxfullname) + " (xlsxwriter)"
     logger.info(msg)
     if "xl_datemode" not in ds.root["Attributes"]:
         if platform.system() == "darwin":

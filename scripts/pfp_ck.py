@@ -180,7 +180,7 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
                                                      var["Data"], copy=True)
         var_filtered["Flag"] = numpy.copy(var["Flag"])
         idx = numpy.where(indicators["final"]["Data"] == 0)[0]
-        var_filtered["Flag"][idx] = numpy.int32(61)
+        var_filtered["Flag"][idx] = numpy.int32(502)
         # update the "description" attribute
         pfp_utils.append_to_attribute(var_filtered["Attr"], {descr_level: "turbulence filter applied"})
         # and write the filtered data to the data structure

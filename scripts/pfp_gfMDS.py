@@ -283,6 +283,9 @@ def gfMDS_mask_long_gaps(ds, mds_label, l5_info, called_by):
     Author: PRI
     Date: June 2019
     """
+    if not l5_info[called_by]["outputs"][mds_label]["mask long gaps"]:
+        # mask long gaps disabled in control file
+        return
     if "MaxShortGapRecords" not in l5_info[called_by]["info"]:
         return
     max_short_gap_days = l5_info[called_by]["info"]["MaxShortGapDays"]
@@ -420,9 +423,6 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     figure_path = os.path.join(l5_info[called_by]["info"]["plot_path"], figure_name)
     fig.savefig(figure_path, format='png')
     if pd["show_plots"]:
-        #plt.draw()
-        #pfp_utils.mypause(1)
-        #plt.ioff()
         fig.canvas.flush_events()
     else:
         plt.close(fig)
