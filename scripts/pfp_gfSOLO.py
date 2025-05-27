@@ -38,7 +38,7 @@ def GapFillUsingSOLO(main_gui, ds, l5_info, called_by):
     l5_info[called_by]["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
     # are we running in interactive or batch mode?
     if l5_info[called_by]["info"]["call_mode"].lower() == "interactive":
-        l5_info["GapFillUsingSOLO"]["gui"]["show_plots"] = True
+        l5_info[called_by]["gui"]["show_plots"] = True
         # put up a plot of the data coverage at L4
         gfSOLO_plotcoveragelines(ds, l5_info, called_by)
         # call the GapFillUsingSOLO GUI

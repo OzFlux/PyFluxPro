@@ -280,7 +280,7 @@ def ParseL5ControlFile(cfg, ds):
             if ds.info["returncodes"]["value"] != 0:
                 return l5_info
         if "GapFillUsingMDS" in list(cfg["Fluxes"][label].keys()):
-            gfMDS_createdict(cfg, ds, l5_info, label, "GapFillUsingMDS", 530)
+            gfMDS_createdict(cfg, ds, l5_info, label, "GapFillUsingMDS", 570)
             if ds.info["returncodes"]["value"] != 0:
                 return l5_info
         if "MergeSeries" in list(cfg["Fluxes"][label].keys()):
