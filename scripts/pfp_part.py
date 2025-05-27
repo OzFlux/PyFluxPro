@@ -581,9 +581,6 @@ class partition(object):
         fig.savefig(file_name, format="png")
 
         if self.l6_info["Options"]["call_mode"] == "interactive":
-            #plt.draw()
-            #pfp_utils.mypause(1)
-            #plt.ioff()
             fig.canvas.flush_events()
         else:
             plt.close()
@@ -629,9 +626,6 @@ class partition(object):
         fig.savefig(file_name, format="png")
 
         if self.l6_info["Options"]["call_mode"] == "interactive":
-            #plt.draw()
-            #pfp_utils.mypause(1)
-            #plt.ioff()
             fig.canvas.flush_events()
         else:
             plt.close()

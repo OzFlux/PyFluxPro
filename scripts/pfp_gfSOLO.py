@@ -519,11 +519,6 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     fig.savefig(figname, format="png")
     # draw the plot on the screen
     if l5s["gui"]["show_plots"]:
-        #plt.draw()
-        #plt.show()
-        #plt.pause(0.5)
-        #pfp_utils.mypause(5)
-        #plt.ioff()
         fig.canvas.flush_events()
     else:
         plt.close()
@@ -592,9 +587,6 @@ def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
     ax2.set_yticklabels(ylabel_right_list)
     fig.tight_layout()
     if l5s["gui"]["show_plots"]:
-        #plt.draw()
-        #pfp_utils.mypause(1)
-        #plt.ioff()
         fig.canvas.flush_events()
     else:
         plt.switch_backend(current_backend)
@@ -678,9 +670,6 @@ def gfSOLO_plotsummary(ds, solo):
     figname = figname + "_" + sdt + "_" + edt + ".png"
     fig.savefig(figname, format="png")
     if solo["gui"]["show_plots"]:
-        #plt.draw()
-        #pfp_utils.mypause(0.5)
-        #plt.ioff()
         fig.canvas.flush_events()
     else:
         plt.close()

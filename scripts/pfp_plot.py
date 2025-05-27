@@ -84,9 +84,6 @@ def checktimestamps_plots(df, sheet, l1_info):
     # interactive or batch?
     if show_plots.lower() == "yes":
         # interactive so render the plot, pause 0.5 seconds, turn interactive plotting off
-        #plt.draw()
-        #pfp_utils.mypause(1)
-        #plt.ioff()
         fig.canvas.flush_events()
     else:
         # batch so close the figure, switch to previous backend
@@ -617,9 +614,6 @@ def plot_fingerprint(cf):
         pngname = pngname + title.replace(" ", "_") + ".png"
         fig.savefig(pngname, format="png")
         if show_plots:
-            #plt.draw()
-            #pfp_utils.mypause(1)
-            #plt.ioff()
             fig.canvas.flush_events()
         else:
             plt.close(fig)

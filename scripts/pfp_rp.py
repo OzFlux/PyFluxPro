@@ -553,9 +553,6 @@ def L6_summary_plotdaily(ds_summary, l6_info):
         figure_path = os.path.join(plot_path, figure_name)
         fig.savefig(figure_path, format='png')
         if l6_info["Options"]["call_mode"].lower() == "interactive":
-            #plt.draw()
-            #pfp_utils.mypause(1)
-            #plt.ioff()
             fig.canvas.flush_events()
         else:
             plt.close(fig)
@@ -590,9 +587,6 @@ def L6_summary_plotdaily(ds_summary, l6_info):
     figname = figname+"_"+sdt+"_"+edt+'.png'
     fig.savefig(figname,format='png')
     if l6_info["Options"]["call_mode"].lower()=="interactive":
-        #plt.draw()
-        #pfp_utils.mypause(1)
-        #plt.ioff()
         fig.canvas.flush_events()
     else:
         plt.close(fig)
@@ -708,9 +702,6 @@ def L6_summary_plotcumulative(ds_summary, l6_info):
         figure_path = os.path.join(plot_path, figure_name)
         fig.savefig(figure_path, format='png')
         if l6_info["Options"]["call_mode"].lower() == "interactive":
-            #plt.draw()
-            #pfp_utils.mypause(1)
-            #plt.ioff()
             fig.canvas.flush_events()
         else:
             plt.close(fig)
@@ -2324,9 +2315,6 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     fig.savefig(figname, format='png')
     # draw the plot on the screen
     if iel["gui"]["show_plots"]:
-        #plt.draw()
-        #pfp_utils.mypause(1)
-        #plt.ioff()
         fig.canvas.flush_events()
     else:
         #plt.close(fig)
