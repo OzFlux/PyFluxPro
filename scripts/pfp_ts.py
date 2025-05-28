@@ -366,6 +366,8 @@ def CalculateHumidities(ds):
      March 2015
     Author: PRI
     """
+    msg = " Calculating humidities"
+    logger.info(msg)
     if "AH" not in list(ds.root["Variables"].keys()):
         if "SH" in list(ds.root["Variables"].keys()):
             AbsoluteHumidityFromSpecificHumidity(ds)   # calculate AH from SH
@@ -430,6 +432,11 @@ def CalculateHumiditiesAfterGapFill(ds, info):
 
 def AbsoluteHumidityFromRelativeHumidity(ds):
     """ Calculate absolute humidity from relative humidity. """
+    ok, missing = pfp_utils.variables_in_datastructure(ds, ["Ta", "RH"])
+    if not ok:
+        msg = ",".join(missing) + " missing, AH not calculated"
+        logger.warning(msg)
+        return
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating absolute humidity from relative humidity')
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -455,6 +462,11 @@ def AbsoluteHumidityFromRelativeHumidity(ds):
 
 def AbsoluteHumidityFromSpecificHumidity(ds):
     """ Calculate absolute humidity from specific humidity. """
+    ok, missing = pfp_utils.variables_in_datastructure(ds, ["Ta", "ps", "SH"])
+    if not ok:
+        msg = ",".join(missing) + " missing, AH not calculated"
+        logger.warning(msg)
+        return
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(" Calculating absolute humidity from specific humidity")
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -508,6 +520,11 @@ def RelativeHumidityFromDewpoint(ds):
 
 def RelativeHumidityFromSpecificHumidity(ds):
     """ Calculate relative humidity from specific humidity. """
+    ok, missing = pfp_utils.variables_in_datastructure(ds, ["Ta", "ps", "SH"])
+    if not ok:
+        msg = ",".join(missing) + " missing, RH not calculated"
+        logger.warning(msg)
+        return
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating relative humidity from specific humidity')
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -533,6 +550,11 @@ def RelativeHumidityFromSpecificHumidity(ds):
 
 def RelativeHumidityFromAbsoluteHumidity(ds):
     """ Calculate relative humidity from absolute humidity. """
+    ok, missing = pfp_utils.variables_in_datastructure(ds, ["Ta", "AH"])
+    if not ok:
+        msg = ",".join(missing) + " missing, RH not calculated"
+        logger.warning(msg)
+        return
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating relative humidity from absolute humidity')
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -605,6 +627,11 @@ def smooth(x,window_len=11,window='hanning'):
 
 def SpecificHumidityFromAbsoluteHumidity(ds):
     """ Calculate specific humidity from absolute humidity. """
+    ok, missing = pfp_utils.variables_in_datastructure(ds, ["Ta", "ps", "AH"])
+    if not ok:
+        msg = ",".join(missing) + " missing, SH not calculated"
+        logger.warning(msg)
+        return
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating specific humidity from absolute humidity')
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -632,6 +659,11 @@ def SpecificHumidityFromAbsoluteHumidity(ds):
 
 def SpecificHumidityFromRelativeHumidity(ds):
     """ Calculate specific humidity from relative humidity."""
+    ok, missing = pfp_utils.variables_in_datastructure(ds, ["Ta", "ps", "RH"])
+    if not ok:
+        msg = ",".join(missing) + " missing, SH not calculated"
+        logger.warning(msg)
+        return
     nrecs = int(float(ds.root["Attributes"]["nc_nrecs"]))
     logger.info(' Calculating specific humidity from relative humidity')
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -685,17 +717,18 @@ def CalculateMeteorologicalVariables(ds, info, Ta_name='Ta', Tv_name='Tv_SONIC_A
     Modifications:
      June 2022 - rewrote to use pfp_utils.GetVariable() and pfp_utils.CreateVariable()
     """
+    msg = " Calculating meteorological variables"
+    logger.info(msg)
     iris = info["RemoveIntermediateSeries"]
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nrecs, dtype=numpy.int32)
     ones = numpy.ones(nrecs, dtype=numpy.int32)
-    for item in [Ta_name, ps_name, AH_name, SH_name]:
-        if item not in list(ds.root["Variables"].keys()):
-            msg = " CalculateMeteorologicalVariables: series "
-            msg = msg + item + " not found, returning ..."
-            logger.warning(msg)
-            return
-    logger.info(' Adding standard met variables to database')
+    labels_to_check = [Ta_name, ps_name, AH_name, SH_name]
+    ok, missing = pfp_utils.variables_in_datastructure(ds, labels_to_check)
+    if not ok:
+        msg = ",".join(missing) + " missing, meteorological variables not calculated"
+        logger.warning(msg)
+        return
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     # get the required data series
     Ta = pfp_utils.GetVariable(ds, Ta_name)
@@ -1018,10 +1051,46 @@ def CoordRotation2D(cf, ds, info):
         Usage pfp_ts.CoordRotation2D(ds)
         ds: data structure
         """
+    msg = " Applying 2D coordinate rotation (components and covariances)"
+    logger.info(msg)
     iris = info["RemoveIntermediateSeries"]
     nRecs = int(ds.root["Attributes"]["nc_nrecs"])
     zeros = numpy.zeros(nRecs,dtype=numpy.int32)
     ones = numpy.ones(nRecs,dtype=numpy.int32)
+    # check to see if the wind velocity component variances are in the data structure
+    labels_to_check = ["Uy_SONIC_Vr", "Ux_SONIC_Vr", "Uz_SONIC_Vr"]
+    ok, missing = pfp_utils.variables_in_datastructure(ds, labels_to_check)
+    if not ok:
+        # if not, check to see if we have the wind velocity standard deviations
+        labels_to_check = ["Uy_SONIC_Sd", "Ux_SONIC_Sd", "Uz_SONIC_Sd"]
+        ok, missing = pfp_utils.variables_in_datastructure(ds, labels_to_check)
+        if not ok:
+            # quit if we have neither variances nor standard deviations
+            msg = ",".join(missing) + " missing, 2D coordinate rotation not done"
+            logger.error(msg)
+            info["status"]["ok"] = False
+            info["status"]["message"] = msg
+            return
+        else:
+            # calculate the variances from the standard deviations
+            msg = "  Calculating wind velocity component variances from standard deviations"
+            logger.info(msg)
+            for sd_label in labels_to_check:
+                vr_label = sd_label.replace("_Sd", "_Vr")
+                pfp_func_stats.Variance_from_standard_deviation(ds, vr_label, sd_label)
+    # now check to see if we have everything else we need
+    labels_to_check = ["Ux_SONIC_Av", "Uy_SONIC_Av", "Uz_SONIC_Av",
+                       "UxUz", "UyUz", "UxUy",
+                       "UzC", "UzA", "UzT",
+                       "UxC", "UyC", "UxA", "UyA", "UxT", "UyT"]
+    ok, missing = pfp_utils.variables_in_datastructure(ds, labels_to_check)
+    if not ok:
+        # quit if any of the equired variables are not present
+        msg = ",".join(missing) + " missing, 2D coordinate rotation not done"
+        logger.error(msg)
+        info["status"]["ok"] = False
+        info["status"]["message"] = msg
+        return
     # get the raw wind velocity components
     Ux = pfp_utils.GetVariable(ds, "Ux_SONIC_Av") # longitudinal component in CSAT coordinate system
     Uy = pfp_utils.GetVariable(ds, "Uy_SONIC_Av") # lateral component in CSAT coordinate system
@@ -1048,7 +1117,6 @@ def CoordRotation2D(cf, ds, info):
         if not cf["Options"].as_bool("2DCoordRotation"):
             rotate = False
     if rotate:
-        logger.info(" Applying 2D coordinate rotation (components and covariances)")
         # get the 2D and 3D wind speeds
         ws2d = numpy.ma.sqrt(Ux["Data"]**2 + Uy["Data"]**2)
         ws3d = numpy.ma.sqrt(Ux["Data"]**2 + Uy["Data"]**2 + Uz["Data"]**2)
