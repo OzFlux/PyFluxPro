@@ -416,6 +416,8 @@ class pfp_main_ui(QWidget):
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_ecostress(self)
         elif self.file["level"] in ["nc2csv_fluxnet"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_fluxnet(self)
+        elif self.file["level"] in ["nc2csv_oneflux"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_oneflux(self)
         elif self.file["level"] in ["nc2csv_reddyproc"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_reddyproc(self)
         elif self.file["level"] in ["batch"]:
@@ -827,16 +829,19 @@ class pfp_main_ui(QWidget):
                 pfp_top_level.do_run_l6(self)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_biomet":
-            pfp_top_level.do_file_convert_nc2biomet(self, mode="custom")
+            pfp_top_level.do_file_convert_nc2biomet(cfg, mode="custom")
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_ecostress":
-            pfp_top_level.do_file_convert_nc2ecostress(self)
+            pfp_top_level.do_file_convert_nc2ecostress(cfg)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_fluxnet":
-            pfp_top_level.do_file_convert_nc2fluxnet(self)
+            pfp_top_level.do_file_convert_nc2fluxnet(cfg)
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "nc2csv_oneflux":
+            pfp_top_level.do_file_convert_nc2oneflux(cfg, mode="custom")
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_reddyproc":
-            pfp_top_level.do_file_convert_nc2reddyproc(self, mode="custom")
+            pfp_top_level.do_file_convert_nc2reddyproc(cfg, mode="custom")
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "windrose":
             if pfp_compliance.check_windrose_controlfile(cfg):

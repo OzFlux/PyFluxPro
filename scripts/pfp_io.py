@@ -2127,10 +2127,10 @@ def NetCDFConcatenate(info):
     pfp_utils.CheckUnits(ds_out, Fc_list, "umol/m^2/s", convert_units=True)
     # appply the Fco2 storage term if requested
     netcdf_concatenate_apply_sco2_storage(ds_out, info)
-    # use the MAD filer if requested
-    netcdf_concatenate_apply_mad_filter(ds_out, info)
-    # check for MAD filtered variables, revert to no MAD if requested
-    netcdf_concatenate_check_mad_filter(ds_out, info)
+    ## use the MAD filer if requested
+    #netcdf_concatenate_apply_mad_filter(ds_out, info)
+    ## check for MAD filtered variables, revert to no MAD if requested
+    #netcdf_concatenate_check_mad_filter(ds_out, info)
     # check missing data and QC flags are consistent
     pfp_utils.CheckQCFlags(ds_out)
     # update the coverage statistics
@@ -2145,68 +2145,6 @@ def NetCDFConcatenate(info):
     logger.info(" Writing data to " + os.path.split(inc["out_file_name"])[1])
     # write the concatenated data structure to file
     NetCDFWrite(inc["out_file_name"], ds_out, ndims=inc["NumberOfDimensions"])
-    return
-
-def netcdf_concatenate_apply_mad_filter(ds, info):
-    inc = info["NetCDFConcatenate"]
-    # return if MAD filter not requested for any variables
-    if "ApplyMADFilter" not in list(inc.keys()):
-        return
-    if inc["ApplyMADFilter"] == "":
-        return
-    filter_labels = inc["ApplyMADFilter"].split(",")
-    # check the requested variables are in the data structure
-    ds_labels = list(ds.root["Variables"].keys())
-    for filter_label in filter_labels:
-        if filter_label not in ds_labels:
-            filter_labels.remove(filter_label)
-    # return if none of the requested variables are in the data structure
-    if len(filter_labels) == 0:
-        return
-    # should be safe to do the business
-    msg = " Applying the MAD (despike) filter to "
-    msg += ",".join(map(str, filter_labels))
-    logger.info(msg)
-    inc["ApplyMADFilter"] = {"Variables": filter_labels, "Options": {}, "General": {}}
-    # add general options
-    inag = info["NetCDFConcatenate"]["ApplyMADFilter"]["General"]
-    inag["nc_nrecs"] = int(ds.root["Attributes"]["nc_nrecs"])
-    inag["time_step"] = int(ds.root["Attributes"]["time_step"])
-    inag["processing_level"] = str(ds.root["Attributes"]["processing_level"])
-    # load the default MAD parameters into the info dictionary
-    inao = info["NetCDFConcatenate"]["ApplyMADFilter"]["Options"]
-    inao["Fsd_threshold"] = float(12)
-    inao["window_size"] = int(13)
-    inao["zfc"] = float(5.5)
-    for filter_label in filter_labels:
-        if filter_label == "Fco2":
-            inao["edge_threshold"] = float(6)
-        elif filter_label in ["Fe", "Fh"]:
-            inao["edge_threshold"] = float(100)
-        else:
-            msg = "  When concatenating, MAD filter only for Fco2, Fe or Fh, not " + filter_label
-            logger.warning(msg)
-            continue
-        # get the data
-        Fsd = pfp_utils.GetVariable(ds, "Fsd")
-        var = pfp_utils.GetVariable(ds, filter_label)
-        if "MAD filter" in var["Attr"]:
-            msg = " MAD filter already applied to " + filter_label
-            logger.warning(msg)
-            continue
-        # save a copy of the unfiltered variable
-        var_notMAD = pfp_utils.CopyVariable(var)
-        var_notMAD["Label"] = var["Label"] + "_notMAD"
-        pfp_utils.CreateVariable(ds, var_notMAD)
-        result = pfp_ck.do_madfilter_1(var, Fsd, inc, code=24)
-        pfp_ck.do_madfilter_2(result, inc, code=24)
-        # get the processing level and description attribute name
-        level = str(ds.root["Attributes"]["processing_level"])
-        description = "description_" + level
-        pfp_utils.append_to_attribute(var["Attr"],{description: "MAD filter applied"})
-        mad_attr = [inao["Fsd_threshold"], inao["window_size"], inao["zfc"], inao["edge_threshold"]]
-        var["Attr"]["MAD filter"] = ",".join(map(str, mad_attr))
-        pfp_utils.CreateVariable(ds, var)
     return
 
 def netcdf_concatenate_apply_sco2_storage(ds, info):
@@ -2260,10 +2198,6 @@ def netcdf_concatenate_apply_sco2_storage(ds, info):
     tmp = "corrected for storage using " + Sco2["Label"]
     pfp_utils.append_to_attribute(Fco2["Attr"], {descr_level: tmp})
     pfp_utils.CreateVariable(ds, Fco2)
-    return
-
-def netcdf_concatenate_check_mad_filter(ds, info):
-    pass
     return
 
 def netcdf_concatenate_rename_output(data, out_file_name):
@@ -2471,7 +2405,7 @@ def netcdf_concatenate_keep_subset(ds_out, info):
     inc_labels = inc["SeriesToKeep"]
     inc_labels.append("DateTime")
     labels = list(ds_out.root["Variables"].keys())
-    # any variable that is not included is excel
+    # any variable that is not included is excluded
     exc_labels = [l for l in labels if l not in inc_labels]
     # except for variables ending in "_notMAD" because these must be preserved
     # for use in the input files for ONEFlux
