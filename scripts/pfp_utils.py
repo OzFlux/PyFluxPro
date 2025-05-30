@@ -3172,3 +3172,16 @@ def mypause(interval):
                 canvas.draw()
             canvas.start_event_loop(interval)
             return
+
+def variables_in_datastructure(ds, labels_to_check):
+    """
+    Check to see if the specified labels are in the data structure.
+    """
+    ok = True
+    labels_in_ds = sorted(list(ds.root["Variables"].keys()))
+    missing = []
+    for label_to_check in labels_to_check:
+        if label_to_check not in labels_in_ds:
+            missing.append(label_to_check)
+            ok = False
+    return ok, missing

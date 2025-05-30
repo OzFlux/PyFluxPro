@@ -272,6 +272,23 @@ def do_reddyproc_batch(main_ui, cf_level):
         logger.info(msg)
         logger.info("")
     return 1
+def do_oneflux_batch(main_ui, cf_level):
+    for i in list(cf_level.keys()):
+        # check the stop flag
+        if main_ui.stop_flag:
+            # break out of the loop if user requested stop
+            break
+        cf_file_name = os.path.split(cf_level[i])
+        msg = "Starting ONEFlux output with " + cf_file_name[1]
+        logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
+        cf = pfp_io.get_controlfilecontents(cf_level[i])
+        pfp_io.write_csv_oneflux(cf)
+        msg = "Finished ONEFlux output with " + cf_file_name[1]
+        logger.info(msg)
+        logger.info("")
+    return 1
 def do_concatenate_batch(main_ui, cf_level):
     sites = sorted(list(cf_level.keys()), key=int)
     for i in sites:
@@ -607,7 +624,7 @@ def do_levels_batch(main_ui):
         logger.error(msg)
         sys.exit()
     processing_levels = ["l1", "l2", "l3",
-                         "ecostress", "fluxnet", "reddyproc",
+                         "nc2csv_oneflux",
                          "concatenate", "climatology",
                          "cpd_barr", "cpd_mchugh", "cpd_mcnew", "mpt",
                          "l4", "l5", "l6"]
@@ -639,6 +656,10 @@ def do_levels_batch(main_ui):
         elif level.lower() == "fluxnet":
             # convert netCDF files to FluxNet CSV files
             if not do_fluxnet_batch(main_ui, cf_batch["Levels"][level]):
+                break
+        elif level.lower() == "nc2csv_oneflux":
+            # convert netCDF files to ONEFlux CSV files
+            if not do_oneflux_batch(main_ui, cf_batch["Levels"][level]):
                 break
         elif level.lower() == "reddyproc":
             # convert netCDF files to REddyProc CSV files
