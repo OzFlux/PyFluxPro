@@ -1,0 +1,25 @@
+name: pfp_web
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - configobj
+  - python-dateutil
+  - lmfit
+  - matplotlib
+  - netcdf4
+  - nicegui
+  - numpy
+  - openpyxl
+  - pandas
+  - plotly
+  - pyqt
+  - pytz
+  - scipy
+  - statsmodels
+  - timezonefinder
+  - windrose
+  - xarray
+  - xlwt
+  - xlrd
+  - xlsxwriter

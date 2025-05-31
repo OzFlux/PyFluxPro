@@ -7,6 +7,7 @@ import numpy
 import dateutil.parser
 # pfp modules
 from scripts import constants as c
+from scripts import pfp_io
 from scripts import pfp_rp
 from scripts import pfp_ts
 from scripts import pfp_utils
@@ -279,22 +280,12 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     Usage:
     Author: PRI
     Date: Back in the day
+    Mods:
+    20250531 PRI - changes for "web" version
     """
-    if len(series)==0:
-        return
-    if len(section) == 0:
-        section = pfp_utils.get_cfsection(cf, series, mode='quiet')
-        if section == None:
-            return
     if "DependencyCheck" not in list(cf[section][series].keys()):
         return
-    if "source" not in cf[section][series]["DependencyCheck"]:
-        msg = " DependencyCheck: keyword 'source' not found for series " + series + ", skipping ..."
-        logger.error(msg)
-        return
-    if mode == "verbose":
-        msg = " Doing DependencyCheck for " + series
-        logger.info(msg)
+    ds_in, ds_out = parse_input_ds(ds)
     # get the precursor source list from the control file
     source_string = cf[section][series]["DependencyCheck"]["source"]
     if "," in source_string:
@@ -302,7 +293,7 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
     else:
         source_list = [source_string]
     # get the data
-    dependent = pfp_utils.GetVariable(ds, series)
+    dependent = pfp_utils.GetVariable(ds_in, series)
     # loop over the precursor source list
     for item in source_list:
         # check the precursor is in the data structure
@@ -312,7 +303,7 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
             logger.warning(msg)
             continue
         # get the precursor data
-        precursor = pfp_utils.GetVariable(ds, item)
+        precursor = pfp_utils.GetVariable(ds_in, item)
         # mask the dependent data where the precursor flag shows data not OK
         dependent["Data"] = numpy.ma.masked_where(numpy.mod(precursor["Flag"], 10) != 0,
                                                   dependent["Data"])
@@ -322,7 +313,7 @@ def do_dependencycheck(cf, ds, section, series, code=23, mode="quiet"):
         dependent["Flag"][idx] = numpy.int32(code)
     # put the data back into the data structure
     dependent["Attr"]["DependencyCheck"] = ",".join(source_list)
-    pfp_utils.CreateVariable(ds, dependent)
+    pfp_utils.CreateVariable(ds_out, dependent)
     # our work here is done
     return
 
@@ -540,44 +531,54 @@ def do_EPQCFlagCheck(cf, ds, section, series, code=9):
     pfp_utils.CreateVariable(ds, variable)
     return
 
-def do_excludedates(cf,ds,section,series,code=6):
+def do_excludedates(cf, ds, section, series, code=6):
     if 'ExcludeDates' not in list(cf[section][series].keys()):
         return
-    ldt = ds.root["Variables"]['DateTime']['Data']
-    ExcludeList = list(cf[section][series]['ExcludeDates'].keys())
-    NumExclude = len(ExcludeList)
-    for i in range(NumExclude):
+    # check the input
+    ds_in, ds_out = parse_input_ds(ds)
+    ldt = ds_in.root["Variables"]['DateTime']['Data']
+    var_in = pfp_utils.GetVariable(ds_in, series)
+    n_ranges = len(cf[section][series]['ExcludeDates'].keys())
+    for i in range(n_ranges):
+        # parse the exclude date range string to get start and end indices
         exclude_dates_string = cf[section][series]['ExcludeDates'][str(i)]
-        exclude_dates_list = exclude_dates_string.split(",")
-        if len(exclude_dates_list) == 1:
-            try:
-                dt = datetime.datetime.strptime(exclude_dates_list[0].strip(),'%Y-%m-%d %H:%M')
-                si = pfp_utils.find_nearest_value(ldt, dt)
-                ei = si + 1
-            except ValueError:
-                si = 0
-                ei = -1
-        elif len(exclude_dates_list) == 2:
-            try:
-                dt = datetime.datetime.strptime(exclude_dates_list[0].strip(),'%Y-%m-%d %H:%M')
-                si = pfp_utils.find_nearest_value(ldt, dt)
-            except ValueError:
-                si = 0
-            try:
-                dt = datetime.datetime.strptime(exclude_dates_list[1].strip(),'%Y-%m-%d %H:%M')
-                ei = pfp_utils.find_nearest_value(ldt, dt)
-            except ValueError:
-                ei = -1
-            if si == ei:
-                ei = si + 1
-        else:
-            msg = "ExcludeDates: bad date string ("+exclude_dates_string+"), skipping ..."
-            logger.warning(msg)
-            return
-        ds.root["Variables"][series]['Data'][si:ei] = numpy.float64(c.missing_value)
-        ds.root["Variables"][series]['Flag'][si:ei] = numpy.int32(code)
-        ds.root["Variables"][series]['Attr']['ExcludeDates_'+str(i)] = cf[section][series]['ExcludeDates'][str(i)]
+        si, ei =  do_excludedates_parse_range(ldt, exclude_dates_string)
+        # exclude data within the date range
+        var_in['Data'].mask[si:ei] = True
+        var_in['Flag'][si:ei] = numpy.int32(code)
+        var_in['Attr']['ExcludeDates_'+str(i)] = cf[section][series]['ExcludeDates'][str(i)]
+    # this will overwrite the variable in ds_out
+    pfp_utils.CreateVariable(ds_out, var_in)
     return
+
+def do_excludedates_parse_range(ldt, exclude_dates_string):
+    exclude_dates_list = exclude_dates_string.split(",")
+    if len(exclude_dates_list) == 1:
+        try:
+            dt = datetime.datetime.strptime(exclude_dates_list[0].strip(),'%Y-%m-%d %H:%M')
+            si = pfp_utils.find_nearest_value(ldt, dt)
+            ei = si + 1
+        except ValueError:
+            si = 0
+            ei = -1
+    elif len(exclude_dates_list) == 2:
+        try:
+            dt = datetime.datetime.strptime(exclude_dates_list[0].strip(),'%Y-%m-%d %H:%M')
+            si = pfp_utils.find_nearest_value(ldt, dt)
+        except ValueError:
+            si = 0
+        try:
+            dt = datetime.datetime.strptime(exclude_dates_list[1].strip(),'%Y-%m-%d %H:%M')
+            ei = pfp_utils.find_nearest_value(ldt, dt)
+        except ValueError:
+            ei = -1
+        if si == ei:
+            ei = si + 1
+    else:
+        msg = "ExcludeDates: bad date string ("+exclude_dates_string+"), skipping ..."
+        logger.warning(msg)
+        return
+    return si, ei
 
 def do_excludehours(cf,ds,section,series,code=7):
     if 'ExcludeHours' not in list(cf[section][series].keys()): return
@@ -1099,51 +1100,38 @@ def do_rangecheck(cf, ds, section, series, code=2):
     Usage:
     Author: PRI
     Date: Back in the day
+    Mods:
+    20250531 PRI - changes for pfp_web
     """
     # check that RangeCheck has been requested for this series
     if 'RangeCheck' not in list(cf[section][series].keys()):
         return
-    # check that the upper and lower limits have been given
-    if ("lower" not in list(cf[section][series]["RangeCheck"].keys()) or
-        "upper" not in list(cf[section][series]["RangeCheck"].keys())):
-        msg = "RangeCheck: key not found in control file for "+series+", skipping ..."
-        logger.warning(msg)
+    # check the input
+    if isinstance(ds, dict):
+        ds_in = ds["in"]
+        ds_out = ds["out"]
+    elif isinstance(ds, pfp_io.DataStructure):
+        ds_in = ds_out = ds
+    else:
+        msg = " do_rangecheck: unrecognised object"
+        logger.error(msg)
         return
-    # get the month from the datetime series
-    ldt = pfp_utils.GetVariable(ds, "DateTime")
-    month = numpy.array([d.month for d in ldt["Data"]])
     # get the upper and lower limits
-    upper = cf[section][series]['RangeCheck']['upper']
-    upr = numpy.array(parse_rangecheck_limit(upper))
-    if len(upr) != 12:
-        msg = " Need 12 'upper' values, got "+str(len(upr))+" for "+series
-        logger.error(msg)
-        return
-    valid_upper = numpy.max(upr)
-    upr = upr[month - 1]
-    lower = cf[section][series]['RangeCheck']['lower']
-    lwr = numpy.array(parse_rangecheck_limit(lower))
-    if len(lwr) != 12:
-        msg = " Need 12 'lower' values, got "+str(len(lwr))+" for "+series
-        logger.error(msg)
-        return
-    valid_lower = numpy.min(lwr)
-    lwr = lwr[month - 1]
+    upper = float(cf[section][series]['RangeCheck']['upper'])
+    lower = float(cf[section][series]['RangeCheck']['lower'])
     # get the data, flag and attributes
-    var = pfp_utils.GetVariable(ds, series)
-    # convert the data from a masked array to an ndarray so the range check works
-    var["Data"] = numpy.ma.filled(var["Data"], fill_value=c.missing_value)
+    var = pfp_utils.GetVariable(ds_in, series)
     # get the indices of elements outside this range
-    idx = numpy.where((var["Data"] < lwr)|(var["Data"] > upr))[0]
+    idx = numpy.ma.where((var["Data"] < lower)|(var["Data"] > upper))[0]
     # set elements outside range to missing and set the QC flag
     var["Data"][idx] = numpy.float64(c.missing_value)
     var["Flag"][idx] = numpy.int32(code)
     # update the variable attributes
     var["Attr"]["rangecheck_lower"] = cf[section][series]["RangeCheck"]["lower"]
     var["Attr"]["rangecheck_upper"] = cf[section][series]["RangeCheck"]["upper"]
-    var["Attr"]["valid_range"] = str(valid_lower) + "," + str(valid_upper)
+    var["Attr"]["valid_range"] = str(lower) + "," + str(upper)
     # and now put the data back into the data structure
-    pfp_utils.CreateVariable(ds, var)
+    pfp_utils.CreateVariable(ds_out, var)
     # now we can return
     return
 
@@ -1300,6 +1288,32 @@ def do_wd_offset(cf, ds):
     for label in labels:
         if pfp_utils.haskey(cf, label, "Wd offset"):
             pfp_ts.ApplyWdOffset(cf, ds, label)
+
+def parse_input_ds(ds):
+    """
+    Purpose:
+     Parse the argument to the QC functions and return an input and output
+     pfp_io.Datastructure() as follows:
+      - if the argument is a dictionary;
+        - return the individual "in" and "out" pfp_io.Datastructures()
+      - if the argument is a pfp_io.Datastructure();
+        - return the argument as both input and output data structures
+     This routine allows the QC functions to be called with a single
+     data structure as input ("classic" PFP) or with an input and an
+     output data structure ("web" PFP).
+    Author: PRI
+    Date: May 2025
+    """
+    if isinstance(ds, dict):
+        ds_in = ds["in"]
+        ds_out = ds["out"]
+    elif isinstance(ds, pfp_io.DataStructure):
+        ds_in = ds_out = ds
+    else:
+        msg = " do_rangecheck: unrecognised object"
+        logger.error(msg)
+        return None, None
+    return ds_in, ds_out
 
 def parse_rangecheck_limit(s):
     """
