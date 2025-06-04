@@ -1,5 +1,8 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.20"
+version_number = "V3.4.21"
+# V3.4.21 - June 2025
+#         - use datetime (not time) when creating output data structure when
+#           concatenating
 # V3.4.20 - May 2025
 #         - make sure Fco2 output for ONEFlux has not had the MAD filter applied
 # V3.4.19 - May 2025

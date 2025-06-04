@@ -26,7 +26,7 @@ from PyQt5 import QtWidgets
 from scripts import cfg
 from scripts import constants as c
 from scripts import meteorologicalfunctions as pfp_mf
-from scripts import pfp_ck
+#from scripts import pfp_ck
 from scripts import pfp_log
 from scripts import pfp_plot
 from scripts import pfp_ts
@@ -2325,9 +2325,9 @@ def netcdf_concatenate_create_ds_out(data, info):
     logger.info(" Creating the output data structure")
     inc = info["NetCDFConcatenate"]
     # get the time step
+    ts = int(float(data[file_names[0]].root["Attributes"]["time_step"]))
     # get the file names in data
     file_names = list(data.keys())
-    ts = int(float(data[file_names[0]].root["Attributes"]["time_step"]))
     tsd = datetime.timedelta(minutes=ts)
     level = data[file_names[0]].root["Attributes"]["processing_level"]
     # get a continuous time variable
@@ -2348,21 +2348,21 @@ def netcdf_concatenate_create_ds_out(data, info):
     pfp_utils.CreateVariable(ds_out, dt)
     # create the netCDF time variable
     pfp_utils.get_nctime_from_datetime(ds_out)
-    time_out = pfp_utils.GetVariable(ds_out, "time")
     # make the empty variables
     attr_out = {}
     for label in inc["labels"]:
         ds_out.root["Variables"][label] = pfp_utils.CreateEmptyVariable(label, nrecs, out_type="ndarray")
         attr_out[label] = []
     # now loop over the files in chronological order
+    dt_out = pfp_utils.GetVariable(ds_out, "DateTime")
     for n, file_name in enumerate(inc["chrono_files"]):
         # copy the global attributes
         for gattr in data[file_name].root["Attributes"]:
             ds_out.root["Attributes"][gattr] = data[file_name].root["Attributes"][gattr]
         # get the time from the input file
-        time_in = pfp_utils.GetVariable(data[file_name], "time")
+        dt_in = pfp_utils.GetVariable(data[file_name], "DateTime")
         # find the indices of matching times
-        indsa, indsb = pfp_utils.FindMatchingIndices(time_out["Data"], time_in["Data"])
+        indsa, indsb = pfp_utils.FindMatchingIndices(dt_out["Data"], dt_in["Data"])
         # loop over the variables
         for label in inc["labels"]:
             dout = ds_out.root["Variables"][label]
