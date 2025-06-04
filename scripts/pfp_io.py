@@ -2324,10 +2324,10 @@ def netcdf_concatenate_create_ds_out(data, info):
     """
     logger.info(" Creating the output data structure")
     inc = info["NetCDFConcatenate"]
-    # get the time step
-    ts = int(float(data[file_names[0]].root["Attributes"]["time_step"]))
     # get the file names in data
     file_names = list(data.keys())
+    # get the time step
+    ts = int(float(data[file_names[0]].root["Attributes"]["time_step"]))
     tsd = datetime.timedelta(minutes=ts)
     level = data[file_names[0]].root["Attributes"]["processing_level"]
     # get a continuous time variable
