@@ -573,12 +573,10 @@ def ParseL3ControlFile(cfg, ds):
     # PRI 7/10/2021 the code to get zms will give unpredictable results if CO2
     #   profile data present
     l3_info = {"status": {"value": 0, "message": "OK", "ok": True},
-               "cfg": {},
                "variables": {"CO2": {}, "Fco2": {}, "Sco2": {}},
                "CombineSeries": {}}
-    # copy the control file sections to the l3_info dictionary
-    for section in list(cfg.keys()):
-        l3_info["cfg"][section] = copy.deepcopy(cfg[section])
+    # copy the control file into the l3_info dictionary
+    l3_info["cfg"] = copy.deepcopy(cfg)
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
     l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
