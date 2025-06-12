@@ -737,9 +737,12 @@ def check_l1_controlfile(cfg):
     Author: PRI
     Date: October 2021
     """
+    ok = True
+    # compliance checks not applied for L1 nc2csv_oneflux
+    if cfg["level"] in ["L1_oneflux"]:
+        return ok
     # quick and dirty use of try...except in a panic ahead to 2021 workshop
     try:
-        ok = True
         cfg_labels = sorted(list(cfg["Variables"].keys()))
         base_path = pfp_utils.get_base_path()
         std_name = os.path.join(base_path, "controlfiles", "standard", "check_l1_controlfile.txt")
@@ -1910,6 +1913,11 @@ def l1_update_controlfile(cfg):
     Author: PRI
     Date: February 2020
     """
+    # initialise the return logical
+    ok = True
+    # update control file not applied for L1 nc2csv_oneflux
+    if cfg["level"] in ["L1_oneflux"]:
+        return ok
     # copy the control file
     cfg_original = copy.deepcopy(cfg)
     # check to see if we can load the update_control_files.txt standard control file
@@ -1932,8 +1940,6 @@ def l1_update_controlfile(cfg):
     except Exception:
         ok = False
         msg = " Unable to load standard control file " + chkname
-    # initialise the return logical
-    ok = True
     try:
         cfg = update_cfg_syntax(cfg, std)
     except Exception:
