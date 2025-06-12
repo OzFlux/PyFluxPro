@@ -2895,7 +2895,7 @@ def MergeHumidities(cf, ds, convert_units=False):
             pfp_utils.CheckUnits(ds, "SH", "kg/kg", convert_units=True)
     return
 
-def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,save_originals=False):
+def MergeSeries(cf, ds, series, convert_units=False, save_originals=False):
     """
     Purpose:
      Merge two series of data to produce one series containing the best data from both.
@@ -2914,6 +2914,7 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
     History:
      16/7/2017 - made okflags optional, implemented save_originals
      30/10/2018 - rewrote to use pfp_utils.GetVariable()
+     12/06/2025 - replace okflags with mod(flag, 10)==0 to handle import flags (e.g 300, 400 etc)
     """
     # check to see if the series is specified in the control file
     section = pfp_utils.get_cfsection(cf, series)
@@ -2963,7 +2964,6 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
             logger.warning(msg)
             return
         primary = pfp_utils.GetVariable(ds, primary_series)
-        p_recs = len(primary["Data"])
         if (primary_series == series) and save_originals:
             tmp = pfp_utils.CopyVariable(primary)
             tmp["Label"] = tmp["Label"] + "_b4merge"
@@ -2973,7 +2973,6 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
         for secondary_series in srclist:
             if secondary_series in list(ds.root["Variables"].keys()):
                 secondary = pfp_utils.GetVariable(ds, secondary_series)
-                s_recs = len(secondary["Data"])
                 if (secondary_series == series) and save_originals:
                     tmp = pfp_utils.CopyVariable(secondary)
                     tmp["Label"] = tmp["Label"] + "_b4merge"
@@ -2990,19 +2989,14 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
                         msg = " MergeSeries: " + secondary_series + " ignored"
                         logger.error(msg)
                         continue
+                # update the secondary series name string, written to variable attributes
                 SeriesNameString = SeriesNameString + ", " + secondary_series
-                p_idx = numpy.zeros(p_recs, dtype=int)
-                s_idx = numpy.zeros(s_recs, dtype=int)
-                for okflag in okflags:
-                    # index of acceptable primary values
-                    index = numpy.where(primary["Flag"] == okflag)[0]
-                    # set primary index to 1 when primary good
-                    p_idx[index] = 1
-                    # same process for secondary
-                    index = numpy.where(secondary["Flag"] == okflag)[0]
-                    s_idx[index] = 1
-                # index where primary bad but secondary good
-                index = numpy.where((p_idx != 1 ) & (s_idx == 1))[0]
+                # pointers to the primary and secondary QC flags
+                pflag = primary["Flag"]
+                sflag = secondary["Flag"]
+                # index of elements where primary is bad and secondary is good
+                index = numpy.where((numpy.mod(pflag, 10) != 0) &
+                                    (numpy.mod(sflag, 10) == 0))[0]
                 # replace bad primary with good secondary
                 primary["Data"][index] = secondary["Data"][index]
                 primary["Flag"][index] = secondary["Flag"][index]
@@ -3013,6 +3007,7 @@ def MergeSeries(cf,ds,series,okflags=[0,10,20,30,40,50,60],convert_units=False,s
     primary["Label"] = series
     pfp_utils.append_to_attribute(primary["Attr"], {descr_level: "merged from " + SeriesNameString})
     pfp_utils.CreateVariable(ds, primary)
+    return
 
 def ReplaceRotatedCovariance(cf,ds,rot_cov_label,non_cov_label):
     logger.info(' Replacing missing '+rot_cov_label+' when '+non_cov_label+' is good')
