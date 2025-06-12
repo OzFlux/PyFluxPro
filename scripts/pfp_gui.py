@@ -1418,7 +1418,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg.filename = self.cfg.filename
-        cfg["level"] = "L1"
+        cfg["level"] = self.cfg["level"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):

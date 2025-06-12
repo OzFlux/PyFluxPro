@@ -372,7 +372,7 @@ class pfp_main_ui(QWidget):
             # and save the control file
             self.file.write()
         # create a QtTreeView to edit the control file
-        if self.file["level"] in ["L1"]:
+        if self.file["level"].split("_")[0] in ["L1"]:
             # update control file to new syntax
             if not pfp_compliance.l1_update_controlfile(self.file): return
             # put the GUI for editing the L1 control file in a new tab
@@ -788,7 +788,7 @@ class pfp_main_ui(QWidget):
             self.threadpool.start(worker)
             # no threading
             #pfp_top_level.do_run_batch(self)
-        elif cfg["level"] == "L1":
+        elif cfg["level"].split("_")[0] == "L1":
             # check the L1 control file to see if it is OK to run
             if pfp_compliance.check_l1_controlfile(cfg):
                 pfp_top_level.do_run_l1(cfg)
