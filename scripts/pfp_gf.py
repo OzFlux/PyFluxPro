@@ -1317,6 +1317,9 @@ def ImportSeries(ds, info):
     if "Imports" not in list(cfg.keys()):
         return
     info["ImportSeries"] = {}
+    # processing level
+    level = ds.root["Attributes"]["processing_level"]
+    qc_prefix = 100 * int(pfp_utils.strip_non_numeric(level))
     # number of records
     nrecs = int(ds.root["Attributes"]["nc_nrecs"])
     # get the start and end datetime
@@ -1359,7 +1362,7 @@ def ImportSeries(ds, info):
         indainb, indbina = pfp_utils.FindMatchingIndices(ldt_import, ldt)
         var = pfp_utils.CreateEmptyVariable(label, nrecs, attr=var_import["Attr"])
         var["Data"][indbina] = var_import["Data"][indainb]
-        var["Flag"][indbina] = var_import["Flag"][indainb]
+        var["Flag"][indbina] = var_import["Flag"][indainb] + qc_prefix
         pfp_utils.CreateVariable(ds, var)
         info["ImportSeries"][label] = {"start": ldt[indbina[0]],
                                        "end": ldt[indbina[-1]]}
