@@ -1201,6 +1201,7 @@ def ParseL7ControlFile(cfg, ds):
     l7_info["ApplyTurbulenceFilter"]["accept_day_times"] = accept_day_times
     filter_string = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "FilterList", default="Fco2")
     l7_info["ApplyTurbulenceFilter"]["filter_list"] = filter_string.split(",")
+    l7_info["ApplyTurbulenceFilter"]["percentiles"] = [1.25, 16.25, 26.25, 50.00, 73.75, 83.75, 98.75]
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
     l7_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     # options for estimating random uncertainty
