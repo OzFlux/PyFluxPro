@@ -1,0 +1,554 @@
+level = L1_oneflux
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.csv)
+    in_firstdatarow = 2
+    in_headerrow = 1
+    out_filename = Right click to browse (*.nc)
+[Global]
+    Conventions = CF-1.8
+    acknowledgement = 
+    altitude = <altitude>m
+    canopy_height = <canopy_height>m
+    comment = 
+    contact = 
+    data_link = http://data.ozflux.org.au/
+    featureType = timeSeries
+    fluxnet_id = 
+    history = 
+    institution = 
+    latitude = <latitude>
+    license = https://creativecommons.org/licenses/by/4.0/
+    license_name = CC BY 4.0
+    longitude = <longitude>
+    metadata_link = http://http://www.ozflux.org.au/monitoringsites/<site_name>/index.html
+    ozflux_link = http://ozflux.org.au/
+    publisher_name = TERN Ecosystem Processes,OzFlux
+    references = 
+    site_name = <site_name>
+    site_pi = 
+    soil = 
+    source = 
+    time_step = daily
+    time_zone = <country>/<time_zone>
+    title = ONEFlux fullset output for the <site_name> site
+    tower_height = 
+    vegetation = 
+[Variables]
+    [[TA_F]]
+        [[[Attr]]]
+            long_name = TA_F
+            description = Air temperature, consolidated from TA_F_MDS and TA_ERA
+            units = degC
+            statistic_type = average
+            standard_name = air_temperature
+        [[[csv]]]
+            name = TA_F
+    [[TA_F_QC]]
+        [[[Attr]]]
+            long_name = TA_F_QC
+            description = Quality flag for TA_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = TA_F_QC
+    [[SW_IN_POT]]
+        [[[Attr]]]
+            long_name = SW_IN_POT
+            description = Shortwave radiation, incoming, potential (top of atmosphere)
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_downwelling_shortwave_flux_in_air
+        [[[csv]]]
+            name = SW_IN_POT
+    [[SW_IN_F]]
+        [[[Attr]]]
+            long_name = SW_IN_F
+            description = Shortwave radiation, incoming consolidated from SW_IN_F_MDS and SW_IN_ERA (negative values set to zero)
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_downwelling_shortwave_flux_in_air
+        [[[csv]]]
+            name = SW_IN_F
+    [[SW_IN_F_QC]]
+        [[[Attr]]]
+            long_name = SW_IN_F_QC
+            description = Quality flag for SW_IN_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = SW_IN_F_QC
+    [[LW_IN_F]]
+        [[[Attr]]]
+            long_name = LW_IN_F
+            description = Longwave radiation, incoming, consolidated from LW_IN_F_MDS and LW_IN_ERA
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_downwelling_longwave_flux_in_air
+        [[[csv]]]
+            name = LW_IN_F
+    [[LW_IN_F_QC]]
+        [[[Attr]]]
+            long_name = LW_IN_F_QC
+            description = Quality flag for LW_IN_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = LW_IN_F_QC
+    [[VPD_F]]
+        [[[Attr]]]
+            long_name = VPD_F
+            description = Vapor Pressure Deficit consolidated from VPD_F_MDS and VPD_ERA
+            units = hPa
+            statistic_type = average
+            standard_name = water_vapor_saturation_deficit_in_air
+        [[[csv]]]
+            name = VPD_F
+    [[VPD_F_QC]]
+        [[[Attr]]]
+            long_name = VPD_F_QC
+            description = Quality flag for VPD_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = VPD_F_QC
+    [[PA_F]]
+        [[[Attr]]]
+            long_name = PA_F
+            description = Atmospheric pressure consolidated from PA and PA_ERA
+            units = kPa
+            statistic_type = average
+            standard_name = surface_air_pressure
+        [[[csv]]]
+            name = PA_F
+    [[PA_F_QC]]
+        [[[Attr]]]
+            long_name = PA_F_QC
+            description = Quality flag for PA_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = PA_F_QC
+    [[P_F]]
+        [[[Attr]]]
+            long_name = P_F
+            description = Precipitation consolidated from P and P_ERA
+            units = mm/day
+            statistic_type = sum
+            standard_name = thickness_of_rainfall_amount
+        [[[csv]]]
+            name = P_F
+    [[P_F_QC]]
+        [[[Attr]]]
+            long_name = P_F_QC
+            description = Quality flag for P_F
+            units = 1
+            statistic_type = sum
+        [[[csv]]]
+            name = P_F_QC
+    [[WS_F]]
+        [[[Attr]]]
+            long_name = WS_F
+            description = Wind speed, consolidated from WS and WS_ERA
+            units = m/s
+            statistic_type = average
+            standard_name = wind_speed
+        [[[csv]]]
+            name = WS_F
+    [[WS_F_QC]]
+        [[[Attr]]]
+            long_name = WS_F_QC
+            description = Quality flag of WS_F
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = WS_F_QC
+    [[USTAR]]
+        [[[Attr]]]
+            long_name = USTAR
+            description = Friction velocity
+            units = m/s
+            statistic_type = average
+        [[[csv]]]
+            name = USTAR
+    [[USTAR_QC]]
+        [[[Attr]]]
+            long_name = USTAR_QC
+            description = Quality flag of USTAR
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = USTAR_QC
+    [[NETRAD]]
+        [[[Attr]]]
+            long_name = NETRAD
+            description = Net radiation
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_net_downward_radiative_flux
+        [[[csv]]]
+            name = NETRAD
+    [[NETRAD_QC]]
+        [[[Attr]]]
+            long_name = NETRAD_QC
+            description = Quality flag of NETRAD
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NETRAD_QC
+    [[SW_OUT]]
+        [[[Attr]]]
+            long_name = SW_OUT
+            description = Shortwave radiation, outgoing
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_upwelling_shortwave_flux_in_air
+        [[[csv]]]
+            name = SW_OUT
+    [[SW_OUT_QC]]
+        [[[Attr]]]
+            long_name = SW_OUT_QC
+            description = Quality flag of SW_OUT
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = SW_OUT_QC
+    [[LW_OUT]]
+        [[[Attr]]]
+            long_name = LW_OUT
+            description = Longwave radiation, outgoing
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_upwelling_longwave_flux_in_air
+        [[[csv]]]
+            name = LW_OUT
+    [[LW_OUT_QC]]
+        [[[Attr]]]
+            long_name = LW_OUT_QC
+            description = Quality flag of LW_OUT
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = LW_OUT_QC
+    [[CO2_F_MDS]]
+        [[[Attr]]]
+            long_name = CO2_F_MDS
+            description = CO2 mole fraction, gapfilled with MDS
+            units = umol/mol
+            statistic_type = average
+            standard_name = mole_fraction_of_carbon_dioxide_in_air
+        [[[csv]]]
+            name = CO2_F_MDS
+    [[CO2_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = CO2_F_MDS_QC
+            description = Quality flag for CO2_F_MDS
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = CO2_F_MDS_QC
+    [[G_F_MDS]]
+        [[[Attr]]]
+            long_name = G_F_MDS
+            description = Soil heat flux
+            units = W/m^2
+            statistic_type = average
+            standard_name = downward_heat_flux_at_ground_level_in_soil
+        [[[csv]]]
+            name = G_F_MDS
+    [[G_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = G_F_MDS_QC
+            description = Quality flag of G_F_MDS
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = G_F_MDS_QC
+    [[LE_F_MDS]]
+        [[[Attr]]]
+            long_name = LE_F_MDS
+            description = Latent heat flux, gapfilled using MDS method
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_upward_latent_heat_flux
+        [[[csv]]]
+            name = LE_F_MDS
+    [[LE_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = LE_F_MDS_QC
+            description = Quality flag for LE_F_MDS, LE_CORR, LE_CORR25, and LE_CORR75.
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = LE_F_MDS_QC
+    [[LE_CORR]]
+        [[[Attr]]]
+            long_name = LE_CORR
+            description = Latent heat flux, corrected LE_F_MDS by energy balance closure correction factor
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_upward_latent_heat_flux
+        [[[csv]]]
+            name = LE_CORR
+    [[LE_CORR_25]]
+        [[[Attr]]]
+            long_name = LE_CORR_25
+            description = Latent heat flux, corrected LE_F_MDS by energy balance closure correction factor, 25th percentile
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_upward_latent_heat_flux
+        [[[csv]]]
+            name = LE_CORR_25
+    [[LE_CORR_75]]
+        [[[Attr]]]
+            long_name = LE_CORR_75
+            description = Latent heat flux, corrected LE_F_MDS by energy balance closure correction factor, 75th percentile
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_upward_latent_heat_flux
+        [[[csv]]]
+            name = LE_CORR_75
+    [[LE_RANDUNC]]
+        [[[Attr]]]
+            long_name = LE_RANDUNC
+            description = Random uncertainty of LE, from measured only data
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = LE_RANDUNC
+    [[H_F_MDS]]
+        [[[Attr]]]
+            long_name = H_F_MDS
+            description = Sensible heat flux, gapfilled using MDS method
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_upward_sensible_heat_flux
+        [[[csv]]]
+            name = H_F_MDS
+    [[H_F_MDS_QC]]
+        [[[Attr]]]
+            long_name = H_F_MDS_QC
+            description = Quality flag for H_F_MDS, H_CORR, H_CORR25, and H_CORR75.
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = H_F_MDS_QC
+    [[H_CORR]]
+        [[[Attr]]]
+            long_name = H_CORR
+            description = Sensible heat flux, corrected H_F_MDS by energy balance closure correction factor
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_upward_sensible_heat_flux
+        [[[csv]]]
+            name = H_CORR
+    [[H_CORR_25]]
+        [[[Attr]]]
+            long_name = H_CORR_25
+            description = Sensible heat flux, corrected H_F_MDS by energy balance closure correction factor, 25th percentile
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_upward_sensible_heat_flux
+        [[[csv]]]
+            name = H_CORR_25
+    [[H_CORR_75]]
+        [[[Attr]]]
+            long_name = H_CORR_75
+            description = Sensible heat flux, corrected H_F_MDS by energy balance closure correction factor, 75th percentile
+            units = W/m^2
+            statistic_type = average
+            standard_name = surface_upward_sensible_heat_flux
+        [[[csv]]]
+            name = H_CORR_75
+    [[H_RANDUNC]]
+        [[[Attr]]]
+            long_name = H_RANDUNC
+            description = Random uncertainty of H, from measured only data
+            units = W/m^2
+            statistic_type = average
+        [[[csv]]]
+            name = H_RANDUNC
+    [[NEE_VUT_REF]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF
+            description = Net Ecosystem Exchange, using Variable Ustar Threshold (VUT) for each year, reference selected on the basis of the model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF
+    [[NEE_VUT_REF_QC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_QC
+            description = Quality flag for NEE_VUT_REF
+            units = 1
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_QC
+    [[NEE_VUT_REF_RANDUNC]]
+        [[[Attr]]]
+            long_name = NEE_VUT_REF_RANDUNC
+            description = Random uncertainty for NEE_VUT_REF, from measured only data
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_REF_RANDUNC
+    [[NEE_VUT_25]]
+        [[[Attr]]]
+            long_name = NEE_VUT_25
+            description = NEE, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_25
+    [[NEE_VUT_50]]
+        [[[Attr]]]
+            long_name = NEE_VUT_50
+            description = NEE, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_50
+    [[NEE_VUT_75]]
+        [[[Attr]]]
+            long_name = NEE_VUT_75
+            description = NEE, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = NEE_VUT_75
+    [[RECO_NT_VUT_REF]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_REF
+            description = Ecosystem Respiration, from Nighttime partitioning method, reference selected from RECO versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_REF
+    [[RECO_NT_VUT_25]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_25
+            description = RECO, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_25
+    [[RECO_NT_VUT_50]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_50
+            description = RECO, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_50
+    [[RECO_NT_VUT_75]]
+        [[[Attr]]]
+            long_name = RECO_NT_VUT_75
+            description = RECO, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_NT_VUT_75
+    [[GPP_NT_VUT_REF]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_REF
+            description = Gross Primary Production, from Nighttime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+            standard_name = gross_primary_productivity_of_carbon
+        [[[csv]]]
+            name = GPP_NT_VUT_REF
+    [[GPP_NT_VUT_25]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_25
+            description = GPP, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+            standard_name = gross_primary_productivity_of_carbon
+        [[[csv]]]
+            name = GPP_NT_VUT_25
+    [[GPP_NT_VUT_50]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_50
+            description = GPP, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+            standard_name = gross_primary_productivity_of_carbon
+        [[[csv]]]
+            name = GPP_NT_VUT_50
+    [[GPP_NT_VUT_75]]
+        [[[Attr]]]
+            long_name = GPP_NT_VUT_75
+            description = GPP, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+            standard_name = gross_primary_productivity_of_carbon
+        [[[csv]]]
+            name = GPP_NT_VUT_75
+    [[RECO_DT_VUT_REF]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_REF
+            description = Ecosystem Respiration, from Daytime partitioning method, reference selected from RECO versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_REF
+    [[RECO_DT_VUT_25]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_25
+            description = RECO, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_25
+    [[RECO_DT_VUT_50]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_50
+            description = RECO, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_50
+    [[RECO_DT_VUT_75]]
+        [[[Attr]]]
+            long_name = RECO_DT_VUT_75
+            description = RECO, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+        [[[csv]]]
+            name = RECO_DT_VUT_75
+    [[GPP_DT_VUT_REF]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_REF
+            description = Gross Primary Production, from Daytime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+            units = gC/m^2/day
+            statistic_type = average
+            standard_name = gross_primary_productivity_of_carbon
+        [[[csv]]]
+            name = GPP_DT_VUT_REF
+    [[GPP_DT_VUT_25]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_25
+            description = GPP, filtered with ustar threshold 25 percentile
+            units = gC/m^2/day
+            statistic_type = average
+            standard_name = gross_primary_productivity_of_carbon
+        [[[csv]]]
+            name = GPP_DT_VUT_25
+    [[GPP_DT_VUT_50]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_50
+            description = GPP, filtered with ustar threshold 50 percentile
+            units = gC/m^2/day
+            statistic_type = average
+            standard_name = gross_primary_productivity_of_carbon
+        [[[csv]]]
+            name = GPP_DT_VUT_50
+    [[GPP_DT_VUT_75]]
+        [[[Attr]]]
+            long_name = GPP_DT_VUT_75
+            description = GPP, filtered with ustar threshold 75 percentile
+            units = gC/m^2/day
+            statistic_type = average
+            standard_name = gross_primary_productivity_of_carbon
+        [[[csv]]]
+            name = GPP_DT_VUT_75

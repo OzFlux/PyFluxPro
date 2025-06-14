@@ -125,7 +125,23 @@ def CheckTimeStamps(dfs, l1_info, fix=True):
     Author: PRI
     Date: August 2023
     """
-    ts = int(l1_info["read_excel"]["Global"]["time_step"])
+    ts = l1_info["read_excel"]["Global"]["time_step"]
+    if isinstance(ts, str):
+        if ts in ["daily", "weekly", "monthly", "yearly"]:
+            # summary time steps, return without checking
+            return
+        elif ts in ["30", "60"]:
+            ts = int(float(ts))
+        else:
+            msg = "  Time step must be one of '30', '60', 'daily','weekly', 'monthly', 'yearly'"
+            logger.error(msg)
+            return
+    elif isinstance(ts, numbers.Number):
+        ts = int(float(ts))
+        if ts not in [30, 60]:
+            msg = "  Time step must be either 30 or 60"
+            logger.error(msg)
+            return
     results = {}
     sheets = list(dfs.keys())
     msg = " Checking timestamps on sheets " + ",".join(sheets)
@@ -684,11 +700,29 @@ def ReadCSVFile(l1_info):
         # remove duplicate CSV labels
         csv_labels = list(set(csv_labels))
         # check for a timestamp
-        # are we dealing with a FluxNet or AmeriFlux file?
+        # are we dealing with a FluxNet or AmeriFlux HH or WW file?
         if ("TIMESTAMP_END" in headers):
             # if so, we use the timestamp at the end of the period
             df["TIMESTAMP"] = pandas.to_datetime(df["TIMESTAMP_END"].astype("string"),
                                                  errors="raise")
+        # are we dealing with a FluxNet or AmeriFlux DD, MM or YY file?
+        elif ("TIMESTAMP" in headers):
+            ndigits = len(str(df["TIMESTAMP"].values[0]))
+            if ndigits == 8:
+                # it's a DD file
+                df["TIMESTAMP"] = pandas.to_datetime(df["TIMESTAMP"].astype("string"), errors="raise")
+            elif ndigits == 6:
+                # it's an MM file
+                df["TIMESTAMP"] = pandas.to_datetime(df["TIMESTAMP"].astype("string"),
+                                                     format="%Y%m", errors="raise")
+            elif ndigits == 4:
+                # it's a YY file
+                df["TIMESTAMP"] = pandas.to_datetime(df["TIMESTAMP"].astype("string"),
+                                                     format="%Y", errors="raise")
+            else:
+                msg = "  Unrecognised TIMESTAMP format in CSV file"
+                logger.error(msg)
+                raise RuntimeError(msg)
         # maybe an EddyPro output file?
         elif (("date" in headers) and ("time" in headers)):
             # date and time in separate columns, time at end of the period
