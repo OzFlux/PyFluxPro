@@ -2215,7 +2215,8 @@ def rp_plot(pd, ds, output, drivers, target, iel, called_by, si=0, ei=-1):
     rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
-    mask = numpy.ma.mask_or(obs["Data"].mask, mod["Data"].mask)
+    mask = numpy.ma.mask_or(numpy.ma.getmaskarray(obs["Data"]),
+                            numpy.ma.getmaskarray(mod["Data"]))
     obs_mor = numpy.ma.array(obs["Data"], mask=mask, copy=True)
     dstats = pfp_utils.get_diurnalstats(dt, obs_mor, ieli)
     ax1.plot(dstats["Hr"], dstats["Av"], 'b-', label="Obs")
