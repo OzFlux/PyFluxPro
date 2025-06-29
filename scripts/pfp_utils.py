@@ -2386,7 +2386,7 @@ def get_missingingapfilledseries(ds, l4_info):
     for series in gf_list:
         if series not in list(ds.root["Variables"].keys()): continue
         var = GetVariable(ds, series)
-        idx = numpy.ma.where(var["Data"].mask == True)[0]
+        idx = numpy.ma.where(numpy.ma.getmaskarray(var["Data"]) == True)[0]
         if len(idx) != 0:
             gap_found = True
             msg = " Missing points ("+str(len(idx))+") found in "+series

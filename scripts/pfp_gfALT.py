@@ -537,17 +537,22 @@ def gfalternate_getolscorrecteddata(data_dict, stat_dict, l4a):
         stat_dict[label_output][label_alternate]["offset"] = float(0)
         stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx"%(resols.params[0])
     else:
-        resols = sm.OLS(y, sm.add_constant(x, prepend=False)).fit()
-        if resols.params.shape[0] == 2:
-            data_dict[label_output][label_alternate]["fitcorr"] = resols.params[0]*x_in+resols.params[1]
-            stat_dict[label_output][label_alternate]["slope"] = resols.params[0]
-            stat_dict[label_output][label_alternate]["offset"] = resols.params[1]
-            stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(resols.params[0], resols.params[1])
-        else:
-            data_dict[label_output][label_alternate]["fitcorr"] = numpy.ma.copy(x_in)
-            stat_dict[label_output][label_alternate]["slope"] = float(0)
-            stat_dict[label_output][label_alternate]["offset"] = float(0)
-            stat_dict[label_output][label_alternate]["eqnstr"] = "OLS error, replaced"
+        slope, offset= numpy.polyfit(x, y, 1)
+        data_dict[label_output][label_alternate]["fitcorr"] = slope*x_in + offset
+        stat_dict[label_output][label_alternate]["slope"] = slope
+        stat_dict[label_output][label_alternate]["offset"] = offset
+        stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(slope, offset)
+        #resols = sm.OLS(y, sm.add_constant(x, prepend=False)).fit()
+        #if resols.params.shape[0] == 2:
+            #data_dict[label_output][label_alternate]["fitcorr"] = resols.params[0]*x_in+resols.params[1]
+            #stat_dict[label_output][label_alternate]["slope"] = resols.params[0]
+            #stat_dict[label_output][label_alternate]["offset"] = resols.params[1]
+            #stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(resols.params[0], resols.params[1])
+        #else:
+            #data_dict[label_output][label_alternate]["fitcorr"] = numpy.ma.copy(x_in)
+            #stat_dict[label_output][label_alternate]["slope"] = float(0)
+            #stat_dict[label_output][label_alternate]["offset"] = float(0)
+            #stat_dict[label_output][label_alternate]["eqnstr"] = "OLS error, replaced"
 
 def gfalternate_getoutputstatistics(data_dict, stat_dict, l4a):
     label_tower = l4a["run"]["label_tower"]
