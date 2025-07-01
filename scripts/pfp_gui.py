@@ -624,6 +624,7 @@ class edit_cfg_batch(QtWidgets.QWidget):
         self.main_gui = main_gui
         self.tabs = main_gui.tabs
         self.implemented_levels = ["L1", "L2", "L3",
+                                   "nc2csv_oneflux",
                                    "concatenate", "climatology",
                                    "cpd_barr", "cpd_mchugh", "cpd_mcnew", "mpt",
                                    "L4", "L5", "L6"]
@@ -737,12 +738,6 @@ class edit_cfg_batch(QtWidgets.QWidget):
                         add_separator = True
         elif level == 1:
             parent = selected_item.parent()
-            #if (str(parent.text()) == "Options") and (selected_item.column() == 0):
-                #self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
-                #self.context_menu.actionRemoveOption.setText("Remove option")
-                #self.context_menu.addAction(self.context_menu.actionRemoveOption)
-                #self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
-            #elif str(parent.text()) == "Files":
             if str(parent.text()) == "Levels":
                 if selected_text in self.implemented_levels:
                     self.context_menu.actionAddControlFile = QtWidgets.QAction(self)
@@ -760,7 +755,6 @@ class edit_cfg_batch(QtWidgets.QWidget):
         elif level == 2:
             parent = selected_item.parent()
             section = selected_item.parent().parent()
-            #if ((str(section.text()) == "Files") and (str(parent.text()) == "In")):
             if (str(section.text()) == "Levels"):
                 if (selected_item.column() == 0):
                     self.context_menu.actionAddControlFileAbove = QtWidgets.QAction(self)
@@ -1424,7 +1418,7 @@ class edit_cfg_L1(QtWidgets.QWidget):
         """ Iterate over the model and get the data."""
         cfg = ConfigObj(indent_type="    ", list_values=False)
         cfg.filename = self.cfg.filename
-        cfg["level"] = "L1"
+        cfg["level"] = self.cfg["level"]
         model = self.model
         # there must be a way to do this recursively
         for i in range(model.rowCount()):
@@ -4412,7 +4406,7 @@ class edit_cfg_climatology(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -4799,11 +4793,6 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                     self.context_menu.actionAddApplyFco2Storage.setText("ApplyFco2Storage")
                     self.context_menu.addAction(self.context_menu.actionAddApplyFco2Storage)
                     self.context_menu.actionAddApplyFco2Storage.triggered.connect(self.add_applyfco2storage)
-                if "ApplyMADFilter" not in existing_entries:
-                    self.context_menu.actionAddApplyMADFilter = QtWidgets.QAction(self)
-                    self.context_menu.actionAddApplyMADFilter.setText("ApplyMADFilter")
-                    self.context_menu.addAction(self.context_menu.actionAddApplyMADFilter)
-                    self.context_menu.actionAddApplyMADFilter.triggered.connect(self.add_applymadfilter)
                 if "NumberOfDimensions" not in existing_entries:
                     self.context_menu.actionAddNumberOfDimensions = QtWidgets.QAction(self)
                     self.context_menu.actionAddNumberOfDimensions.setText("NumberOfDimensions")
@@ -4986,12 +4975,6 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         # add the subsubsection
         self.add_subsection(dict_to_add)
 
-    def add_applymadfilter(self):
-        """ Add the ApplyMADFilter option to the context menu."""
-        dict_to_add = {"ApplyMADFilter": "Fco2,Fe,Fh"}
-        # add the subsubsection
-        self.add_subsection(dict_to_add)
-
     def add_dofingerprints(self):
         """ Add the DoFingerprints option to the context menu."""
         # add the option to the [Options] section
@@ -5106,7 +5089,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_path = QtCore.QDir.toNativeSeparators(str(new_file_path))
@@ -5258,7 +5241,7 @@ class edit_cfg_cpd_barr(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -5600,7 +5583,7 @@ class edit_cfg_cpd_mchugh(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -5942,7 +5925,7 @@ class edit_cfg_cpd_mcnew(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -6284,7 +6267,7 @@ class edit_cfg_mpt(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -7800,6 +7783,31 @@ class edit_cfg_L5(QtWidgets.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
+    def add_madcheck(self):
+        """ Add the MAD check to a variable."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        if selected_item.text().split("_")[0] == "Fco2":
+            edge_threshold = 6
+        elif selected_item.text().split("_")[0] in ["Fe", "Fh"]:
+            edge_threshold = 100
+        else:
+            edge_threshold = "20,80"
+        new_qc = {"MADCheck":{"Fsd_threshold": 12, "edge_threshold": edge_threshold,
+                              "window_size": 13, "zfc": 5.5,}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_mask_long_gaps(self):
+        """ Add the mask long gaps option."""
+        dict_to_add = {"mask long gaps": "Yes"}
+        # add the subsubsection
+        self.add_subsection(dict_to_add)
+
     def add_maxgapinterpolate(self):
         """ Add MaxGapInterpolate to the [Options] section."""
         dict_to_add = {"MaxGapInterpolate": "3"}
@@ -7848,6 +7856,19 @@ class edit_cfg_L5(QtWidgets.QWidget):
         d2a = {"New variable": var_dict}
         self.add_variable(d2a)
         # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_qc_check(self, selected_item, new_qc):
+        for key1 in new_qc:
+            parent = QtGui.QStandardItem(key1)
+            parent.setEditable(False)
+            for key in new_qc[key1]:
+                val = str(new_qc[key1][key])
+                child0 = QtGui.QStandardItem(key)
+                child0.setEditable(False)
+                child1 = QtGui.QStandardItem(val)
+                parent.appendRow([child0, child1])
+            selected_item.appendRow(parent)
         self.update_tab_text()
 
     def add_rangecheck(self):
@@ -8484,6 +8505,11 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
                     self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
                     add_separator = True
+                if "MADCheck" not in existing_entries:
+                    self.context_menu.actionAddMADCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMADCheck.setText("Add MADCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddMADCheck)
+                    self.context_menu.actionAddMADCheck.triggered.connect(self.add_madcheck)
                 if add_separator:
                     add_separator = False
                     self.context_menu.addSeparator()
@@ -8511,7 +8537,7 @@ class edit_cfg_L5(QtWidgets.QWidget):
             parent = selected_item.parent()
             grand_parent = selected_item.parent().parent()
             subsubsection_name = str(idx.data())
-            if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck"]:
+            if subsubsection_name in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "MADCheck"]:
                 self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
                 self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
@@ -8556,6 +8582,11 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionAddSOLOSettings)
                     self.context_menu.actionAddSOLOSettings.triggered.connect(self.add_solo_settings)
                     add_separator = True
+                if "mask long gaps" not in existing_entries:
+                    self.context_menu.actionAddMaskLongGaps = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMaskLongGaps.setText("Add mask long gaps")
+                    self.context_menu.addAction(self.context_menu.actionAddMaskLongGaps)
+                    self.context_menu.actionAddMaskLongGaps.triggered.connect(self.add_mask_long_gaps)
                 if add_separator:
                     add_separator = False
                     self.context_menu.addSeparator()
@@ -8570,14 +8601,31 @@ class edit_cfg_L5(QtWidgets.QWidget):
                     self.context_menu.actionAddMDStarget.setText("Add target")
                     self.context_menu.addAction(self.context_menu.actionAddMDStarget)
                     self.context_menu.actionAddMDStarget.triggered.connect(self.add_mds_target)
+                if "mask long gaps" not in existing_entries:
+                    self.context_menu.actionAddMaskLongGaps = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMaskLongGaps.setText("Add mask long gaps")
+                    self.context_menu.addAction(self.context_menu.actionAddMaskLongGaps)
+                    self.context_menu.actionAddMaskLongGaps.triggered.connect(self.add_mask_long_gaps)
         elif level == 4:
             selected_text = str(idx.data())
-            if selected_text in ["solo_settings"]:
+            parent = selected_item.parent()
+            key = str(parent.child(selected_item.row(),0).text())
+            if (selected_item.column() == 0) and selected_text in ["solo_settings", "mask long gaps"]:
                 self.context_menu.actionRemoveSOLOSettings = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveSOLOSettings.setText("Remove item")
                 self.context_menu.addAction(self.context_menu.actionRemoveSOLOSettings)
                 self.context_menu.actionRemoveSOLOSettings.triggered.connect(self.remove_item)
-
+            if (selected_item.column() == 1) and (key == "mask long gaps"):
+                if selected_text != "Yes":
+                    self.context_menu.actionChangeMaskLongGaps = QtWidgets.QAction(self)
+                    self.context_menu.actionChangeMaskLongGaps.setText("Yes")
+                    self.context_menu.addAction(self.context_menu.actionChangeMaskLongGaps)
+                    self.context_menu.actionChangeMaskLongGaps.triggered.connect(lambda:self.change_selected_text("Yes"))
+                if selected_text != "No":
+                    self.context_menu.actionChangeMaskLongGaps = QtWidgets.QAction(self)
+                    self.context_menu.actionChangeMaskLongGaps.setText("No")
+                    self.context_menu.addAction(self.context_menu.actionChangeMaskLongGaps)
+                    self.context_menu.actionChangeMaskLongGaps.triggered.connect(lambda:self.change_selected_text("No"))
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
     def double_click(self):
@@ -8664,7 +8712,8 @@ class edit_cfg_L5(QtWidgets.QWidget):
                                     key5 = str(subsubsubsection.child(m, 0).text())
                                     val5 = str(subsubsubsection.child(m, 1).text())
                                     cfg[key1][key2][key3][key4][key5] = val5
-                        elif key3 in ["MergeSeries", "RangeCheck", "DiurnalCheck", "DependencyCheck", "ExcludeDates"]:
+                        elif key3 in ["MergeSeries", "RangeCheck", "DiurnalCheck",
+                                      "DependencyCheck", "ExcludeDates", "MADCheck"]:
                             for l in range(subsubsection.rowCount()):
                                 key4 = str(subsubsection.child(l, 0).text())
                                 val4 = str(subsubsection.child(l, 1).text())
@@ -8766,7 +8815,8 @@ class edit_cfg_L5(QtWidgets.QWidget):
                                     child1 = QtGui.QStandardItem(val)
                                     parent4.appendRow([child0, child1])
                                 parent3.appendRow(parent4)
-                        elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates", "DiurnalCheck", "DependencyCheck"]:
+                        elif key3 in ["MergeSeries", "RangeCheck", "ExcludeDates",
+                                      "DiurnalCheck", "DependencyCheck", "MADCheck"]:
                             for key4 in self.cfg[key1][key2][key3]:
                                 val = self.cfg[key1][key2][key3][key4]
                                 child0 = QtGui.QStandardItem(key4)
@@ -10025,7 +10075,7 @@ class edit_cfg_nc2csv_biomet(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -10325,7 +10375,7 @@ class edit_cfg_nc2csv_ecostress(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -10625,7 +10675,7 @@ class edit_cfg_nc2csv_fluxnet(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -10645,6 +10695,272 @@ class edit_cfg_nc2csv_fluxnet(QtWidgets.QWidget):
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getSaveFileName(caption="Choose an output file ...",
                                                               directory=file_path, filter="*.csv")[0]
+        # update the model
+        if len(str(new_file_path)) > 0:
+            new_file_parts = os.path.split(str(new_file_path))
+            parent.child(selected_item.row(), 1).setText(new_file_parts[1])
+
+    def get_keyval_by_key_name(self, section, key):
+        """ Get the value from a section based on the key name."""
+        found = False
+        val_child = ""
+        key_child = ""
+        for i in range(section.rowCount()):
+            if str(section.child(i, 0).text()) == str(key):
+                found = True
+                key_child = str(section.child(i, 0).text())
+                val_child = str(section.child(i, 1).text())
+                break
+        return key_child, val_child, found, i
+
+    def get_level_selected_item(self):
+        """ Get the level of the selected item."""
+        indexes = self.view.selectedIndexes()
+        level = -1
+        if len(indexes) > 0:
+            level = 0
+            index = indexes[0]
+            while index.parent().isValid():
+                index = index.parent()
+                level += 1
+        return level
+
+    def handleItemChanged(self, item):
+        """ Handler for when view items are edited."""
+        # update the control file contents
+        self.cfg = self.get_data_from_model()
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def remove_item(self):
+        """ Remove an item from the view."""
+        # loop over selected items in the tree
+        for idx in self.view.selectedIndexes():
+            # get the selected item from the index
+            selected_item = idx.model().itemFromIndex(idx)
+            # get the parent of the selected item
+            parent = selected_item.parent()
+            # remove the row
+            parent.removeRow(selected_item.row())
+        self.update_tab_text()
+
+    def update_tab_text(self):
+        """ Add an asterisk to the tab title text to indicate tab contents have changed."""
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        tab_text = str(self.tabs.tabText(self.tabs.tab_index_current))
+        if "*" not in tab_text:
+            self.tabs.setTabText(self.tabs.tab_index_current, tab_text+"*")
+
+class edit_cfg_nc2csv_oneflux(QtWidgets.QWidget):
+    def __init__(self, main_gui):
+        super(edit_cfg_nc2csv_oneflux, self).__init__()
+        self.cfg = copy.deepcopy(main_gui.file)
+        self.tabs = main_gui.tabs
+        self.edit_nc2csv_oneflux_gui()
+
+    def edit_nc2csv_oneflux_gui(self):
+        """ Edit an nc2csv_oneflux control file GUI."""
+        # get a QTreeView and a standard model
+        self.view = myTreeView()
+        # get a QStandardItemModel
+        self.model = QtGui.QStandardItemModel()
+        # add the model to the view
+        self.view.setModel(self.model)
+        # set the context menu policy
+        self.view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        # connect the context menu requested signal to appropriate slot
+        self.view.customContextMenuRequested.connect(self.context_menu)
+        # do the QTreeView layout
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addWidget(self.view)
+        self.setLayout(vbox)
+        self.setGeometry(300, 300, 600, 400)
+        # build the model
+        self.get_model_from_data()
+        # set the default width for the first column
+        self.view.setColumnWidth(0, 200)
+        # expand the top level of the sections
+        for row in range(self.model.rowCount()):
+            idx = self.model.index(row, 0)
+            self.view.expand(idx)
+
+    def get_model_from_data(self):
+        """ Build the data model."""
+        self.model.setHorizontalHeaderLabels(['Parameter', 'Value'])
+        self.model.itemChanged.connect(self.handleItemChanged)
+        # there must be someway outa here, said the Joker to the Thief ...
+        self.sections = {}
+        for key1 in self.cfg:
+            if not self.cfg[key1]:
+                continue
+            if key1 in ["Files"]:
+                # sections with only 1 level
+                self.sections[key1] = QtGui.QStandardItem(key1)
+                for key2 in self.cfg[key1]:
+                    val = self.cfg[key1][key2]
+                    child0 = QtGui.QStandardItem(key2)
+                    child1 = QtGui.QStandardItem(val)
+                    self.sections[key1].appendRow([child0, child1])
+                self.model.appendRow(self.sections[key1])
+            elif key1 in ["Variables"]:
+                # sections with 2 levels
+                self.sections[key1] = QtGui.QStandardItem(key1)
+                # key2 is the variable name
+                for key2 in self.cfg[key1]:
+                    parent2 = QtGui.QStandardItem(key2)
+                    # key3 is the variable options
+                    for key3 in self.cfg[key1][key2]:
+                        val = self.cfg[key1][key2][key3]
+                        child0 = QtGui.QStandardItem(key3)
+                        child1 = QtGui.QStandardItem(val)
+                        parent2.appendRow([child0, child1])
+                    self.sections[key1].appendRow(parent2)
+                self.model.appendRow(self.sections[key1])
+
+    def get_data_from_model(self):
+        """ Iterate over the model and get the data."""
+        cfg = ConfigObj(indent_type="    ", list_values=False)
+        cfg.filename = self.cfg.filename
+        cfg["level"] = "nc2csv_oneflux"
+        model = self.model
+        # there must be a way to do this recursively
+        for i in range(model.rowCount()):
+            section = model.item(i)
+            key1 = str(section.text())
+            cfg[key1] = {}
+            if key1 in ["Files"]:
+                # sections with only 1 level
+                for j in range(section.rowCount()):
+                    key2 = str(section.child(j, 0).text())
+                    val2 = str(section.child(j, 1).text())
+                    cfg[key1][key2] = val2
+            elif key1 in ["Variables"]:
+                # sections with 2 levels
+                for j in range(section.rowCount()):
+                    subsection = section.child(j)
+                    key2 = str(subsection.text())
+                    cfg[key1][key2] = {}
+                    for k in range(subsection.rowCount()):
+                        key3 = str(subsection.child(k, 0).text())
+                        val3 = str(subsection.child(k, 1).text())
+                        cfg[key1][key2][key3] = val3
+
+        return cfg
+
+    def context_menu(self, position):
+        """ Right click context menu."""
+        # get a menu
+        self.context_menu = QtWidgets.QMenu()
+        # get the index of the selected item
+        if len(self.view.selectedIndexes()) == 0:
+            # trap right click when nothing is selected
+            return
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item text
+        selected_text = str(idx.data())
+        # get the selected item
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the level of the selected item
+        level = self.get_level_selected_item()
+        # initialise logical for inserting a separator
+        if level == 0:
+            if selected_text in ["Variables"]:
+                self.context_menu.actionAddVariable = QtWidgets.QAction(self)
+                self.context_menu.actionAddVariable.setText("Add variable")
+                self.context_menu.addAction(self.context_menu.actionAddVariable)
+                self.context_menu.actionAddVariable.triggered.connect(self.add_new_variable)
+        elif level == 1:
+            # sections with 2 levels
+            # get the parent of the selected item
+            parent = selected_item.parent()
+            if (str(parent.text()) == "Files") and (selected_item.column() == 1):
+                key = str(parent.child(selected_item.row(),0).text())
+                if key in ["file_path"]:
+                    self.context_menu.actionBrowseFilePath = QtWidgets.QAction(self)
+                    self.context_menu.actionBrowseFilePath.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseFilePath)
+                    self.context_menu.actionBrowseFilePath.triggered.connect(self.browse_file_path)
+                elif key in ["in_filename"]:
+                    self.context_menu.actionBrowseInputFile = QtWidgets.QAction(self)
+                    self.context_menu.actionBrowseInputFile.setText("Browse...")
+                    self.context_menu.addAction(self.context_menu.actionBrowseInputFile)
+                    self.context_menu.actionBrowseInputFile.triggered.connect(self.browse_input_file)
+            elif (str(parent.text()) == "Variables") and (selected_item.column() == 0):
+                self.context_menu.actionRemoveOption = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveOption.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveOption)
+                self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
+        elif level == 2:
+            # sections with 3 levels
+            pass
+
+        self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
+
+    def add_general_item(self):
+        """ Add a new entry to the [Files] section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        section = idx.model().itemFromIndex(idx)
+        dict_to_add = {"New item":""}
+        # add the subsection
+        self.add_subsection(section, dict_to_add)
+
+    def add_new_variable(self):
+        """ Add a new variable to the 'Variables' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        dict_to_add = {"format": "", "name": "", "units": ""}
+        subsection = QtGui.QStandardItem("New variable")
+        self.add_subsection(subsection, dict_to_add)
+        parent.appendRow(subsection)
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def add_subsection(self, section, dict_to_add):
+        """ Add a subsection to the model."""
+        for key in dict_to_add:
+            val = str(dict_to_add[key])
+            child0 = QtGui.QStandardItem(key)
+            child1 = QtGui.QStandardItem(val)
+            section.appendRow([child0, child1])
+
+    def browse_file_path(self):
+        """ Browse for the data file path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the selected entry text
+        file_path = str(idx.data())
+        # dialog for new directory
+        new_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose a folder",
+                                                             file_path, QtWidgets.QFileDialog.ShowDirsOnly)
+        # quit if cancel button pressed
+        if len(str(new_dir)) > 0:
+            # make sure the string ends with a path delimiter
+            tmp_dir = QtCore.QDir.toNativeSeparators(str(new_dir))
+            new_dir = os.path.join(tmp_dir, "")
+            # update the model
+            parent.child(selected_item.row(), 1).setText(new_dir)
+
+    def browse_input_file(self):
+        """ Browse for the input data file path."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # get the file_path so it can be used as a default directory
+        key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
+        # dialog for open file
+        new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -10915,7 +11231,7 @@ class edit_cfg_nc2csv_reddyproc(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))
@@ -11053,7 +11369,7 @@ class edit_cfg_windrose(QtWidgets.QWidget):
         key, file_path, found, j = self.get_keyval_by_key_name(parent, "file_path")
         # dialog for open file
         new_file_path = QtWidgets.QFileDialog.getOpenFileName(caption="Choose an input file ...",
-                                                              directory=file_path)[0]
+                                                              directory=file_path, filter="*.nc")[0]
         # update the model
         if len(str(new_file_path)) > 0:
             new_file_parts = os.path.split(str(new_file_path))

@@ -262,7 +262,7 @@ class pfp_main_ui(QWidget):
         self.actionFileSave.triggered.connect(self.file_save)
         self.actionFileSaveAs.triggered.connect(self.file_save_as)
         self.actionFileSplit.triggered.connect(pfp_top_level.do_file_split)
-        self.actionFileQuit.triggered.connect(QApplication.quit)
+        self.actionFileQuit.triggered.connect(self.application_quit)
         # Edit menu actions
         self.actionEditPreferences.triggered.connect(self.edit_preferences)
         # Run menu actions
@@ -314,6 +314,12 @@ class pfp_main_ui(QWidget):
             
             self.menuFileNew.addAction(thisMenu.menuAction())
             self.menuFileNewLevel += [thisMenu]
+
+    def application_quit(self):
+        # 20250629 PRI
+        # added to avoid "RuntimeError: wrapped C/C++ object of type ConsoleWindowLogHandler has been deleted"
+        # messages when File/Quit menu event occurs.
+        sys.exit()
 
     def file_open(self, file_uri=None):
         """
@@ -408,7 +414,7 @@ class pfp_main_ui(QWidget):
             # and save the control file
             self.file.write()
         # create a QtTreeView to edit the control file
-        if self.file["level"] in ["L1"]:
+        if self.file["level"].split("_")[0] in ["L1"]:
             # update control file to new syntax
             if not pfp_compliance.l1_update_controlfile(self.file): return
             # put the GUI for editing the L1 control file in a new tab
@@ -452,6 +458,8 @@ class pfp_main_ui(QWidget):
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_ecostress(self)
         elif self.file["level"] in ["nc2csv_fluxnet"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_fluxnet(self)
+        elif self.file["level"] in ["nc2csv_oneflux"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_oneflux(self)
         elif self.file["level"] in ["nc2csv_reddyproc"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_reddyproc(self)
         elif self.file["level"] in ["batch"]:
@@ -822,7 +830,7 @@ class pfp_main_ui(QWidget):
             self.threadpool.start(worker)
             # no threading
             #pfp_top_level.do_run_batch(self)
-        elif cfg["level"] == "L1":
+        elif cfg["level"].split("_")[0] == "L1":
             # check the L1 control file to see if it is OK to run
             if pfp_compliance.check_l1_controlfile(cfg):
                 pfp_top_level.do_run_l1(cfg)
@@ -854,24 +862,28 @@ class pfp_main_ui(QWidget):
             pfp_top_level.do_run_l4(self)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "L5":
-            if pfp_compliance.check_l5_controlfile(cfg):
-                pfp_top_level.do_run_l5(self)
+            if not pfp_compliance.check_l5_controlfile(cfg):
+                return
+            pfp_top_level.do_run_l5(self)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "L6":
             if pfp_compliance.check_l6_controlfile(cfg):
                 pfp_top_level.do_run_l6(self)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_biomet":
-            pfp_top_level.do_file_convert_nc2biomet(self, mode="custom")
+            pfp_top_level.do_file_convert_nc2biomet(cfg, mode="custom")
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_ecostress":
-            pfp_top_level.do_file_convert_nc2ecostress(self)
+            pfp_top_level.do_file_convert_nc2ecostress(cfg)
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_fluxnet":
-            pfp_top_level.do_file_convert_nc2fluxnet(self)
+            pfp_top_level.do_file_convert_nc2fluxnet(cfg)
+            self.actionRunCurrent.setDisabled(False)
+        elif cfg["level"] == "nc2csv_oneflux":
+            pfp_top_level.do_file_convert_nc2oneflux(cfg, mode="custom")
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "nc2csv_reddyproc":
-            pfp_top_level.do_file_convert_nc2reddyproc(self, mode="custom")
+            pfp_top_level.do_file_convert_nc2reddyproc(cfg, mode="custom")
             self.actionRunCurrent.setDisabled(False)
         elif cfg["level"] == "windrose":
             if pfp_compliance.check_windrose_controlfile(cfg):
@@ -889,6 +901,11 @@ class pfp_main_ui(QWidget):
             msg = "Processing will stop when this level is finished"
             result = pfp_gui.myMessageBox(msg)
         return
+    def closeEvent(self, event):
+        # 20250629 PRI
+        # added to avoid "RuntimeError: wrapped C/C++ object of type ConsoleWindowLogHandler has been deleted"
+        # messages when close window event occurs.
+        sys.exit()
     def closeTab (self, currentIndex):
         """ Close the selected tab."""
         # the tab close button ("x") shows on MacOS even though it is disabled
@@ -1029,4 +1046,4 @@ if (__name__ == '__main__'):
     ui.show()
     #pfp_compliance.check_executables()
     app.exec_()
-    del ui
+    #del ui

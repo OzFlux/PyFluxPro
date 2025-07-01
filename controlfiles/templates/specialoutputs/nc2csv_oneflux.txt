@@ -1,4 +1,7 @@
 level = nc2csv_oneflux
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.nc)
 [Variables]
     [[CO2]]
         format = 0.000

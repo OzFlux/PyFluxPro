@@ -525,7 +525,7 @@ def ParseConcatenateControlFile(cf):
     inc["chrono_files"] = []
     inc["labels"] = []
     inc["attributes"] = ["height", "instrument", "long_name", "standard_name",
-                         "statistic_type", "units", "valid_range"]
+                         "statistic_type", "units", "valid_range", "MAD filter"]
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
@@ -572,13 +572,11 @@ def ParseL3ControlFile(cfg, ds):
     """
     # PRI 7/10/2021 the code to get zms will give unpredictable results if CO2
     #   profile data present
-    l3_info = {"status": {"value": 0, "message": "OK"},
-               "cfg": {},
+    l3_info = {"status": {"value": 0, "message": "OK", "ok": True},
                "variables": {"CO2": {}, "Fco2": {}, "Sco2": {}},
                "CombineSeries": {}}
-    # copy the control file sections to the l3_info dictionary
-    for section in list(cfg.keys()):
-        l3_info["cfg"][section] = copy.deepcopy(cfg[section])
+    # copy the control file into the l3_info dictionary
+    l3_info["cfg"] = copy.deepcopy(cfg)
     # add key for suppressing output of intermediate variables e.g. Cpd etc
     opt = pfp_utils.get_keyvaluefromcf(cfg, ["Options"], "KeepIntermediateSeries", default="No")
     l3_info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
@@ -739,9 +737,12 @@ def check_l1_controlfile(cfg):
     Author: PRI
     Date: October 2021
     """
+    ok = True
+    # compliance checks not applied for L1 nc2csv_oneflux
+    if cfg["level"] in ["L1_oneflux"]:
+        return ok
     # quick and dirty use of try...except in a panic ahead to 2021 workshop
     try:
-        ok = True
         cfg_labels = sorted(list(cfg["Variables"].keys()))
         base_path = pfp_utils.get_base_path()
         std_name = os.path.join(base_path, "controlfiles", "standard", "check_l1_controlfile.txt")
@@ -1634,8 +1635,8 @@ def l1_check_irga_sonic_type(cfg, messages):
     return
 def l1_check_irga_only(cfg, irga_only_labels, messages):
     """ Check instrument attribute of variables that depend only on the IRGA"""
-    if len(irga_only_labels) == 0:
-        return
+    #if len(irga_only_labels) == 0:
+        #return
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     known_irgas = open_path_irgas + closed_path_irgas
@@ -1643,6 +1644,8 @@ def l1_check_irga_only(cfg, irga_only_labels, messages):
     for label in list(irga_only_labels):
         if label not in cfg_labels:
             irga_only_labels.remove(label)
+    if len(irga_only_labels) == 0:
+        return
     irga_check = {}
     for label in irga_only_labels:
         if "instrument" in cfg["Variables"][label]["Attr"]:
@@ -1673,13 +1676,15 @@ def l1_check_irga_only(cfg, irga_only_labels, messages):
     return
 def l1_check_sonic_only(cfg, sonic_only_labels, messages):
     """ Check instrument attribute of variables that depend only on the sonic."""
-    if len(sonic_only_labels) == 0:
-        return
+    #if len(sonic_only_labels) == 0:
+        #return
     known_sonics = list(c.instruments["sonics"].keys())
     cfg_labels = sorted(list(cfg["Variables"].keys()))
     for label in list(sonic_only_labels):
         if label not in cfg_labels:
             sonic_only_labels.remove(label)
+    if len(sonic_only_labels) == 0:
+        return
     sonic_check = {}
     for label in sonic_only_labels:
         if "instrument" in cfg["Variables"][label]["Attr"]:
@@ -1723,8 +1728,8 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
     Author: PRI
     Date: November 2022
     """
-    if len(sonic_irga_labels) == 0:
-        return
+    #if len(sonic_irga_labels) == 0:
+        #return
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     known_irgas = open_path_irgas + closed_path_irgas
@@ -1733,6 +1738,8 @@ def l1_check_sonic_irga(cfg, sonic_irga_labels, messages):
     for sonic_irga_label in list(sonic_irga_labels):
         if sonic_irga_label not in cfg_labels:
             sonic_irga_labels.remove(sonic_irga_label)
+    if len(sonic_irga_labels) == 0:
+        return
     sonic_check = {}
     irga_check = {}
     for sonic_irga_label in sonic_irga_labels:
@@ -1906,6 +1913,11 @@ def l1_update_controlfile(cfg):
     Author: PRI
     Date: February 2020
     """
+    # initialise the return logical
+    ok = True
+    # update control file not applied for L1 nc2csv_oneflux
+    if cfg["level"] in ["L1_oneflux"]:
+        return ok
     # copy the control file
     cfg_original = copy.deepcopy(cfg)
     # check to see if we can load the update_control_files.txt standard control file
@@ -1928,8 +1940,6 @@ def l1_update_controlfile(cfg):
     except Exception:
         ok = False
         msg = " Unable to load standard control file " + chkname
-    # initialise the return logical
-    ok = True
     try:
         cfg = update_cfg_syntax(cfg, std)
     except Exception:

@@ -537,17 +537,22 @@ def gfalternate_getolscorrecteddata(data_dict, stat_dict, l4a):
         stat_dict[label_output][label_alternate]["offset"] = float(0)
         stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx"%(resols.params[0])
     else:
-        resols = sm.OLS(y, sm.add_constant(x, prepend=False)).fit()
-        if resols.params.shape[0] == 2:
-            data_dict[label_output][label_alternate]["fitcorr"] = resols.params[0]*x_in+resols.params[1]
-            stat_dict[label_output][label_alternate]["slope"] = resols.params[0]
-            stat_dict[label_output][label_alternate]["offset"] = resols.params[1]
-            stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(resols.params[0], resols.params[1])
-        else:
-            data_dict[label_output][label_alternate]["fitcorr"] = numpy.ma.copy(x_in)
-            stat_dict[label_output][label_alternate]["slope"] = float(0)
-            stat_dict[label_output][label_alternate]["offset"] = float(0)
-            stat_dict[label_output][label_alternate]["eqnstr"] = "OLS error, replaced"
+        slope, offset= numpy.polyfit(x, y, 1)
+        data_dict[label_output][label_alternate]["fitcorr"] = slope*x_in + offset
+        stat_dict[label_output][label_alternate]["slope"] = slope
+        stat_dict[label_output][label_alternate]["offset"] = offset
+        stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(slope, offset)
+        #resols = sm.OLS(y, sm.add_constant(x, prepend=False)).fit()
+        #if resols.params.shape[0] == 2:
+            #data_dict[label_output][label_alternate]["fitcorr"] = resols.params[0]*x_in+resols.params[1]
+            #stat_dict[label_output][label_alternate]["slope"] = resols.params[0]
+            #stat_dict[label_output][label_alternate]["offset"] = resols.params[1]
+            #stat_dict[label_output][label_alternate]["eqnstr"] = "y = %.3fx + %.3f"%(resols.params[0], resols.params[1])
+        #else:
+            #data_dict[label_output][label_alternate]["fitcorr"] = numpy.ma.copy(x_in)
+            #stat_dict[label_output][label_alternate]["slope"] = float(0)
+            #stat_dict[label_output][label_alternate]["offset"] = float(0)
+            #stat_dict[label_output][label_alternate]["eqnstr"] = "OLS error, replaced"
 
 def gfalternate_getoutputstatistics(data_dict, stat_dict, l4a):
     label_tower = l4a["run"]["label_tower"]
@@ -1028,9 +1033,7 @@ def gfalternate_plotcomposite(data_dict, stat_dict, diel_avg, l4a, pd):
     fig.savefig(figname, format='png')
     # draw the plot on the screen
     if l4a["gui"]["show_plots"]:
-        plt.draw()
-        pfp_utils.mypause(1)
-        plt.ioff()
+        fig.canvas.flush_events()
     else:
         plt.close()
         plt.switch_backend(current_backend)
@@ -1097,9 +1100,7 @@ def gfalternate_plotcoveragelines(ds_tower, l4_info, called_by):
     pylab.yticks(ylabel_posn, ylabel_right_list)
     fig.tight_layout()
     if l4a["gui"]["show_plots"]:
-        plt.draw()
-        pfp_utils.mypause(1)
-        plt.ioff()
+        fig.canvas.flush_events()
     else:
         plt.switch_backend(current_backend)
         plt.ion()
@@ -1191,9 +1192,7 @@ def gfalternate_plotsummary(l4_info):
         figname += "_" + startdate.strftime("%Y%m%d") + "_" + enddate.strftime("%Y%m%d") + ".png"
         fig.savefig(figname, format="png")
         if l4ig["show_plots"]:
-            plt.draw()
-            pfp_utils.mypause(0.5)
-            plt.ioff()
+            fig.canvas.flush_events()
         else:
             plt.close()
             plt.switch_backend(current_backend)

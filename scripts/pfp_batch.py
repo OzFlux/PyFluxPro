@@ -5,6 +5,7 @@ import os
 import sys
 import traceback
 # 3rd party modules
+import dateutil
 # PFP modules
 from scripts import pfp_clim
 from scripts import pfp_compliance
@@ -38,6 +39,19 @@ def do_batch_fingerprints(cfg):
     logger.info(msg)
     pfp_plot.plot_fingerprint(cfg_fp)
     logger.info("Finished fingerprint plots")
+    return
+def do_batch_stacked_timeseries(cfg, ds, start=0, end=-1):
+    """
+    Purpose:
+     Plot stacked timeseries for the level being processed.
+    Author: PRI
+    Date: August 2024
+    """
+    msg = "Doing stacked timeseries plots"
+    logger.info(msg)
+    pfp_plot.plot_stacked_timeseries(cfg, ds, start=start, end=end)
+    msg = "Finished stacked timeseries plots"
+    logger.info(msg)
     return
 def do_L1_batch(main_ui, cf_level):
     for i in list(cf_level.keys()):
@@ -180,6 +194,18 @@ def do_L3_batch(main_ui, cf_level):
             logger.info("Plotting L3 fingerprints")
             do_batch_fingerprints(cf_l3)
             logger.info("Finished L3 fingerprints")
+            # do the stacked time series plots
+            ldt = pfp_utils.GetVariable(ds3, "DateTime")
+            end = ldt["Data"][-1]
+            start = end - dateutil.relativedelta.relativedelta(months=1)
+            radn_labels = ["Fsd", "Fsu", "Fld", "Flu", "Fn"]
+            flux_labels = ["Fh", "Fe", "Fco2", "Fm"]
+            met_labels = ["Precip", "Ta", "RH", "Ws", "Wd", "ps"]
+            soil_labels = ["Ts", "Fg", "Sws"]
+            plot_labels = radn_labels + flux_labels + met_labels + soil_labels
+            cf_l3["Options"]["plot_stacked_timeseries"] = {"plot_labels": plot_labels,
+                                                           "start": start, "end": end,}
+            do_batch_stacked_timeseries(cf_l3, ds3, start=start, end=end)
             logger.info("")
         except Exception:
             msg = "Error occurred during L3 processing " + cf_file_name[1]
@@ -243,6 +269,23 @@ def do_reddyproc_batch(main_ui, cf_level):
         cf = pfp_io.get_controlfilecontents(cf_level[i])
         pfp_io.write_tsv_reddyproc(cf)
         msg = "Finished REddyProc output with " + cf_file_name[1]
+        logger.info(msg)
+        logger.info("")
+    return 1
+def do_oneflux_batch(main_ui, cf_level):
+    for i in list(cf_level.keys()):
+        # check the stop flag
+        if main_ui.stop_flag:
+            # break out of the loop if user requested stop
+            break
+        cf_file_name = os.path.split(cf_level[i])
+        msg = "Starting ONEFlux output with " + cf_file_name[1]
+        logger.info(msg)
+        if not check_file_exits(cf_level[i]):
+            return 0
+        cf = pfp_io.get_controlfilecontents(cf_level[i])
+        pfp_io.write_csv_oneflux(cf)
+        msg = "Finished ONEFlux output with " + cf_file_name[1]
         logger.info(msg)
         logger.info("")
     return 1
@@ -581,7 +624,7 @@ def do_levels_batch(main_ui):
         logger.error(msg)
         sys.exit()
     processing_levels = ["l1", "l2", "l3",
-                         "ecostress", "fluxnet", "reddyproc",
+                         "nc2csv_oneflux",
                          "concatenate", "climatology",
                          "cpd_barr", "cpd_mchugh", "cpd_mcnew", "mpt",
                          "l4", "l5", "l6"]
@@ -613,6 +656,10 @@ def do_levels_batch(main_ui):
         elif level.lower() == "fluxnet":
             # convert netCDF files to FluxNet CSV files
             if not do_fluxnet_batch(main_ui, cf_batch["Levels"][level]):
+                break
+        elif level.lower() == "nc2csv_oneflux":
+            # convert netCDF files to ONEFlux CSV files
+            if not do_oneflux_batch(main_ui, cf_batch["Levels"][level]):
                 break
         elif level.lower() == "reddyproc":
             # convert netCDF files to REddyProc CSV files

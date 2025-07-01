@@ -36,14 +36,14 @@ def get_temperature_class_results(contents):
         temperature_classes[i]["counts"] = numpy.zeros(len(temperature_classes[i]["values"]))
     return temperature_classes
 
-def get_bootstrap_results(contents):
+def get_bootstrap_seasonal_results(contents):
     # get the number of seasons
     season_values = numpy.array([float(s) for s in contents[2].split()])
     number_seasons = len(season_values)
     # get the individual bootstrap results
-    bootstrap_results = {}
+    bootstrap_seasonal_results = {}
     for i in range(number_seasons):
-        bootstrap_results[i] = {"values": [], "counts": []}
+        bootstrap_seasonal_results[i] = {"values": [], "counts": []}
     # on Windows machines, len(contents[n]) == 1 for the first empty line after the bootstrap section
     n = 17
     while len(contents[n]) > 1:
@@ -51,13 +51,24 @@ def get_bootstrap_results(contents):
         season_counts = numpy.array([int(s) for s in contents[n+1][0:].split()])
         for i in range(number_seasons):
             if i < len(season_values):
-                bootstrap_results[i]["values"] = numpy.append(bootstrap_results[i]["values"], season_values[i])
-                bootstrap_results[i]["counts"] = numpy.append(bootstrap_results[i]["counts"], season_counts[i])
+                bsr = bootstrap_seasonal_results[i]
+                bsr["values"] = numpy.append(bsr["values"], season_values[i])
+                bsr["counts"] = numpy.append(bsr["counts"], season_counts[i])
             else:
-                bootstrap_results[i]["values"] = numpy.append(bootstrap_results[i]["values"], float(-9999))
-                bootstrap_results[i]["counts"] = numpy.append(bootstrap_results[i]["counts"], float(-9999))
+                bsr["values"] = numpy.append(bsr["values"], float(-9999))
+                bsr["counts"] = numpy.append(bsr["counts"], float(-9999))
         n = n + 2
-    return bootstrap_results
+    return bootstrap_seasonal_results
+
+def get_bootstrap_annual_results(contents):
+    # get the annual bootstrap results
+    bootstrap_annual_results = {"values": []}
+    # on Windows machines, len(contents[n]) == 1 for the first empty line after the bootstrap section
+    n = 219
+    while len(contents[n]) > 1:
+        bootstrap_annual_results["values"].append(float(contents[n].strip()))
+        n = n + 1
+    return bootstrap_annual_results
 
 def make_data_array(cf, ds, current_year):
     ldt = pfp_utils.GetVariable(ds, "DateTime")
@@ -185,7 +196,8 @@ def read_mpt_output(out_file_paths):
         ury[year]["seasonal"] = get_seasonal_results(contents)
         ury[year]["annual"] = get_annual_results(contents)
         ury[year]["temperature_classes"] = get_temperature_class_results(contents)
-        ury[year]["bootstraps"] = get_bootstrap_results(contents)
+        ury[year]["bootstraps_seasonal"] = get_bootstrap_seasonal_results(contents)
+        ury[year]["bootstraps_annual"] = get_bootstrap_annual_results(contents)
     return ustar_results
 
 def xl_write_mpt(mpt_full_path, ustar_results):
@@ -201,11 +213,11 @@ def xl_write_mpt(mpt_full_path, ustar_results):
     annual = {}
     years = sorted(list(ustar_results["Years"].keys()))
     for year in years:
-        season_list = sorted(list(ustar_results["Years"][year]["bootstraps"].keys()))
-        values = ustar_results["Years"][year]["bootstraps"][0]["values"]
+        season_list = sorted(list(ustar_results["Years"][year]["bootstraps_seasonal"].keys()))
+        values = ustar_results["Years"][year]["bootstraps_seasonal"][0]["values"]
         season_list.remove(0)
         for s in season_list:
-            values = numpy.concatenate((values, ustar_results["Years"][year]["bootstraps"][s]["values"]))
+            values = numpy.concatenate((values, ustar_results["Years"][year]["bootstraps_seasonal"][s]["values"]))
         values = numpy.ma.masked_values(values, -9999)
         ustar_results["Years"][year]["annual"]["stdev"] = numpy.ma.std(values)
         annual[year] = {"ustar_mean": ustar_results["Years"][year]["annual"]["value"],
@@ -226,18 +238,25 @@ def xl_write_mpt(mpt_full_path, ustar_results):
                 d[i] = ustar_results["Years"][year]["temperature_classes"][t]["values"][i]
             by_years["Temperature classes"][t] = d
         d = {}
-        for i in range(len(ustar_results["Years"][year]["bootstraps"])):
-            d[str(i)+" Values"] = ustar_results["Years"][year]["bootstraps"][i]["values"]
-            d[str(i)+" Counts"] = ustar_results["Years"][year]["bootstraps"][i]["counts"]
-        by_years["Bootstraps"] = d
+        for i in range(len(ustar_results["Years"][year]["bootstraps_seasonal"])):
+            d[str(i)+" Values"] = ustar_results["Years"][year]["bootstraps_seasonal"][i]["values"]
+            d[str(i)+" Counts"] = ustar_results["Years"][year]["bootstraps_seasonal"][i]["counts"]
+        by_years["Bootstraps_seasonal"] = d
+        d = {}
+        for i in range(len(ustar_results["Years"][year]["bootstraps_annual"])):
+            d["Values"] = ustar_results["Years"][year]["bootstraps_annual"]["values"]
+        by_years["Bootstraps_annual"] = d
+        df_bootstraps = pandas.DataFrame.from_dict(by_years["Bootstraps_annual"])
+        df_bootstraps.index.names = ["Bootstraps annual"]
+        df_bootstraps.to_excel(xlwriter, sheet_name=str(year), startrow=0, startcol=0)
         df_seasonal = pandas.DataFrame.from_dict(by_years["Seasonal"])
         df_seasonal.index.names = ["Seasonal"]
-        df_seasonal.to_excel(xlwriter, sheet_name=str(year), startrow=0)
+        df_seasonal.to_excel(xlwriter, sheet_name=str(year), startrow=0, startcol=3)
         df_temperature = pandas.DataFrame.from_dict(by_years["Temperature classes"], orient='index')
         df_temperature.index.names = ["Temperature classes"]
-        df_temperature.to_excel(xlwriter, sheet_name=str(year), startrow=10)
-        df_bootstraps = pandas.DataFrame.from_dict(by_years["Bootstraps"])
-        df_bootstraps.index.names = ["Bootstraps"]
-        df_bootstraps.to_excel(xlwriter, sheet_name=str(year), startrow=20)
+        df_temperature.to_excel(xlwriter, sheet_name=str(year), startrow=10, startcol=3)
+        df_bootstraps = pandas.DataFrame.from_dict(by_years["Bootstraps_seasonal"])
+        df_bootstraps.index.names = ["Bootstraps seasonal"]
+        df_bootstraps.to_excel(xlwriter, sheet_name=str(year), startrow=20, startcol=3)
     xlwriter.close()
     return

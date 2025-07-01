@@ -1,5 +1,16 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.18"
+version_number = "V3.4.21"
+# V3.4.21 - June 2025
+#         - use datetime (not time) when creating output data structure when
+#           concatenating
+# V3.4.20 - May 2025
+#         - make sure Fco2 output for ONEFlux has not had the MAD filter applied
+# V3.4.19 - May 2025
+#         - implement MAD filter at L5
+#         - replace plt.draw()/pfp_utils.mypause() with fig.canvas.flush_events()
+#         - correct implementation of masking long gaps in GapFillUsingSOLO()
+#           and GapFillUsingMDS()
+#         - reinstate use of cftime to get Python real_datetime from netCDF time
 # V3.4.18 - June 2024
 #         - L4 gap filling
 #           - force final window to equal user specified window length by

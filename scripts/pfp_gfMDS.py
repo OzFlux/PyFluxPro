@@ -283,6 +283,9 @@ def gfMDS_mask_long_gaps(ds, mds_label, l5_info, called_by):
     Author: PRI
     Date: June 2019
     """
+    if not l5_info[called_by]["outputs"][mds_label]["mask long gaps"]:
+        # mask long gaps disabled in control file
+        return
     if "MaxShortGapRecords" not in l5_info[called_by]["info"]:
         return
     max_short_gap_days = l5_info[called_by]["info"]["MaxShortGapDays"]
@@ -344,7 +347,8 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
-    mask = numpy.ma.mask_or(obs["Data"].mask, mds["Data"].mask)
+    mask = numpy.ma.mask_or(numpy.ma.getmaskarray(obs["Data"]),
+                            numpy.ma.getmaskarray(mds["Data"]))
     obs_mor = numpy.ma.array(obs["Data"], mask=mask, copy=True)
     _, Hr1, Av1, _, _, _ = gf_getdiurnalstats(Hdh, obs_mor, ts)
     ax1.plot(Hr1, Av1, 'b-', label="Obs")
@@ -420,9 +424,7 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     figure_path = os.path.join(l5_info[called_by]["info"]["plot_path"], figure_name)
     fig.savefig(figure_path, format='png')
     if pd["show_plots"]:
-        plt.draw()
-        pfp_utils.mypause(0.5)
-        plt.ioff()
+        fig.canvas.flush_events()
     else:
         plt.close(fig)
         plt.ion()

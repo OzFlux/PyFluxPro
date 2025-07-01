@@ -180,7 +180,7 @@ def ApplyTurbulenceFilter(cf, ds, l5_info, ustar_threshold=None):
                                                      var["Data"], copy=True)
         var_filtered["Flag"] = numpy.copy(var["Flag"])
         idx = numpy.where(indicators["final"]["Data"] == 0)[0]
-        var_filtered["Flag"][idx] = numpy.int32(61)
+        var_filtered["Flag"][idx] = numpy.int32(502)
         # update the "description" attribute
         pfp_utils.append_to_attribute(var_filtered["Attr"], {descr_level: "turbulence filter applied"})
         # and write the filtered data to the data structure
@@ -702,7 +702,9 @@ def do_li7500check(cf, ds, code=4):
         logger.warning(msg)
     # check if we have the H2O and CO2 signal strengths
     got_signal = False
-    for signal in ["Signal_Av", "Signal_H2O", "Signal_CO2", "AGC_7500", "AGC_IRGA"]:
+    for signal in ["Signal_Av", "Signal_H2O", "Signal_CO2",
+                   "Sig_IRGA", "Sig_IRGA_Av",
+                   "AGC_7500", "AGC_IRGA"]:
         if signal in labels:
             got_signal = True
             conditionals.append(signal)
@@ -880,7 +882,7 @@ def do_madfilter(cf, ds, section, label, code=24):
     mad_attr = [inao["Fsd_threshold"], inao["window_size"], inao["zfc"], inao["edge_threshold"]]
     var["Attr"]["MAD filter"] = ",".join(map(str, mad_attr))
     pfp_utils.CreateVariable(ds, var)
-    return var
+    return
 
 def do_madfilter_1(var, Fsd, info, code=24):
     # get required constants

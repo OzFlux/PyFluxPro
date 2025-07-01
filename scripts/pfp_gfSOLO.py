@@ -38,7 +38,7 @@ def GapFillUsingSOLO(main_gui, ds, l5_info, called_by):
     l5_info[called_by]["info"]["enddate"] = ldt[-1].strftime("%Y-%m-%d %H:%M")
     # are we running in interactive or batch mode?
     if l5_info[called_by]["info"]["call_mode"].lower() == "interactive":
-        l5_info["GapFillUsingSOLO"]["gui"]["show_plots"] = True
+        l5_info[called_by]["gui"]["show_plots"] = True
         # put up a plot of the data coverage at L4
         gfSOLO_plotcoveragelines(ds, l5_info, called_by)
         # call the GapFillUsingSOLO GUI
@@ -338,6 +338,42 @@ def gfSOLO_main(ds, l5_info, called_by, outputs=None):
         pd = gfSOLO_initplot(len(drivers))
         gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=si, ei=ei)
 
+def gfSOLO_mask_long_gaps(ds, solo_label, l5_info, called_by):
+    """
+    Purpose:
+     Mask gaps that are longer than a specified maximum length.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: May 2025
+    """
+    if not l5_info[called_by]["outputs"][solo_label]["mask long gaps"]:
+        # mask long gaps disabled in control file
+        return
+    if (("MaxShortGapRecords" not in l5_info[called_by]["info"]) or
+        ("MaxShortGapDays" not in l5_info[called_by]["info"])):
+        # required info missing
+        return
+    max_short_gap_days = int(l5_info[called_by]["info"]["MaxShortGapDays"])
+    msg = "  Masking gaps longer than " + str(max_short_gap_days) + " days "
+    msg += "in variable " + solo_label
+    logger.info(msg)
+    target_label = l5_info[called_by]["outputs"][solo_label]["target"]
+    target = pfp_utils.GetVariable(ds, target_label)
+    variable = pfp_utils.GetVariable(ds, solo_label)
+    mask = numpy.ma.getmaskarray(target["Data"])
+    # start and stop indices of contiguous blocks
+    max_short_gap_records = int(l5_info[called_by]["info"]["MaxShortGapRecords"])
+    gap_start_end = pfp_utils.contiguous_regions(mask)
+    for start, stop in gap_start_end:
+        gap_length = stop - start
+        if gap_length > max_short_gap_records:
+            variable["Data"][start: stop] = target["Data"][start: stop]
+            variable["Flag"][start: stop] = target["Flag"][start: stop]
+    # put data_int back into the data structure
+    pfp_utils.CreateVariable(ds, variable)
+    return
+
 def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     """ Plot the results of the SOLO run. """
     # get the time step
@@ -367,7 +403,8 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
-    mask = numpy.ma.mask_or(obs["Data"].mask, mod["Data"].mask)
+    mask = numpy.ma.mask_or(numpy.ma.getmaskarray(obs["Data"]),
+                            numpy.ma.getmaskarray(mod["Data"]))
     obs_mor = numpy.ma.array(obs["Data"], mask=mask, copy=True)
     _, Hr1, Av1, _, _, _ = gf_getdiurnalstats(Hdh, obs_mor, ts)
     ax1.plot(Hr1, Av1, 'b-', label="Obs")
@@ -483,9 +520,7 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     fig.savefig(figname, format="png")
     # draw the plot on the screen
     if l5s["gui"]["show_plots"]:
-        plt.draw()
-        pfp_utils.mypause(0.5)
-        plt.ioff()
+        fig.canvas.flush_events()
     else:
         plt.close()
         plt.switch_backend(current_backend)
@@ -553,9 +588,7 @@ def gfSOLO_plotcoveragelines(ds, l5_info, called_by):
     ax2.set_yticklabels(ylabel_right_list)
     fig.tight_layout()
     if l5s["gui"]["show_plots"]:
-        plt.draw()
-        pfp_utils.mypause(0.5)
-        plt.ioff()
+        fig.canvas.flush_events()
     else:
         plt.switch_backend(current_backend)
         plt.ion()
@@ -638,9 +671,7 @@ def gfSOLO_plotsummary(ds, solo):
     figname = figname + "_" + sdt + "_" + edt + ".png"
     fig.savefig(figname, format="png")
     if solo["gui"]["show_plots"]:
-        plt.draw()
-        pfp_utils.mypause(0.5)
-        plt.ioff()
+        fig.canvas.flush_events()
     else:
         plt.close()
         plt.switch_backend(current_backend)
@@ -834,9 +865,21 @@ def gfSOLO_run(ds, l5_info, called_by):
             if l5s["info"]["call_mode"] == "interactive":
                 # plot the summary statistics
                 gfSOLO_plotsummary(ds, l5s)
-        logger.info(" Finished auto (months) run ...")
+        msg = " Finished auto (months) run ..."
+        logger.info(msg)
     else:
-        logger.error("GapFillUsingSOLO: unrecognised period option")
+        msg = " " + called_by + ": unrecognised period option"
+        logger.error(msg)
+        return
+    # check to see if we should mask long gaps
+    # this is only done for GapFillUsingSOLO, not done for GapFillLongSOLO
+    if called_by in ["GapFillUsingSOLO"]:
+        # we are doing GapFillUsingSOLO, get a list of output labels
+        outputs = list(l5s["outputs"].keys())
+        # loop over the outputs ...
+        for output in outputs:
+            # ... and mask long gaps
+            gfSOLO_mask_long_gaps(ds, output, l5_info, called_by)
     return
 
 def gfSOLO_runseqsolo(dsb, drivers, targetlabel, outputlabel, nRecs,
