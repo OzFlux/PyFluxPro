@@ -184,7 +184,7 @@ def climatology_update_controlfile(cfg):
         logger.error(error_message)
     return ok
 
-def cpd_barr_update_controlfile(cfg):
+def cpd_barr_update_controlfile(cfg, call_mode="interactive"):
     """
     Purpose:
      Parse the CPD (Barr) control file to update the syntax from earlier OFQC/PFP
@@ -220,6 +220,7 @@ def cpd_barr_update_controlfile(cfg):
         msg = " An error occurred while updating the CPD (Barr) control file syntax"
     # clean up the variable names
     try:
+        cfg = update_cfg_options(cfg, std, call_mode=call_mode)
         cfg = update_cfg_variables_rename(cfg, std)
     except Exception:
         ok = False
@@ -237,7 +238,7 @@ def cpd_barr_update_controlfile(cfg):
         logger.error(error_message)
     return ok
 
-def cpd_mchugh_update_controlfile(cfg):
+def cpd_mchugh_update_controlfile(cfg, call_mode="interactive"):
     """
     Purpose:
      Parse the CPD (McHugh) control file to update the syntax from earlier OFQC/PFP
@@ -273,6 +274,7 @@ def cpd_mchugh_update_controlfile(cfg):
         msg = " An error occurred while updating the CPD (McHugh) control file syntax"
     # clean up the variable names
     try:
+        cfg = update_cfg_options(cfg, std, call_mode=call_mode)
         cfg = update_cfg_variables_rename(cfg, std)
     except Exception:
         ok = False
@@ -290,7 +292,7 @@ def cpd_mchugh_update_controlfile(cfg):
         logger.error(error_message)
     return ok
 
-def cpd_mcnew_update_controlfile(cfg):
+def cpd_mcnew_update_controlfile(cfg, call_mode="interactive"):
     """
     Purpose:
      Parse the CPD (McNew) control file to update the syntax from earlier OFQC/PFP
@@ -326,6 +328,7 @@ def cpd_mcnew_update_controlfile(cfg):
         msg = " An error occurred while updating the CPD (McNew) control file syntax"
     # clean up the variable names
     try:
+        cfg = update_cfg_options(cfg, std, call_mode=call_mode)
         cfg = update_cfg_variables_rename(cfg, std)
     except Exception:
         ok = False
@@ -343,7 +346,7 @@ def cpd_mcnew_update_controlfile(cfg):
         logger.error(error_message)
     return ok
 
-def mpt_update_controlfile(cfg):
+def mpt_update_controlfile(cfg, call_mode="interactive"):
     """
     Purpose:
      Parse the MPT control file to update the syntax from earlier OFQC/PFP
@@ -379,6 +382,7 @@ def mpt_update_controlfile(cfg):
         msg = " An error occurred while updating the MPT control file syntax"
     # clean up the variable names
     try:
+        cfg = update_cfg_options(cfg, std, call_mode=call_mode)
         cfg = update_cfg_variables_rename(cfg, std)
     except Exception:
         ok = False
@@ -801,8 +805,8 @@ def check_l2_controlfile(cfg):
     Date: October 2022
     """
     # quick and dirty use of try...except in a panic ahead to 2021 workshop
+    ok = True
     try:
-        ok = True
         # initialise the messages dictionary
         messages = {"ERROR":[], "WARNING": [], "INFO": [], "DEBUG": [], "RESULT": "ignore"}
         # check the files section
@@ -824,8 +828,8 @@ def check_l2_controlfile(cfg):
 def check_l2_options(cfg, ds):
     """
     Purpose:
-     Check the options specified in the L3 control file are consistent
-     with the contents of the L2 netCDF file.
+     Check the options specified in the L2 control file are consistent
+     with the contents of the L1 netCDF file.
     Usage:
     Side effects:
     Author: PRI
@@ -1899,7 +1903,7 @@ def l1_make_variables_attributes_consistent(cfg, std, cfg_label, std_label, mess
             if msg not in messages["ERROR"]:
                 messages["ERROR"].append(msg)
     return
-def l1_update_controlfile(cfg):
+def l1_update_controlfile(cfg, call_mode="interactive"):
     """
     Purpose:
      Parse the L1 control file to update the syntax from earlier OFQC/PFP versions
@@ -1945,7 +1949,8 @@ def l1_update_controlfile(cfg):
     except Exception:
         ok = False
         msg = " An error occurred updating the L1 control file syntax"
-    # clean up the variable names
+    # clean up the options section
+    cfg = update_cfg_options(cfg, std, call_mode=call_mode)
     cfg = update_cfg_global_attributes(cfg, std)
     cfg = update_cfg_variables_deprecated(cfg, std)
     cfg = update_cfg_variables_rename(cfg, std)
@@ -2348,7 +2353,7 @@ def l2_check_options(cfg, messages):
         msg = "No Options section in control file, using defaults for all options"
         messages["WARNING"].append(msg)
     return
-def l2_update_controlfile(cfg):
+def l2_update_controlfile(cfg, call_mode="interactive"):
     """
     Purpose:
      Parse the L2 control file to update the syntax from earlier OFQC/PFP versions
@@ -2382,7 +2387,7 @@ def l2_update_controlfile(cfg):
         msg = " An error occurred while updating the L2 control file syntax"
     # clean up the Options section
     try:
-        cfg = update_cfg_options(cfg, std)
+        cfg = update_cfg_options(cfg, std, call_mode=call_mode)
     except Exception:
         ok = False
         msg = " An error occurred while updating the L2 control file Options section"
@@ -2588,7 +2593,7 @@ def update_cfg_variables_rename(cfg, std):
                         cfg["Plots"][plot][axis] = ",".join(vs)
     return cfg
 
-def l3_update_controlfile(cfg):
+def l3_update_controlfile(cfg, call_mode="interactive"):
     """
     Purpose:
      Parse the L3 control file to update the syntax from earlier OFQC/PFP versions
@@ -2622,7 +2627,7 @@ def l3_update_controlfile(cfg):
         msg = " An error occurred while updating the L3 control file syntax"
     # clean up the variable names
     try:
-        cfg = update_cfg_options(cfg, std)
+        cfg = update_cfg_options(cfg, std, call_mode=call_mode)
         cfg = update_cfg_variables_deprecated(cfg, std)
         cfg = update_cfg_variables_rename(cfg, std)
         cfg = update_cfg_variable_attributes(cfg, std)
@@ -2642,7 +2647,7 @@ def l3_update_controlfile(cfg):
         logger.error(error_message)
     return ok
 
-def update_cfg_options(cfg, std):
+def update_cfg_options(cfg, std, call_mode="interactive"):
     """
     Purpose:
      Update an L3 control file Options section.
@@ -2655,13 +2660,20 @@ def update_cfg_options(cfg, std):
     # make sure there is an Options section
     if "Options" not in cfg:
         cfg["Options"] = {}
+    # add the call mode and show plots options
+    cfg["Options"]["call_mode"] = call_mode
+    cfg["Options"]["show_plots"] = "Yes"
+    if call_mode == "batch":
+        cfg["Options"]["show_plots"] = "No"
     # move items from the General section (if it exists) to the Options section.
     if "General" in cfg:
         for item in cfg["General"]:
             cfg["Options"][item] = cfg["General"][item]
         del cfg["General"]
     # update the units in the Options section
-    if cfg["level"] == "L2":
+    if cfg["level"] == "L1":
+        pass
+    elif cfg["level"] == "L2":
         if "irga_type" in cfg["Options"]:
             irga_type = cfg["Options"]["irga_type"]
             if irga_type in ["Li-7500A (<V6.5)", "Li-7500A (>=V6.5)"]:
@@ -2725,7 +2737,7 @@ def update_cfg_options(cfg, std):
                     cfg["Options"][option] = new_opt
     return cfg
 
-def l4_update_controlfile(cfg):
+def l4_update_controlfile(cfg, call_mode="interactive"):
     """
     Purpose:
      Parse the L4 control file to make sure the syntax is correct and that the
@@ -2759,6 +2771,7 @@ def l4_update_controlfile(cfg):
         msg = " An error occurred while updating the L4 control file syntax"
     # clean up the variable names
     try:
+        cfg = update_cfg_options(cfg, std, call_mode=call_mode)
         cfg = update_cfg_variables_deprecated(cfg, std)
         cfg = update_cfg_variables_rename(cfg, std)
         cfg = update_cfg_variable_attributes(cfg, std)
@@ -2778,7 +2791,7 @@ def l4_update_controlfile(cfg):
         logger.error(error_message)
     return ok
 
-def l5_update_controlfile(cfg):
+def l5_update_controlfile(cfg, call_mode="interactive"):
     """
     Purpose:
      Parse the L5 control file to make sure the syntax is correct and that the
@@ -2812,7 +2825,7 @@ def l5_update_controlfile(cfg):
         msg = " An error occurred while updating the L5 control file syntax"
     # clean up the variable names
     try:
-        cfg = update_cfg_options(cfg, std)
+        cfg = update_cfg_options(cfg, std, call_mode=call_mode)
         cfg = update_cfg_variables_deprecated(cfg, std)
         cfg = update_cfg_variables_rename(cfg, std)
         cfg = update_cfg_variable_attributes(cfg, std)
@@ -2832,7 +2845,7 @@ def l5_update_controlfile(cfg):
         logger.error(error_message)
     return ok
 
-def l6_update_controlfile(cfg):
+def l6_update_controlfile(cfg, call_mode="interactive"):
     """
     Purpose:
      Parse the L6 control file to make sure the syntax is correct and that the
@@ -2875,6 +2888,7 @@ def l6_update_controlfile(cfg):
         msg = " An error occurred while updating the L6 control file syntax"
     # clean up the variable names
     try:
+        cfg = update_cfg_options(cfg, std, call_mode=call_mode)
         cfg = l6_update_cfg_variable_names(cfg, std)
         cfg = l6_update_cfg_variable_attributes(cfg, std)
     except Exception:
