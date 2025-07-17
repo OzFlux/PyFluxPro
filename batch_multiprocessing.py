@@ -16,14 +16,6 @@ warnings.filterwarnings("ignore", category=Warning)
 
 logger = logging.getLogger("pfp_log")
 
-class Bunch:
-    """
-    Constructor class for dummy object with attributes defined by keywords
-    when instantiated.
-    """
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
 def do_sites_batch(main_ui):
     """
     Purpose:
@@ -46,7 +38,7 @@ def do_sites_batch(main_ui):
     # loop over the sites
     for site in list(main_ui.cfg["Sites"].keys()):
         # construct the argument for do_sites_batch_dispatcher for this site
-        obj = Bunch(stop_flag=False, cfg=main_ui.cfg, mode="batch", site=site)
+        obj = pfp_batch.Bunch(stop_flag=False, cfg=main_ui.cfg, mode="batch", site=site)
         # add it to the list
         cfs.append(obj)
     #for item in cfs:
@@ -143,7 +135,7 @@ if (__name__ == '__main__'):
     cfg_batch = ConfigObj(cfg_file_name, indent_type="    ", list_values=False,
                           write_empty_values=True)
 
-    main_ui = Bunch(stop_flag=False, cfg=cfg_batch, mode="batch")
+    main_ui = pfp_batch.Bunch(stop_flag=False, cfg=cfg_batch, mode="batch")
 
     if cfg_batch["level"] in ["batch_sites"]:
         do_sites_batch(main_ui)
