@@ -704,7 +704,7 @@ def do_sites_batch(item):
             level = str(cfg["level"])
             # get the batch routine argument, this is a dictionary with a single
             # entry containing the name of the control file to process
-            cf_level = {n: item.cfg["Sites"][item.site][n]}
+            cf_level = {n: item.cfg["Sites"][site][n]}
             # call the batch routine based on the processing level
             if level.lower() == "l1":
                 # L1 processing
