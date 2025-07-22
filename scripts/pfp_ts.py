@@ -2003,6 +2003,7 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
 
         Accepts meteorological constants or variables
         """
+    ok = True
     # check the ApplyWPL option is consistent with the IRGA type
     apply_wpl = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
     irga_type = str(ds.root["Attributes"]["irga_type"])
@@ -2010,14 +2011,26 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
     # check to see if the IRGA type and ApplyWPL option are consistent
-    if ((apply_wpl.lower() == "yes" and irga_type in open_path_irgas) or
-        (apply_wpl.lower() == "no" and irga_type in closed_path_irgas)):
-        # all good
+    #if ((apply_wpl.lower() == "yes" and irga_type in open_path_irgas) or
+        #(apply_wpl.lower() == "no" and irga_type in closed_path_irgas)):
+        ## all good
+        #pass
+    #else:
+        ## not all good
+        #msg = "Wrong ApplyWPL option ("+apply_wpl+") for IRGA type ("+irga_type+")"
+        #raise RuntimeError(msg)
+    if (apply_wpl.lower() == "yes" and irga_type in open_path_irgas):
         pass
-    else:
-        # not all good
+    elif (apply_wpl.lower() == "no" and irga_type in closed_path_irgas):
+        return ok
+    elif ((apply_wpl.lower() == "no" and irga_type in open_path_irgas) or
+          (apply_wpl.lower() == "yes" and irga_type in closed_path_irgas)):
         msg = "Wrong ApplyWPL option ("+apply_wpl+") for IRGA type ("+irga_type+")"
-        raise RuntimeError(msg)
+        logger.error(msg)
+        ds.info["returncodes"]["value"] = 1
+        ds.info["returncodes"]["message"] = msg
+        ok = False
+        return ok
     msg = " Applying WPL correction to Fco2 (IRGA type is " + irga_type + ")"
     logger.info(msg)
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -2044,7 +2057,8 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
             logger.error(msg)
             ds.info["returncodes"]["message"] = msg
             ds.info["returncodes"]["value"] = 1
-            return 1
+            ok = False
+            return ok
     sigma = AH["Data"] / rhod["Data"]
     co2_wpl_Fe = (c.mu/(1+c.mu*sigma))*(CO2["Data"]/rhod["Data"])*(Fe["Data"]/Lv["Data"])
     co2_wpl_Fh = (CO2["Data"]/Ta["Data"])*(Fh["Data"]/RhoCp["Data"])
@@ -2061,7 +2075,7 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
     pfp_utils.CreateVariable(ds, variable)
     variable = {"Label": "Fco2_PFP", "Data": Fco2_wpl_data, "Flag": Fco2_wpl_flag, "Attr": attr}
     pfp_utils.CreateVariable(ds, variable)
-    return 0
+    return ok
 
 def Fe_WPL(cf, ds):
     """

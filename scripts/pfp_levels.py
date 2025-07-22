@@ -145,7 +145,9 @@ def l3qc(cf, ds2):
         # correct the H2O & CO2 flux due to effects of flux on density measurements
         if pfp_ts.Fe_WPL(cf, ds3):
             return ds3
-        if pfp_ts.Fco2_WPL(cf, ds3):
+        #if pfp_ts.Fco2_WPL(cf, ds3):
+            #return ds3
+        if not pfp_ts.Fco2_WPL(cf, ds3):
             return ds3
     # **************************
     # *** CO2 and Fc section ***
