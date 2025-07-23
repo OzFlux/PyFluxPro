@@ -2003,41 +2003,32 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
 
         Accepts meteorological constants or variables
         """
-    ok = True
-    # check the ApplyWPL option is consistent with the IRGA type
-    apply_wpl = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
+    ds.info["returncodes"]["message"] = ""
+    ds.info["returncodes"]["value"] = 0
+    # get the IRGA type
     irga_type = str(ds.root["Attributes"]["irga_type"])
     # define the known IRGAs, this should be an external settings option
     closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
     open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
-    # check to see if the IRGA type and ApplyWPL option are consistent
-    #if ((apply_wpl.lower() == "yes" and irga_type in open_path_irgas) or
-        #(apply_wpl.lower() == "no" and irga_type in closed_path_irgas)):
-        ## all good
-        #pass
-    #else:
-        ## not all good
-        #msg = "Wrong ApplyWPL option ("+apply_wpl+") for IRGA type ("+irga_type+")"
-        #raise RuntimeError(msg)
-    if (apply_wpl.lower() == "yes" and irga_type in open_path_irgas):
+    # WPL correction only applied to open-path IRGAs
+    if (irga_type in closed_path_irgas):
+        msg = " WPL (Fco2): closed-path IRGA type (" + irga_type + "), WPL not applied"
+        logger.info(msg)
+        return
+    elif (irga_type in open_path_irgas):
         pass
-    elif (apply_wpl.lower() == "no" and irga_type in closed_path_irgas):
-        return ok
-    elif ((apply_wpl.lower() == "no" and irga_type in open_path_irgas) or
-          (apply_wpl.lower() == "yes" and irga_type in closed_path_irgas)):
-        msg = "Wrong ApplyWPL option ("+apply_wpl+") for IRGA type ("+irga_type+")"
+    else:
+        msg = " WPL (Fco2): unrecognised IRGA type (" + irga_type + "), WPL not applied"
         logger.error(msg)
         ds.info["returncodes"]["value"] = 1
         ds.info["returncodes"]["message"] = msg
-        ok = False
-        return ok
+        return
     msg = " Applying WPL correction to Fco2 (IRGA type is " + irga_type + ")"
     logger.info(msg)
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
     Fco2 = pfp_utils.GetVariable(ds, Fco2_in)
     Fh = pfp_utils.GetVariable(ds, "Fh")
     Fe = pfp_utils.GetVariable(ds, "Fe")
-    ps = pfp_utils.GetVariable(ds, "ps")
     Ta = pfp_utils.GetVariable(ds, "Ta")
     Ta["Data"] = Ta["Data"] + c.C2K
     AH = pfp_utils.GetVariable(ds, "AH")
@@ -2046,19 +2037,7 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
     RhoCp = pfp_utils.GetVariable(ds, "RhoCp")
     Lv = pfp_utils.GetVariable(ds, "Lv")
     CO2 = pfp_utils.GetVariable(ds, CO2_in)
-    if CO2["Attr"]["units"] != "mg/m^3":
-        if CO2["Attr"]["units"] == "umol/mol":
-            msg = " Fco2_WPL: CO2 units (" + CO2["Attr"]["units"] + ") converted to mg/m^3"
-            logger.warning(msg)
-            CO2["Data"] = pfp_mf.co2_mgCO2pm3fromppm(CO2["Data"], Ta["Data"], ps["Data"])
-            CO2["Attr"]["units"] == "mg/m^3"
-        else:
-            msg = " Fco2_WPL: unrecognised units (" + CO2["Attr"]["units"] + ") for CO2"
-            logger.error(msg)
-            ds.info["returncodes"]["message"] = msg
-            ds.info["returncodes"]["value"] = 1
-            ok = False
-            return ok
+    CO2 = pfp_utils.convert_units_func(ds, CO2, "mg/m^3")
     sigma = AH["Data"] / rhod["Data"]
     co2_wpl_Fe = (c.mu/(1+c.mu*sigma))*(CO2["Data"]/rhod["Data"])*(Fe["Data"]/Lv["Data"])
     co2_wpl_Fh = (CO2["Data"]/Ta["Data"])*(Fh["Data"]/RhoCp["Data"])
@@ -2075,7 +2054,7 @@ def Fco2_WPL(cf, ds, CO2_in="CO2", Fco2_in="Fco2"):
     pfp_utils.CreateVariable(ds, variable)
     variable = {"Label": "Fco2_PFP", "Data": Fco2_wpl_data, "Flag": Fco2_wpl_flag, "Attr": attr}
     pfp_utils.CreateVariable(ds, variable)
-    return ok
+    return
 
 def Fe_WPL(cf, ds):
     """
@@ -2094,13 +2073,25 @@ def Fe_WPL(cf, ds):
 
         Accepts meteorological constants or variables
         """
+    ds.info["returncodes"]["message"] = ""
+    ds.info["returncodes"]["value"] = 0
+    # get the IRGA type
     irga_type = str(ds.root["Attributes"]["irga_type"])
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyWPL", default="Yes")
-    if (opt.lower() == "no"):
-        msg = " WPL correction for Fe disabled in control file (" + irga_type + ")"
-        logger.warning(msg)
-        return 0
-    irga_type = str(ds.root["Attributes"]["irga_type"])
+    # define the known IRGAs, this should be an external settings option
+    closed_path_irgas = list(c.instruments["irgas"]["closed_path"].keys())
+    open_path_irgas = list(c.instruments["irgas"]["open_path"].keys())
+    if (irga_type in closed_path_irgas):
+        msg = " WPL (Fe): closed-path IRGA type (" + irga_type + "), WPL not applied"
+        logger.info(msg)
+        return
+    elif (irga_type in open_path_irgas):
+        pass
+    else:
+        msg = " WPL (Fe): unrecognised IRGA type (" + irga_type + "), WPL not applied"
+        logger.error(msg)
+        ds.info["returncodes"]["value"] = 1
+        ds.info["returncodes"]["message"] = msg
+        return
     msg = " Applying WPL correction to Fe (IRGA type is " + irga_type + ")"
     logger.info(msg)
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -2131,9 +2122,7 @@ def Fe_WPL(cf, ds):
     pfp_utils.CreateVariable(ds, variable)
     variable = {"Label": "Fe_PFP", "Data": Fe_wpl_data, "Flag": Fe_wpl_flag, "Attr": attr}
     pfp_utils.CreateVariable(ds, variable)
-    if pfp_utils.get_optionskeyaslogical(cf, "RelaxFeWPL"):
-        ReplaceWhereMissing(ds.root["Variables"]['Fe'], ds.root["Variables"]['Fe'], ds.root["Variables"]['Fe_raw'], FlagValue=20)
-    return 0
+    return
 
 def FhvtoFh(cf, ds, Tv_in = "Tv_SONIC_Av"):
     '''
