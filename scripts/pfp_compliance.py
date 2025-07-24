@@ -1052,7 +1052,7 @@ def check_l3_options_generic(cfg, messages):
         if Fco2_units not in ["umol/m^2/s", "mg/m^2/s"]:
             msg = "Unrecognised Fco2 units (" + Fco2_units + "), must be umol/m^2/s or mg/m^2/s"
             messages["ERROR"].append(msg)
-    for item in ["2DCoordRotation", "ApplyFco2Storage", "ApplyWPL", "CalculateFluxes",
+    for item in ["2DCoordRotation", "ApplyFco2Storage", "CalculateFluxes",
                  "CorrectFgForStorage", "CorrectIndividualFg", "KeepIntermediateSeries",
                  "MassmanCorrection", ]:
         if item in cfg["Options"]:
@@ -2672,22 +2672,6 @@ def update_cfg_options(cfg, std):
                 cfg["Options"].rename(item, item.replace("Fc", "Fco2"))
             if item in ["CcUnits"]:
                 cfg["Options"].rename(item, item.replace("Cc", "CO2"))
-        if "DisableFco2WPL" in list(cfg["Options"].keys()):
-            opt = cfg["Options"]["DisableFco2WPL"]
-            if opt.lower() == "no":
-                apply_wpl = "Yes"
-            else:
-                apply_wpl = "No"
-            cfg["Options"].pop("DisableFco2WPL")
-            cfg["Options"]["ApplyWPL"] = apply_wpl
-        if "DisableFeWPL" in list(cfg["Options"].keys()):
-            opt = cfg["Options"]["DisableFeWPL"]
-            if opt.lower() == "no":
-                apply_wpl = "Yes"
-            else:
-                apply_wpl = "No"
-            cfg["Options"].pop("DisableFeWPL")
-            cfg["Options"]["ApplyWPL"] = apply_wpl
         if "UseL2Fluxes" in list(cfg["Options"].keys()):
             opt = cfg["Options"]["UseL2Fluxes"]
             if opt.lower() == "no":
@@ -2696,6 +2680,11 @@ def update_cfg_options(cfg, std):
                 calculate_fluxes = "No"
             cfg["Options"].pop("UseL2Fluxes")
             cfg["Options"]["CalculateFluxes"] = calculate_fluxes
+        # remove deprecated L3 options
+        for item in ["DisableFco2WPL", "DisableFcWPL", "DisableFeWPL",
+                     "DisableWPL", "ApplyWPL"]:
+            if item in cfg["Options"]:
+                cfg["Options"].pop(item)
         old_units = list(std["Variables"]["units_map"].keys())
         for item in list(cfg["Options"].keys()):
             if cfg["Options"][item] in old_units:
