@@ -249,7 +249,7 @@ class pfp_main_ui(QWidget):
         self.actionFileSave.triggered.connect(self.file_save)
         self.actionFileSaveAs.triggered.connect(self.file_save_as)
         self.actionFileSplit.triggered.connect(pfp_top_level.do_file_split)
-        self.actionFileQuit.triggered.connect(QApplication.quit)
+        self.actionFileQuit.triggered.connect(self.application_quit)
         # Edit menu actions
         self.actionEditPreferences.triggered.connect(self.edit_preferences)
         # Run menu actions
@@ -278,6 +278,12 @@ class pfp_main_ui(QWidget):
         self.l4_ui = pfp_gui.pfp_l4_ui(self)
         # add the L5 GUI
         self.solo_gui = pfp_gui.solo_gui(self)
+
+    def application_quit(self):
+        # 20250629 PRI
+        # added to avoid "RuntimeError: wrapped C/C++ object of type ConsoleWindowLogHandler has been deleted"
+        # messages when File/Quit menu event occurs.
+        sys.exit()
 
     def file_open(self, file_uri=None):
         """
@@ -859,6 +865,11 @@ class pfp_main_ui(QWidget):
             msg = "Processing will stop when this level is finished"
             result = pfp_gui.myMessageBox(msg)
         return
+    def closeEvent(self, event):
+        # 20250629 PRI
+        # added to avoid "RuntimeError: wrapped C/C++ object of type ConsoleWindowLogHandler has been deleted"
+        # messages when close window event occurs.
+        sys.exit()
     def closeTab (self, currentIndex):
         """ Close the selected tab."""
         # the tab close button ("x") shows on MacOS even though it is disabled
@@ -999,4 +1010,4 @@ if (__name__ == '__main__'):
     ui.show()
     #pfp_compliance.check_executables()
     app.exec_()
-    del ui
+    #del ui

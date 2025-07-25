@@ -3123,14 +3123,6 @@ class edit_cfg_L3(QtWidgets.QWidget):
         self.add_qc_check(selected_item, new_qc)
         self.update_tab_text()
 
-    def add_ApplyWPL_to_options(self):
-        """ Add ApplyWPL to the [Options] section."""
-        child0 = QtGui.QStandardItem("ApplyWPL")
-        child0.setEditable(False)
-        child1 = QtGui.QStandardItem("Yes")
-        self.sections["Options"].appendRow([child0, child1])
-        self.update_tab_text()
-
     def add_diurnalcheck(self):
         """ Add a diurnal check to a variable."""
         new_qc = {"DiurnalCheck":{"numsd":"5"}}
@@ -3721,11 +3713,6 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.actionAddApplyFco2Storage.setText("ApplyFco2Storage")
                     self.context_menu.addAction(self.context_menu.actionAddApplyFco2Storage)
                     self.context_menu.actionAddApplyFco2Storage.triggered.connect(self.add_applyfco2storage_to_options)
-                if "ApplyWPL" not in existing_entries:
-                    self.context_menu.actionAddApplyWPL = QtWidgets.QAction(self)
-                    self.context_menu.actionAddApplyWPL.setText("ApplyWPL")
-                    self.context_menu.addAction(self.context_menu.actionAddApplyWPL)
-                    self.context_menu.actionAddApplyWPL.triggered.connect(self.add_ApplyWPL_to_options)
                 if "CalculateFluxes" not in existing_entries:
                     self.context_menu.actionAddCalculateFluxes = QtWidgets.QAction(self)
                     self.context_menu.actionAddCalculateFluxes.setText("CalculateFluxes")
@@ -3838,10 +3825,9 @@ class edit_cfg_L3(QtWidgets.QWidget):
                     self.context_menu.addAction(self.context_menu.actionRemoveOption)
                     self.context_menu.actionRemoveOption.triggered.connect(self.remove_item)
                 elif (selected_item.column() == 1) and (key in ["2DCoordRotation", "ApplyFco2Storage",
-                                                                "ApplyWPL", "CalculateFluxes",
-                                                                "CorrectIndividualFg", "CorrectFgForStorage",
-                                                                "KeepIntermediateSeries", "MassmanCorrection",
-                                                                "UseFhvforFh"]):
+                                                                "CalculateFluxes", "CorrectIndividualFg",
+                                                                "CorrectFgForStorage", "KeepIntermediateSeries",
+                                                                "MassmanCorrection", "UseFhvforFh"]):
                     if selected_text != "Yes":
                         self.context_menu.actionChangeOption = QtWidgets.QAction(self)
                         self.context_menu.actionChangeOption.setText("Yes")

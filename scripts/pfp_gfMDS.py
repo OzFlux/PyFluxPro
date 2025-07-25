@@ -347,7 +347,8 @@ def gfMDS_plot(pd, ds, mds_label, l5_info, called_by):
     rect1 = [0.10, pd["margin_bottom"], pd["xy_width"], pd["xy_height"]]
     ax1 = plt.axes(rect1)
     # get the diurnal stats of the observations
-    mask = numpy.ma.mask_or(obs["Data"].mask, mds["Data"].mask)
+    mask = numpy.ma.mask_or(numpy.ma.getmaskarray(obs["Data"]),
+                            numpy.ma.getmaskarray(mds["Data"]))
     obs_mor = numpy.ma.array(obs["Data"], mask=mask, copy=True)
     _, Hr1, Av1, _, _, _ = gf_getdiurnalstats(Hdh, obs_mor, ts)
     ax1.plot(Hr1, Av1, 'b-', label="Obs")

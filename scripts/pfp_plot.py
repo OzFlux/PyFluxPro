@@ -1232,8 +1232,9 @@ def plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily):
     plt.figtext(0.5, 0.95, plot_title, horizontalalignment='center', size=16)
     xyplot(Fa_SEB, FhpFe_SEB, sub=[2,2,1], regr=1, title="All hours", xlabel='Fa (W/m^2)', ylabel='Fh+Fe (W/m^2)')
     # scatter plot of (Fh+Fe) versus Fa, 24 hour averages
-    mask = numpy.ma.mask_or(daily["Fa"]["Data"].mask, daily["Fe"]["Data"].mask)
-    mask = numpy.ma.mask_or(mask, daily["Fh"]["Data"].mask)
+    mask = numpy.ma.mask_or(numpy.ma.getmaskarray(daily["Fa"]["Data"]),
+                            numpy.ma.getmaskarray(daily["Fe"]["Data"]))
+    mask = numpy.ma.mask_or(mask, numpy.ma.getmaskarray(daily["Fh"]["Data"]))
     Fa_daily = numpy.ma.array(daily["Fa"]["Data"], mask=mask, copy=True)
     Fe_daily = numpy.ma.array(daily["Fe"]["Data"], mask=mask, copy=True)
     Fh_daily = numpy.ma.array(daily["Fh"]["Data"], mask=mask, copy=True)
