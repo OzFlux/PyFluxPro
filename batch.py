@@ -17,10 +17,6 @@ warnings.filterwarnings("ignore", category=Warning)
 
 logger = logging.getLogger("pfp_log")
 
-class Bunch:
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
 if (__name__ == '__main__'):
 
     # get the logger
@@ -39,10 +35,12 @@ if (__name__ == '__main__'):
     cfg_batch = ConfigObj(cfg_file_name, indent_type="    ", list_values=False,
                           write_empty_values=True)
 
-    main_ui = Bunch(stop_flag=False, cfg=cfg_batch, mode="batch")
+    item = pfp_batch.Bunch(stop_flag=False, cfg=cfg_batch, mode="batch")
 
     if cfg_batch["level"] in ["batch", "batch_levels"]:
-        pfp_batch.do_levels_batch(main_ui)
+        pfp_batch.do_levels_batch(item)
+    elif cfg_batch["level"] in ["batch_sites"]:
+        pfp_batch.do_sites_batch(item)
     else:
         msg = " Unrecognised batch type: " + str(cfg_batch["level"])
         logger.error(msg)

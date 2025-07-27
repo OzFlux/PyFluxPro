@@ -1,0 +1,12 @@
+level = batch_sites
+[Sites]
+    [[<site>]]
+        0 = Right click to browse
+        1 = Right click to browse
+        2 = Right click to browse
+        3 = Right click to browse
+        4 = Right click to browse
+        5 = Right click to browse
+        6 = Right click to browse
+        7 = Right click to browse
+        8 = Right click to browse
