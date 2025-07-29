@@ -1,11 +1,13 @@
 # standard modules
 import logging
+import os
 # 3rd party
 import numpy
 # PFP modules
 from scripts import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 def Ws_from_Ux_Uy(ds, Ws_out, Ux_in, Uy_in):
     """

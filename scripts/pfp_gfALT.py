@@ -17,7 +17,8 @@ from scripts import pfp_io
 from scripts import pfp_ts
 from scripts import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 # functions for GapFillFromAlternate
 def GapFillFromAlternate(main_gui, ds4, ds_alt, l4_info, called_by):

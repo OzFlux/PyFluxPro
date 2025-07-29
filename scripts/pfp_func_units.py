@@ -1,12 +1,14 @@
 # standard modules
 import logging
+import os
 # 3rd party
 import numpy
 # PFP modules
 from scripts import meteorologicalfunctions as pfp_mf
 from scripts import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 def fraction_to_percent(ds, RH_out, RH_in):
     """

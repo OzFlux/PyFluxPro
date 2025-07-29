@@ -17,7 +17,8 @@ from scripts import pfp_gfSOLO
 from scripts import pfp_plot
 from scripts import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 class myMessageBox(QtWidgets.QMessageBox):
     def __init__(self, msg, title="Information", parent=None):

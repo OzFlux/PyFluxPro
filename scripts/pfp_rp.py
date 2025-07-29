@@ -20,7 +20,8 @@ from scripts import pfp_part
 from scripts import pfp_ts
 from scripts import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 def CalculateNEE(ds, l6_info):
     """

@@ -12,8 +12,8 @@ import xarray as xr
 # PFP modules
 from scripts import pfp_utils
 
-# get the logger
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 #------------------------------------------------------------------------------
 ### CLASSES ###

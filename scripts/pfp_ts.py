@@ -3,6 +3,7 @@ import copy
 import datetime
 import inspect
 import logging
+import os
 # 3d party
 import numpy
 from matplotlib.dates import date2num
@@ -17,7 +18,8 @@ from scripts import pfp_io
 from scripts import pfp_utils
 from scripts import pysolar
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 def ApplyLinear(cf,ds,ThisOne):
     """

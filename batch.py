@@ -1,39 +1,39 @@
 # standard modules
 import datetime
-import logging
-import datetime
-import logging
 import os
 import sys
 import warnings
 # 3rd party modules
 from configobj import ConfigObj
 # PFP modules
-sys.path.append('scripts')
-from scripts import pfp_batch
-from scripts import pfp_log
+#sys.path.append('scripts')
+#from scripts import pfp_batch
+#from scripts import pfp_log
 
 warnings.filterwarnings("ignore", category=Warning)
 
-logger = logging.getLogger("pfp_log")
-
 if (__name__ == '__main__'):
+
+    cfg_file_url = sys.argv[1]
+    if not os.path.isfile(cfg_file_url):
+        msg = "Batch control file " + cfg_file_url + " not found"
+        print(msg)
+        sys.exit()
 
     # get the logger
     now = datetime.datetime.now()
-    log_file_name = "batch_" + now.strftime("%Y%m%d%H%M") + ".log"
-    log_file_name = os.path.join("logfiles", log_file_name)
-    logger = pfp_log.CreateLogger("pfp_log", log_file_name=log_file_name,
-                                  to_screen=True)
+    cfg_base_name, _= os.path.splitext(os.path.basename(cfg_file_url))
+    log_file_base = cfg_base_name + "_" + now.strftime("%Y%m%dT%H%M%S%f")
+    os.environ["pfp_log"] = log_file_base
+    log_file_name = log_file_base + ".log"
+    log_file_url = os.path.join("logfiles", log_file_name)
 
-    cfg_file_name = sys.argv[1]
-    if not os.path.isfile(cfg_file_name):
-        msg = "Batch control file " + cfg_file_name + " not found"
-        logger.error(msg)
-        sys.exit()
+    from scripts import pfp_batch
+    from scripts import pfp_log
 
-    cfg_batch = ConfigObj(cfg_file_name, indent_type="    ", list_values=False,
-                          write_empty_values=True)
+    logger = pfp_log.CreateLogger(log_file_base, log_file_name=log_file_url, to_screen=True)
+
+    cfg_batch = ConfigObj(cfg_file_url, indent_type="    ", list_values=False, write_empty_values=True)
 
     item = pfp_batch.Bunch(stop_flag=False, cfg=cfg_batch, mode="batch")
 
