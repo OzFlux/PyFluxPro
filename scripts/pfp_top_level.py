@@ -474,6 +474,30 @@ def do_run_batch(self):
     self.menuRun.removeAction(self.actionStopCurrent)
     self.actionRunCurrent.setDisabled(False)
     return
+def do_run_batch_sites(self):
+    """
+    Purpose:
+     Top level routine for running the batch processing.
+      - batch by sites mode
+    Usage:
+     pfp_top_level.do_run_batch_sites(cfg)
+     where cfg is a batch control exist
+    Side effects:
+     Creates netCDF files and plots as required.
+    Author: PRI
+    Date: July 2025
+    """
+    try:
+        pfp_batch.do_sites_batch(self)
+    except Exception:
+        msg = " Error running batch processing, see below for details ..."
+        logger.error(msg)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    self.actionStopCurrent.disconnect()
+    self.menuRun.removeAction(self.actionStopCurrent)
+    self.actionRunCurrent.setDisabled(False)
+    return
 def do_run_l1(cfg):
     """
     Purpose:
