@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 from scripts import constants as c
 from scripts import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 def GapFillUsingMDS(ds, l5_info, called_by):
     """

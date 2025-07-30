@@ -19,7 +19,8 @@ import xlrd
 from scripts import constants as c
 from scripts import meteorologicalfunctions as pfp_mf
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 def append_to_attribute(attr, to_add):
     """

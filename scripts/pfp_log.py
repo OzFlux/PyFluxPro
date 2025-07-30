@@ -7,7 +7,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 class ConsoleWindowLogHandler(logging.Handler, QObject):
     sigLog = pyqtSignal(str)

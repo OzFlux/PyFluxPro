@@ -13,8 +13,8 @@ from scripts import pfp_io
 from scripts import pfp_log
 
 warnings.filterwarnings("ignore", category=Warning)
-
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 def do_sites_batch(main_ui):
     """

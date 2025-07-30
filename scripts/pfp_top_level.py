@@ -20,7 +20,9 @@ from scripts import pfp_plot
 from scripts import pfp_utils
 from scripts import split_dialog
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
+
 # top level routines for the File menu
 def do_file_concatenate(cfg):
     """

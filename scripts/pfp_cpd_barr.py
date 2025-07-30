@@ -14,8 +14,8 @@ from scripts import pfp_io
 from scripts import pfp_ts
 from scripts import pfp_utils
 
-# get the logger
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 def cpd_barr_main(cf):
     """

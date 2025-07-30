@@ -1,12 +1,14 @@
 # standard modules
 import copy
 import logging
+import os
 # 3rd party
 import numpy
 # PFP modules
 from scripts import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 def Standard_deviation_from_variance(ds, Sd_out, Vr_in):
     """

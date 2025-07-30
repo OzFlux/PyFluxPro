@@ -2,6 +2,7 @@
 import copy
 import datetime
 import logging
+import os
 # 3rd party
 import numpy
 import dateutil.parser
@@ -11,7 +12,8 @@ from scripts import pfp_rp
 from scripts import pfp_ts
 from scripts import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 def ApplyQCChecks(variable):
     """

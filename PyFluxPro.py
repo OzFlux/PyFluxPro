@@ -7,6 +7,9 @@ import sys
 import traceback
 import warnings
 import webbrowser
+now = datetime.datetime.now()
+log_file_base = "pfp_" + now.strftime("%Y%m%dT%H%M%S%f")
+os.environ["pfp_log"] = log_file_base
 # 3rd party modules
 from configobj import ConfigObj
 import netCDF4
@@ -38,11 +41,9 @@ for item in dir_list:
     if not os.path.exists(item):
         os.makedirs(item)
 
-now = datetime.datetime.now()
-logger_name = "pfp_log"
-log_file_name = "pfp_" + now.strftime("%Y%m%d%H%M") + ".log"
+log_file_name = log_file_base + ".log"
 log_file_name = os.path.join(logfiles_path, log_file_name)
-logger = pfp_log.CreateLogger(logger_name, log_file_name=log_file_name)
+logger = pfp_log.CreateLogger(log_file_base, log_file_name=log_file_name)
 
 class pfp_main_ui(QWidget):
     def __init__(self, pfp_version, textBox):
@@ -426,7 +427,7 @@ class pfp_main_ui(QWidget):
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_oneflux(self)
         elif self.file["level"] in ["nc2csv_reddyproc"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_reddyproc(self)
-        elif self.file["level"] in ["batch"]:
+        elif self.file["level"] in ["batch", "batch_levels"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_batch(self)
         elif self.file["level"] in ["windrose"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_windrose(self)

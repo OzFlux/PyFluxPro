@@ -16,7 +16,8 @@ from scripts import pfp_ck
 from scripts import pfp_io
 from scripts import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 # functions for GapFillUsingSOLO
 def GapFillUsingSOLO(main_gui, ds, l5_info, called_by):

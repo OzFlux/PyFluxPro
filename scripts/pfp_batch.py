@@ -14,11 +14,13 @@ from scripts import pfp_cpd_mchugh
 from scripts import pfp_cpd_mcnew
 from scripts import pfp_io
 from scripts import pfp_levels
+from scripts import pfp_log
 from scripts import pfp_mpt
 from scripts import pfp_plot
 from scripts import pfp_utils
 
-logger = logging.getLogger("pfp_log")
+pfp_log = os.environ["pfp_log"]
+logger = logging.getLogger(pfp_log)
 
 class Bunch:
     """
@@ -575,7 +577,6 @@ def do_L6_batch(main_ui, cf_level):
             continue
     return ok
 def do_levels_batch(main_ui):
-    logger = logging.getLogger("pfp_log")
     if main_ui.mode == "interactive":
         tab_index_running = main_ui.tabs.tab_index_running
         cf_batch = main_ui.tabs.tab_dict[tab_index_running].get_data_from_model()
