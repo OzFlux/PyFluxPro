@@ -134,14 +134,6 @@ def change_logger_filename(logger_name, new_file_name):
             fh.setFormatter(old_log_formatter)
             logger.addHandler(fh)
     return logger
-def debug_function_enter(function_name):
-    msg = "   Entering " + function_name
-    logger.debug(msg)
-    return
-def debug_function_leave(function_name):
-    msg = "   Leaving " + function_name
-    logger.debug(msg)
-    return
 def disable_console_log(logger_name):
     console_handler = None
     logger = logging.getLogger(name=logger_name)
