@@ -778,7 +778,6 @@ def ReadExcelWorkbook(l1_info):
     Author: PRI
     Date: February 2021
     """
-    pfp_log.debug_function_enter(inspect.currentframe().f_code.co_name)
     l1ire = l1_info["read_excel"]
     # get the worksheets named in the control file
     labels = list(l1ire["Variables"].keys())
@@ -892,7 +891,6 @@ def ReadExcelWorkbook(l1_info):
             tmp[l] = dfs[df_name][l1ire["xl_sheets"][df_name]["nc_labels"][l]].copy()
         # copy the new dataframe to the old name
         dfs[df_name] = tmp.copy()
-    pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     # discard empty data frames
     for key in list(dfs.keys()):
         if len(dfs[key]) == 0:
@@ -992,7 +990,6 @@ def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
 def ReadInputFile(l1_info):
     """
     """
-    pfp_log.debug_function_enter(inspect.currentframe().f_code.co_name)
     l1ire = l1_info["read_excel"]
     # get the input file extension
     file_extension = os.path.splitext(l1ire["Files"]["in_filename"])
@@ -1013,7 +1010,6 @@ def ReadInputFile(l1_info):
         msg = "An error occurred reading the input file"
         logger.error(msg)
         raise RuntimeError(msg)
-    pfp_log.debug_function_leave(inspect.currentframe().f_code.co_name)
     return data
 
 def read_eddypro_full(csvname):
