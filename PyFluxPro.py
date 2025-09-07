@@ -429,6 +429,8 @@ class pfp_main_ui(QWidget):
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_nc2csv_reddyproc(self)
         elif self.file["level"] in ["batch", "batch_levels"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_batch(self)
+        elif self.file["level"] in ["batch_sites"]:
+            self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_batch_sites(self)
         elif self.file["level"] in ["windrose"]:
             self.tabs.tab_dict[self.tabs.tab_index_all] = pfp_gui.edit_cfg_windrose(self)
         else:
@@ -783,9 +785,9 @@ class pfp_main_ui(QWidget):
         self.tabs.setCurrentIndex(0)
         # call the appropriate processing routine depending on the level
         self.tabs.tab_index_running = tab_index_current
-        if cfg["level"] == "batch":
+        if cfg["level"] in ["batch", "batch_levels", "batch_sites"]:
             # check the L1 control file to see if it is OK to run
-            if not pfp_compliance.check_batch_controlfile(cfg): return
+            #if not pfp_compliance.check_batch_controlfile(cfg): return
             # add stop to run menu
             self.menuRun.addAction(self.actionStopCurrent)
             self.actionStopCurrent.triggered.connect(self.stop_current)

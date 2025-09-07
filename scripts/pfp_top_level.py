@@ -464,7 +464,14 @@ def do_run_batch(self):
     Date: September 2020
     """
     try:
-        pfp_batch.do_levels_batch(self)
+        if self.file["level"] in ["batch", "batch_levels"]:
+            pfp_batch.do_levels_batch(self)
+        elif self.file["level"] in ["batch_sites"]:
+            pfp_batch.do_sites_batch(self)
+        else:
+            msg = " Unrecognised batch type: " + str(self.file["level"])
+            logger.error(msg)
+        #pfp_batch.do_levels_batch(self)
     except Exception:
         msg = " Error running batch processing, see below for details ..."
         logger.error(msg)
