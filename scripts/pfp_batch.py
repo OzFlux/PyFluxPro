@@ -674,7 +674,7 @@ def do_levels_batch(main_ui):
     msg = " Finished batch processing at " + end.strftime("%Y%m%d%H%M")
     logger.info(msg)
     return
-def do_sites_batch(item):
+def do_sites_batch(main_ui):
     """
     Purpose:
      Function to farm out batch processing by site across multiple CPUs.
@@ -691,10 +691,22 @@ def do_sites_batch(item):
     Author: PRI
     Date: April 2022
     """
+    if main_ui.mode == "interactive":
+        tab_index_running = main_ui.tabs.tab_index_running
+        cf_batch = main_ui.tabs.tab_dict[tab_index_running].get_data_from_model()
+    elif main_ui.mode == "batch":
+        cf_batch = main_ui.cfg
+    else:
+        msg = "Unrecognised option for mode (" + main_ui.mode + ")"
+        logger.error(msg)
+        raise RuntimeError
+    start = datetime.datetime.now()
+    msg = "Started batch processing at " + start.strftime("%Y%m%d%H%M")
+    logger.info(msg)
     # loop over the sites
-    for site in list(item.cfg["Sites"].keys()):
+    for site in list(cf_batch["Sites"].keys()):
         # get the control files for this site
-        cfg_site = item.cfg["Sites"][site]
+        cfg_site = cf_batch["Sites"][site]
         # loop over the control files
         for n in sorted(list(cfg_site.keys()), key=int):
             # get the control file name
@@ -705,63 +717,63 @@ def do_sites_batch(item):
             level = str(cfg["level"])
             # get the batch routine argument, this is a dictionary with a single
             # entry containing the name of the control file to process
-            cf_level = {n: item.cfg["Sites"][site][n]}
+            cf_level = {n: cf_batch["Sites"][site][n]}
             # call the batch routine based on the processing level
             if level.lower() == "l1":
                 # L1 processing
-                if not do_L1_batch(item, cf_level):
+                if not do_L1_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "l2":
                 # L2 processing
-                if not do_L2_batch(item, cf_level):
+                if not do_L2_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "l3":
                 # L3 processing
-                if not do_L3_batch(item, cf_level):
+                if not do_L3_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "concatenate":
                 # concatenate netCDF files
-                if not do_concatenate_batch(item, cf_level):
+                if not do_concatenate_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "nc2csv_oneflux":
                 # convert netCDF files to ONEFlux CSV files
-                if not do_oneflux_batch(item, cf_level):
+                if not do_oneflux_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "reddyproc":
                 # convert netCDF files to REddyProc CSV files
-                if not do_reddyproc_batch(item, cf_level):
+                if not do_reddyproc_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "climatology":
                 # climatology
-                if not do_climatology_batch(item, cf_level):
+                if not do_climatology_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "cpd_barr":
                 # ustar threshold from change point detection
-                if not do_cpd_barr_batch(item, cf_level):
+                if not do_cpd_barr_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "cpd_mchugh":
                 # ustar threshold from change point detection
-                if not do_cpd_mchugh_batch(item, cf_level):
+                if not do_cpd_mchugh_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "cpd_mcnew":
                 # ustar threshold from change point detection
-                if not do_cpd_mcnew_batch(item, cf_level):
+                if not do_cpd_mcnew_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "mpt":
                 # ustar threshold from change point detection
-                if not do_mpt_batch(item, cf_level):
+                if not do_mpt_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "l4":
                 # L4 processing
-                if not do_L4_batch(item, cf_level):
+                if not do_L4_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "l5":
                 # L5 processing
-                if not do_L5_batch(item, cf_level):
+                if not do_L5_batch(main_ui, cf_level):
                     continue
             elif level.lower() == "l6":
                 # L6 processing
-                if not do_L6_batch(item, cf_level):
+                if not do_L6_batch(main_ui, cf_level):
                     continue
             else:
                 msg = " Unrecognised batch processing level " + str(level)
