@@ -1082,6 +1082,7 @@ def CoordRotation2D(cf, ds, info):
                 pfp_func_stats.Variance_from_standard_deviation(ds, vr_label, sd_label)
     # now check to see if we have everything else we need
     labels_to_check = ["Ux_SONIC_Av", "Uy_SONIC_Av", "Uz_SONIC_Av",
+                       "Ux_SONIC_Vr", "Uy_SONIC_Vr", "Uz_SONIC_Vr",
                        "UxUz", "UyUz", "UxUy",
                        "UzC", "UzA", "UzT",
                        "UxC", "UyC", "UxA", "UyA", "UxT", "UyT"]

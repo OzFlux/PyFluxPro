@@ -1017,6 +1017,11 @@ class edit_cfg_batch_sites(QtWidgets.QWidget):
         self.cfg = copy.deepcopy(main_gui.file)
         self.main_gui = main_gui
         self.tabs = main_gui.tabs
+        self.implemented_levels = ["L1", "L2", "L3",
+                                   "nc2csv_oneflux",
+                                   "concatenate", "climatology",
+                                   "cpd_barr", "cpd_mchugh", "cpd_mcnew", "mpt",
+                                   "L4", "L5", "L6"]
         self.edit_batch_gui()
 
     def add_control_file(self):
@@ -1048,18 +1053,6 @@ class edit_cfg_batch_sites(QtWidgets.QWidget):
         self.update_tab_text()
         return
 
-    def add_level(self):
-        """ Add a level to be processed."""
-        idx = self.view.selectedIndexes()[0]
-        selected_item = idx.model().itemFromIndex(idx)
-        s = self.context_menu.sender().text()
-        level = s.rsplit(" ", 1)[-1]
-        dict_to_add = {level: {"0": "Right click to browse"}}
-        # add the subsubsection
-        self.add_subsubsection(selected_item, dict_to_add)
-        # update the tab text with an asterix if required
-        self.update_tab_text()
-
     def add_site(self):
         """ Add a site to be processed."""
         idx = self.view.selectedIndexes()[0]
@@ -1069,6 +1062,23 @@ class edit_cfg_batch_sites(QtWidgets.QWidget):
         self.add_subsubsection(selected_item, dict_to_add)
         # update the tab text with an asterix if required
         self.update_tab_text()
+
+    def add_site_above(self):
+        """ Add a new site above the selected entry."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # insert the new site entry
+        new_site_entry = QtGui.QStandardItem("<site_name>")
+        new_site_entry.appendRow([QtGui.QStandardItem("0"),
+                                 QtGui.QStandardItem("Right click to browse")])
+        parent.insertRow(idx.row(), new_site_entry)
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+        return
 
     def add_subsection(self, section, dict_to_add):
         """ Add a subsection to the model."""
@@ -1120,9 +1130,8 @@ class edit_cfg_batch_sites(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         # get the level of the selected item
         level = self.get_level_selected_item()
-        add_separator = False
         if level == 0:
-            existing_entries = self.get_existing_entries()
+            #existing_entries = self.get_existing_entries()
             # sections with only 1 level
             if selected_text == "Options":
                 pass
@@ -1132,7 +1141,6 @@ class edit_cfg_batch_sites(QtWidgets.QWidget):
                 self.context_menu.actionAddSite.setText(site_text)
                 self.context_menu.addAction(self.context_menu.actionAddSite)
                 self.context_menu.actionAddSite.triggered.connect(self.add_site)
-                add_separator = True
         elif level == 1:
             parent = selected_item.parent()
             if str(parent.text()) == "Sites":
@@ -1140,10 +1148,11 @@ class edit_cfg_batch_sites(QtWidgets.QWidget):
                 self.context_menu.actionAddControlFile.setText("Add control file")
                 self.context_menu.addAction(self.context_menu.actionAddControlFile)
                 self.context_menu.actionAddControlFile.triggered.connect(self.add_control_file)
-                add_separator = True
-                if add_separator:
-                    add_separator = False
-                    self.context_menu.addSeparator()
+                self.context_menu.actionAddSiteAbove = QtWidgets.QAction(self)
+                self.context_menu.actionAddSiteAbove.setText("Add site")
+                self.context_menu.addAction(self.context_menu.actionAddSiteAbove)
+                self.context_menu.actionAddSiteAbove.triggered.connect(self.add_site_above)
+                self.context_menu.addSeparator()
                 self.context_menu.actionRemoveSite = QtWidgets.QAction(self)
                 self.context_menu.actionRemoveSite.setText("Remove site")
                 self.context_menu.addAction(self.context_menu.actionRemoveSite)
@@ -1310,10 +1319,10 @@ class edit_cfg_batch_sites(QtWidgets.QWidget):
             elif key1 in ["Sites"]:
                 # sections with 2 levels
                 self.sections[key1] = QtGui.QStandardItem(key1)
-                #self.sections[key1].setEditable(False)
+                self.sections[key1].setEditable(False)
                 for key2 in self.cfg[key1]:
                     parent2 = QtGui.QStandardItem(key2)
-                    #parent2.setEditable(False)
+                    parent2.setEditable(False)
                     for val in self.cfg[key1][key2]:
                         value = self.cfg[key1][key2][val]
                         child0 = QtGui.QStandardItem(val)
