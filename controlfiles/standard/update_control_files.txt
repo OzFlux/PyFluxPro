@@ -91,6 +91,11 @@ back_mode,back_mode_2,back_mode_3,groupby,seasons_group_allow_duplicates,thresho
 AcceptDayTimes,Fsd_threshold,Truncate,KeepIntermediateSeries"""
     L6 = MaxGapInterpolate,Truncate
 
+# Soil section from the L3 control file
+[Soil]
+    # FgDepth,SwsDefault,SwsSeries deprecated 2050/09/09 PRI
+    deprecated = FgDepth,SwsDefault,SwsSeries
+
 [Variables]
     # exclude variables that start with these strings
     [[exclude]]
