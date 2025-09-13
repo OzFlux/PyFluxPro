@@ -77,6 +77,9 @@ class pfp_main_ui(QWidget):
         self.menuHelp = QMenu(self.menubar)
         self.menuHelp.setTitle("Help")
         # File menu items: menu actions for control files
+        # File/New submenu
+        self.menuFileNew = QMenu(self.menuFile)
+        self.menuFileNew.setTitle("New")
         self.actionFileOpen = QAction(self)
         self.actionFileOpen.setText("Open")
         self.actionFileOpen.setShortcut('Ctrl+O')
@@ -86,6 +89,11 @@ class pfp_main_ui(QWidget):
         self.actionFileSaveAs = QAction(self)
         self.actionFileSaveAs.setText("Save As...")
         self.actionFileSaveAs.setShortcut('Shift+Ctrl+S')
+        # File/New submenu
+        self.actionFileNewFromNetCDF = QAction(self)
+        self.actionFileNewFromNetCDF.setText("From netCDF")
+        #self.actionFileNewFromTemplate = QAction(self)
+        #self.actionFileNewFromTemplate.setText("From template")
         # File/Convert submenu
         self.actionFileConvertnc2biomet = QAction(self)
         self.actionFileConvertnc2biomet.setText("nc to Biomet")
@@ -157,12 +165,15 @@ class pfp_main_ui(QWidget):
         self.actionHelpAbout = QAction(self)
         self.actionHelpAbout.setText("About")
         # add the actions to the menus
+        # File/New submenu
+        self.menuFileNew.addAction(self.actionFileNewFromNetCDF)
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
         self.menuFileConvert.addAction(self.actionFileConvertnc2biomet)
         self.menuFileConvert.addAction(self.actionFileConvertnc2oneflux)
         self.menuFileConvert.addAction(self.actionFileConvertnc2reddyproc)
         # File menu
+        self.menuFile.addAction(self.menuFileNew.menuAction())
         self.menuFile.addAction(self.actionFileOpen)
         self.menuFile.addAction(self.actionFileSave)
         self.menuFile.addAction(self.actionFileSaveAs)
@@ -238,6 +249,8 @@ class pfp_main_ui(QWidget):
 
         # Connect signals to slots
         # File menu actions
+        arg = lambda: pfp_top_level.do_file_new_from_netcdf(self)
+        self.actionFileNewFromNetCDF.triggered.connect(arg)
         arg = lambda: pfp_top_level.do_file_convert_nc2biomet(None, mode="standard")
         self.actionFileConvertnc2biomet.triggered.connect(arg)
         arg = lambda: pfp_top_level.do_file_convert_nc2oneflux(None, mode="standard")

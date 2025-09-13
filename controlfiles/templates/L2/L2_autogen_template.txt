@@ -1,0 +1,267 @@
+level = L2
+[Files]
+    file_path = Right click to browse
+    in_filename = Right click to browse (*.nc)
+    out_filename = Right click to browse (*.nc)
+    plot_path = Right click to browse
+[Options]
+    SONIC_Check = Yes
+    IRGA_Check = Yes
+[Variables]
+    [[AGC_IRGA]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 70
+    [[AGC_7500]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 70
+    [[AH]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 30
+    [[AH_IRGA_Sd]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 2
+    [[AH_IRGA_Vr]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 4
+    [[CO2]]
+        [[[RangeCheck]]]
+            lower = 500
+            upper = 2000
+    [[CO2_IRGA_Sd]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 25
+    [[CO2_IRGA_Vr]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 625
+    [[CO2Sig_IRGA]]
+        [[[RangeCheck]]]
+            lower = 75
+            upper = 110
+    [[Diag_IRGA]]
+        [[[RangeCheck]]]
+            lower = -0.5
+            upper = 10.5
+    [[Diag_SONIC]]
+        [[[RangeCheck]]]
+            lower = -0.5
+            upper = 20.5
+    [[Fco2]]
+        [[[RangeCheck]]]
+            lower = -50
+            upper = 50
+    [[Fe]]
+        [[[RangeCheck]]]
+            lower = -100
+            upper = 600
+    [[Fg]]
+        [[[RangeCheck]]]
+            lower = -100
+            upper = 150
+    [[Fh]]
+        [[[RangeCheck]]]
+            lower = -100
+            upper = 600
+    [[Fld]]
+        [[[RangeCheck]]]
+            lower = 200
+            upper = 700
+    [[Flu]]
+        [[[RangeCheck]]]
+            lower = 200
+            upper = 700
+    [[Fm]]
+        [[[RangeCheck]]]
+            lower = -2
+            upper = 2
+    [[Fn]]
+        [[[RangeCheck]]]
+            lower = -100
+            upper = 1000
+    [[Fsd]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 1500
+    [[Fsu]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 500
+    [[H2O]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 30
+    [[H2O_IRGA_Sd]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 5
+    [[H2O_IRGA_Vr]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 25
+    [[H2OSig_IRGA]]
+        [[[RangeCheck]]]
+            lower = 75
+            upper = 110
+    [[Precip]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 50
+    [[RH]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 110
+    [[Sig_IRGA]]
+        [[[RangeCheck]]]
+            lower = 80
+            upper = 101
+    [[Sig_IRGA_Av]]
+        [[[RangeCheck]]]
+            lower = 80
+            upper = 101
+    [[Signal_Av]]
+        [[[RangeCheck]]]
+            lower = 80
+            upper = 101
+    [[Signal_H2O]]
+        [[[RangeCheck]]]
+            lower = 80
+            upper = 101
+    [[Signal_CO2]]
+        [[[RangeCheck]]]
+            lower = 80
+            upper = 101
+    [[Sws]]
+        [[[RangeCheck]]]
+            lower = 0.001
+            upper = 0.5
+    [[Ta]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 50
+    [[Tpanel]]
+        [[[RangeCheck]]]
+            lower = -20
+            upper = 60
+    [[Ts]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 60
+    [[Tv_SONIC_Av]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 50
+    [[Tv_SONIC_Sd]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 3
+    [[Tv_SONIC_Vr]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 5
+    [[UxA]]
+        [[[RangeCheck]]]
+            lower = -1
+            upper = 1
+    [[UxC]]
+        [[[RangeCheck]]]
+            lower = -4
+            upper = 4
+    [[UxT]]
+        [[[RangeCheck]]]
+            lower = -2
+            upper = 2
+    [[UxUy]]
+        [[[RangeCheck]]]
+            lower = -1
+            upper = 1
+    [[UxUz]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 10
+    [[Ux_SONIC_Av]]
+        [[[RangeCheck]]]
+            lower = -20
+            upper = 20
+    [[Ux_SONIC_Sd]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 3
+    [[Ux_SONIC_Vr]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 10
+    [[UyA]]
+        [[[RangeCheck]]]
+            lower = -1
+            upper = 1
+    [[UyC]]
+        [[[RangeCheck]]]
+            lower = -4
+            upper = 4
+    [[UyT]]
+        [[[RangeCheck]]]
+            lower = -2
+            upper = 2
+    [[UyUz]]
+        [[[RangeCheck]]]
+            lower = -10
+            upper = 10
+    [[Uy_SONIC_Av]]
+        [[[RangeCheck]]]
+            lower = -20
+            upper = 20
+    [[Uy_SONIC_Sd]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 3
+    [[Uy_SONIC_Vr]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 10
+    [[UzA]]
+        [[[RangeCheck]]]
+            lower = -0.01
+            upper = 0.5
+    [[UzC]]
+        [[[RangeCheck]]]
+            lower = -2
+            upper = 2
+    [[UzT]]
+        [[[RangeCheck]]]
+            lower = -0.2
+            upper = 1
+    [[Uz_SONIC_Av]]
+        [[[RangeCheck]]]
+            lower = -1
+            upper = 1
+    [[Uz_SONIC_Sd]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 1.5
+    [[Uz_SONIC_Vr]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 2
+    [[Vbat]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 15
+    [[Wd]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 360
+    [[Ws]]
+        [[[RangeCheck]]]
+            lower = 0
+            upper = 20
+    [[ps]]
+        [[[RangeCheck]]]
+            lower = 90
+            upper = 105
+[Plots]

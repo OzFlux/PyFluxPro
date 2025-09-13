@@ -7,6 +7,7 @@ import netCDF4
 import matplotlib
 from PyQt5 import QtWidgets
 # PFP modules
+from scripts import pfp_autogen
 from scripts import pfp_batch
 from scripts import pfp_clim
 from scripts import pfp_compliance
@@ -394,6 +395,23 @@ def do_file_convert_nc2fluxnet(cfg):
             logger.error("")
     except Exception:
         error_message = " Error converting to ECOSTRESS format, see below for details ... "
+        logger.error(error_message)
+        error_message = traceback.format_exc()
+        logger.error(error_message)
+    return
+def do_file_new_from_netcdf(self):
+    """
+    Purpose:
+     Generate a control file from a netCDF file.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Septembner 2025
+    """
+    try:
+        pfp_autogen.generate_controlfile(self)
+    except Exception:
+        error_message = " Error generating control file from netCDF file"
         logger.error(error_message)
         error_message = traceback.format_exc()
         logger.error(error_message)
