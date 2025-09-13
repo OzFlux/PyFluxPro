@@ -1089,7 +1089,7 @@ def check_l3_options_rotation(cfg, messages):
 def check_l3_options_soil(cfg, messages):
     """ Check the entries of the Soil section."""
     # check the numbers
-    for item in ["BulkDensity", "FgDepth", "OrganicContent", "SwsDefault"]:
+    for item in ["BulkDensity", "OrganicContent"]:
         if item in cfg["Soil"]:
             opt =  cfg["Soil"][item]
             if isinstance(float(pfp_utils.strip_non_numeric(opt)), numbers.Number):
@@ -1100,12 +1100,6 @@ def check_l3_options_soil(cfg, messages):
         else:
             msg = "Required entry " + item + " missing from Soil section"
             messages["ERROR"].append(msg)
-    # check the soil moisture series
-    if "SwsSeries" in cfg["Soil"]:
-        pass
-    else:
-        msg = "SwsSeries entry not in Soil section"
-        messages["ERROR"].append(msg)
     return
 def check_l5_controlfile(cfg):
     """
@@ -2629,6 +2623,7 @@ def l3_update_controlfile(cfg, call_mode="interactive"):
     # clean up the variable names
     try:
         cfg = update_cfg_options(cfg, std, call_mode=call_mode)
+        cfg = update_cfg_soil(cfg, std, call_mode=call_mode)
         cfg = update_cfg_variables_deprecated(cfg, std)
         cfg = update_cfg_variables_rename(cfg, std)
         cfg = update_cfg_variable_attributes(cfg, std)
@@ -2725,6 +2720,26 @@ def update_cfg_options(cfg, std, call_mode="interactive"):
                     (opt[:klen] != srp)):
                     new_opt = opt.replace(opt[:llen], srp)
                     cfg["Options"][option] = new_opt
+    return cfg
+
+def update_cfg_soil(cfg, std, call_mode="interactive"):
+    """
+    Purpose:
+     Remove deprecated entries from the [Soil] section of an L3 control file.
+     PFP now:
+      1) gets FgDepth from the 'height' attribute of the Fg variable.
+      2) gets the default soil moisture as the average of all available soil moisture.
+      3) assumes 'Sws' will be the soil moisture variable for calculating the
+         soil specific heat capacity.
+    Author: PRI
+    Date: September 2025
+    """
+    if "Soil" in std:
+        if "deprecated" in std["Soil"]:
+            deprecated = [s.strip() for s in std["Soil"]["deprecated"].split(",")]
+            for item in deprecated:
+                if item in cfg["Soil"]:
+                    del cfg["Soil"][item]
     return cfg
 
 def l4_update_controlfile(cfg, call_mode="interactive"):
