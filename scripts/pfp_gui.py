@@ -273,6 +273,43 @@ class file_explore(QtWidgets.QWidget):
                 idx = self.model.index(row, 0)
                 self.view.expand(idx)
 
+    def add_global(self):
+        """ Add a new entry to the [Global] section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the new children
+        child0 = QtGui.QStandardItem("New item")
+        child1 = QtGui.QStandardItem("")
+        selected_item.appendRow([child0, child1])
+        # update the tab text with an asterix if required
+        self.update_tab_text()
+
+    def add_global_above(self):
+        """ Add a new variable above the selected variable."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        
+        ## construct the new variable dictionary
+        #new_var = {"xl":{"sheet":"", "name":""},
+                   #"Attr":{"height": "", "instrument": "", "long_name": "",
+                           #"statistic_type": "average", "standard_name": "",
+                           #"units": ""}}
+        #subsection = QtGui.QStandardItem("New variable")
+        #self.add_subsubsection(subsection, new_var)
+        
+        # get the new children
+        child0 = QtGui.QStandardItem("New item")
+        child1 = QtGui.QStandardItem("")        
+        parent.insertRow(idx.row(), [child0, child1])
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
     def double_click(self):
         """ Save the selected text on double click events."""
         idx = self.view.selectedIndexes()
@@ -286,60 +323,85 @@ class file_explore(QtWidgets.QWidget):
             return
         # get the indices of selected items
         idx = self.view.selectedIndexes()
-        # get the group labels of selected items
-        groups = list(set([i.parent().data() for i in idx]))
-        # dictionary to hold the labels of selected variables for each group
-        selections = {}
-        # add the selected variable labels to the right group in selections
-        for i in idx:
-            # get the group label of this selected item
-            group = i.parent().data()
-            # skip anything selected in 'Global attributes'
-            if (group in ["Global attributes"]):
-                continue
-            # add the group to selections if not there
-            if group not in selections:
-                selections[group] = []
-            # append the label of the selected variable to the group
-            selections[i.parent().data()].append(i.data())
-        # rename the 'Variables' group to 'root'
-        for key in list(selections.keys()):
-            if key is None or key == "Variables":
-                selections["root"] = selections.pop(key)
-                break
-        # return if selections is empty (no variables selected)
-        if len(list(selections.keys())) == 0:
-            return
-        # plot time series, separate axes or grouped
-        menuPlotTimeSeries = QtWidgets.QMenu(self)
-        menuPlotTimeSeries.setTitle("Plot time series")
-        actionPlotTimeSeriesSeparate = QtWidgets.QAction(self)
-        actionPlotTimeSeriesSeparate.setText("Separate")
-        actionPlotTimeSeriesSeparate.triggered.connect(lambda: self.plot_timeseries(selections))
-        actionPlotTimeSeriesGrouped = QtWidgets.QAction(self)
-        actionPlotTimeSeriesGrouped.setText("Grouped")
-        actionPlotTimeSeriesGrouped.triggered.connect(lambda: self.plot_timeseries_grouped(selections))
-        menuPlotTimeSeries.addAction(actionPlotTimeSeriesSeparate)
-        menuPlotTimeSeries.addAction(actionPlotTimeSeriesGrouped)
-        self.context_menu.addMenu(menuPlotTimeSeries)
-        # plot time series of percentiles
-        self.context_menu.actionPlotPercentiles = QtWidgets.QAction(self)
-        self.context_menu.actionPlotPercentiles.setText("Plot percentiles")
-        self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
-        self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selections))
-        # plot fingerprints
-        # check the time steps for all groups containing selected variables
-        groups = list(selections.keys())
-        groups = ["root" if i == "Global attributes" else i for i in groups]
-        time_steps = []
-        for group in groups:
-            time_steps.append(str(getattr(self.ds, group)["Attributes"]["time_step"]))
-        # all time steps for selected variables must be 30 or 60 to plot fingerprints
-        if all([True if ts in ["30", "60"] else False for ts in time_steps]):
-            self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
-            self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
-            self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
-            self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selections))
+        if len(idx) == 1 and idx[0].data() == "Global attributes":
+            # context menu to add global attribute
+            self.context_menu.actionAddGlobal = QtWidgets.QAction(self)
+            self.context_menu.actionAddGlobal.setText("Add attribute")
+            self.context_menu.addAction(self.context_menu.actionAddGlobal)
+            self.context_menu.actionAddGlobal.triggered.connect(self.add_global)
+        elif len(idx) == 1 and idx[0].parent().data() == "Global attributes":
+            selected_text = idx[0].data()
+            # context menu to add global attribute above selected item
+            self.context_menu.actionAddGlobalAbove = QtWidgets.QAction(self)
+            self.context_menu.actionAddGlobalAbove.setText("Add attribute")
+            self.context_menu.addAction(self.context_menu.actionAddGlobalAbove)
+            self.context_menu.actionAddGlobalAbove.triggered.connect(self.add_global_above)
+            if selected_text not in ["canopy_height", "featureType", "fluxnet_id",
+                                     "irga_type", "license_name", 
+                                     "latitude", "longitude",
+                                     "processing_level",
+                                     "site_name", "sonic_type", 
+                                     "time_step", "time_zone",
+                                     "time_coverage_end", "time_coverage_start"]:
+                self.context_menu.actionRemoveGlobal = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveGlobal.setText("Remove attribute")
+                self.context_menu.addAction(self.context_menu.actionRemoveGlobal)
+                self.context_menu.actionRemoveGlobal.triggered.connect(self.remove_item)
+        else:
+            # get the group labels of selected items
+            groups = list(set([i.parent().data() for i in idx]))
+            # dictionary to hold the labels of selected variables for each group
+            selections = {}
+            # add the selected variable labels to the right group in selections
+            for i in idx:
+                # get the group label of this selected item
+                group = i.parent().data()
+                # skip anything selected in 'Global attributes'
+                if (group in ["Global attributes"]):
+                    continue
+                # add the group to selections if not there
+                if group not in selections:
+                    selections[group] = []
+                # append the label of the selected variable to the group
+                selections[i.parent().data()].append(i.data())
+            # rename the 'Variables' group to 'root'
+            for key in list(selections.keys()):
+                if key is None or key == "Variables":
+                    selections["root"] = selections.pop(key)
+                    break
+            # return if selections is empty (no variables selected)
+            if len(list(selections.keys())) == 0:
+                return
+            # plot time series, separate axes or grouped
+            menuPlotTimeSeries = QtWidgets.QMenu(self)
+            menuPlotTimeSeries.setTitle("Plot time series")
+            actionPlotTimeSeriesSeparate = QtWidgets.QAction(self)
+            actionPlotTimeSeriesSeparate.setText("Separate")
+            actionPlotTimeSeriesSeparate.triggered.connect(lambda: self.plot_timeseries(selections))
+            actionPlotTimeSeriesGrouped = QtWidgets.QAction(self)
+            actionPlotTimeSeriesGrouped.setText("Grouped")
+            actionPlotTimeSeriesGrouped.triggered.connect(lambda: self.plot_timeseries_grouped(selections))
+            menuPlotTimeSeries.addAction(actionPlotTimeSeriesSeparate)
+            menuPlotTimeSeries.addAction(actionPlotTimeSeriesGrouped)
+            self.context_menu.addMenu(menuPlotTimeSeries)
+            # plot time series of percentiles
+            self.context_menu.actionPlotPercentiles = QtWidgets.QAction(self)
+            self.context_menu.actionPlotPercentiles.setText("Plot percentiles")
+            self.context_menu.addAction(self.context_menu.actionPlotPercentiles)
+            self.context_menu.actionPlotPercentiles.triggered.connect(lambda: self.plot_percentiles(selections))
+            # plot fingerprints
+            # check the time steps for all groups containing selected variables
+            groups = list(selections.keys())
+            groups = ["root" if i == "Global attributes" else i for i in groups]
+            time_steps = []
+            for group in groups:
+                time_steps.append(str(getattr(self.ds, group)["Attributes"]["time_step"]))
+            # all time steps for selected variables must be 30 or 60 to plot fingerprints
+            if all([True if ts in ["30", "60"] else False for ts in time_steps]):
+                self.context_menu.actionPlotFingerprints = QtWidgets.QAction(self)
+                self.context_menu.actionPlotFingerprints.setText("Plot fingerprints")
+                self.context_menu.addAction(self.context_menu.actionPlotFingerprints)
+                self.context_menu.actionPlotFingerprints.triggered.connect(lambda: self.plot_fingerprints(selections))
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
@@ -609,6 +671,18 @@ class file_explore(QtWidgets.QWidget):
             error_message = traceback.format_exc()
             logger.error(error_message)
         return
+
+    def remove_item(self):
+        """ Remove an item from the view."""
+        # loop over selected items in the tree
+        for idx in self.view.selectedIndexes():
+            # get the selected item from the index
+            selected_item = idx.model().itemFromIndex(idx)
+            # get the parent of the selected item
+            parent = selected_item.parent()
+            # remove the row
+            parent.removeRow(selected_item.row())
+        self.update_tab_text()
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""

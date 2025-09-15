@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.21"
+version_number = "V3.4.22"
+# V3.4.22 - September 2025
+#         - add or remove global attributes from netCDF file open in GUI
 # V3.4.21 - June 2025
 #         - use datetime (not time) when creating output data structure when
 #           concatenating
