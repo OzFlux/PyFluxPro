@@ -82,7 +82,7 @@ def generate_controlfile_l2(main_ui, ds):
     # set up the plot variables
     radiation_labels = ["Fsd", "Fsu", "Fld", "Flu", "Fn"]
     flux_labels = ["Fco2", "Fe", "Fh", "Fm", "ustar"]
-    meteorology_labels = ["Ta", "RH", "Ws", "Wd", "ps", "Precip"]
+    meteorology_labels = ["AH", "Ta", "RH", "Ws", "Wd", "ps", "Precip"]
     cov_sonic_labels = ["UxT", "UyT", "UzT", "UxUy", "UxUz", "UyUz"]
     cov_sonic_irga_labels = ["UxA", "UxC", "UyA", "UyC", "UzA", "UzC"]
     soil_temperature_labels = ["Ts"]
@@ -98,21 +98,24 @@ def generate_controlfile_l2(main_ui, ds):
         ds_label_prefix = ds_label.split("_")[0]
         if ds_label_prefix in radiation_labels:
             ds_labels_radiation.append(ds_label)
-    cfg_site["Plots"]["Radiation"] = {"variables": ",".join(ds_labels_radiation)}
+    if len(ds_labels_radiation) > 0:
+        cfg_site["Plots"]["Radiation"] = {"variables": ",".join(ds_labels_radiation)}
 
     ds_labels_cov_sonic = []
     for ds_label in ds_labels:
         ds_label_prefix = ds_label.split("_")[0]
         if ds_label_prefix in cov_sonic_labels:
             ds_labels_cov_sonic.append(ds_label)
-    cfg_site["Plots"]["Covariances (SONIC)"] = {"variables": ",".join(ds_labels_cov_sonic)}
+    if len(ds_labels_cov_sonic) > 0:
+        cfg_site["Plots"]["Covariances (SONIC)"] = {"variables": ",".join(ds_labels_cov_sonic)}
 
     ds_labels_cov_sonic_irga = []
     for ds_label in ds_labels:
         ds_label_prefix = ds_label.split("_")[0]
         if ds_label_prefix in cov_sonic_irga_labels:
             ds_labels_cov_sonic_irga.append(ds_label)
-    cfg_site["Plots"]["Covariances (SONIC & IRGA)"] = {"variables": ",".join(ds_labels_cov_sonic_irga)}
+    if len(ds_labels_cov_sonic_irga) > 0:
+        cfg_site["Plots"]["Covariances (SONIC & IRGA)"] = {"variables": ",".join(ds_labels_cov_sonic_irga)}
 
     ds_labels_flux = []
     for ds_label in ds_labels:
@@ -126,7 +129,8 @@ def generate_controlfile_l2(main_ui, ds):
         ds_label_prefix = ds_label.split("_")[0]
         if ds_label_prefix in meteorology_labels:
             ds_labels_meteorology.append(ds_label)
-    cfg_site["Plots"]["Meteorology"] = {"variables": ",".join(ds_labels_meteorology)}
+    if len(ds_labels_meteorology) > 0:
+        cfg_site["Plots"]["Meteorology"] = {"variables": ",".join(ds_labels_meteorology)}
 
     ds_labels_soil_temperature = []
     for ds_label in ds_labels:
@@ -137,9 +141,9 @@ def generate_controlfile_l2(main_ui, ds):
     for i in range(len(ds_labels_soil_temperature)):
         st = ds_labels_soil_temperature[i]
         if "cm" in st.split("_")[-1]:
-            st_labels.append(st[0:st.index("cm")])
+            st_labels.append(st[0:st.index("cm")+2])
         elif "m" in st.split("_")[-1]:
-            st_labels.append(st[0:st.index("m")])
+            st_labels.append(st[0:st.index("m")+1])
         else:
             msg = "Unrecognised format for soil temperature variable name: " + st
             print(msg)
@@ -149,7 +153,8 @@ def generate_controlfile_l2(main_ui, ds):
         for ds_label_soil_temperature in ds_labels_soil_temperature:
             if st_label in ds_label_soil_temperature:
                 plt_labels_soil_temperature.append(ds_label_soil_temperature)
-        cfg_site["Plots"]["Soil temperature: "+st_label] = {"variables": ",".join(plt_labels_soil_temperature)}
+        if len(plt_labels_soil_temperature) > 0:
+            cfg_site["Plots"]["Soil temperature: "+st_label] = {"variables": ",".join(plt_labels_soil_temperature)}
 
     ds_labels_soil_moisture = []
     for ds_label in ds_labels:
@@ -160,9 +165,9 @@ def generate_controlfile_l2(main_ui, ds):
     for i in range(len(ds_labels_soil_moisture)):
         sm = ds_labels_soil_moisture[i]
         if "cm" in sm.split("_")[-1]:
-            sm_labels.append(sm[0:sm.index("cm")])
+            sm_labels.append(sm[0:sm.index("cm")+2])
         elif "m" in sm.split("_")[-1]:
-            sm_labels.append(sm[0:sm.index("m")])
+            sm_labels.append(sm[0:sm.index("m")+1])
         else:
             msg = "Unrecognised format for soil temperature variable name: " + sm
             print(msg)
@@ -173,14 +178,16 @@ def generate_controlfile_l2(main_ui, ds):
             if sm_label in ds_label_soil_moisture:
                 plt_labels_soil_moisture.append(ds_label_soil_moisture)
         #print(sm_label, len(plt_labels_soil_moisture), plt_labels_soil_moisture)
-        cfg_site["Plots"]["Soil moisture: "+sm_label] = {"variables": ",".join(plt_labels_soil_moisture)}
+        if len(plt_labels_soil_moisture) > 0:
+            cfg_site["Plots"]["Soil moisture: "+sm_label] = {"variables": ",".join(plt_labels_soil_moisture)}
 
     ds_labels_soil_heat_flux = []
     for ds_label in ds_labels:
         ds_label_prefix = ds_label.split("_")[0]
         if ds_label_prefix in soil_heat_flux_labels:
             ds_labels_soil_heat_flux.append(ds_label)
-    cfg_site["Plots"]["Soil heat flux"] = {"variables": ",".join(ds_labels_soil_heat_flux)}
+    if len(ds_labels_soil_heat_flux) > 0:
+        cfg_site["Plots"]["Soil heat flux"] = {"variables": ",".join(ds_labels_soil_heat_flux)}
     # save the automatically generated L2 control file
     cfg_filename = pfp_io.get_output_filename_dialog(file_path="L2_autogen.txt",
                                                      title="Choose an output file name ...")
@@ -331,7 +338,7 @@ def generate_controlfile_l3(main_ui, ds):
             cfg_site["Variables"]["Fn"] = {combine: {"source": "Fn_4cmpt"}}
     # soil data
     combine = "AverageSeries"
-    tolerance = 0.25
+    tolerance = 0.1
     soil_prefixes = ["Fg", "Sws", "Ts"]
     combine_close(cfg_site, ds, soil_prefixes, combine=combine, tolerance=tolerance)
     # flux data
@@ -342,7 +349,6 @@ def generate_controlfile_l3(main_ui, ds):
             cfg_site["Variables"][prefix] = {}
         prefix_labels = [l for l in ds_labels
                          if l.split("_")[0] == prefix
-                         #and l.split("_")[-1] not in ["Ct","Sd","Vr","QC","DL"]]
                          and l.split("_")[-1] in ["EP","EF"]]
         if len(prefix_labels) == 0:
             if cfg_site["Options"]["CalculateFluxes"] == "Yes":
@@ -369,7 +375,7 @@ def generate_controlfile_l3(main_ui, ds):
     # plots section
     radiation_labels = ["Fsd", "Fsu", "Fld", "Flu", "Fn"]
     flux_labels = ["Fco2", "Fe", "Fh", "Fm", "ustar"]
-    meteorology_labels = ["Ta", "RH", "Ws", "Wd", "ps", "Precip"]
+    meteorology_labels = ["AH", "Ta", "RH", "Ws", "Wd", "ps", "Precip"]
     soil_temperature_labels = ["Ts"]
     soil_moisture_labels = ["Sws"]
     soil_heat_flux_labels = ["Fg"]
@@ -407,15 +413,15 @@ def generate_controlfile_l3(main_ui, ds):
     for i in range(len(ds_labels_soil_temperature)):
         st = ds_labels_soil_temperature[i]
         if "cm" in st.split("_")[-1]:
-            st_labels.append(st[0:st.index("cm")])
+            st_labels.append(st[0:st.index("cm")+2])
         elif "m" in st.split("_")[-1]:
-            st_labels.append(st[0:st.index("m")])
+            st_labels.append(st[0:st.index("m")+1])
         else:
             msg = "Unrecognised format for soil temperature variable name: " + st
             print(msg)
     st_labels = sorted(list(set(st_labels)))
     for n, st_label in enumerate(st_labels):
-        plt_labels_soil_temperature = []
+        plt_labels_soil_temperature = [st_label]
         for ds_label_soil_temperature in ds_labels_soil_temperature:
             if st_label in ds_label_soil_temperature:
                 plt_labels_soil_temperature.append(ds_label_soil_temperature)
@@ -430,15 +436,15 @@ def generate_controlfile_l3(main_ui, ds):
     for i in range(len(ds_labels_soil_moisture)):
         sm = ds_labels_soil_moisture[i]
         if "cm" in sm.split("_")[-1]:
-            sm_labels.append(sm[0:sm.index("cm")])
+            sm_labels.append(sm[0:sm.index("cm")+2])
         elif "m" in sm.split("_")[-1]:
-            sm_labels.append(sm[0:sm.index("m")])
+            sm_labels.append(sm[0:sm.index("m")+1])
         else:
             msg = "Unrecognised format for soil temperature variable name: " + sm
             print(msg)
     sm_labels = sorted(list(set(sm_labels)))
     for n, sm_label in enumerate(sm_labels):
-        plt_labels_soil_moisture = []
+        plt_labels_soil_moisture = [sm_label]
         for ds_label_soil_moisture in ds_labels_soil_moisture:
             if sm_label in ds_label_soil_moisture:
                 plt_labels_soil_moisture.append(ds_label_soil_moisture)
@@ -448,6 +454,8 @@ def generate_controlfile_l3(main_ui, ds):
     for ds_label in ds_labels:
         ds_label_prefix = ds_label.split("_")[0]
         if ds_label_prefix in soil_heat_flux_labels:
+            if ds_label_prefix not in ds_labels_soil_heat_flux:
+                ds_labels_soil_heat_flux.append(ds_label_prefix)
             ds_labels_soil_heat_flux.append(ds_label)
     cfg_site["Plots"]["Soil heat flux"] = {"variables": ",".join(ds_labels_soil_heat_flux)}
     # save the automatically generated L2 control file
@@ -499,7 +507,7 @@ def get_dicts(ds, prefix_labels):
                     h = round(sum(hl)/len(hl), 2)
                 else:
                     msg = "Unrecognised 'height' attribute format (" + prefix_label + ")"
-                    print(msg)
+                    logger.warning(msg)
                     del td[prefix_label]
                     continue
             else:

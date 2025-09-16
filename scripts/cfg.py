@@ -1,5 +1,10 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.21"
+version_number = "V3.4.22"
+# V3.4.22 - September 2025
+#         - values for zmd, soil moisture series and default value etc now
+#           derived from metadat in netCDF file, no longer required in control
+#           file
+#         - implemented automated generation of L2 and L3 control files
 # V3.4.21 - June 2025
 #         - use datetime (not time) when creating output data structure when
 #           concatenating

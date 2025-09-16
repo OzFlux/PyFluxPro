@@ -56,10 +56,18 @@ level = L2
         [[[RangeCheck]]]
             lower = -50
             upper = 50
+    [[Fco2_EP_QC]]
+        [[[RangeCheck]]]
+            lower = -0.5
+            upper = 1.5
     [[Fe]]
         [[[RangeCheck]]]
             lower = -100
             upper = 600
+    [[Fe_EP_QC]]
+        [[[RangeCheck]]]
+            lower = -0.5
+            upper = 1.5
     [[Fg]]
         [[[RangeCheck]]]
             lower = -100
@@ -68,6 +76,10 @@ level = L2
         [[[RangeCheck]]]
             lower = -100
             upper = 600
+    [[Fh_EP_QC]]
+        [[[RangeCheck]]]
+            lower = -0.5
+            upper = 1.5
     [[Fld]]
         [[[RangeCheck]]]
             lower = 200
@@ -80,6 +92,10 @@ level = L2
         [[[RangeCheck]]]
             lower = -2
             upper = 2
+    [[Fm_EP_QC]]
+        [[[RangeCheck]]]
+            lower = -0.5
+            upper = 1.5
     [[Fn]]
         [[[RangeCheck]]]
             lower = -100
