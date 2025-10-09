@@ -797,18 +797,6 @@ class pfp_main_ui(QWidget):
             self.threadpool.start(worker)
             # no threading
             #pfp_top_level.do_run_batch(self)
-        elif cfg["level"] in ["batch_sites"]:
-            ## check the L1 control file to see if it is OK to run
-            #if not pfp_compliance.check_batch_controlfile(cfg): return
-            # add stop to run menu
-            self.menuRun.addAction(self.actionStopCurrent)
-            self.actionStopCurrent.triggered.connect(self.stop_current)
-            # get a worker thread
-            worker = pfp_threading.Worker(pfp_top_level.do_run_batch_sites, self)
-            # start the worker
-            self.threadpool.start(worker)
-            # no threading
-            #pfp_top_level.do_run_batch_sites(self)
         elif cfg["level"].split("_")[0] == "L1":
             # check the L1 control file to see if it is OK to run
             if pfp_compliance.check_l1_controlfile(cfg):
