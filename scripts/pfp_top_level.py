@@ -471,7 +471,6 @@ def do_run_batch(self):
         else:
             msg = " Unrecognised batch type: " + str(self.file["level"])
             logger.error(msg)
-        #pfp_batch.do_levels_batch(self)
     except Exception:
         msg = " Error running batch processing, see below for details ..."
         logger.error(msg)
