@@ -1,5 +1,13 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.22"
+version_number = "V3.4.23"
+# V3.4.23 - October 2025
+#         - implemented batch_sites processing and editing of control file
+#         - removed pfp_log.debug_function_enter() and debug_function_leave()
+#         - added CO2Sig_IRGA and H2OSig_IRGA to pfp_ck.do_EC155check()
+#         - added variances to variable sanity check in pfp_ts.CoordRotation2D()
+#         - relocated pfp_gf.CheckGapLengths() in pfp_levels.l5qc()
+#         - cleaned up pfp_top_level.do_run_batch()
+#         - this version used for 2025_v2 processing
 # V3.4.22 - September 2025
 #         - add or remove global attributes from netCDF file open in GUI
 # V3.4.21 - June 2025
