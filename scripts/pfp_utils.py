@@ -2529,6 +2529,13 @@ def get_timezone(site_name,prompt="no"):
             found = True
     return time_zone,found
 
+def get_utc_offset(ldt, time_zone):
+    pytz_time_zone = pytz.timezone(time_zone)
+    utc_offset = pytz_time_zone.utcoffset(ldt)
+    dst = pytz_time_zone.dst(ldt)
+    standard_offset = utc_offset - dst
+    return {"utc_offset": utc_offset, "standard_offset": standard_offset}
+
 def get_UTCfromlocaltime(ds):
     '''
     Purpose:
