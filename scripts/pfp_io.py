@@ -1951,9 +1951,14 @@ def write_csv_oneflux_year(cfg, ds):
         if len(ds.root["Attributes"]["fluxnet_id"]) == 6:
             fluxnet_id = ds.root["Attributes"]["fluxnet_id"]
     # get the UTC offset from the time zone name
+    # original code - bad Peter, naughty Peter, shameful Peter!
+    #time_zone = ds.root["Attributes"]["time_zone"]
+    #now = datetime.datetime.now(pytz.timezone(time_zone))
+    #utc_offset = now.utcoffset().total_seconds()/60/60
+    # 20251211 code - all hail Cacilia The Mighty Bug Finder!
     time_zone = ds.root["Attributes"]["time_zone"]
-    now = datetime.datetime.now(pytz.timezone(time_zone))
-    utc_offset = now.utcoffset().total_seconds()/60/60
+    offsets = pfp_utils.get_utc_offset(ldt[0], time_zone)
+    utc_offset = offsets["standard_offset"].total_seconds()/60/60
     # get the tower height
     tower_height = pfp_utils.strip_non_numeric(str(ds.root["Attributes"]["tower_height"]))
     # get the data path and CSV name
