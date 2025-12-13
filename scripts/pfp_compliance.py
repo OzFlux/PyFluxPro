@@ -1089,7 +1089,7 @@ def check_l3_options_rotation(cfg, messages):
 def check_l3_options_soil(cfg, messages):
     """ Check the entries of the Soil section."""
     # check the numbers
-    for item in ["BulkDensity", "FgDepth", "OrganicContent", "SwsDefault"]:
+    for item in ["BulkDensity", "OrganicContent"]:
         if item in cfg["Soil"]:
             opt =  cfg["Soil"][item]
             if isinstance(float(pfp_utils.strip_non_numeric(opt)), numbers.Number):
@@ -1100,12 +1100,6 @@ def check_l3_options_soil(cfg, messages):
         else:
             msg = "Required entry " + item + " missing from Soil section"
             messages["ERROR"].append(msg)
-    # check the soil moisture series
-    if "SwsSeries" in cfg["Soil"]:
-        pass
-    else:
-        msg = "SwsSeries entry not in Soil section"
-        messages["ERROR"].append(msg)
     return
 def check_l5_controlfile(cfg):
     """

@@ -1560,7 +1560,7 @@ def CorrectIndividualFgForStorage(cf,ds):
             CorrectFgForStorage(cf,ds,Fg_out=CFgArgs[0],Fg_in=CFgArgs[1],Ts_in=CFgArgs[2],Sws_in=CFgArgs[3])
         return
 
-def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts'):
+def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts', Sws_in="Sws"):
     """
         Correct ground heat flux for storage in the layer above the heat flux plate
 
@@ -1575,6 +1575,11 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts'):
             BulkDensity: soil bulk density, kg/m3
             OrganicContent: soil organic content, fraction
             SwsDefault: default value of soil moisture content used when no sensors present
+        Mods:
+         Rewritten in mid-2025
+          - get Fg depth from variable attribute
+          - assume soil moisture variable is Sws
+          - get default soil moisture as average of good Sws data
         """
     iris = info["RemoveIntermediateSeries"]
     descr_level = "description_" + ds.root["Attributes"]["processing_level"]
@@ -1585,26 +1590,45 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts'):
     if not pfp_utils.get_optionskeyaslogical(cf, "CorrectFgForStorage", default=True):
         logger.info(' CorrectFgForStorage: storage correction disabled in control file')
         return
-    if Fg_in not in list(ds.root["Variables"].keys()) or Ts_in not in list(ds.root["Variables"].keys()):
-        logger.warning(' CorrectFgForStorage: '+Fg_in+' or '+Ts_in+' not found in data structure, Fg not corrected')
+    # check to see if we have the uncorrected Fg, the soil temperature Ts and moisture Sws
+    if Fg_in not in list(ds.root["Variables"].keys()):
+        logger.warning(' CorrectFgForStorage: '+Fg_in+' not found in data structure, Fg not corrected')
         return
-    logger.info(' Correcting soil heat flux for storage')
-    # get the soil properties needed to calculate soil specific heat capacity
-    d = max(0.0,min(0.5,float(cf['Soil']['FgDepth'])))
-    bd = max(100.0,min(2500.0,float(cf['Soil']['BulkDensity'])))
-    oc = max(0.0,min(1.0,float(cf['Soil']['OrganicContent'])))
-    mc = 1.0 - oc
-    Sws_default = min(1.0,max(0.0,float(cf['Soil']['SwsDefault'])))
+    if Ts_in not in list(ds.root["Variables"].keys()):
+        logger.warning(' CorrectFgForStorage: '+Ts_in+' not found in data structure, Fg not corrected')
+        return
+    if Sws_in not in list(ds.root["Variables"].keys()):
+        logger.warning(' CorrectFgForStorage: '+Sws_in+' not found in data structure, Fg not corrected')
+        return
     # get the data
     Fg = pfp_utils.GetVariable(ds, Fg_in)
     Ts = pfp_utils.GetVariable(ds, Ts_in)
+    Sws = pfp_utils.GetVariable(ds, Sws_in)
+    # sanity check for all missing data
+    for item in [Fg, Ts, Sws]:
+        if item["Data"].mask.all():
+            msg = " CorrectFgForStorage: all " + item["Label"]
+            msg += " data is missing, skipping correction..."
+            logger.warning(msg)
+            return
+    sws_default = min(1.0, max(0.0, numpy.ma.mean(Sws["Data"])))
+    # get the soil properties needed to calculate soil specific heat capacity
+    if "height" in Fg["Attr"]:
+        d = float(pfp_utils.strip_non_numeric(Fg["Attr"]["height"]))
+    elif "FgDepth" in cf["Soil"]:
+        d = max(0.0,min(0.5,float(cf['Soil']['FgDepth'])))
+    else:
+        msg = "  CorrectFgForStorage: depthg of Fg not found, Fg not corrected"
+        logger.warning(msg)
+        return
+    logger.info(' Correcting soil heat flux for storage')
+    bd = max(100.0,min(2500.0,float(cf['Soil']['BulkDensity'])))
+    oc = max(0.0,min(1.0,float(cf['Soil']['OrganicContent'])))
+    mc = 1.0 - oc
     # mask is True if Fg or Ts are masked
     m1 = numpy.ma.getmaskarray(Fg["Data"])
     m2 = numpy.ma.getmaskarray(Ts["Data"])
     mask = numpy.ma.mask_or(m1, m2, copy=True, shrink=False)
-    # get the soil moisture label
-    sws_label = pfp_utils.get_keyvaluefromcf(info, ["cfg", "Soil"], "SwsSeries", default="Sws")
-    Sws = pfp_utils.GetVariable(ds, sws_label)
     # index of records where soil moisture is missing but Fg and Ts are not
     iom = numpy.ma.where((numpy.ma.getmaskarray(Sws["Data"])==True) & (mask==False))[0]
     # tell the user we are using the default soil moisture value
@@ -1612,7 +1636,7 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts'):
         msg = "  CorrectFgForStorage: default soil moisture used for "
         msg += str(len(iom)) + " values"
         logger.info(msg)
-        Sws["Data"][iom] = Sws_default
+        Sws["Data"][iom] = sws_default
     # create the output variable
     Fg_corr = pfp_utils.CreateEmptyVariable(Fg_out, nrecs)
     # get the soil temperature difference from time step to time step
@@ -1638,7 +1662,7 @@ def CorrectFgForStorage(cf, ds, info, Fg_out='Fg', Fg_in='Fg', Ts_in='Ts'):
     Cs["Data"] = mc*bd*c.Cd + oc*bd*c.Co + Sws["Data"]*c.rho_water*c.Cw
     # calculate the soil heat storage
     S = pfp_utils.CreateEmptyVariable("S", nrecs)
-    S["Data"] = Cs["Data"]*(dTs["Data"]/dt)*d
+    S["Data"] = Cs["Data"]*(dTs["Data"]/dt)*numpy.abs(d)
     # apply the storage term
     Fg_corr["Data"] = Fg["Data"] + S["Data"]
     # put the corrected soil heat flux into the data structure
