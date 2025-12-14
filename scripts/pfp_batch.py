@@ -130,18 +130,26 @@ def do_L2_batch(main_ui, cf_level):
             logger.info(msg)
             # check to see if the control file exists
             if not check_file_exists(cf_level[i]):
+                msg = " Control file " + cf_level[i] + " does not exist"
+                logger.error("!!!!!")
+                logger.error(msg)
+                logger.error("!!!!!")
                 continue
             # get the contents of the control file
             cf_l2 = pfp_io.get_controlfilecontents(cf_level[i])
             # update the L2 control file (legacy)
             if not pfp_compliance.l2_update_controlfile(cf_l2, call_mode="batch"):
                 msg = "Error occurred updating L2 controlfile"
+                logger.error("!!!!!")
                 logger.error(msg)
+                logger.error("!!!!!")
                 continue
             # check the contents of the L2 control file
             if not pfp_compliance.check_l2_controlfile(cf_l2):
                 msg = "Error occurred checking compliance of L2 controlfile"
+                logger.error("!!!!!")
                 logger.error(msg)
+                logger.error("!!!!!")
                 continue
             # get the input file name
             infilename = pfp_io.get_infilenamefromcf(cf_l2)
@@ -160,9 +168,11 @@ def do_L2_batch(main_ui, cf_level):
             logger.info("")
         except Exception:
             msg = "Error occurred during L2 processing " + cf_file_name[1]
+            logger.error("!!!!!")
             logger.error(msg)
             error_message = traceback.format_exc()
             logger.error(error_message)
+            logger.error("!!!!!")
             continue
     return ok
 def do_l2_plots_batch(cfg, ds1, ds2):
@@ -189,24 +199,42 @@ def do_L3_batch(main_ui, cf_level):
             # break out of the loop if user requested stop
             break
         try:
+            # get the control file name for this site at this level
             cf_file_name = os.path.split(cf_level[i])
             msg = "Starting L3 processing with " + cf_file_name[1]
             logger.info(msg)
+            # check to see if the control file exists
             if not check_file_exists(cf_level[i]):
+                msg = " Control file " + cf_level[i] + " does not exist"
+                logger.error("!!!!!")
+                logger.error(msg)
+                logger.error("!!!!!")
                 continue
+            # get the contents of the control file
             cf_l3 = pfp_io.get_controlfilecontents(cf_level[i])
+            # update the L3 control file (legacy)
             if not pfp_compliance.l3_update_controlfile(cf_l3, call_mode="batch"):
                 msg = "Error occurred updating L3 controlfile"
+                logger.error("!!!!!")
                 logger.error(msg)
+                logger.error("!!!!!")
                 continue
+            # check the contents of the L3 control file
             if not pfp_compliance.check_l3_controlfile(cf_l3):
                 msg = "Error occurred checking compliance of L3 controlfile"
+                logger.error("!!!!!")
                 logger.error(msg)
+                logger.error("!!!!!")
                 continue
+            # get the input file name
             infilename = pfp_io.get_infilenamefromcf(cf_l3)
+            # read the input file
             ds2 = pfp_io.NetCDFRead(infilename)
+            # do the business
             ds3 = pfp_levels.l3qc(cf_l3, ds2)
+            # get the output file name
             outfilename = pfp_io.get_outfilenamefromcf(cf_l3)
+            # write the output netCDF file
             pfp_io.NetCDFWrite(outfilename, ds3)
             msg = "Finished L3 processing with " + cf_file_name[1]
             logger.info(msg)
@@ -224,9 +252,11 @@ def do_L3_batch(main_ui, cf_level):
             logger.info("")
         except Exception:
             msg = "Error occurred during L3 processing " + cf_file_name[1]
+            logger.error("!!!!!")
             logger.error(msg)
             error_message = traceback.format_exc()
             logger.error(error_message)
+            logger.error("!!!!!")
             continue
     return ok
 def do_l3_plots_batch(cfg, ds2, ds3):
@@ -470,20 +500,35 @@ def do_L4_batch(main_ui, cf_level):
             # break out of the loop if user requested stop
             break
         try:
+            # get the control file name for this site at this level
             cf_file_name = os.path.split(cf_level[i])
             msg = "Starting L4 processing with " + cf_file_name[1]
             logger.info(msg)
+            # check to see if the control file exists
             if not check_file_exists(cf_level[i]):
+                msg = " Control file " + cf_level[i] + " does not exist"
+                logger.error("!!!!!")
+                logger.error(msg)
+                logger.error("!!!!!")
                 continue
+            # get the contents of the control file
             cf_l4 = pfp_io.get_controlfilecontents(cf_level[i])
+            # update the L4 control file (legacy)
             if not pfp_compliance.l4_update_controlfile(cf_l4, call_mode="batch"):
                 msg = "Error occurred updating L4 controlfile"
+                logger.error("!!!!!")
                 logger.error(msg)
+                logger.error("!!!!!")
                 continue
+            # get the input file name
             infilename = pfp_io.get_infilenamefromcf(cf_l4)
+            # read the input file
             ds3 = pfp_io.NetCDFRead(infilename)
+            # do the business
             ds4 = pfp_levels.l4qc(None, cf_l4, ds3)
+            # get the output file name
             outfilename = pfp_io.get_outfilenamefromcf(cf_l4)
+            # write the output netCDF file
             pfp_io.NetCDFWrite(outfilename, ds4)
             msg = "Finished L4 processing with " + cf_file_name[1]
             logger.info(msg)
@@ -492,9 +537,11 @@ def do_L4_batch(main_ui, cf_level):
             logger.info("")
         except Exception:
             msg = "Error occurred during L4 with " + cf_file_name[1]
+            logger.error("!!!!!")
             logger.error(msg)
             error_message = traceback.format_exc()
             logger.error(error_message)
+            logger.error("!!!!!")
             continue
     return ok
 def do_L5_batch(main_ui, cf_level):
@@ -506,11 +553,17 @@ def do_L5_batch(main_ui, cf_level):
             # break out of the loop if user requested stop
             break
         try:
+            # get the control file name for this site at this level
             cf_file_name = os.path.split(cf_level[i])
             msg = "Starting L5 processing with " + cf_file_name[1]
             logger.info(msg)
             if not check_file_exists(cf_level[i]):
+                msg = " Control file " + cf_level[i] + " does not exist"
+                logger.error("!!!!!")
+                logger.error(msg)
+                logger.error("!!!!!")
                 continue
+            # get the contents of the control file
             cf_l5 = pfp_io.get_controlfilecontents(cf_level[i])
             if not pfp_compliance.l5_update_controlfile(cf_l5, call_mode="batch"):
                 msg = "Error occurred updating L5 controlfile"
@@ -711,6 +764,13 @@ def do_sites_batch(main_ui):
         for n in sorted(list(cfg_site.keys()), key=int):
             # get the control file name
             cfg_name = cfg_site[n]
+            # check the control file exists
+            if not os.path.isfile(cfg_name):
+                msg = " Control file " + cfg_name + " does not exist"
+                logger.error("!!!!!")
+                logger.error(msg)
+                logger.error("!!!!!")
+                break
             # get the control file contents
             cfg = pfp_io.get_controlfilecontents(cfg_name)
             # get the processing level
@@ -722,59 +782,59 @@ def do_sites_batch(main_ui):
             if level.lower() == "l1":
                 # L1 processing
                 if not do_L1_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "l2":
                 # L2 processing
                 if not do_L2_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "l3":
                 # L3 processing
                 if not do_L3_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "concatenate":
                 # concatenate netCDF files
                 if not do_concatenate_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "nc2csv_oneflux":
                 # convert netCDF files to ONEFlux CSV files
                 if not do_oneflux_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "reddyproc":
                 # convert netCDF files to REddyProc CSV files
                 if not do_reddyproc_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "climatology":
                 # climatology
                 if not do_climatology_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "cpd_barr":
                 # ustar threshold from change point detection
                 if not do_cpd_barr_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "cpd_mchugh":
                 # ustar threshold from change point detection
                 if not do_cpd_mchugh_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "cpd_mcnew":
                 # ustar threshold from change point detection
                 if not do_cpd_mcnew_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "mpt":
                 # ustar threshold from change point detection
                 if not do_mpt_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "l4":
                 # L4 processing
                 if not do_L4_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "l5":
                 # L5 processing
                 if not do_L5_batch(main_ui, cf_level):
-                    continue
+                    break
             elif level.lower() == "l6":
                 # L6 processing
                 if not do_L6_batch(main_ui, cf_level):
-                    continue
+                    break
             else:
                 msg = " Unrecognised batch processing level " + str(level)
                 logger.error(msg)
