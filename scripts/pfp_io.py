@@ -3,7 +3,6 @@ from collections import OrderedDict
 import copy
 import csv
 import datetime
-import inspect
 import logging
 import numbers
 import os
@@ -18,7 +17,6 @@ import netCDF4
 import numpy
 import pandas
 from pandas.errors import ParserError
-import pytz
 import xlwt
 import xlsxwriter
 from PyQt5 import QtWidgets
@@ -148,6 +146,7 @@ def CheckTimeStamps(dfs, l1_info, fix=True):
     msg = " Checking timestamps on sheets " + ",".join(sheets)
     logger.info(msg)
     for sheet in sheets:
+        l1_info["current_sheet"] = sheet
         indices = checktimestamps_get_indices(dfs[sheet], l1_info)
         results[sheet] = indices
         if ((len(indices["non_monotonic"]) > 0) or
@@ -188,6 +187,7 @@ def CheckTimeStamps(dfs, l1_info, fix=True):
 
 def checktimestamps_get_indices(df, l1_info):
     ts = int(l1_info["read_excel"]["Global"]["time_step"])
+    sheet = l1_info["current_sheet"]
     indices = {}
     # timestamp from data frame index
     dt = df.index.values
@@ -195,34 +195,34 @@ def checktimestamps_get_indices(df, l1_info):
     ddt = numpy.diff(dt).astype('timedelta64[s]').astype(int)/60
     indices["non_monotonic"] = numpy.where(ddt < 0)[0]
     if len(indices["non_monotonic"]) > 0:
-        msg = "  Number of negative time steps: " + str(len(indices["non_monotonic"]))
+        msg = f"  {sheet}: number of negative time steps: " + str(len(indices["non_monotonic"]))
         logger.error(msg)
     dt_mod = numpy.mod(ddt, ts)
     indices["non_integral"] = numpy.where(dt_mod != 0)[0]
     if len(indices["non_integral"]) != 0:
-        msg = "  Number of non-integral time steps: " + str(len(indices["non_integral"]))
+        msg = f"  {sheet}: number of non-integral time steps: " + str(len(indices["non_integral"]))
         logger.warning(msg)
     indices["duplicates"] = numpy.where(ddt == 0)[0]
     if len(indices["duplicates"]) != 0:
-        msg = "  Number of duplicate timestamps: " + str(len(indices["duplicates"]))
+        msg = f"  {sheet}: number of duplicate timestamps: " + str(len(indices["duplicates"]))
         logger.warning(msg)
     indices["lessthan_timestep"] = numpy.where((ddt > 0) & (ddt < ts))[0]
     if len(indices["lessthan_timestep"]) != 0:
-        msg = "  Number of time steps less than " + str(ts) + " minutes: "
+        msg = f"  {sheet}: number of time steps less than " + str(ts) + " minutes: "
         msg += str(len(indices["lessthan_timestep"]))
         logger.warning(msg)
     indices["equalto_timestep"] = numpy.where(ddt == ts)[0]
     if len(indices["equalto_timestep"]) != 0:
-        msg = "  Number of time steps equal to " + str(ts) + " minutes: "
+        msg = f"  {sheet}: number of time steps equal to " + str(ts) + " minutes: "
         msg += str(len(indices["equalto_timestep"]))
         #logger.info(msg)
     indices["greaterthan_3hours"] = numpy.where(ddt >= 180)[0]
     if len(indices["greaterthan_3hours"]) != 0:
-        msg = "  Number of gaps greater than 3 hours: " + str(len(indices["greaterthan_3hours"]))
+        msg = f"  {sheet}: number of gaps greater than 3 hours: " + str(len(indices["greaterthan_3hours"]))
         logger.warning(msg)
     indices["greaterthan_1day"] = numpy.where(ddt >= 1440)[0]
     if len(indices["greaterthan_1day"]) != 0:
-        msg = "  Number of gaps greater than 1 day: " + str(len(indices["greaterthan_1day"]))
+        msg = f"  {sheet}: number of gaps greater than 1 day: " + str(len(indices["greaterthan_1day"]))
         logger.warning(msg)
     indices["longest_gap"] = numpy.max(ddt)
     return indices
@@ -963,6 +963,43 @@ def read_excel_workbook_get_timestamp(dfs, df_name, l1_info):
                 if df_ts == ts:
                     # if yes then we have the timestamp column for this data frame
                     timestamp = obj_column
+                    got_timestamp = True
+                    # and exit the for loop
+                    break
+            except (ParserError, TypeError, ValueError):
+                pass
+    #if not got_timestamp:
+        #sample_size = min([100, len(df)])
+        #success_threshold = 0.9
+        #for col in df.columns:
+            ## Drop NaNs and take a small sample to keep it fast
+            #series = df[col].dropna()
+            #if series.empty:
+                #continue
+            #sample = series.head(sample_size)
+            ## Try converting to datetime
+            #parsed = pandas.to_datetime(sample, errors="coerce")
+            ## Calculate the fraction of successful parses
+            #success_rate = parsed.notna().sum() / len(sample)
+            #if success_rate >= success_threshold:
+                #timestamp = col
+                #got_timestamp = True
+                #break
+    if not got_timestamp:
+        str_columns = [c for c in df.columns[df.dtypes=='str']]
+        #if len(str_columns) > 1:
+            #more_than_one = True
+        for str_column in str_columns:
+            try:
+                df[str_column] = pandas.to_datetime(df[str_column])
+                # get the time step for this column
+                df_ts = df[str_column].diff()
+                # get the mode of the time step as minutes
+                df_ts = df_ts.mode().values[0].astype('timedelta64[m]').astype(int)
+                # is the data frame time step the same as the global attribute time step?
+                if df_ts == ts:
+                    # if yes then we have the timestamp column for this data frame
+                    timestamp = str_column
                     got_timestamp = True
                     # and exit the for loop
                     break
