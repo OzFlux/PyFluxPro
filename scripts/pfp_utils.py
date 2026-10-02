@@ -12,6 +12,7 @@ import time
 # third party modules
 import cftime
 import dateutil
+import matplotlib.pyplot as plt
 import numpy
 import pytz
 import xlrd
@@ -3173,20 +3174,6 @@ def update_progress(progress):
     sys.stdout.write(text)
     sys.stdout.flush()
     return
-
-def mypause(interval):
-    import matplotlib
-    import matplotlib.pyplot as plt
-    import matplotlib.backends
-    backend = plt.rcParams['backend']
-    if backend in matplotlib.rcsetup.interactive_bk:
-        figManager = matplotlib._pylab_helpers.Gcf.get_active()
-        if figManager is not None:
-            canvas = figManager.canvas
-            if canvas.figure.stale:
-                canvas.draw()
-            canvas.start_event_loop(interval)
-            return
 
 def variables_in_datastructure(ds, labels_to_check):
     """
