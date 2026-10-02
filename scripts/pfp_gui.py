@@ -294,7 +294,7 @@ class file_explore(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         # get the parent of the selected item
         parent = selected_item.parent()
-        
+
         ## construct the new variable dictionary
         #new_var = {"xl":{"sheet":"", "name":""},
                    #"Attr":{"height": "", "instrument": "", "long_name": "",
@@ -302,10 +302,10 @@ class file_explore(QtWidgets.QWidget):
                            #"units": ""}}
         #subsection = QtGui.QStandardItem("New variable")
         #self.add_subsubsection(subsection, new_var)
-        
+
         # get the new children
         child0 = QtGui.QStandardItem("New item")
-        child1 = QtGui.QStandardItem("")        
+        child1 = QtGui.QStandardItem("")
         parent.insertRow(idx.row(), [child0, child1])
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
@@ -337,10 +337,10 @@ class file_explore(QtWidgets.QWidget):
             self.context_menu.addAction(self.context_menu.actionAddGlobalAbove)
             self.context_menu.actionAddGlobalAbove.triggered.connect(self.add_global_above)
             if selected_text not in ["canopy_height", "featureType", "fluxnet_id",
-                                     "irga_type", "license_name", 
+                                     "irga_type", "license_name",
                                      "latitude", "longitude",
                                      "processing_level",
-                                     "site_name", "sonic_type", 
+                                     "site_name", "sonic_type",
                                      "time_step", "time_zone",
                                      "time_coverage_end", "time_coverage_start"]:
                 self.context_menu.actionRemoveGlobal = QtWidgets.QAction(self)
@@ -5188,6 +5188,24 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                         child1 = QtGui.QStandardItem(str(val))
                         self.sections[key1].appendRow([child0, child1])
                 self.model.appendRow(self.sections[key1])
+            elif key1 in ["Variables"]:
+                # sections with 3 levels
+                self.sections[key1] = QtGui.QStandardItem(key1)
+                self.sections[key1].setEditable(False)
+                for key2 in sorted(list(self.cfg[key1].keys())):
+                    parent2 = QtGui.QStandardItem(key2)
+                    for key3 in sorted(list(self.cfg[key1][key2].keys())):
+                        parent3 = QtGui.QStandardItem(key3)
+                        parent3.setEditable(False)
+                        for key4 in sorted(list(self.cfg[key1][key2][key3].keys())):
+                            value = self.cfg[key1][key2][key3][key4]
+                            child0 = QtGui.QStandardItem(key4)
+                            child0.setEditable(False)
+                            child1 = QtGui.QStandardItem(value)
+                            parent3.appendRow([child0, child1])
+                        parent2.appendRow(parent3)
+                    self.sections[key1].appendRow(parent2)
+                self.model.appendRow(self.sections[key1])
 
     def get_data_from_model(self):
         """ Iterate over the model and get the data."""
@@ -5219,6 +5237,20 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                             key3 = str(subsection.child(k, 0).text())
                             val3 = str(subsection.child(k, 1).text())
                             cfg[key1][key2][key3] = val3
+            elif key1 in ["Variables"]:
+                # sections with 3 levels
+                for j in range(section.rowCount()):
+                    subsection = section.child(j)
+                    key2 = str(subsection.text())
+                    cfg[key1][key2] = {}
+                    for k in range(subsection.rowCount()):
+                        subsubsection = subsection.child(k)
+                        key3 = str(subsubsection.text())
+                        cfg[key1][key2][key3] = {}
+                        for l in range(subsubsection.rowCount()):
+                            key4 = str(subsubsection.child(l, 0).text())
+                            val4 = str(subsubsection.child(l, 1).text())
+                            cfg[key1][key2][key3][key4] = val4
         return cfg
 
     def handleItemChanged(self, item):
@@ -5251,7 +5283,13 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         level = self.get_level_selected_item()
         if level == 0:
             # sections with only 1 level
-            if selected_text == "Options":
+            if selected_text == "Files":
+                if "Variables" not in list(self.cfg.keys()):
+                    self.context_menu.actionAddVariablesSection = QtWidgets.QAction(self)
+                    self.context_menu.actionAddVariablesSection.setText("Add Variables sectiion")
+                    self.context_menu.addAction(self.context_menu.actionAddVariablesSection)
+                    self.context_menu.actionAddVariablesSection.triggered.connect(self.add_variables_section)
+            elif selected_text == "Options":
                 existing_entries = self.get_existing_entries()
                 if "ApplyFco2Storage" not in existing_entries:
                     self.context_menu.actionAddApplyFco2Storage = QtWidgets.QAction(self)
@@ -5298,6 +5336,11 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                     self.context_menu.actionAddDoFingerprints.setText("DoFingerprints")
                     self.context_menu.addAction(self.context_menu.actionAddDoFingerprints)
                     self.context_menu.actionAddDoFingerprints.triggered.connect(self.add_dofingerprints)
+            elif selected_text == "Variables":
+                self.context_menu.actionAddVariable = QtWidgets.QAction(self)
+                self.context_menu.actionAddVariable.setText("Add variable")
+                self.context_menu.addAction(self.context_menu.actionAddVariable)
+                self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
         elif level == 1:
             parent = selected_item.parent()
             key = str(parent.child(selected_item.row(),0).text())
@@ -5331,7 +5374,71 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                     self.context_menu.actionBrowsePlotPath.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowsePlotPath)
                     self.context_menu.actionBrowsePlotPath.triggered.connect(self.browse_plot_path)
+            elif str(parent.text()) == "Variables":
+                # get a list of existing entries
+                existing_entries = self.get_existing_entries()
+                # only put a QC check in the context menu if it is not already present
+                if "RangeCheck" not in existing_entries:
+                    self.context_menu.actionAddRangeCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddRangeCheck.setText("Add RangeCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddRangeCheck)
+                    self.context_menu.actionAddRangeCheck.triggered.connect(self.add_rangecheck)
+                if "DependencyCheck" not in existing_entries:
+                    self.context_menu.actionAddDependencyCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddDependencyCheck.setText("Add DependencyCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddDependencyCheck)
+                    self.context_menu.actionAddDependencyCheck.triggered.connect(self.add_dependencycheck)
+                if "DiurnalCheck" not in existing_entries:
+                    self.context_menu.actionAddDiurnalCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddDiurnalCheck.setText("Add DiurnalCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddDiurnalCheck)
+                    self.context_menu.actionAddDiurnalCheck.triggered.connect(self.add_diurnalcheck)
+                if "ExcludeDates" not in existing_entries:
+                    self.context_menu.actionAddExcludeDates = QtWidgets.QAction(self)
+                    self.context_menu.actionAddExcludeDates.setText("Add ExcludeDates")
+                    self.context_menu.addAction(self.context_menu.actionAddExcludeDates)
+                    self.context_menu.actionAddExcludeDates.triggered.connect(self.add_excludedates)
+                if "ExcludeHours" not in existing_entries:
+                    self.context_menu.actionAddExcludeHours = QtWidgets.QAction(self)
+                    self.context_menu.actionAddExcludeHours.setText("Add ExcludeHours")
+                    self.context_menu.addAction(self.context_menu.actionAddExcludeHours)
+                    self.context_menu.actionAddExcludeHours.triggered.connect(self.add_excludehours)
+                if "LowerCheck" not in existing_entries:
+                    self.context_menu.actionAddLowerCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddLowerCheck.setText("Add LowerCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddLowerCheck)
+                    self.context_menu.actionAddLowerCheck.triggered.connect(self.add_lowercheck)
+                if "MADCheck" not in existing_entries:
+                    self.context_menu.actionAddMADCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddMADCheck.setText("Add MADCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddMADCheck)
+                    self.context_menu.actionAddMADCheck.triggered.connect(self.add_madcheck)
+                if "UpperCheck" not in existing_entries:
+                    self.context_menu.actionAddUpperCheck = QtWidgets.QAction(self)
+                    self.context_menu.actionAddUpperCheck.setText("Add UpperCheck")
+                    self.context_menu.addAction(self.context_menu.actionAddUpperCheck)
+                    self.context_menu.actionAddUpperCheck.triggered.connect(self.add_uppercheck)
+                if "CorrectWindDirection" not in existing_entries:
+                    self.context_menu.actionAddWindDirectionCorrection = QtWidgets.QAction(self)
+                    self.context_menu.actionAddWindDirectionCorrection.setText("Add CorrectWindDirection")
+                    self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrection)
+                    self.context_menu.actionAddWindDirectionCorrection.triggered.connect(self.add_winddirectioncorrection)
+                if "Linear" not in existing_entries:
+                    self.context_menu.actionAddLinear = QtWidgets.QAction(self)
+                    self.context_menu.actionAddLinear.setText("Add Linear")
+                    self.context_menu.addAction(self.context_menu.actionAddLinear)
+                    self.context_menu.actionAddLinear.triggered.connect(self.add_linear)
+                self.context_menu.addSeparator()
+                self.context_menu.actionAddVariableAbove = QtWidgets.QAction(self)
+                self.context_menu.actionAddVariableAbove.setText("New variable")
+                self.context_menu.addAction(self.context_menu.actionAddVariableAbove)
+                self.context_menu.actionAddVariableAbove.triggered.connect(self.add_variable_above)
+                self.context_menu.actionRemoveVariable = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveVariable.setText("Remove variable")
+                self.context_menu.addAction(self.context_menu.actionRemoveVariable)
+                self.context_menu.actionRemoveVariable.triggered.connect(self.remove_item)
         elif level == 2:
+            add_separator = False
             parent = selected_item.parent()
             section = selected_item.parent().parent()
             if ((str(section.text()) == "Files") and (str(parent.text()) == "In")):
@@ -5355,8 +5462,59 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                     self.context_menu.actionBrowseOutputFile.setText("Browse...")
                     self.context_menu.addAction(self.context_menu.actionBrowseOutputFile)
                     self.context_menu.actionBrowseOutputFile.triggered.connect(self.browse_output_file)
+            elif str(idx.data()) in ["ExcludeDates"]:
+                self.context_menu.actionAddExcludeDateRange = QtWidgets.QAction(self)
+                self.context_menu.actionAddExcludeDateRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddExcludeDateRange)
+                self.context_menu.actionAddExcludeDateRange.triggered.connect(self.add_excludedaterange)
+                add_separator = True
+            elif str(idx.data()) in ["ExcludeHours"]:
+                self.context_menu.actionAddExcludeHourRange = QtWidgets.QAction(self)
+                self.context_menu.actionAddExcludeHourRange.setText("Add hour range")
+                self.context_menu.addAction(self.context_menu.actionAddExcludeHourRange)
+                self.context_menu.actionAddExcludeHourRange.triggered.connect(self.add_excludehourrange)
+                add_separator = True
+            elif str(idx.data()) in ["LowerCheck"]:
+                self.context_menu.actionAddLowerCheckRange = QtWidgets.QAction(self)
+                self.context_menu.actionAddLowerCheckRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddLowerCheckRange)
+                self.context_menu.actionAddLowerCheckRange.triggered.connect(self.add_lowercheckrange)
+                add_separator = True
+            elif str(idx.data()) in ["UpperCheck"]:
+                self.context_menu.actionAddUpperCheckRange = QtWidgets.QAction(self)
+                self.context_menu.actionAddUpperCheckRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddUpperCheckRange)
+                self.context_menu.actionAddUpperCheckRange.triggered.connect(self.add_uppercheckrange)
+                add_separator = True
+            elif str(idx.data()) in ["CorrectWindDirection"]:
+                self.context_menu.actionAddWindDirectionCorrectionRange = QtWidgets.QAction(self)
+                self.context_menu.actionAddWindDirectionCorrectionRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddWindDirectionCorrectionRange)
+                self.context_menu.actionAddWindDirectionCorrectionRange.triggered.connect(self.add_winddirectioncorrectionrange)
+                add_separator = True
+            elif str(idx.data()) in ["Linear"]:
+                self.context_menu.actionAddLinearRange = QtWidgets.QAction(self)
+                self.context_menu.actionAddLinearRange.setText("Add date range")
+                self.context_menu.addAction(self.context_menu.actionAddLinearRange)
+                self.context_menu.actionAddLinearRange.triggered.connect(self.add_linearrange)
+                add_separator = True
+            if add_separator:
+                self.context_menu.addSeparator()
+                add_separator = False
+            if str(idx.data()) in ["RangeCheck", "DependencyCheck", "DiurnalCheck", "ExcludeDates",
+                                   "ExcludeHours", "LowerCheck", "MADCheck", "UpperCheck"]:
+                self.context_menu.actionRemoveQCCheck = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveQCCheck.setText("Remove QC check")
+                self.context_menu.addAction(self.context_menu.actionRemoveQCCheck)
+                self.context_menu.actionRemoveQCCheck.triggered.connect(self.remove_item)
         elif level == 3:
-            pass
+            if (str(idx.parent().data()) in ["ExcludeDates", "ExcludeHours", "LowerCheck",
+                                             "UpperCheck", "Linear"] and
+                str(idx.data()) != "0"):
+                self.context_menu.actionRemoveExcludeDateRange = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveExcludeDateRange.setText("Remove date range")
+                self.context_menu.addAction(self.context_menu.actionRemoveExcludeDateRange)
+                self.context_menu.actionRemoveExcludeDateRange.triggered.connect(self.remove_daterange)
 
         self.context_menu.exec_(self.view.viewport().mapToGlobal(position))
 
@@ -5440,12 +5598,86 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         # add the subsubsection
         self.add_subsection(dict_to_add)
 
+    def add_applymadfilter(self):
+        """ Add the ApplyMADFilter option to the context menu."""
+        dict_to_add = {"ApplyMADFilter": "Fco2"}
+        # add the subsubsection
+        self.add_subsection(dict_to_add)
+
     def add_dofingerprints(self):
         """ Add the DoFingerprints option to the context menu."""
         # add the option to the [Options] section
         dict_to_add = {"DoFingerprints": "No"}
         # add the subsubsection
         self.add_subsection(dict_to_add)
+
+    def add_dependencycheck(self):
+        """ Add a dependency check to a variable."""
+        new_qc = {"DependencyCheck":{"source":""}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_diurnalcheck(self):
+        """ Add a diurnal check to a variable."""
+        new_qc = {"DiurnalCheck":{"numsd":"5"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_excludedates(self):
+        """ Add an exclude dates check to a variable."""
+        new_qc = {"ExcludeDates":{"0":"YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_excludedaterange(self):
+        """ Add another date range to the ExcludeDates QC check."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_excludehours(self):
+        """ Add an exclude hours check to a variable."""
+        new_qc = {"ExcludeHours":{"0":"YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM,HH:MM,HH:MM, ..."}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_excludehourrange(self):
+        """ Add an exclude hours check to a variable."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM,HH:MM,HH:MM, ...")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
 
     def add_inputfile(self):
         """ Add an entry for a new input file."""
@@ -5476,6 +5708,73 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         self.update_tab_text()
         return
 
+    def add_linear(self):
+        """ Add a linear correction to a variable."""
+        new_qc = {"Linear": {"0": "YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 1.0, 0.0"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_linearrange(self):
+        """ Add another date range to the Linear QC check."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, 1.0, 0.0")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_lowercheck(self):
+        """ Add a lower range check to a variable."""
+        new_qc = {"LowerCheck":{"0":"YYYY-mm-dd HH:MM,<start_value>,YYYY-mm-dd HH:MM,<end_value>"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_lowercheckrange(self):
+        """ Add another date range to the LowerCheck QC check."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child0.setEditable(False)
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,<start_value>,YYYY-mm-dd HH:MM,<end_value>")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_madcheck(self):
+        """ Add the MAD check to a variable."""
+        idx = self.view.selectedIndexes()[0]
+        selected_item = idx.model().itemFromIndex(idx)
+        if selected_item.text().split("_")[0] == "Fco2":
+            edge_threshold = 6
+        elif selected_item.text().split("_")[0] in ["Fe", "Fh"]:
+            edge_threshold = 100
+        else:
+            edge_threshold = "20,80"
+        new_qc = {"MADCheck":{"Fsd_threshold": 12, "edge_threshold": edge_threshold,
+                              "window_size": 13, "zfc": 5.5,}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
     def add_numberofdimensions(self):
         """ Add the NumberOfDimensions option to the context menu."""
         dict_to_add = {"NumberOfDimensions": "3"}
@@ -5495,6 +5794,29 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         dict_to_add = {"FixTimeStepMethod": "round"}
         # add the subsubsection (GapFillFromAlternate)
         self.add_subsection(dict_to_add)
+
+    def add_qc_check(self, selected_item, new_qc):
+        for key1 in new_qc:
+            parent = QtGui.QStandardItem(key1)
+            parent.setEditable(False)
+            for key in new_qc[key1]:
+                val = str(new_qc[key1][key])
+                child0 = QtGui.QStandardItem(key)
+                child0.setEditable(False)
+                child1 = QtGui.QStandardItem(val)
+                parent.appendRow([child0, child1])
+            selected_item.appendRow(parent)
+        self.update_tab_text()
+
+    def add_rangecheck(self):
+        """ Add a range check to a variable."""
+        new_qc = {"RangeCheck":{"lower":0, "upper": 1}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
 
     def add_subsection(self, dict_to_add):
         """ Add a subsection to the model."""
@@ -5541,6 +5863,90 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         dict_to_add = {"TruncateThreshold": "50"}
         # add the subsubsection (GapFillFromAlternate)
         self.add_subsection(dict_to_add)
+
+    def add_uppercheck(self):
+        """ Add a upper range check to a variable."""
+        new_qc = {"UpperCheck":{"0":"YYYY-mm-dd HH:MM,<start_value>,YYYY-mm-dd HH:MM,<end_value>"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_uppercheckrange(self):
+        """ Add another date range to the UpperCheck QC check."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,<start_value>,YYYY-mm-dd HH:MM,<end_value>")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
+
+    def add_variable(self):
+        """ Add a new variable to the 'Variables' section."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        parent = idx.model().itemFromIndex(idx)
+        #new_var_qc = {"RangeCheck":{"lower":0, "upper": 1}}
+        subsection = QtGui.QStandardItem("New variable")
+        #self.add_subsubsection(subsection, new_var_qc)
+        parent.appendRow(subsection)
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def add_variable_above(self):
+        """ Add a new variable above the selected variable."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the parent of the selected item
+        parent = selected_item.parent()
+        # construct the new variable dictionary
+        new_var = {"RangeCheck":{"lower":0, "upper": 1}}
+        subsection = QtGui.QStandardItem("New variable")
+        self.add_subsubsection(subsection, new_var)
+        parent.insertRow(idx.row(), subsection)
+        # add an asterisk to the tab text to indicate the tab contents have changed
+        self.update_tab_text()
+
+    def add_variables_section(self):
+        """ Add a Variables section to the control file."""
+        if "Variables" in list(self.sections.keys()):
+            return
+        self.sections["Variables"] = QtGui.QStandardItem("Variables")
+        idx = len(self.sections.keys())
+        self.model.insertRow(idx-1, self.sections["Variables"])
+        self.update_tab_text()
+
+    def add_winddirectioncorrection(self):
+        """ Add the wind direction correction check to a variable."""
+        new_qc = {"CorrectWindDirection":{"0":"YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, <correction>"}}
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        self.add_qc_check(selected_item, new_qc)
+        self.update_tab_text()
+
+    def add_winddirectioncorrectionrange(self):
+        """ Add another date range to the wind direction correction."""
+        # get the index of the selected item
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        # get the children
+        child0 = QtGui.QStandardItem(str(selected_item.rowCount()))
+        child1 = QtGui.QStandardItem("YYYY-mm-dd HH:MM,YYYY-mm-dd HH:MM, <correction>")
+        # add them
+        selected_item.appendRow([child0, child1])
+        self.update_tab_text()
 
     def browse_input_file(self):
         """ Browse for the input data file path."""

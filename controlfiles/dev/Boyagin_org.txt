@@ -1,0 +1,31 @@
+level = concatenate
+[Files]
+    plot_path = /mnt/data/OzFlux/Batch/Plots/
+    [[Out]]
+        ncFileName = /mnt/data/OzFlux/Sites/Boyagin/Data/Processed/Boyagin_L3.nc
+    [[In]]
+        0 = /mnt/data/OzFlux/Sites/Boyagin/Data/Cleaned/Boyagin_2017_L3.nc
+        1 = /mnt/data/OzFlux/Sites/Boyagin/Data/Cleaned/Boyagin_2018_L3.nc
+        2 = /mnt/data/OzFlux/Sites/Boyagin/Data/Cleaned/Boyagin_2019_L3.nc
+        3 = /mnt/data/OzFlux/Sites/Boyagin/Data/Cleaned/Boyagin_2020_L3.nc
+        4 = /mnt/data/OzFlux/Sites/Boyagin/Data/Cleaned/Boyagin_2021_L3.nc
+        5 = /mnt/data/OzFlux/Sites/Boyagin/Data/Cleaned/Boyagin_2022_L3.nc
+        6 = /mnt/data/OzFlux/Sites/Boyagin/Data/Cleaned/Boyagin_2023_L3.nc
+        7 = /mnt/data/OzFlux/Sites/Boyagin/Data/Cleaned/Boyagin_2024_L3.nc
+        8 = /mnt/data/OzFlux/Sites/Boyagin/Data/Cleaned/Boyagin_2025_L3.nc
+        9 = /mnt/data/OzFlux/Sites/Boyagin/Data/Cleaned/Boyagin_2026_L3.nc
+[Options]
+    FixTimeStepMethod = round
+    MaxGapInterpolate = 0
+    NumberOfDimensions = 3
+    SeriesToCheck = Fco2,Fe,Fh,ustar
+    Truncate = Yes
+    TruncateThreshold = 50
+    ApplyFco2Storage = Yes
+[Variables]
+    [[Fco2]]
+        [[[MADCheck]]]
+            Fsd_threshold = 12
+            edge_threshold = 6
+            window_size = 13
+            zfc = 5.5

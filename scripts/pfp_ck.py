@@ -1034,7 +1034,15 @@ def do_madfilter_2(result, info, code=24):
         logger.warning(msg)
     return var
 
-def do_qcchecks(cf,ds,mode="verbose"):
+def do_qcchecks(cf, ds, mode="verbose"):
+    """
+    Purpose:
+     Upper level driver for the QC checks.
+    Usage:
+    Side effects:
+    Author: PRI
+    Date: Back in the day
+    """
     if "processing_level" in ds.root["Attributes"]:
         level = str(ds.root["Attributes"]["processing_level"])
         if mode!="quiet": logger.info(" Doing the QC checks at level "+str(level))
@@ -1046,9 +1054,10 @@ def do_qcchecks(cf,ds,mode="verbose"):
         if item in cf:
             section = item
             series_list = list(cf[item].keys())
-    if len(series_list)==0:
-        msg = " do_qcchecks: Variables, Drivers or Fluxes section not found in control file, skipping QC checks ..."
-        logger.warning(msg)
+    if len(series_list) == 0:
+        if mode != "quiet":
+            msg = " Variables, Drivers or Fluxes section not found in control file, skipping QC checks ..."
+            logger.warning(msg)
         return
     # loop over the series specified in the control file
     # first time for general QC checks
@@ -1060,7 +1069,7 @@ def do_qcchecks(cf,ds,mode="verbose"):
                 logger.warning(msg)
             continue
         # if so, do the QC checks
-        do_qcchecks_oneseries(cf,ds,section,series)
+        do_qcchecks_oneseries(cf, ds, section, series)
     # loop over the series in the control file
     # second time for dependencies
     for series in series_list:
@@ -1071,7 +1080,7 @@ def do_qcchecks(cf,ds,mode="verbose"):
                 logger.warning(msg)
             continue
         # if so, do dependency check
-        do_dependencycheck(cf,ds,section,series,code=23,mode="quiet")
+        do_dependencycheck(cf, ds, section, series, code=23, mode="quiet")
 
 def do_qcchecks_oneseries(cf, ds, section, series):
     if len(section) == 0:
