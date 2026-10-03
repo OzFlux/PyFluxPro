@@ -1034,7 +1034,8 @@ def gfalternate_plotcomposite(data_dict, stat_dict, diel_avg, l4a, pd):
     fig.savefig(figname, format='png')
     # draw the plot on the screen
     if l4a["gui"]["show_plots"]:
-        fig.canvas.flush_events()
+        plt.draw()
+        plt.pause(1)
     else:
         plt.close()
         plt.switch_backend(current_backend)

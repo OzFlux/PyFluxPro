@@ -9877,6 +9877,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
+    def add_fsdthreshold(self):
+        """ Add Fsd_threshold to the [Options] section."""
+        dict_to_add = {"Fsd_threshold": "10"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
     def add_global_attribute(self):
         """ Add a new global attribute to the [Global] section."""
         dict_to_add = {"New attribute":""}
@@ -10080,6 +10086,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
         self.model.insertRow(self.section_headings.index("EcosystemRespiration"),
                              self.sections["Options"])
         self.update_tab_text()
+
+    def add_plotrawdata(self):
+        """ Add PlotRawData to the [Options] section."""
+        dict_to_add = {"PlotRawData": "No"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_subsection(self, dict_to_add):
         """ Add a subsection to the model."""
@@ -10296,6 +10308,11 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 # get a list of existing entries in this section
                 existing_entries = self.get_existing_entries()
                 # only put a QC check in the context menu if it is not already present
+                if "Fsd_threshold" not in existing_entries:
+                    self.context_menu.actionAddFsdthreshold = QtWidgets.QAction(self)
+                    self.context_menu.actionAddFsdthreshold.setText("Fsd_threshold")
+                    self.context_menu.addAction(self.context_menu.actionAddFsdthreshold)
+                    self.context_menu.actionAddFsdthreshold.triggered.connect(self.add_fsdthreshold)
                 if "MaxGapInterpolate" not in existing_entries:
                     self.context_menu.actionAddMaxGapInterpolate = QtWidgets.QAction(self)
                     self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
@@ -10311,6 +10328,11 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     self.context_menu.actionAddMinPercentDay.setText("MinPercentDay")
                     self.context_menu.addAction(self.context_menu.actionAddMinPercentDay)
                     self.context_menu.actionAddMinPercentDay.triggered.connect(self.add_minpercentday)
+                if "PlotRawData" not in existing_entries:
+                    self.context_menu.actionAddPlotRawData = QtWidgets.QAction(self)
+                    self.context_menu.actionAddPlotRawData.setText("PlotRawData")
+                    self.context_menu.addAction(self.context_menu.actionAddPlotRawData)
+                    self.context_menu.actionAddPlotRawData.triggered.connect(self.add_plotrawdata)
                 if "Truncate" not in existing_entries and "Imports" in self.section_headings:
                     self.context_menu.actionAddTruncate = QtWidgets.QAction(self)
                     self.context_menu.actionAddTruncate.setText("Truncate")
