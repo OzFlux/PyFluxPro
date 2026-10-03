@@ -343,6 +343,14 @@ class partition(object):
                 #msg = '- {}'.format(e)
                 #logger.error(msg)
                 continue
+        # check to see if the raw E0 plot was produced by checking the E0_fignum attribute
+        if hasattr(self, "E0_fignum"):
+            # check to see if a figure with this number exists
+            if plt.fignum_exists(self.E0_fignum):
+                # close the plot
+                plt.close(self.E0_fignum)
+                # delete the attribute
+                delattr(self, "E0_fignum")
         # check to see if the raw LL plot was produced by checking the LL_fignum attribute
         if hasattr(self, "LL_fignum"):
             # check to see if a figure with this number exists
@@ -585,7 +593,8 @@ class partition(object):
         fig.savefig(file_name, format="png")
 
         if self.l6_info["Options"]["call_mode"] == "interactive":
-            fig.canvas.flush_events()
+            plt.draw()
+            plt.pause(0.5)
         else:
             plt.close()
             plt.switch_backend(current_backend)
@@ -630,12 +639,12 @@ class partition(object):
         fig.savefig(file_name, format="png")
 
         if self.l6_info["Options"]["call_mode"] == "interactive":
-            fig.canvas.flush_events()
+            plt.draw()
+            plt.pause(0.5)
         else:
             plt.close()
             plt.switch_backend(current_backend)
             plt.ion()
-
         return
     #--------------------------------------------------------------------------
 
