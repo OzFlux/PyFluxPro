@@ -5284,7 +5284,8 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
         if level == 0:
             # sections with only 1 level
             if selected_text == "Files":
-                if "Variables" not in list(self.cfg.keys()):
+                top_level_entries = self.get_top_level_entries()
+                if "Variables" not in top_level_entries:
                     self.context_menu.actionAddVariablesSection = QtWidgets.QAction(self)
                     self.context_menu.actionAddVariablesSection.setText("Add Variables sectiion")
                     self.context_menu.addAction(self.context_menu.actionAddVariablesSection)
@@ -5341,6 +5342,10 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
                 self.context_menu.actionAddVariable.setText("Add variable")
                 self.context_menu.addAction(self.context_menu.actionAddVariable)
                 self.context_menu.actionAddVariable.triggered.connect(self.add_variable)
+                self.context_menu.actionRemoveVariablesSection = QtWidgets.QAction(self)
+                self.context_menu.actionRemoveVariablesSection.setText("Remove Variables section")
+                self.context_menu.addAction(self.context_menu.actionRemoveVariablesSection)
+                self.context_menu.actionRemoveVariablesSection.triggered.connect(self.remove_section)
         elif level == 1:
             parent = selected_item.parent()
             key = str(parent.child(selected_item.row(),0).text())
@@ -5584,6 +5589,15 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
             idx = idx.parent()
             level += 1
         return level
+
+    def get_top_level_entries(self):
+        row_count = self.model.rowCount(QtCore.QModelIndex())
+        top_level_entries = []
+        for row in range(row_count):
+            index = self.model.index(row, 0, QtCore.QModelIndex())
+            item_text = self.model.data(index, QtCore.Qt.ItemDataRole.DisplayRole)
+            top_level_entries.append(item_text)
+        return top_level_entries
 
     def update_tab_text(self):
         """ Add an asterisk to the tab title text to indicate tab contents have changed."""
@@ -6017,6 +6031,22 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
             # remove the option
             section.removeRow(i)
             self.update_tab_text()
+
+    def remove_section(self):
+        """ Remove a section from the view."""
+        # loop over selected items in the tree
+        idx = self.view.selectedIndexes()[0]
+        # get the selected item from the index
+        selected_item = idx.model().itemFromIndex(idx)
+        selected_text = selected_item.text()
+        # get the root
+        root = self.model.invisibleRootItem()
+        # remove the row
+        root.removeRow(selected_item.row())
+        # remove the section from the self.sections dictionary
+        if selected_text in self.sections:
+            del self.sections[selected_text]
+        self.update_tab_text()
 
     def remove_input_file(self):
         """ Remove an input file."""
