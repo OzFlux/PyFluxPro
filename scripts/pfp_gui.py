@@ -294,7 +294,7 @@ class file_explore(QtWidgets.QWidget):
         selected_item = idx.model().itemFromIndex(idx)
         # get the parent of the selected item
         parent = selected_item.parent()
-        
+
         ## construct the new variable dictionary
         #new_var = {"xl":{"sheet":"", "name":""},
                    #"Attr":{"height": "", "instrument": "", "long_name": "",
@@ -302,10 +302,10 @@ class file_explore(QtWidgets.QWidget):
                            #"units": ""}}
         #subsection = QtGui.QStandardItem("New variable")
         #self.add_subsubsection(subsection, new_var)
-        
+
         # get the new children
         child0 = QtGui.QStandardItem("New item")
-        child1 = QtGui.QStandardItem("")        
+        child1 = QtGui.QStandardItem("")
         parent.insertRow(idx.row(), [child0, child1])
         # add an asterisk to the tab text to indicate the tab contents have changed
         self.update_tab_text()
@@ -337,10 +337,10 @@ class file_explore(QtWidgets.QWidget):
             self.context_menu.addAction(self.context_menu.actionAddGlobalAbove)
             self.context_menu.actionAddGlobalAbove.triggered.connect(self.add_global_above)
             if selected_text not in ["canopy_height", "featureType", "fluxnet_id",
-                                     "irga_type", "license_name", 
+                                     "irga_type", "license_name",
                                      "latitude", "longitude",
                                      "processing_level",
-                                     "site_name", "sonic_type", 
+                                     "site_name", "sonic_type",
                                      "time_step", "time_zone",
                                      "time_coverage_end", "time_coverage_start"]:
                 self.context_menu.actionRemoveGlobal = QtWidgets.QAction(self)
@@ -9441,6 +9441,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
         # add the subsection
         self.add_subsection(dict_to_add)
 
+    def add_fsdthreshold(self):
+        """ Add Fsd_threshold to the [Options] section."""
+        dict_to_add = {"Fsd_threshold": "10"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
+
     def add_global_attribute(self):
         """ Add a new global attribute to the [Global] section."""
         dict_to_add = {"New attribute":""}
@@ -9644,6 +9650,12 @@ class edit_cfg_L6(QtWidgets.QWidget):
         self.model.insertRow(self.section_headings.index("EcosystemRespiration"),
                              self.sections["Options"])
         self.update_tab_text()
+
+    def add_plotrawdata(self):
+        """ Add PlotRawData to the [Options] section."""
+        dict_to_add = {"PlotRawData": "No"}
+        # add the subsection
+        self.add_subsection(dict_to_add)
 
     def add_subsection(self, dict_to_add):
         """ Add a subsection to the model."""
@@ -9860,6 +9872,11 @@ class edit_cfg_L6(QtWidgets.QWidget):
                 # get a list of existing entries in this section
                 existing_entries = self.get_existing_entries()
                 # only put a QC check in the context menu if it is not already present
+                if "Fsd_threshold" not in existing_entries:
+                    self.context_menu.actionAddFsdthreshold = QtWidgets.QAction(self)
+                    self.context_menu.actionAddFsdthreshold.setText("Fsd_threshold")
+                    self.context_menu.addAction(self.context_menu.actionAddFsdthreshold)
+                    self.context_menu.actionAddFsdthreshold.triggered.connect(self.add_fsdthreshold)
                 if "MaxGapInterpolate" not in existing_entries:
                     self.context_menu.actionAddMaxGapInterpolate = QtWidgets.QAction(self)
                     self.context_menu.actionAddMaxGapInterpolate.setText("MaxGapInterpolate")
@@ -9875,6 +9892,11 @@ class edit_cfg_L6(QtWidgets.QWidget):
                     self.context_menu.actionAddMinPercentDay.setText("MinPercentDay")
                     self.context_menu.addAction(self.context_menu.actionAddMinPercentDay)
                     self.context_menu.actionAddMinPercentDay.triggered.connect(self.add_minpercentday)
+                if "PlotRawData" not in existing_entries:
+                    self.context_menu.actionAddPlotRawData = QtWidgets.QAction(self)
+                    self.context_menu.actionAddPlotRawData.setText("PlotRawData")
+                    self.context_menu.addAction(self.context_menu.actionAddPlotRawData)
+                    self.context_menu.actionAddPlotRawData.triggered.connect(self.add_plotrawdata)
                 if "Truncate" not in existing_entries and "Imports" in self.section_headings:
                     self.context_menu.actionAddTruncate = QtWidgets.QAction(self)
                     self.context_menu.actionAddTruncate.setText("Truncate")

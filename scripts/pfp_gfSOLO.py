@@ -521,7 +521,8 @@ def gfSOLO_plot(pd, ds, drivers, target, output, l5s, si=0, ei=-1):
     fig.savefig(figname, format="png")
     # draw the plot on the screen
     if l5s["gui"]["show_plots"]:
-        fig.canvas.flush_events()
+        plt.draw()
+        plt.pause(1)
     else:
         plt.close()
         plt.switch_backend(current_backend)

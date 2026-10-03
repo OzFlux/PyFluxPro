@@ -431,7 +431,7 @@ def CPD_run(cf):
     #fig.savefig(plot_out_name)
     #if d["show_plots"]:
         #plt.draw()
-        #pfp_utils.mypause(1)
+        #plt.pause(1)
         #plt.ioff()
     #else:
         #plt.ion()
@@ -459,7 +459,7 @@ def CPD_run(cf):
     #fig.savefig(plot_out_name)
     #if d["show_plots"]:
         #plt.draw()
-        #pfp_utils.mypause(1)
+        #plt.pause(1)
         #plt.ioff()
     #else:
         #plt.ion()
