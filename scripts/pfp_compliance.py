@@ -505,8 +505,7 @@ def ParseConcatenateControlFile(cf):
     if not os.path.isdir(file_path):
         os.makedirs(file_path)
     # work through the choices in the [Options] section
-    opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyMADFilter", default = "")
-    inc["ApplyMADFilter"] = str(opt)
+    #parse_concatenate_applymadfilter(cf, inc)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyFco2Storage", default = "No")
     inc["ApplyFco2Storage"] = str(opt)
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "NumberOfDimensions", default=3)
@@ -535,6 +534,11 @@ def ParseConcatenateControlFile(cf):
     opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "KeepIntermediateSeries", default="No")
     info["RemoveIntermediateSeries"] = {"KeepIntermediateSeries": opt, "not_output": []}
     return info
+
+#def parse_concatenate_applymadfilter(cf, inc):
+    #opt = pfp_utils.get_keyvaluefromcf(cf, ["Options"], "ApplyMADFilter", default = "")
+    #inc["ApplyMADFilter"] = str(opt)
+    #return
 
 def ParseL1ControlFile(cf):
     """
