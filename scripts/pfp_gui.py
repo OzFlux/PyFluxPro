@@ -5856,7 +5856,7 @@ class edit_cfg_concatenate(QtWidgets.QWidget):
     def add_seriestokeep(self):
         """ Add the SeriesToKeep option to the context menu."""
         # add the option to the [Options] section
-        series = "AH,CO2,Fa,Fco2,Fe,Fg,Fh,Fld,Flu,Fm,Fn,Fsd,Fsu,H2O,Precip,RH,SH,Sws,Ta,Ts,VP,Wd,Ws,ps,ustar"
+        series = "AH,CO2,Fa,Fco2,Fe,Fg,Fh,Fld,Flu,Fm,Fn,Fsd,Fsu,H2O,Precip,RH,SH,SHD,Sws,Ta,Ts,VP,VPD,Wd,Ws,ps,ustar"
         dict_to_add = {"SeriesToKeep": series}
         # add the subsubsection
         self.add_subsection(dict_to_add)
