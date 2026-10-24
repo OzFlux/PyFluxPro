@@ -55,6 +55,9 @@ class pfp_main_ui(QWidget):
         # File menu
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setTitle("File")
+        # File/New submenu
+        self.menuFileNew = QMenu(self.menuFile)
+        self.menuFileNew.setTitle("New")
         # File/Convert submenu
         self.menuFileConvert = QMenu(self.menuFile)
         self.menuFileConvert.setTitle("Convert")
@@ -77,6 +80,10 @@ class pfp_main_ui(QWidget):
         self.menuHelp = QMenu(self.menubar)
         self.menuHelp.setTitle("Help")
         # File menu items: menu actions for control files
+        self.actionFileNewFromNetCDF = QAction(self)
+        self.actionFileNewFromNetCDF.setText("From netCDF")
+        self.actionFileNewFromTemplate = QAction(self)
+        self.actionFileNewFromTemplate.setText("From template")
         self.actionFileOpen = QAction(self)
         self.actionFileOpen.setText("Open")
         self.actionFileOpen.setShortcut('Ctrl+O')
@@ -163,6 +170,7 @@ class pfp_main_ui(QWidget):
         self.menuFileConvert.addAction(self.actionFileConvertnc2oneflux)
         self.menuFileConvert.addAction(self.actionFileConvertnc2reddyproc)
         # File menu
+        self.menuFile.addAction(self.menuFileNew.menuAction())
         self.menuFile.addAction(self.actionFileOpen)
         self.menuFile.addAction(self.actionFileSave)
         self.menuFile.addAction(self.actionFileSaveAs)
@@ -238,6 +246,10 @@ class pfp_main_ui(QWidget):
 
         # Connect signals to slots
         # File menu actions
+        arg = lambda: pfp_top_level.do_file_new_from_netcdf(self)
+        self.actionFileNewFromNetCDF.triggered.connect(arg)
+        arg = lambda: pfp_top_level.do_file_new_from_template(self)
+        self.actionFileNewFromTemplate.triggered.connect(arg)
         arg = lambda: pfp_top_level.do_file_convert_nc2biomet(None, mode="standard")
         self.actionFileConvertnc2biomet.triggered.connect(arg)
         arg = lambda: pfp_top_level.do_file_convert_nc2oneflux(None, mode="standard")
@@ -246,6 +258,7 @@ class pfp_main_ui(QWidget):
         self.actionFileConvertnc2xls.triggered.connect(arg)
         arg = lambda: pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard")
         self.actionFileConvertnc2reddyproc.triggered.connect(arg)
+        self.actionFileNew.triggered.connect(self.file_new)
         self.actionFileOpen.triggered.connect(self.file_open)
         self.actionFileSave.triggered.connect(self.file_save)
         self.actionFileSaveAs.triggered.connect(self.file_save_as)
