@@ -1,5 +1,7 @@
 version_name = "PyFluxPro"
-version_number = "V3.4.24"
+version_number = "V3.4.25"
+# V3.4.25 - October 2026
+#         - implement automated generation of L2 and L3 control files
 # V3.4.24 - May 2026
 #         - fix bugs associated with upgrade from pandas 2+ to pandas 3+
 #           - fixed issue with dtype='object' and ufuncs in pfp_rp.py
