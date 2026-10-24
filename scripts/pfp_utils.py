@@ -12,7 +12,6 @@ import time
 # third party modules
 import cftime
 import dateutil
-import matplotlib.pyplot as plt
 import numpy
 import pytz
 import xlrd

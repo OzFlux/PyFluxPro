@@ -164,6 +164,9 @@ class pfp_main_ui(QWidget):
         self.actionHelpAbout = QAction(self)
         self.actionHelpAbout.setText("About")
         # add the actions to the menus
+        # File/New submenu
+        self.menuFileNew.addAction(self.actionFileNewFromNetCDF)
+        self.menuFileNew.addAction(self.actionFileNewFromTemplate)
         # File/Convert submenu
         self.menuFileConvert.addAction(self.actionFileConvertnc2xls)
         self.menuFileConvert.addAction(self.actionFileConvertnc2biomet)
@@ -258,7 +261,6 @@ class pfp_main_ui(QWidget):
         self.actionFileConvertnc2xls.triggered.connect(arg)
         arg = lambda: pfp_top_level.do_file_convert_nc2reddyproc(None, mode="standard")
         self.actionFileConvertnc2reddyproc.triggered.connect(arg)
-        self.actionFileNew.triggered.connect(self.file_new)
         self.actionFileOpen.triggered.connect(self.file_open)
         self.actionFileSave.triggered.connect(self.file_save)
         self.actionFileSaveAs.triggered.connect(self.file_save_as)
