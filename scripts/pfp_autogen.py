@@ -1,4 +1,5 @@
 # standard modules
+import copy
 import logging
 import os
 # 3rd party module
@@ -26,18 +27,61 @@ def generate_controlfile(main_ui):
         return
     return
 def generate_controlfile_l2(main_ui, ds):
+    ds_labels = sorted(list(ds.root["Variables"]))
     nc_url = ds.info["filepath"]
     l2_template_url = os.path.join("controlfiles", "templates", "L2", "L2_autogen_template.txt")
     cfg_template = ConfigObj(l2_template_url)
+    ctv = cfg_template["Variables"]
     cfg_template_labels = list(cfg_template["Variables"])
-    av_labels = sorted(list(set([l.split("_")[0] for l in cfg_template_labels if "_Sd" not in l and "_Vr" not in l])))
-    sd_labels = sorted(list(set([l.split("_")[0] for l in cfg_template_labels if "_Sd" in l])))
-    vr_labels = sorted(list(set([l.split("_")[0] for l in cfg_template_labels if "_Vr" in l])))
-    cv_labels = ["UxA", "UxC", "UxT", "UyA", "UyC", "UyT",
-                 "UzA", "UzC", "UzT", "UxUy", "UxUz", "UyUz"]
-    diag_labels = sorted(list(set([l for l in cfg_template_labels if "Diag" in l])))
-    l2_template_labels = av_labels + sd_labels + vr_labels + cv_labels + diag_labels
-    ds_labels = sorted(list(ds.root["Variables"]))
+    # explicit variable lists for plotting
+    radiation_labels = ["Fsd", "Fsu", "Fld", "Flu", "Fn"]
+    flux_sonic_labels = ["Fh", "Fm", "ustar"]
+    flux_sonic_units = ["W/m^2", "kg/m^2/s", "m/s"]
+    flux_sonic_irga_labels = ["Fco2", "Fe"]
+    flux_labels = flux_sonic_labels + flux_sonic_irga_labels
+    meteorology_labels = ["AH", "Ta", "RH", "Ws", "Wd", "ps", "Precip"]
+    cov_sonic_labels = ["UxT", "UyT", "UzT", "UxUy", "UxUz", "UyUz"]
+    cov_sonic_irga_labels = ["UxA", "UxC", "UyA", "UyC", "UzA", "UzC"]
+    soil_temperature_labels = ["Ts"]
+    soil_moisture_labels = ["Sws"]
+    soil_heat_flux_labels = ["Fg"]
+    # let's find out what's in the data structure ...
+
+    av_labels = sorted(list(set([l.split("_")[0] for l in ds_labels if "_Sd" not in l and "_Vr" not in l])))
+    sd_labels = sorted(list(set([l.split("_")[0] for l in ds_labels if "_Sd" in l])))
+    vr_labels = sorted(list(set([l.split("_")[0] for l in ds_labels if "_Vr" in l])))
+
+    cv_labels = cov_sonic_labels + cov_sonic_irga_labels
+    diag_labels = sorted(list(set([l for l in ds_labels if "Diag" in l])))
+    diag_sonic_labels = [l for l in diag_labels if s in l for s in ["SONIC", "CSAT"]]
+    diag_irga_labels = [l for l in diag_labels if s in l for s in ["IRGA", "7500"]]
+    agc_labels = sorted(list(set([l for l in ds_labels if "AGC" in l])))
+    sig_labels = sorted(list(set([l for l in ds_labels if "Sig" in l])))
+    # ... and then check to see what is defined in the template
+    groups = [av_labels, sd_labels, vr_labels,
+              cov_sonic_labels, cov_sonic_irga_labels,
+              flux_sonic_labels, flux_sonic_irga_labels,
+              diag_sonic_labels, diag_irga_labels, agc_labels, sig_labels]
+    undefined_labels = []
+    for group in groups:
+        for label in group:
+            if label not in cfg_template_labels:
+                undefined_labels.append(label)
+                group.remove(label)
+    if len(undefined_labels) > 0:
+        for undefined_label in undefined_labels:
+            msg = f"{undefined_label} not defined in autogen template, skipped ..."
+            logger.warning(msg)
+    # now specify the default dependencies
+    dep_labels = {"SONIC": {"deps": diag_sonic_labels,
+                            "vars": cov_sonic_labels + flux_sonic_labels},
+                  "IRGA": {"deps": diag_irga_labels + sig_labels + agc_labels,
+                           "vars": cov_sonic_irga_labels + flux_sonic_irga_labels}}
+
+    l2_template_labels = av_labels + sd_labels + vr_labels + cv_labels
+    l2_template_labels += dep_labels["SONIC"] + dep_labels["IRGA"]
+    l2_flux_cov_labels = flux_labels + cov_sonic_labels + cov_sonic_irga_labels
+
     if "DateTime" in ds_labels:
         ds_labels.remove("DateTime")
     cfg_site = ConfigObj(indent_type="    ", list_values=False)
@@ -50,23 +94,23 @@ def generate_controlfile_l2(main_ui, ds):
     cfg_site["Files"]["in_filename"] = os.path.basename(nc_url)
     cfg_site["Files"]["out_filename"] = cfg_site["Files"]["in_filename"].replace("L1", "L2")
     cfg_site["Files"]["plot_path"] = os.path.join(cfg_site["Files"]["file_path"], "plots")
-    cfg_site["Options"]["IRGA_Check"] = "Yes"
-    cfg_site["Options"]["SONIC_Check"] = "Yes"
+    cfg_site["Options"]["IRGA_Check"] = "No"
+    cfg_site["Options"]["SONIC_Check"] = "No"
     # look for complete matches first
     for ds_label in list(ds_labels):
         if ds_label in cfg_template_labels:
-            cfg_site["Variables"][ds_label] = cfg_template["Variables"][ds_label]
+            cfg_site["Variables"][ds_label] = copy.deepcopy(ctv[ds_label])
             ds_labels.remove(ds_label)
+    # look for matches in the variable name prefix
     for ds_label in list(ds_labels):
         ds_label_prefix = ds_label.split("_")[0]
-        #if ds_label in av_labels or ds_label in sd_labels or ds_label in vr_labels or ds_label in diag_labels:
         if ds_label in l2_template_labels:
             if ds_label_prefix not in cfg_template_labels:
                 continue
-            cfg_site["Variables"][ds_label] = cfg_template["Variables"][ds_label_prefix]
+            cfg_site["Variables"][ds_label] = copy.deepcopy(ctv[ds_label_prefix])
             continue
         if ds_label_prefix in av_labels and ds_label_prefix in cfg_template_labels:
-            cfg_site["Variables"][ds_label] = cfg_template["Variables"][ds_label_prefix]
+            cfg_site["Variables"][ds_label] = copy.deepcopy(ctv[ds_label_prefix])
     # adjust the range for presure based on the site altitude
     cfg_labels = list(cfg_site["Variables"].keys())
     if "altitude" in ds.root["Attributes"]:
@@ -79,15 +123,42 @@ def generate_controlfile_l2(main_ui, ds):
         for ps_label in ps_labels:
             cfg_site["Variables"][ps_label]["RangeCheck"]["upper"] = str(upper_ps)
             cfg_site["Variables"][ps_label]["RangeCheck"]["lower"] = str(lower_ps)
+
+    # dependencies for covariances and fluxes
+    if len(diag_sonic_labels) > 0:
+        ds_labels = sorted(list(ds.root["Variables"]))
+        sonic_labels = flux_sonic_labels + cov_sonic_labels
+        for sonic_label in sonic_labels:
+            if sonic_label in ds_labels:
+                var = pfp_utils.GetVariable(ds, sonic_label)
+                if var["Attr"]["units"] in flux_sonic_units:
+                    cfg_site["Variables"][sonic_label]["DependencyCheck"] = {"source": l2_dep_labels,}
+
+
+
+
+
+
+    l2_diag_labels = diag_labels + agc_labels + sig_labels
+    ds_labels = sorted(list(ds.root["Variables"]))
+    l2_dep_labels = []
+    for ds_label in list(ds_labels):
+        if ds_label in l2_diag_labels:
+            l2_dep_labels.append(ds_label)
+    if len(l2_dep_labels) > 0:
+        # look for complete matches first
+        for ds_label in list(ds_labels):
+            if ds_label in l2_flux_cov_labels:
+                cfg_site["Variables"][ds_label]["DependencyCheck"] = {"source": l2_dep_labels,}
+                ds_labels.remove(ds_label)
+        # look for matches in the variable name prefix
+        for ds_label in list(ds_labels):
+            ds_label_parts = ds_label.split("_")
+            if ds_label_parts[0] in l2_flux_cov_labels and len(ds_label_parts) <= 2:
+                if ds_label in cfg_site["Variables"]:
+                    cfg_site["Variables"][ds_label]["DependencyCheck"] = {"source": l2_dep_labels,}
+
     # set up the plot variables
-    radiation_labels = ["Fsd", "Fsu", "Fld", "Flu", "Fn"]
-    flux_labels = ["Fco2", "Fe", "Fh", "Fm", "ustar"]
-    meteorology_labels = ["AH", "Ta", "RH", "Ws", "Wd", "ps", "Precip"]
-    cov_sonic_labels = ["UxT", "UyT", "UzT", "UxUy", "UxUz", "UyUz"]
-    cov_sonic_irga_labels = ["UxA", "UxC", "UyA", "UyC", "UzA", "UzC"]
-    soil_temperature_labels = ["Ts"]
-    soil_moisture_labels = ["Sws"]
-    soil_heat_flux_labels = ["Fg"]
     # write the [Plots] section
     ds_labels = sorted(list(ds.root["Variables"].keys()))
     if "DateTime" in ds_labels:
@@ -145,8 +216,7 @@ def generate_controlfile_l2(main_ui, ds):
         elif "m" in st.split("_")[-1]:
             st_labels.append(st[0:st.index("m")+1])
         else:
-            msg = "Unrecognised format for soil temperature variable name: " + st
-            print(msg)
+            st_labels.append(st)
     st_labels = sorted(list(set(st_labels)))
     for n, st_label in enumerate(st_labels):
         plt_labels_soil_temperature = []
@@ -169,8 +239,7 @@ def generate_controlfile_l2(main_ui, ds):
         elif "m" in sm.split("_")[-1]:
             sm_labels.append(sm[0:sm.index("m")+1])
         else:
-            msg = "Unrecognised format for soil temperature variable name: " + sm
-            print(msg)
+            st_labels.append(sm)
     sm_labels = sorted(list(set(sm_labels)))
     for n, sm_label in enumerate(sm_labels):
         plt_labels_soil_moisture = []
