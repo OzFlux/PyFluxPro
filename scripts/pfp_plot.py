@@ -1501,7 +1501,9 @@ def plot_quickcheck(cf):
     plot_quickcheck_seb(nFig, plot_title, figure_name, data, daily)
     plt.pause(1)
     # plot the daily ratios
-    cmap = plt.cm.get_cmap("RdYlBu")
+    #cmap = plt.cm.get_cmap("RdYlBu")
+    cmap_registry = getattr(matplotlib, 'colormaps', matplotlib.cm)
+    cmap = cmap_registry.get_cmap('viridis') if hasattr(cmap_registry, 'get_cmap') else cmap_registry["RdYlBu"]
     logger.info(" Doing the daily ratios plot")
     plt.ion()
     nFig = nFig + 1
@@ -1596,7 +1598,9 @@ def plot_quickcheck(cf):
     # variable labels
     labels = ["Fsd", "Fsu", "Fa", "Fn", "Fg", "Ta", "Ts", "Fh", "Fe", "Fco2"]
     # get the colour map, points will be coloured according to the percentage of good data
-    cm = plt.cm.get_cmap("RdYlBu")
+    #cm = plt.cm.get_cmap("RdYlBu")
+    cmap_registry = getattr(matplotlib, 'colormaps', matplotlib.cm)
+    cm = cmap_registry.get_cmap('viridis') if hasattr(cmap_registry, 'get_cmap') else cmap_registry["RdYlBu"]
     # 12 plots per page, 1 for each month
     nrows = 4
     ncols = 3
