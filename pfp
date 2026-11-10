@@ -1,20 +1,64 @@
-#!/bin/bash -l
-# activate the environment
-eval "$(conda shell.bash hook)"
-conda activate pfp_env
-# wait until the command has completed
-wait
-# check the command line arguments
-if [ "$1" != "batch" ]; then
-    # run interactive if anything other than batch entered on command line
-    python PyFluxPro.py
-else
-    # check to see if control file entered on command line
-    if [ "$2" != "" ]; then
-        # run batch with specified control file
-        python batch.py $2
+#!/usr/bin/env bash
+
+# Name of the environment to activate
+ENV_NAME="pfp_env"
+
+# Resolve the directory where this script lives so it works from anywhere
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+APP_ENTRY="${SCRIPT_DIR}/PyFluxPro.py"
+
+# Function to run Python using micromamba
+run_micromamba() {
+    echo "Using micromamba (environment: ${ENV_NAME})..."
+    # Evaluate micromamba shell hook to enable 'micromamba activate' in subshell
+    eval "$(micromamba shell hook -s bash)"
+    micromamba activate "${ENV_NAME}"
+    exec python "${APP_ENTRY}" "$@"
+}
+
+# Function to run Python using mamba/conda
+run_conda() {
+    local cmd="$1"
+    echo "Using ${cmd} (environment: ${ENV_NAME})..."
+    # Evaluate conda shell hook to enable 'conda activate' in subshell
+    local conda_base
+    conda_base="$(${cmd} info --base 2>/dev/null)"
+    if [ -f "${conda_base}/etc/profile.d/conda.sh" ]; then
+        source "${conda_base}/etc/profile.d/conda.sh"
     else
-        # run batch with no control file
-        python batch.py
+        eval "$(${cmd} shell.bash hook)"
     fi
+    conda activate "${ENV_NAME}"
+    exec python "${APP_ENTRY}" "$@"
+}
+
+# --- Detection Logic ---
+
+# 1. Prefer micromamba if installed and available in PATH or default location
+if command -v micromamba &>/dev/null; then
+    run_micromamba "$@"
+elif [ -x "${HOME}/.local/bin/micromamba" ]; then
+    export PATH="${HOME}/.local/bin:${PATH}"
+    run_micromamba "$@"
+elif [ -x "${HOME}/bin/micromamba" ]; then
+    export PATH="${HOME}/bin:${PATH}"
+    run_micromamba "$@"
+
+# 2. Check for mamba
+elif command -v mamba &>/dev/null; then
+    run_conda "mamba" "$@"
+
+# 3. Check for conda
+elif command -v conda &>/dev/null; then
+    run_conda "conda" "$@"
+elif [ -n "${CONDA_EXE}" ] && [ -x "${CONDA_EXE}" ]; then
+    eval "$("${CONDA_EXE}" shell.bash hook)"
+    conda activate "${ENV_NAME}"
+    exec python "${APP_ENTRY}" "$@"
+
+# 4. Fallback: Neither found
+else
+    echo "Error: Neither micromamba nor conda was found in PATH." >&2
+    echo "Please ensure micromamba or conda is installed and accessible." >&2
+    exit 1
 fi
